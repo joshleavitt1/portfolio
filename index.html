@@ -124,8 +124,21 @@
       }
 
       @media (max-width: 900px) {
+        body {
+          align-items: center;
+        }
+
+        .site-header {
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 32px;
+        }
+
         .hero {
           flex-direction: column;
+          align-items: center;
           padding: 48px 32px;
           text-align: center;
           min-height: auto;
@@ -133,11 +146,16 @@
 
         .hero-content {
           max-width: none;
+          text-align: center;
         }
 
         h1,
         p {
           text-align: center;
+        }
+
+        .hero-image {
+          margin-left: 0;
         }
       }
     </style>
