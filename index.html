@@ -18,6 +18,11 @@
       rel="stylesheet"
     />
     <style>
+      :root {
+        --reveal-duration: 0.8s;
+        --reveal-gap: 0.5s;
+      }
+
       body {
         margin: 0;
         min-height: 100vh;
@@ -200,7 +205,9 @@
       .reveal {
         opacity: 0;
         transform: translateY(24px);
-        transition: opacity 0.8s ease, transform 0.8s ease;
+        transition:
+          opacity var(--reveal-duration) ease,
+          transform var(--reveal-duration) ease;
       }
 
       .reveal.is-visible {
@@ -330,14 +337,29 @@
         document.querySelector('.logo-carousel'),
       ];
 
-      const staggerDelay = 500;
+      const toMilliseconds = (timeValue) => {
+        const trimmed = timeValue.trim();
+        const numericValue = parseFloat(trimmed);
+        if (Number.isNaN(numericValue)) return 0;
+        return trimmed.endsWith('ms') ? numericValue : numericValue * 1000;
+      };
 
       window.addEventListener('DOMContentLoaded', () => {
-        initialSequence.forEach((element, index) => {
+        const rootStyles = getComputedStyle(document.documentElement);
+        const revealDuration = toMilliseconds(
+          rootStyles.getPropertyValue('--reveal-duration') || '0.8s'
+        );
+        const revealGap = toMilliseconds(
+          rootStyles.getPropertyValue('--reveal-gap') || '0.5s'
+        );
+
+        let accumulatedDelay = 0;
+        initialSequence.forEach((element) => {
           if (!element) return;
           setTimeout(() => {
             element.classList.add('is-visible');
-          }, staggerDelay * index);
+          }, accumulatedDelay);
+          accumulatedDelay += revealDuration + revealGap;
         });
 
         const observer = new IntersectionObserver(
