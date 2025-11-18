@@ -20,7 +20,8 @@
     <style>
       :root {
         --reveal-duration: 0.8s;
-        --reveal-gap: 0.25s;
+        --reveal-delay: 0s;
+        --reveal-buffer: 0.25s;
       }
 
       body {
@@ -342,16 +343,22 @@
         const revealDuration = toMilliseconds(
           rootStyles.getPropertyValue('--reveal-duration') || '0.8s'
         );
-        const revealGap = toMilliseconds(
-          rootStyles.getPropertyValue('--reveal-gap') || '0.25s'
+        const revealDelay = toMilliseconds(
+          rootStyles.getPropertyValue('--reveal-delay') || '0s'
+        );
+        const revealBuffer = toMilliseconds(
+          rootStyles.getPropertyValue('--reveal-buffer') || '0.25s'
         );
         const revealElements = Array.from(document.querySelectorAll('.reveal'));
 
         revealElements.forEach((element, index) => {
-          const delay = index * (revealDuration + revealGap);
+          const totalDelay =
+            revealDelay +
+            revealBuffer +
+            index * (revealDuration + revealBuffer * 2);
           setTimeout(() => {
             element.classList.add('is-visible');
-          }, delay);
+          }, totalDelay);
         });
       });
     </script>
