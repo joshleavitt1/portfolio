@@ -193,6 +193,17 @@
         color: #000c2a;
       }
 
+      .reveal {
+        opacity: 0;
+        transform: translateY(24px);
+        transition: opacity 0.8s ease, transform 0.8s ease;
+      }
+
+      .reveal.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
       @media (max-width: 900px) {
         body {
           align-items: center;
@@ -236,7 +247,7 @@
     </style>
   </head>
     <body>
-      <header class="site-header">
+      <header class="site-header reveal">
         <img src="images/logo.svg" alt="Josh Leavitt monogram" class="logo-mark" />
         <div class="logo-details">
           <span class="logo-text">Josh Leavitt</span>
@@ -250,7 +261,7 @@
         </div>
       </header>
       <div class="hero">
-      <div class="hero-content">
+      <div class="hero-content reveal">
         <h1>Design that accelerates <em>strategic advantage</em></h1>
         <p>
           Over a decade of experience leading Fortune 500 design teams, creating
@@ -264,10 +275,10 @@
         alt="Portrait of the designer"
         width="350"
         height="350"
-        class="hero-image"
+        class="hero-image reveal"
       />
     </div>
-    <section class="logo-carousel" aria-label="Companies I've worked with">
+    <section class="logo-carousel reveal" aria-label="Companies I've worked with">
       <div class="logo-track">
         <div class="logo-item">
           <img src="images/logos/aig.svg" alt="AIG logo" width="64px" height="35px" />
@@ -307,5 +318,44 @@
         </div>
       </div>
     </section>
+    <script>
+      const initialSequence = [
+        document.querySelector('.site-header'),
+        document.querySelector('.hero-content'),
+        document.querySelector('.hero-image'),
+        document.querySelector('.logo-carousel'),
+      ];
+
+      const staggerDelay = 500;
+
+      window.addEventListener('DOMContentLoaded', () => {
+        initialSequence.forEach((element, index) => {
+          if (!element) return;
+          setTimeout(() => {
+            element.classList.add('is-visible');
+          }, staggerDelay * index);
+        });
+
+        const observer = new IntersectionObserver(
+          (entries, obs) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                obs.unobserve(entry.target);
+              }
+            });
+          },
+          {
+            threshold: 0.2,
+          }
+        );
+
+        document.querySelectorAll('.reveal').forEach((element) => {
+          if (!initialSequence.includes(element)) {
+            observer.observe(element);
+          }
+        });
+      });
+    </script>
   </body>
 </html>
