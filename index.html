@@ -20,7 +20,7 @@
     <style>
       :root {
         --reveal-duration: 0.8s;
-        --reveal-gap: 0.5s;
+        --reveal-gap: 0.25s;
       }
 
       body {
@@ -330,13 +330,6 @@
       </div>
     </section>
     <script>
-      const initialSequence = [
-        document.querySelector('.site-header'),
-        document.querySelector('.hero-content'),
-        document.querySelector('.hero-image'),
-        document.querySelector('.logo-carousel'),
-      ];
-
       const toMilliseconds = (timeValue) => {
         const trimmed = timeValue.trim();
         const numericValue = parseFloat(trimmed);
@@ -350,36 +343,15 @@
           rootStyles.getPropertyValue('--reveal-duration') || '0.8s'
         );
         const revealGap = toMilliseconds(
-          rootStyles.getPropertyValue('--reveal-gap') || '0.5s'
+          rootStyles.getPropertyValue('--reveal-gap') || '0.25s'
         );
+        const revealElements = Array.from(document.querySelectorAll('.reveal'));
 
-        let accumulatedDelay = 0;
-        initialSequence.forEach((element) => {
-          if (!element) return;
+        revealElements.forEach((element, index) => {
+          const delay = index * (revealDuration + revealGap);
           setTimeout(() => {
             element.classList.add('is-visible');
-          }, accumulatedDelay);
-          accumulatedDelay += revealDuration + revealGap;
-        });
-
-        const observer = new IntersectionObserver(
-          (entries, obs) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting) {
-                entry.target.classList.add('is-visible');
-                obs.unobserve(entry.target);
-              }
-            });
-          },
-          {
-            threshold: 0.2,
-          }
-        );
-
-        document.querySelectorAll('.reveal').forEach((element) => {
-          if (!initialSequence.includes(element)) {
-            observer.observe(element);
-          }
+          }, delay);
         });
       });
     </script>
