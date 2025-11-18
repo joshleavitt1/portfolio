@@ -21,6 +21,7 @@
       :root {
         --reveal-duration: 0.8s;
         --reveal-delay: 0s;
+        --reveal-buffer: 0.25s;
       }
 
       body {
@@ -339,22 +340,26 @@
 
       window.addEventListener('DOMContentLoaded', () => {
         const rootStyles = getComputedStyle(document.documentElement);
+        const revealDuration = toMilliseconds(
+          rootStyles.getPropertyValue('--reveal-duration') || '0.8s'
+        );
         const revealDelay = toMilliseconds(
           rootStyles.getPropertyValue('--reveal-delay') || '0s'
         );
+        const revealBuffer = toMilliseconds(
+          rootStyles.getPropertyValue('--reveal-buffer') || '0.25s'
+        );
         const revealElements = Array.from(document.querySelectorAll('.reveal'));
 
-        const revealAll = () => {
-          revealElements.forEach((element) => {
+        revealElements.forEach((element, index) => {
+          const totalDelay =
+            revealDelay +
+            revealBuffer +
+            index * (revealDuration + revealBuffer * 2);
+          setTimeout(() => {
             element.classList.add('is-visible');
-          });
-        };
-
-        if (revealDelay > 0) {
-          setTimeout(revealAll, revealDelay);
-        } else {
-          revealAll();
-        }
+          }, totalDelay);
+        });
       });
     </script>
   </body>
