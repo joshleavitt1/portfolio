@@ -149,6 +149,115 @@
         filter: none;
       }
 
+      .case-gallery {
+        width: 100%;
+        padding: 0 120px 160px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 56px;
+      }
+
+      .case-slider-window {
+        width: min(1120px, 100%);
+        margin: 0 auto;
+        overflow: hidden;
+      }
+
+      .case-slider {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+      }
+
+      .case-track {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        transition: transform 0.6s ease;
+      }
+
+      .case-slide {
+        flex: 0 0 clamp(420px, 60vw, 720px);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+      }
+
+      .case-slide img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+      }
+
+      .case-info {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        width: min(1120px, 100%);
+        margin: 0 auto;
+      }
+
+      .case-copy h2 {
+        margin: 0 0 16px;
+        font-family: 'Source Serif Pro', serif;
+        font-size: 40px;
+        font-weight: 600;
+        color: #ffffff;
+      }
+
+      .case-copy p {
+        margin: 0;
+        max-width: 640px;
+      }
+
+      .case-controls {
+        width: 144px;
+        height: 64px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        flex-shrink: 0;
+      }
+
+      .case-nav {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .case-nav svg {
+        width: 20px;
+        height: 20px;
+        fill: #ffffff;
+      }
+
+      .case-nav:hover,
+      .case-nav:focus-visible {
+        background-color: rgba(255, 255, 255, 0.12);
+      }
+
+      .case-nav:disabled {
+        cursor: default;
+        background: transparent;
+      }
+
+      .case-nav:disabled svg {
+        fill: rgba(255, 255, 255, 0.25);
+      }
+
       @keyframes logo-scroll {
         0% {
           transform: translateX(0);
@@ -255,6 +364,24 @@
           width: calc(100% - 64px);
           margin: 0 32px 64px;
         }
+
+        .case-gallery {
+          padding: 0 32px 96px;
+        }
+
+        .case-slider-window,
+        .case-info {
+          width: 100%;
+        }
+
+        .case-info {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .case-controls {
+          align-self: flex-start;
+        }
       }
     </style>
   </head>
@@ -328,6 +455,44 @@
         </div>
       </div>
     </section>
+    <section class="case-gallery reveal" aria-label="Featured case studies">
+      <div class="case-slider-window">
+        <div class="case-slider">
+          <div class="case-track">
+            <figure class="case-slide">
+              <img src="images/case/Case_1.jpg" alt="Case study mockup" width="720" height="480" />
+            </figure>
+            <figure class="case-slide">
+              <img src="images/case/Case_2.jpg" alt="Product dashboard concept" width="720" height="480" />
+            </figure>
+            <figure class="case-slide">
+              <img src="images/case/Case_3.jpg" alt="Customer mobile experience" width="720" height="480" />
+            </figure>
+          </div>
+        </div>
+      </div>
+      <div class="case-info">
+        <div class="case-copy">
+          <h2>Case Study</h2>
+          <p>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque efficitur sed nulla ut hendrerit. Praesent iaculis
+            venenatis quam, vel bibendum odio tincidunt.
+          </p>
+        </div>
+        <div class="case-controls" aria-label="Case study navigation">
+          <button class="case-nav case-nav--prev" type="button" aria-label="Previous case study">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15.707 4.293a1 1 0 0 1 0 1.414L10.414 11l5.293 5.293a1 1 0 0 1-1.414 1.414l-6-6a1 1 0 0 1 0-1.414l6-6a1 1 0 0 1 1.414 0z" />
+            </svg>
+          </button>
+          <button class="case-nav case-nav--next" type="button" aria-label="Next case study">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8.293 19.707a1 1 0 0 1 0-1.414L13.586 13 8.293 7.707a1 1 0 1 1 1.414-1.414l6 6a1 1 0 0 1 0 1.414l-6 6a1 1 0 0 1-1.414 0z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
     <script>
       const toMilliseconds = (timeValue) => {
         const trimmed = timeValue.trim();
@@ -358,6 +523,38 @@
             element.classList.add('is-visible');
           }, totalDelay);
         });
+
+        const sliderWindow = document.querySelector('.case-slider-window');
+        if (sliderWindow) {
+          const track = sliderWindow.querySelector('.case-track');
+          const slides = Array.from(track.querySelectorAll('.case-slide'));
+          const prevButton = document.querySelector('.case-nav--prev');
+          const nextButton = document.querySelector('.case-nav--next');
+          let currentIndex = 0;
+
+          const updateSlider = () => {
+            const sliderWidth = sliderWindow.getBoundingClientRect().width;
+            const activeSlide = slides[currentIndex];
+            const slideWidth = activeSlide.getBoundingClientRect().width;
+            const slideOffset = activeSlide.offsetLeft;
+            const translateX = -slideOffset + (sliderWidth - slideWidth) / 2;
+            track.style.transform = `translateX(${translateX}px)`;
+            prevButton.disabled = currentIndex === 0;
+            nextButton.disabled = currentIndex === slides.length - 1;
+          };
+
+          const goToSlide = (index) => {
+            currentIndex = Math.max(0, Math.min(index, slides.length - 1));
+            updateSlider();
+          };
+
+          prevButton.addEventListener('click', () => goToSlide(currentIndex - 1));
+          nextButton.addEventListener('click', () => goToSlide(currentIndex + 1));
+          window.addEventListener('resize', () => {
+            window.requestAnimationFrame(updateSlider);
+          });
+          updateSlider();
+        }
       });
     </script>
   </body>
