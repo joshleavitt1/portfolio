@@ -22,6 +22,7 @@
         --reveal-duration: 0.6s;
         --reveal-delay: 0s;
         --reveal-buffer: 0.2s;
+        --case-horizontal-padding: 240px;
       }
 
       body {
@@ -161,7 +162,7 @@
       .case-slider-window {
         width: min(1120px, 100%);
         margin: 0 auto;
-        overflow: hidden;
+        overflow: visible;
       }
 
       .case-slider {
@@ -178,8 +179,12 @@
       }
 
       .case-slide {
+        width: min(1120px, calc(100vw - var(--case-horizontal-padding)));
+        max-width: 100%;
+        flex: 0 0 auto;
         border-radius: 24px;
         overflow: hidden;
+        aspect-ratio: 16 / 9;
       }
 
       .case-slide img {
@@ -370,6 +375,10 @@
         .case-slider-window,
         .case-info {
           width: 100%;
+        }
+
+        :root {
+          --case-horizontal-padding: 64px;
         }
 
         .case-info {
