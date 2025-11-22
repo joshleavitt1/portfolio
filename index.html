@@ -48,9 +48,25 @@
         box-sizing: border-box;
       }
 
-      .logo-mark {
-        width: 64px;
-        height: 64px;
+      .logo-button {
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #00c8ff, #0009ff);
+        box-shadow: 0 0 40px #0009ff;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .logo-button img {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
       }
 
       .logo-details {
@@ -64,6 +80,7 @@
         font-weight: 700;
         font-size: 24px;
         color: #ffffff;
+        letter-spacing: -0.02em;
       }
 
       .role-list {
@@ -71,7 +88,7 @@
         align-items: center;
         gap: 8px;
         font-family: 'Inter', sans-serif;
-        font-size: 20px;
+        font-size: 14px;
         font-weight: 400;
         color: rgba(255, 255, 255, 0.48);
       }
@@ -81,6 +98,12 @@
         height: 4px;
         border-radius: 50%;
         background-color: rgba(255, 255, 255, 0.48);
+      }
+
+      .role {
+        font-size: 14px;
+        font-weight: 400;
+        letter-spacing: -0.02em;
       }
 
       .hero {
@@ -402,7 +425,9 @@
   </head>
     <body>
       <header class="site-header reveal">
-        <img src="images/logo.svg" alt="Josh Leavitt monogram" class="logo-mark" />
+        <button class="logo-button" type="button" aria-label="Josh Leavitt monogram" aria-disabled="true">
+          <img src="images/logo.svg" alt="Josh Leavitt monogram" />
+        </button>
         <div class="logo-details">
           <span class="logo-text">Josh Leavitt</span>
           <div class="role-list">
