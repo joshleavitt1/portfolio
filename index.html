@@ -297,23 +297,25 @@
       }
 
       button {
-        background: transparent;
-        border: 2px solid rgba(255, 255, 255, 0.24);
+        background: linear-gradient(135deg, #00c8ff, #0009ff);
+        border: none;
         color: #ffffff;
         font-family: 'Inter', sans-serif;
-        font-size: 20px;
+        font-size: 16px;
         font-weight: 900;
+        letter-spacing: -0.02em;
         height: 64px;
         padding: 0 24px;
         cursor: pointer;
-        border-radius: 4px;
-        transition: color 0.3s ease, background-color 0.3s ease;
+        border-radius: 9999px;
+        box-shadow: 0 12px 40px #0009ff;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
 
       button:hover,
       button:focus-visible {
-        background-color: #E7F1FF;
-        color: #000c2a;
+        transform: translateY(-2px);
+        box-shadow: 0 16px 40px #0009ff;
       }
 
       .reveal {
