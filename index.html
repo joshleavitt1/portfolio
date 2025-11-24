@@ -103,8 +103,13 @@ body::after {
       .logo-text {
         font-family: 'Inter', sans-serif;
         font-weight: 900;
-        font-size: 24px;
-        color: #ffffff;
+        font-size: 32px;
+        background: linear-gradient(90deg, #ffffff 0%, #ffffff 60%, #47526f 85%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
         letter-spacing: -0.02em;
       }
 
@@ -273,50 +278,41 @@ body::after {
         max-width: 640px;
       }
 
-      .case-slider-window {
-        position: relative;
-      }
-
-      .case-controls {
-        position: absolute;
-        right: 32px;
-        bottom: 32px;
-        display: inline-flex;
-        gap: 12px;
-        z-index: 2;
-      }
-
-      .case-control {
-        width: 56px;
+      .case-navigation {
         height: 56px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 16px;
-        background: linear-gradient(135deg, #00c8ff, #0009ff);
-        box-shadow: 0 10px 30px rgba(0, 9, 255, 0.35);
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0;
+        background: none;
+        box-shadow: none;
+        border-radius: 0;
+        backdrop-filter: none;
+      }
+
+      .case-arrow {
+        width: 10px;
+        height: 16px;
+        padding: 0;
+        border: none;
+        background: none;
         color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
       }
 
-      .case-control:hover,
-      .case-control:focus-visible {
-        transform: translateY(-2px);
-        box-shadow: 0 16px 40px rgba(0, 9, 255, 0.45);
+      .case-arrow:hover,
+      .case-arrow:active,
+      .case-arrow:focus-visible {
+        background: none;
+        border: none;
+        color: inherit;
       }
 
-      .case-control:disabled {
-        cursor: not-allowed;
-        opacity: 0.4;
-        box-shadow: none;
-        transform: none;
-      }
-
-      .case-control svg {
-        width: 18px;
-        height: 18px;
+      .case-arrow svg {
+        width: 10px;
+        height: 16px;
         fill: currentColor;
       }
 
@@ -469,10 +465,9 @@ body::after {
           flex-direction: column;
           align-items: flex-start;
         }
-        
-        .case-controls {
-          right: 16px;
-          bottom: 16px;
+
+        .case-navigation {
+          align-self: flex-start;
         }
       }
     </style>
@@ -553,6 +548,18 @@ body::after {
             venenatis quam, vel bibendum odio tincidunt.
           </p>
         </div>
+        <div class="case-navigation" aria-label="Case study navigation">
+          <button class="case-arrow case-arrow--prev" type="button" aria-label="Previous case study">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15.707 4.293a1 1 0 0 1 0 1.414L11.414 10l4.293 4.293a1 1 0 0 1-1.414 1.414l-5-5a1 1 0 0 1 0-1.414l5-5a1 1 0 0 1 1.414 0z" />
+            </svg>
+          </button>
+          <button class="case-arrow case-arrow--next" type="button" aria-label="Next case study">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8.293 19.707a1 1 0 0 1 0-1.414L12.586 13 8.293 8.707a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 0 0 1-1.414 0z" />
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="case-slider-window">
         <div class="case-slider">
@@ -567,18 +574,6 @@ body::after {
               <img src="images/case/Case_3.jpg" alt="Case study mockup" width="1200" height="675" />
             </figure>
           </div>
-        </div>
-        <div class="case-controls" aria-label="Case study navigation">
-          <button class="case-control case-control--prev" type="button" aria-label="Previous case study">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M15.707 4.293a1 1 0 0 1 0 1.414L11.414 10l4.293 4.293a1 1 0 0 1-1.414 1.414l-5-5a1 1 0 0 1 0-1.414l5-5a1 1 0 0 1 1.414 0z" />
-            </svg>
-          </button>
-          <button class="case-control case-control--next" type="button" aria-label="Next case study">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8.293 19.707a1 1 0 0 1 0-1.414L12.586 13 8.293 8.707a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 0 0 1-1.414 0z" />
-            </svg>
-          </button>
         </div>
       </div>
     </section>
@@ -664,8 +659,8 @@ body::after {
         if (sliderWindow) {
           const track = sliderWindow.querySelector('.case-track');
           const slides = Array.from(track.querySelectorAll('.case-slide'));
-          const prevButton = sliderWindow.querySelector('.case-control--prev');
-          const nextButton = sliderWindow.querySelector('.case-control--next');
+          const prevButton = document.querySelector('.case-arrow--prev');
+          const nextButton = document.querySelector('.case-arrow--next');
           let currentIndex = 0;
 
           const updateSlider = () => {
