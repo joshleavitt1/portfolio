@@ -278,16 +278,10 @@ body::after {
         max-width: 640px;
       }
 
-      .case-navigation {
-        height: 56px;
+      .case-controls {
         display: inline-flex;
-        align-items: center;
-        gap: 16px;
-        padding: 0;
-        background: none;
-        box-shadow: none;
-        border-radius: 0;
-        backdrop-filter: none;
+        gap: 12px;
+        align-self: flex-end;
       }
 
       .case-arrow {
@@ -463,11 +457,7 @@ body::after {
 
         .case-info {
           flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .case-navigation {
-          align-self: flex-start;
+          align-items: flex-end;
         }
       }
     </style>
@@ -548,13 +538,13 @@ body::after {
             venenatis quam, vel bibendum odio tincidunt.
           </p>
         </div>
-        <div class="case-navigation" aria-label="Case study navigation">
-          <button class="case-arrow case-arrow--prev" type="button" aria-label="Previous case study">
+        <div class="case-controls" aria-label="Case study navigation">
+          <button class="case-control case-control--prev" type="button" aria-label="Previous case study">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M15.707 4.293a1 1 0 0 1 0 1.414L11.414 10l4.293 4.293a1 1 0 0 1-1.414 1.414l-5-5a1 1 0 0 1 0-1.414l5-5a1 1 0 0 1 1.414 0z" />
             </svg>
           </button>
-          <button class="case-arrow case-arrow--next" type="button" aria-label="Next case study">
+          <button class="case-control case-control--next" type="button" aria-label="Next case study">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M8.293 19.707a1 1 0 0 1 0-1.414L12.586 13 8.293 8.707a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 0 0 1-1.414 0z" />
             </svg>
@@ -655,12 +645,14 @@ body::after {
 
         revealElements.forEach((element) => observer.observe(element));
 
-        const sliderWindow = document.querySelector('.case-slider-window');
-        if (sliderWindow) {
+        const caseSection = document.querySelector('.case-gallery');
+        const sliderWindow = caseSection?.querySelector('.case-slider-window');
+        const prevButton = caseSection?.querySelector('.case-control--prev');
+        const nextButton = caseSection?.querySelector('.case-control--next');
+
+        if (sliderWindow && prevButton && nextButton) {
           const track = sliderWindow.querySelector('.case-track');
           const slides = Array.from(track.querySelectorAll('.case-slide'));
-          const prevButton = document.querySelector('.case-arrow--prev');
-          const nextButton = document.querySelector('.case-arrow--next');
           let currentIndex = 0;
 
           const updateSlider = () => {
