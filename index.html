@@ -103,8 +103,13 @@ body::after {
       .logo-text {
         font-family: 'Inter', sans-serif;
         font-weight: 900;
-        font-size: 24px;
-        color: #ffffff;
+        font-size: 32px;
+        background: linear-gradient(90deg, #ffffff 0%, #ffffff 60%, #47526f 85%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
         letter-spacing: -0.02em;
       }
 
@@ -279,37 +284,29 @@ body::after {
         align-self: flex-end;
       }
 
-      .case-control {
-        width: 56px;
-        height: 56px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 16px;
-        background: linear-gradient(135deg, #00c8ff, #0009ff);
-        box-shadow: 0 10px 30px rgba(0, 9, 255, 0.35);
+      .case-arrow {
+        width: 10px;
+        height: 16px;
+        padding: 0;
+        border: none;
+        background: none;
         color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
       }
 
-      .case-control:hover,
-      .case-control:focus-visible {
-        transform: translateY(-2px);
-        box-shadow: 0 16px 40px rgba(0, 9, 255, 0.45);
+      .case-arrow:hover,
+      .case-arrow:active,
+      .case-arrow:focus-visible {
+        background: none;
+        border: none;
+        color: inherit;
       }
 
-      .case-control:disabled {
-        cursor: not-allowed;
-        opacity: 0.4;
-        box-shadow: none;
-        transform: none;
-      }
-
-      .case-control svg {
-        width: 18px;
-        height: 18px;
+      .case-arrow svg {
+        width: 10px;
+        height: 16px;
         fill: currentColor;
       }
 
