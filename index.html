@@ -319,18 +319,12 @@ body::after {
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: background-color 0.3s ease;
       }
 
       .case-nav svg {
-        width: 40px;
-        height: 40px;
+        width: 10px;
+        height: 16px;
         fill: #ffffff;
-      }
-
-      .case-nav:hover,
-      .case-nav:focus-visible {
-        background-color: rgba(0, 0, 0, 0.08);
       }
 
       .case-nav:disabled {
@@ -339,7 +333,7 @@ body::after {
       }
 
       .case-nav:disabled svg {
-        fill: rgba(255, 255, 255, 0.25);
+        opacity: 0.5;
       }
 
       @keyframes logo-scroll {
@@ -569,21 +563,6 @@ body::after {
       </div>
     </section>
     <section class="case-gallery reveal" aria-label="Featured case studies">
-      <div class="case-slider-window">
-        <div class="case-slider">
-          <div class="case-track">
-            <figure class="case-slide">
-              <img src="images/case/Case_1.jpg" alt="Case study mockup" width="1200" height="675" />
-            </figure>
-            <figure class="case-slide">
-              <img src="images/case/Case_2.jpg" alt="Product dashboard concept" width="1200" height="675" />
-            </figure>
-            <figure class="case-slide">
-              <img src="images/case/Case_3.jpg" alt="Customer mobile experience" width="1200" height="675" />
-            </figure>
-          </div>
-        </div>
-      </div>
       <div class="case-info">
         <div class="case-copy">
           <h2>Case Study</h2>
@@ -603,6 +582,21 @@ body::after {
               <path d="M8.293 19.707a1 1 0 0 1 0-1.414L13.586 13 8.293 7.707a1 1 0 1 1 1.414-1.414l6 6a1 1 0 0 1 0 1.414l-6 6a1 1 0 0 1-1.414 0z" />
             </svg>
           </button>
+        </div>
+      </div>
+      <div class="case-slider-window">
+        <div class="case-slider">
+          <div class="case-track">
+            <figure class="case-slide">
+              <img src="images/case/Case_1.jpg" alt="Case study mockup" width="1200" height="675" />
+            </figure>
+            <figure class="case-slide">
+              <img src="images/case/Case_2.jpg" alt="Product dashboard concept" width="1200" height="675" />
+            </figure>
+            <figure class="case-slide">
+              <img src="images/case/Case_3.jpg" alt="Customer mobile experience" width="1200" height="675" />
+            </figure>
+          </div>
         </div>
       </div>
     </section>
