@@ -186,7 +186,9 @@
 
       .case-slider-window {
         margin: 0 auto;
-        overflow: visible;
+        width: min(1120px, calc(100vw - var(--case-horizontal-padding)));
+        max-width: 100%;
+        overflow: hidden;
       }
 
       .case-slider {
@@ -402,7 +404,12 @@
           padding: 0 32px 96px;
         }
 
-        .case-slider-window,
+        .case-slider-window {
+          width: min(1120px, calc(100vw - var(--case-horizontal-padding)));
+          max-width: 100%;
+          overflow: hidden;
+        }
+
         .case-info {
           width: 100%;
         }
