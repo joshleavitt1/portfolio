@@ -276,12 +276,12 @@ body::after {
       .case-navigation {
         display: inline-flex;
         align-items: center;
-        gap: 40px;
-        padding: 0px 24px;
-        background: linear-gradient(135deg, #00c8ff, #0009ff);
-        box-shadow: 0 0 40px #0009ff;
-        border-radius: 999px;
-        backdrop-filter: blur(12px);
+        gap: 16px;
+        padding: 0;
+        background: none;
+        box-shadow: none;
+        border-radius: 0;
+        backdrop-filter: none;
       }
 
       .case-arrow {
@@ -294,6 +294,14 @@ body::after {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+      }
+
+      .case-arrow:hover,
+      .case-arrow:active,
+      .case-arrow:focus-visible {
+        background: none;
+        border: none;
+        color: inherit;
       }
 
       .case-arrow svg {
