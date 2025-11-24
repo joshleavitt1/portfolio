@@ -296,20 +296,21 @@ body::after {
 
       .case-controls {
         height: 56px;
-        width: 100%;
-        padding: 0;
-        background: transparent;
+        width: 120px;
+        padding: 0 16px;
+        background: linear-gradient(135deg, #00c8ff, #0009ff);
         border: none;
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 16px;
+        justify-content: space-between;
         flex-shrink: 0;
+        box-sizing: border-box;
+        border-radius: 12px;
       }
 
       .case-nav {
-        width: 10px;
-        height: 16px;
+        width: 24px;
+        height: 24px;
         border: none;
         background: transparent;
         padding: 0;
@@ -328,10 +329,11 @@ body::after {
       .case-nav:disabled {
         cursor: default;
         background: transparent;
+        opacity: 0.5;
       }
 
       .case-nav:disabled svg {
-        opacity: 0.5;
+        opacity: 1;
       }
 
       @keyframes logo-scroll {
