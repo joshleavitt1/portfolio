@@ -306,38 +306,21 @@ body::after {
       }
 
       .case-arrow {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: radial-gradient(circle at 30% 30%, rgba(0, 200, 255, 0.12), rgba(0, 9, 255, 0.08));
+        width: 10px;
+        height: 16px;
+        padding: 0;
+        border: none;
+        background: none;
         color: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
       }
 
       .case-arrow svg {
-        width: 16px;
+        width: 10px;
         height: 16px;
         fill: currentColor;
-      }
-
-      .case-arrow:hover:not(:disabled) {
-        transform: translateY(-2px);
-        border-color: rgba(0, 200, 255, 0.6);
-        box-shadow: 0 10px 30px rgba(0, 200, 255, 0.25);
-      }
-
-      .case-arrow:active:not(:disabled) {
-        transform: translateY(0);
-      }
-
-      .case-arrow:disabled {
-        cursor: default;
-        opacity: 0.32;
       }
 
       @keyframes logo-scroll {
