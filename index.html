@@ -624,6 +624,25 @@ body::after {
       };
 
       window.addEventListener('DOMContentLoaded', () => {
+        const lazyMedia = document.querySelectorAll('[data-src]');
+
+        if ('IntersectionObserver' in window) {
+          const mediaObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+
+              const element = entry.target;
+              const source = element.getAttribute('data-src');
+
+              if (source) {
+                element.src = source;
+                element.removeAttribute('data-src');
+                element.setAttribute('loading', 'lazy');
+              }
+
+              observer.unobserve(element);
+            });
+          });
 
           lazyMedia.forEach((element) => mediaObserver.observe(element));
         } else {
