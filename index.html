@@ -26,63 +26,47 @@
       }
 
       body {
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  overflow-x: hidden;
-  position: relative; /* keep this so ::before/::after anchor to body */
-  background: #000C2A; /* deep navy base */
-}
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        overflow-x: hidden;
+        position: relative; /* keep this so ::before/::after anchor to body */
+        background: #000c2a; /* deep navy base */
+      }
 
-/* BLURRED GRADIENT TEXTURE LAYER */
-body::before {
-  content: "";
-  position: absolute;       /* was: fixed */
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 520px;            /* adjust this to cover hero area */
-  z-index: -2;
-  pointer-events: none;
-  filter: blur(50px);
-
-  background:
-    linear-gradient(
-      -135deg,
-      #000C2A 0%,
-      #000C2A 10%,
-      #0009FF 20%,
-      #0009FF 30%,
-      #000C2A 35%,
-      #000C2A 100%
-    );
-}
+      /* CENTERED CIRCLE BACKDROP */
+      body::before {
+        content: "";
+        position: absolute;
+        top: 35%;
+        left: 50%;
+        width: 800px;
+        height: 800px;
+        transform: translate(-50%, -50%);
+        z-index: -2;
+        pointer-events: none;
+        border-radius: 50%;
+        background: #0009ff;
+        filter: blur(30px);
+      }
 
 /* SUBTLE NOISE OVERLAY */
 body::after {
   content: "";
   position: absolute;       /* was: fixed */
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 520px;            /* same height as ::before */
+  top: 35%;
+  left: 50%;
+  width: 800px;
+  height: 800px;
+  transform: translate(-50%, calc(-50% + 40px));
   z-index: -1;
   pointer-events: none;
-  opacity: 0.12;
-  mix-blend-mode: soft-light;
-
-  background-image: 
-    repeating-linear-gradient(
-      45deg,
-      rgba(255, 255, 255, 0.06) 0px,
-      rgba(255, 255, 255, 0.06) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-  background-size: 4px 4px;
+  border-radius: 50%;
+  background: #000c2a;
+  box-shadow: 0 0 120px rgba(0, 12, 42, 0.6);
 }
 
       .site-header {
@@ -90,7 +74,7 @@ body::after {
         align-items: center;
         gap: 12px;
         padding: 0 32px;
-        margin: 80px 120px 0;
+        margin: 80px auto 0;
         height: 64px;
         box-sizing: border-box;
         background: rgba(0, 0, 0, 0.08);
