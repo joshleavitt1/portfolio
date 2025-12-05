@@ -47,12 +47,12 @@
       body::before {
         content: "";
         position: absolute;
-        top: 25%;
+        top: 35%;
         left: 50%;
         width: 800px;
         height: 800px;
         transform: translate(-50%, -50%);
-        z-index: 0;
+        z-index: 1;
         pointer-events: none;
         border-radius: 50%;
         background: #0009ff;
@@ -62,17 +62,17 @@
 /* SUBTLE NOISE OVERLAY */
 body::after {
   content: "";
-  position: absolute;       /* was: fixed */
-  top: 30%;
-  left: 50%;
-  width: 1200px;
-  height: 1200px;
-  transform: translate(-50%, calc(-50% + 40px));
-  z-index: 0;
-  pointer-events: none;
-  border-radius: 50%;
-  background: #000c2a;
-  filter: blur(50px);
+        position: absolute;
+        top: 35%;
+        left: 50%;
+        width: 800px;
+        height: 800px;
+        transform: translate(-50%, -50%);
+        z-index: 0;
+        pointer-events: none;
+        border-radius: 50%;
+        background: #0009ff;
+        filter: blur(30px);
 }
 
       .site-header {
