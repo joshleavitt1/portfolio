@@ -33,7 +33,14 @@
         justify-content: flex-start;
         overflow-x: hidden;
         position: relative; /* keep this so ::before/::after anchor to body */
+        isolation: isolate; /* create stacking context so pseudo elements stay visible */
         background: #000c2a; /* deep navy base */
+      }
+
+      /* keep content above the glowing circles */
+      body > * {
+        position: relative;
+        z-index: 1;
       }
 
       /* CENTERED CIRCLE BACKDROP */
@@ -45,7 +52,7 @@
         width: 800px;
         height: 800px;
         transform: translate(-50%, -50%);
-        z-index: -10;
+        z-index: 0;
         pointer-events: none;
         border-radius: 50%;
         background: #0009ff;
@@ -61,7 +68,7 @@ body::after {
   width: 1200px;
   height: 1200px;
   transform: translate(-50%, calc(-50% + 40px));
-  z-index: -10;
+  z-index: 0;
   pointer-events: none;
   border-radius: 50%;
   background: #000c2a;
