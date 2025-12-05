@@ -32,48 +32,10 @@
         align-items: flex-start;
         justify-content: flex-start;
         overflow-x: hidden;
-        position: relative; /* keep this so ::before/::after anchor to body */
-        isolation: isolate; /* create stacking context so pseudo elements stay visible */
+        position: relative;
+        isolation: isolate;
         background: #000c2a; /* deep navy base */
       }
-
-      /* keep content above the glowing circles */
-      body > * {
-        position: relative;
-        z-index: 1;
-      }
-
-      /* CENTERED CIRCLE BACKDROP */
-      body::before {
-        content: "";
-        position: absolute;
-        top: 35%;
-        left: 50%;
-        width: 800px;
-        height: 800px;
-        transform: translate(-50%, -50%);
-        z-index: 1;
-        pointer-events: none;
-        border-radius: 50%;
-        background: #0009ff;
-        filter: blur(30px);
-      }
-
-/* SUBTLE NOISE OVERLAY */
-body::after {
-  content: "";
-        position: absolute;
-        top: 35%;
-        left: 50%;
-        width: 800px;
-        height: 800px;
-        transform: translate(-50%, -50%);
-        z-index: 0;
-        pointer-events: none;
-        border-radius: 50%;
-        background: #0009ff;
-        filter: blur(30px);
-}
 
       .site-header {
         display: inline-flex;
