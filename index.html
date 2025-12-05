@@ -86,41 +86,44 @@ body::after {
 }
 
       .site-header {
-        width: 100%;
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: 8px;
-        padding: 80px 120px 0px 120px;
+        gap: 12px;
+        padding: 0 32px;
+        margin: 80px 120px 0;
+        height: 64px;
         box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.08);
+        border-radius: 999px;
+        box-shadow: 0 0 100px rgba(255, 255, 255, 0.5);
+        color: #ffffff;
       }
 
       .logo-details {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
       }
 
       .logo-text {
         font-family: 'Inter', sans-serif;
-        font-weight: 900;
-        font-size: 32px;
-        background: linear-gradient(90deg, #ffffff 0%, #ffffff 60%, #47526f 85%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+        font-size: 16px;
+        color: #ffffff;
         display: inline-block;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.01em;
       }
 
       .role-list {
-        display: flex;
+        display: inline-flex;
         align-items: center;
         gap: 8px;
         font-family: 'Inter', sans-serif;
         font-size: 14px;
         font-weight: 400;
-        color: rgba(255, 255, 255, 0.48);
+        color: #ffffff;
+        white-space: nowrap;
       }
 
       .role-dot {
@@ -403,11 +406,9 @@ body::after {
         }
 
         .site-header {
-          flex-direction: column;
-          align-items: center;
+          margin: 48px 16px 0;
+          width: calc(100% - 32px);
           justify-content: center;
-          text-align: center;
-          padding: 32px;
         }
 
         .hero {
