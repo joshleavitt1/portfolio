@@ -66,6 +66,15 @@
         z-index: -1;
       }
 
+      .background-vertical-glow--color {
+        background: linear-gradient(135deg, #00c8ff, #0009ff);
+        width: 140px;
+        height: 360px;
+        filter: blur(80px);
+        opacity: 0.9;
+        z-index: -2;
+      }
+
       .site-header {
         display: inline-flex;
         align-items: center;
@@ -283,6 +292,10 @@
     </style>
   </head>
     <body>
+      <div
+        class="background-vertical-glow background-vertical-glow--color"
+        aria-hidden="true"
+      ></div>
       <div class="background-vertical-glow" aria-hidden="true"></div>
       <div class="background-circle background-circle--navy" aria-hidden="true"></div>
       <div class="background-circle" aria-hidden="true"></div>
