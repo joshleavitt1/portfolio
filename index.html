@@ -18,12 +18,6 @@
       rel="stylesheet"
     />
     <style>
-      :root {
-        --reveal-duration: 0.6s;
-        --reveal-delay: 0s;
-        --reveal-buffer: 0.2s;
-      }
-
       body {
         margin: 0;
         min-height: 100vh;
@@ -110,6 +104,8 @@
         align-items: center;
         justify-content: center;
         width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
         padding: 80px 120px 80px 120px;
         box-sizing: border-box;
         text-align: center;
@@ -117,7 +113,7 @@
 
       .hero-content {
         width: 100%;
-        max-width: 960px;
+        max-width: 100%;
       }
 
       .logo-carousel {
@@ -225,31 +221,6 @@
           linear-gradient(135deg, #00c8ff, #0009ff);
       }
 
-      .reveal {
-        opacity: 0.01;
-        transform: translateY(32px);
-        filter: blur(12px);
-      }
-
-      .reveal.is-visible {
-        animation: revealIn var(--reveal-duration) ease
-          var(--reveal-sequence-delay, 0s) both;
-      }
-
-      @keyframes revealIn {
-        from {
-          opacity: 0.01;
-          transform: translateY(32px);
-          filter: blur(12px);
-        }
-
-        to {
-          opacity: 1;
-          transform: translateY(0);
-          filter: blur(0);
-        }
-      }
-
       @media (max-width: 900px) {
         body {
           align-items: center;
@@ -302,7 +273,7 @@
         </div>
       </header>
       <div class="hero">
-        <div class="hero-content reveal">
+        <div class="hero-content">
           <h1>Design leader driving strategic clarity, creative excellence, and high-impact digital experiences for modern finance</h1>
           <p>
             10+ years leading financial design teams and transforming complex ecosystems into experiences that empower clients and deliver measurable business results.
@@ -310,7 +281,7 @@
         </div>
         <button type="button">Download Resume</button>
       </div>
-    <section class="logo-carousel reveal" aria-label="Companies I've worked with">
+    <section class="logo-carousel" aria-label="Companies I've worked with">
       <div class="logo-track">
         <div class="logo-item">
           <img src="images/logos/aig.svg" alt="AIG logo" width="64px" height="35px" />
@@ -350,85 +321,5 @@
         </div>
       </div>
     </section>
-    <script>
-      const toMilliseconds = (timeValue) => {
-        const trimmed = timeValue.trim();
-        const numericValue = parseFloat(trimmed);
-        if (Number.isNaN(numericValue)) return 0;
-        return trimmed.endsWith('ms') ? numericValue : numericValue * 1000;
-      };
-
-      window.addEventListener('DOMContentLoaded', () => {
-        const lazyMedia = document.querySelectorAll('[data-src]');
-
-        if ('IntersectionObserver' in window) {
-          const mediaObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach((entry) => {
-              if (!entry.isIntersecting) return;
-
-              const element = entry.target;
-              const source = element.getAttribute('data-src');
-
-              if (source) {
-                element.src = source;
-                element.removeAttribute('data-src');
-                element.setAttribute('loading', 'lazy');
-              }
-
-              observer.unobserve(element);
-            });
-          });
-
-          lazyMedia.forEach((element) => mediaObserver.observe(element));
-        } else {
-          lazyMedia.forEach((element) => {
-            const source = element.getAttribute('data-src');
-            if (source) {
-              element.src = source;
-              element.removeAttribute('data-src');
-              element.setAttribute('loading', 'lazy');
-            }
-          });
-        }
-
-        const rootStyles = getComputedStyle(document.documentElement);
-        const revealDuration = toMilliseconds(
-          rootStyles.getPropertyValue('--reveal-duration') || '0.6s'
-        );
-        const revealBuffer = toMilliseconds(
-          rootStyles.getPropertyValue('--reveal-buffer') || '0.2s'
-        );
-        const revealElements = Array.from(document.querySelectorAll('.reveal'));
-
-        const observer = new IntersectionObserver(
-          (entries) => {
-            entries
-              .filter((entry) => entry.isIntersecting)
-              .sort(
-                (a, b) =>
-                  revealElements.indexOf(a.target) -
-                  revealElements.indexOf(b.target)
-              )
-              .forEach((entry) => {
-                const index = revealElements.indexOf(entry.target);
-                const delay = index * (revealDuration + revealBuffer);
-                entry.target.style.setProperty(
-                  '--reveal-sequence-delay',
-                  `${delay}ms`
-                );
-                entry.target.classList.add('is-visible');
-                observer.unobserve(entry.target);
-              });
-          },
-          {
-            threshold: 0,
-            rootMargin: '300px 0px',
-          }
-        );
-
-        revealElements.forEach((element) => observer.observe(element));
-
-      });
-    </script>
   </body>
 </html>
