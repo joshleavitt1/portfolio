@@ -137,24 +137,19 @@ body::after {
 
       .hero {
         display: flex;
-        gap: 80px;
+        flex-direction: column;
+        gap: 32px;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
         width: 100%;
         padding: 80px 120px 80px 120px;
         box-sizing: border-box;
+        text-align: center;
       }
 
       .hero-content {
         width: 100%;
-      }
-
-      .hero-image {
-        width: 350px;
-        height: 350px;
-        object-fit: cover;
-        border-radius: 8px;
-        margin-left: auto;
+        max-width: 960px;
       }
 
       .logo-carousel {
@@ -325,14 +320,9 @@ body::after {
         font-size: 56px;
         line-height: 120%;
         letter-spacing: -0.04em;
-        text-align: left;
+        text-align: center;
         margin: 0 0 32px;
-        background: linear-gradient(90deg, #ffffff 0%, #ffffff 60%, #47526f 85%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-        -webkit-text-fill-color: transparent;
-        display: inline-block;
+        color: #ffffff;
       }
 
       p {
@@ -428,10 +418,6 @@ body::after {
           text-align: center;
         }
 
-        .hero-image {
-          margin-left: 0;
-        }
-
         .logo-carousel {
           width: calc(100% - 64px);
           margin: 0 32px 64px;
@@ -476,19 +462,14 @@ body::after {
         </div>
       </header>
       <div class="hero">
-      <div class="hero-content reveal">
-        <h1>Design that accelerates strategic advantage</h1>
-        <p>
-          I’ve spent over a decade leading Fortune 500 design teams, transforming complex ecosystems into experiences that sharpen strategy and deliver measurable business results.
-        </p>
-        <button type="button">Download Resume</button>
+        <div class="hero-content reveal">
+          <h1>Design leader driving strategic clarity, creative excellence, and high-impact digital experiences for modern finance</h1>
+          <p>
+            I’ve spent over a decade leading Fortune 500 design teams, transforming complex ecosystems into experiences that sharpen strategy and deliver measurable business results.
+          </p>
+          <button type="button">Download Resume</button>
+        </div>
       </div>
-      <img
-        src="images/headshot.png"
-        alt="Portrait of the designer"
-        class="hero-image reveal"
-      />
-    </div>
     <section class="logo-carousel reveal" aria-label="Companies I've worked with">
       <div class="logo-track">
         <div class="logo-item">
