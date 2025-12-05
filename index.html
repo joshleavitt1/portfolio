@@ -33,20 +33,23 @@
 
       .background-circle {
         position: absolute;
-        width: 800px;
-        height: 800px;
+        width: 1000px;
+        height: 1000px;
         background: #0f51ff;
         border-radius: 50%;
-        top: 40px;
+        top: 80px;
         left: 50%;
         transform: translateX(-50%);
         pointer-events: none;
         z-index: -2;
+        filter: blur(50px);
       }
 
       .background-circle--navy {
         background: #000c2a;
-        top: 80px;
+        top: 340px;
+        width: 2000px;
+        height: 2000px;
         z-index: -1;
       }
 
@@ -67,7 +70,7 @@
       .logo-details {
         display: inline-flex;
         align-items: center;
-        gap: 12px;
+        gap: 24px;
         width: 100%;
       }
 
