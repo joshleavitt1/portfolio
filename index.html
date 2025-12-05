@@ -41,6 +41,12 @@
         left: 50%;
         transform: translateX(-50%);
         pointer-events: none;
+        z-index: -2;
+      }
+
+      .background-circle--navy {
+        background: #000c2a;
+        top: 80px;
         z-index: -1;
       }
 
@@ -259,6 +265,7 @@
     </style>
   </head>
     <body>
+      <div class="background-circle background-circle--navy" aria-hidden="true"></div>
       <div class="background-circle" aria-hidden="true"></div>
       <header class="site-header reveal">
         <div class="logo-details">
