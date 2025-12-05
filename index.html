@@ -31,6 +31,19 @@
         background: #000c2a; /* deep navy base */
       }
 
+      .background-circle {
+        position: absolute;
+        width: 800px;
+        height: 800px;
+        background: #0f51ff;
+        border-radius: 50%;
+        top: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        pointer-events: none;
+        z-index: -1;
+      }
+
       .site-header {
         display: inline-flex;
         align-items: center;
@@ -246,7 +259,8 @@
     </style>
   </head>
     <body>
-      <header class="site-header">
+      <div class="background-circle" aria-hidden="true"></div>
+      <header class="site-header reveal">
         <div class="logo-details">
           <span class="logo-text">Josh Leavitt</span>
           <div class="role-list">
