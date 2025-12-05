@@ -41,7 +41,7 @@
         left: 50%;
         transform: translateX(-50%);
         pointer-events: none;
-        z-index: -2;
+        z-index: -3;
         filter: blur(50px);
       }
 
@@ -50,6 +50,19 @@
         top: 340px;
         width: 2000px;
         height: 2000px;
+        z-index: -2;
+      }
+
+      .background-vertical-glow {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 100px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.75);
+        transform: translateX(-50%);
+        filter: blur(50px);
+        pointer-events: none;
         z-index: -1;
       }
 
@@ -270,6 +283,7 @@
     </style>
   </head>
     <body>
+      <div class="background-vertical-glow" aria-hidden="true"></div>
       <div class="background-circle background-circle--navy" aria-hidden="true"></div>
       <div class="background-circle" aria-hidden="true"></div>
       <header class="site-header reveal">
