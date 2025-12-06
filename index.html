@@ -31,6 +31,14 @@
         background: #000c2a; /* deep navy base */
       }
 
+      .background-wrapper {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: -3;
+      }
+
       .background-circle {
         position: absolute;
         width: 1000px;
@@ -41,7 +49,7 @@
         left: 50%;
         transform: translateX(-50%);
         pointer-events: none;
-        z-index: -3;
+        z-index: 0;
         filter: blur(50px);
       }
 
@@ -50,7 +58,7 @@
         top: 340px;
         width: 2000px;
         height: 2000px;
-        z-index: -2;
+        z-index: -1;
       }
 
       .background-vertical-glow {
@@ -296,14 +304,15 @@
       }
     </style>
   </head>
-    <body>
-      <div
-        class="background-vertical-glow background-vertical-glow--color"
-        aria-hidden="true"
-      ></div>
-      <div class="background-vertical-glow" aria-hidden="true"></div>
-      <div class="background-circle background-circle--navy" aria-hidden="true"></div>
-      <div class="background-circle" aria-hidden="true"></div>
+  <body>
+      <div class="background-wrapper" aria-hidden="true">
+        <div
+          class="background-vertical-glow background-vertical-glow--color"
+        ></div>
+        <div class="background-vertical-glow"></div>
+        <div class="background-circle background-circle--navy"></div>
+        <div class="background-circle"></div>
+      </div>
       <header class="site-header reveal">
         <div class="logo-details">
           <span class="logo-text">Josh Leavitt</span>
