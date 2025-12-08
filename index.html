@@ -31,14 +31,6 @@
         background: #000c2a; /* deep navy base */
       }
 
-      .background-wrapper {
-        position: fixed;
-        inset: 0;
-        overflow: hidden;
-        pointer-events: none;
-        z-index: -3;
-      }
-
       .background-circle {
         position: absolute;
         width: 1000px;
@@ -63,7 +55,7 @@
 
       .background-vertical-glow {
         position: absolute;
-        top: -40%;
+        top: -35%;
         left: 50%;
         width: 80px;
         height: 420px;
@@ -96,7 +88,7 @@
         margin: 64px auto 0;
         height: 64px;
         box-sizing: border-box;
-        background: rgba(0, 0, 0, 0.24);
+        background: rgba(0, 0, 0, 0.16);
         border-radius: 999px;
         box-shadow: 0 0 110px rgba(255, 255, 255);
         color: #ffffff;
@@ -305,14 +297,13 @@
     </style>
   </head>
   <body>
-      <div class="background-wrapper" aria-hidden="true">
-        <div
-          class="background-vertical-glow background-vertical-glow--color"
-        ></div>
-        <div class="background-vertical-glow"></div>
-        <div class="background-circle background-circle--navy"></div>
-        <div class="background-circle"></div>
-      </div>
+    <div
+      class="background-vertical-glow background-vertical-glow--color"
+      aria-hidden="true"
+    ></div>
+    <div class="background-vertical-glow" aria-hidden="true"></div>
+    <div class="background-circle background-circle--navy" aria-hidden="true"></div>
+    <div class="background-circle" aria-hidden="true"></div>
       <header class="site-header reveal">
         <div class="logo-details">
           <span class="logo-text">Josh Leavitt</span>
