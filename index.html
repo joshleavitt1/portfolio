@@ -291,6 +291,41 @@
         }
 
       }
+
+      .case-study {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto 120px;
+        padding: 0 24px;
+        box-sizing: border-box;
+        text-align: center;
+      }
+
+      .case-study img {
+        width: 100%;
+        max-width: 800px;
+        border-radius: 12px;
+        object-fit: cover;
+      }
+
+      .case-study h2 {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 32px;
+        line-height: 1.2;
+        color: #ffffff;
+        margin: 0;
+      }
+
+      .case-study p {
+        max-width: 800px;
+        margin: 0;
+      }
     </style>
   </head>
   <body>
@@ -353,6 +388,19 @@
           <img src="images/logos/aig.svg" alt="AIG logo" width="64px" height="35px" />
         </div>
       </div>
+    </section>
+
+    <section class="case-study" aria-labelledby="case-study-1-title">
+      <div>
+        <img src="images/Case_1.png" alt="Screenshot of Pro Analytics dashboard" />
+      </div>
+      <h2 id="case-study-1-title">Pro Analytics</h2>
+      <p>
+        I accelerated advisor acquisition by launching Pro, an integrated sales-enablement
+        platform that equips advisors with real-time insights to drive client outcomes.
+        Intuitive workflows include performance analysis, yield forecasting, and account
+        management.
+      </p>
     </section>
   </body>
 </html>
