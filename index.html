@@ -20,15 +20,27 @@
     <style>
       body {
         margin: 0;
+        position: relative;
+        isolation: isolate;
+        background: #000c2a; /* deep navy base */
+      }
+
+      .background-layer {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .page {
         min-height: 100vh;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         justify-content: flex-start;
-        overflow-x: hidden;
         position: relative;
-        isolation: isolate;
-        background: #000c2a; /* deep navy base */
+        z-index: 1;
       }
 
       .background-circle {
@@ -256,7 +268,7 @@
       }
 
       @media (max-width: 900px) {
-        body {
+        .page {
           align-items: center;
         }
 
@@ -329,8 +341,11 @@
     </style>
   </head>
   <body>
-    <div class="background-circle background-circle--navy" aria-hidden="true"></div>
-    <div class="background-circle" aria-hidden="true"></div>
+    <div class="background-layer" aria-hidden="true">
+      <div class="background-circle background-circle--navy"></div>
+      <div class="background-circle"></div>
+    </div>
+    <div class="page">
       <header class="site-header reveal">
         <div class="logo-details">
           <span class="logo-text">Josh Leavitt</span>
@@ -344,15 +359,15 @@
         </div>
       </header>
       <div class="hero">
-        <div class="hero-content">
-          <h1>Design leader who drives clarity, craft, and impact across the financial sector</h1>
-          <p>
-            10+ years leading design teams and creating experiences that empower clients and deliver measurable results.
-          </p>
-        </div>
-        <button type="button">Download Resume</button>
+      <div class="hero-content">
+        <h1>Design leader who drives clarity, craft, and impact across the financial sector</h1>
+        <p>
+          10+ years leading design teams and creating experiences that empower clients and deliver measurable results.
+        </p>
       </div>
-    <section class="logo-carousel" aria-label="Companies I've worked with">
+      <button type="button">Download Resume</button>
+    </div>
+  <section class="logo-carousel" aria-label="Companies I've worked with">
       <div class="logo-track">
         <div class="logo-item">
           <img src="images/logos/aig.svg" alt="AIG logo" width="64px" height="35px" />
@@ -402,5 +417,6 @@
         management.
       </p>
     </section>
+    </div>
   </body>
 </html>
