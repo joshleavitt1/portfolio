@@ -53,33 +53,6 @@
         z-index: -2;
       }
 
-      .background-vertical-glow {
-        position: absolute;
-        top: -35%;
-        left: 50%;
-        width: 80px;
-        height: 420px;
-        background:
-          radial-gradient(ellipse 80% 140% at 50% 18%, rgba(255, 255, 255) 0%, rgba(255, 255, 255) 45%, transparent 100%),
-          radial-gradient(ellipse 80% 140% at 50% 82%, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255) 45%, transparent 100%);
-        transform: translateX(-50%);
-        filter: blur(20px);
-        pointer-events: none;
-        z-index: -1;
-        opacity: 0.8;
-      }
-
-      .background-vertical-glow--color {
-        background:
-          radial-gradient(ellipse 90% 150% at 50% 16%, rgba(0, 200, 255) 0%, rgba(0, 128, 255) 45%, transparent 100%),
-          radial-gradient(ellipse 90% 150% at 50% 84%, rgba(0, 9, 255) 0%, rgba(0, 9, 255) 45%, transparent 100%);
-        width: 240px;
-        height: 480px;
-        filter: blur(30px);
-        opacity: 1.0;
-        z-index: -2;
-      }
-
       .site-header {
         display: inline-flex;
         align-items: center;
@@ -297,11 +270,6 @@
     </style>
   </head>
   <body>
-    <div
-      class="background-vertical-glow background-vertical-glow--color"
-      aria-hidden="true"
-    ></div>
-    <div class="background-vertical-glow" aria-hidden="true"></div>
     <div class="background-circle background-circle--navy" aria-hidden="true"></div>
     <div class="background-circle" aria-hidden="true"></div>
       <header class="site-header reveal">
