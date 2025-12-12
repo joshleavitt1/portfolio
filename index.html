@@ -490,7 +490,7 @@
         </div>
       </header>
       <div class="hero">
-      <div class="hero-content immersive-reveal" data-delay="140ms">
+      <div class="hero-content immersive-reveal" data-delay="200ms">
         <h1>Design leader who drives clarity, craft, and impact across the financial sector</h1>
         <p>
           10+ years leading design teams and creating experiences that empower clients and deliver measurable results.
@@ -501,12 +501,12 @@
         href="images/josh_leavitt_resume.pdf"
         target="_blank"
         rel="noopener noreferrer"
-        data-delay="280ms"
+        data-delay="400ms"
       >
         Download Resume
       </a>
     </div>
-  <section class="logo-carousel immersive-reveal" aria-label="Companies I've worked with" data-delay="420ms">
+  <section class="logo-carousel immersive-reveal" aria-label="Companies I've worked with" data-delay="600ms">
       <div class="logo-track">
         <div class="logo-item">
           <img src="images/logos/aig.svg" alt="AIG logo" width="64px" height="35px" />
@@ -608,9 +608,20 @@
     </section>
     </div>
     <script>
-      const revealElements = document.querySelectorAll('.immersive-reveal');
-      const resumeButton = document.querySelector('.resume-button');
-      const carouselSection = document.querySelector('.logo-carousel');
+      const stagedSelectors = [
+        '.site-header',
+        '.hero-content',
+        '.resume-button',
+        '.logo-carousel',
+      ];
+
+      const stagedElements = stagedSelectors
+        .map((selector) => document.querySelector(selector))
+        .filter(Boolean);
+
+      const revealElements = Array.from(
+        document.querySelectorAll('.immersive-reveal')
+      ).filter((element) => !stagedElements.includes(element));
 
       const observer = new IntersectionObserver(
         (entries) => {
@@ -618,11 +629,6 @@
             if (entry.isIntersecting) {
               entry.target.classList.add('in-view');
               observer.unobserve(entry.target);
-
-              if (entry.target === resumeButton && carouselSection) {
-                carouselSection.classList.add('in-view');
-                observer.unobserve(carouselSection);
-              }
             }
           });
         },
@@ -637,6 +643,17 @@
         const delay = element.dataset.delay || `${Math.min(index * 90, 540)}ms`;
         element.style.setProperty('--reveal-delay', delay);
         observer.observe(element);
+      });
+
+      const baseStagger = 200;
+
+      stagedElements.forEach((element, index) => {
+        const delay = `${index * baseStagger}ms`;
+        element.style.setProperty('--reveal-delay', delay);
+
+        window.setTimeout(() => {
+          element.classList.add('in-view');
+        }, index * baseStagger + 60);
       });
     </script>
   </body>
