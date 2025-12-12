@@ -75,16 +75,17 @@
         box-sizing: border-box;
         position: relative;
         border-radius: 999px;
-        background: rgba(0, 0, 0, 0.16);
-        backdrop-filter: blur(10px);
-        border: 1px solid transparent;
-        border-image: linear-gradient(
+        background: rgba(0, 0, 0, 0.16),
+          linear-gradient(
             135deg,
             #ffffff,
             rgba(255, 255, 255, 0) 50%,
             #ffffff
-          )
-          1;
+          );
+        background-clip: padding-box, border-box;
+        background-origin: padding-box, border-box;
+        backdrop-filter: blur(10px);
+        border: 1px solid transparent;
       }
 
         .logo-details {
