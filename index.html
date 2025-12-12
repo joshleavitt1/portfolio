@@ -227,7 +227,8 @@
         margin: 0 0 40px;
       }
 
-        button {
+        button,
+        .resume-button {
           background: linear-gradient(135deg, #00c8ff, #0009ff);
           border: none;
           color: #ffffff;
@@ -244,7 +245,9 @@
         }
 
       button:hover,
-      button:focus-visible {
+      button:focus-visible,
+      .resume-button:hover,
+      .resume-button:focus-visible {
         transform: translateY(-4px);
         background: linear-gradient(
             0deg,
@@ -252,6 +255,13 @@
             rgba(255, 255, 255, 0.08)
           ),
           linear-gradient(135deg, #00c8ff, #0009ff);
+      }
+
+      .resume-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
       }
 
       @media (max-width: 900px) {
@@ -351,7 +361,9 @@
           10+ years leading design teams and creating experiences that empower clients and deliver measurable results.
         </p>
       </div>
-      <button type="button">Download Resume</button>
+      <a class="resume-button" href="images/josh_leavitt_resume.pdf" download>
+        Download Resume
+      </a>
     </div>
   <section class="logo-carousel" aria-label="Companies I've worked with">
       <div class="logo-track">
