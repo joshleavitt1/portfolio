@@ -608,20 +608,23 @@
     </section>
     </div>
     <script>
-      const stagedSelectors = [
-        '.site-header',
-        '.hero-content',
-        '.resume-button',
-        '.logo-carousel',
-      ];
-
-      const stagedElements = stagedSelectors
-        .map((selector) => document.querySelector(selector))
+      const stagedElements = [
+        { selector: '.site-header', delay: 0 },
+        { selector: '.hero-content', delay: 150 },
+        { selector: '.resume-button', delay: 1200 },
+        { selector: '.logo-carousel', delay: 1400 },
+      ]
+        .map(({ selector, delay }) => {
+          const element = document.querySelector(selector);
+          return element ? { element, delay } : null;
+        })
         .filter(Boolean);
+
+      const stagedElementNodes = stagedElements.map(({ element }) => element);
 
       const revealElements = Array.from(
         document.querySelectorAll('.immersive-reveal')
-      ).filter((element) => !stagedElements.includes(element));
+      ).filter((element) => !stagedElementNodes.includes(element));
 
       const observer = new IntersectionObserver(
         (entries) => {
@@ -645,15 +648,9 @@
         observer.observe(element);
       });
 
-      const stagedInterval = 250;
-      const stagedDelays = stagedElements.map(
-        (_, index) => index * stagedInterval
-      );
-
-      stagedElements.forEach((element, index) => {
-        const delayValue = stagedDelays[index];
-        const delay = `${delayValue}ms`;
-        element.style.setProperty('--reveal-delay', delay);
+      stagedElements.forEach(({ element, delay }) => {
+        const delayValue = Number.isFinite(delay) ? delay : 0;
+        element.style.setProperty('--reveal-delay', `${delayValue}ms`);
 
         window.setTimeout(() => {
           element.classList.add('in-view');
