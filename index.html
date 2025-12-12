@@ -603,6 +603,8 @@
     </div>
     <script>
       const revealElements = document.querySelectorAll('.immersive-reveal');
+      const resumeButton = document.querySelector('.resume-button');
+      const carouselSection = document.querySelector('.logo-carousel');
 
       const observer = new IntersectionObserver(
         (entries) => {
@@ -610,6 +612,11 @@
             if (entry.isIntersecting) {
               entry.target.classList.add('in-view');
               observer.unobserve(entry.target);
+
+              if (entry.target === resumeButton && carouselSection) {
+                carouselSection.classList.add('in-view');
+                observer.unobserve(carouselSection);
+              }
             }
           });
         },
