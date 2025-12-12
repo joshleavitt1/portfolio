@@ -645,11 +645,13 @@
         observer.observe(element);
       });
 
-      const stagedDelays = [0, 250, 700, 1150];
-      const fallbackStagger = 260;
+      const stagedInterval = 250;
+      const stagedDelays = stagedElements.map(
+        (_, index) => index * stagedInterval
+      );
 
       stagedElements.forEach((element, index) => {
-        const delayValue = stagedDelays[index] ?? index * fallbackStagger;
+        const delayValue = stagedDelays[index];
         const delay = `${delayValue}ms`;
         element.style.setProperty('--reveal-delay', delay);
 
