@@ -311,7 +311,11 @@
           cursor: pointer;
           border-radius: 4px;
           box-shadow: 0 0 40px #0009ff;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          transition:
+            opacity 1100ms cubic-bezier(0.16, 1, 0.3, 1),
+            filter 1200ms cubic-bezier(0.16, 1, 0.3, 1),
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
         }
 
       button:hover,
