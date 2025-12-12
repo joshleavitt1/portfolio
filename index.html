@@ -365,6 +365,38 @@
         max-width: 800px;
         margin: 0;
       }
+
+      .case-metrics {
+        display: flex;
+        gap: 16px;
+        width: 100%;
+        max-width: 800px;
+        margin: 8px auto 0;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .case-metric-card {
+        flex: 1 1 280px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 20px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .case-metric-card h2 {
+        margin: 0;
+      }
+
+      .case-metric-card p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.72);
+      }
     </style>
   </head>
   <body>
@@ -450,6 +482,16 @@
         Intuitive workflows include performance analysis, yield forecasting, and account
         management.
       </p>
+      <div class="case-metrics">
+        <div class="case-metric-card">
+          <h2>300mm</h2>
+          <p>Annual AUM</p>
+        </div>
+        <div class="case-metric-card">
+          <h2>100%</h2>
+          <p>Sales Adoption</p>
+        </div>
+      </div>
     </section>
     </div>
   </body>
