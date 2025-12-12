@@ -90,6 +90,42 @@
         box-shadow: 0px 0px 50px 20px #ffffff16;
       }
 
+      .immersive-reveal {
+        --reveal-delay: 0ms;
+        position: relative;
+        opacity: 0;
+        transform: translateY(32px) scale(0.985);
+        filter: blur(18px) saturate(0.8);
+        transition:
+          opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
+          transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
+          filter 900ms cubic-bezier(0.16, 1, 0.3, 1);
+        transition-delay: var(--reveal-delay);
+      }
+
+      .immersive-reveal::after {
+        content: "";
+        position: absolute;
+        inset: -6%;
+        background: radial-gradient(circle at 50% 50%, #ffffff0f, transparent 55%);
+        opacity: 0;
+        filter: blur(30px);
+        transition: opacity 1200ms ease, filter 900ms ease;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .immersive-reveal.in-view {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0) saturate(1);
+      }
+
+      .immersive-reveal.in-view::after {
+        opacity: 1;
+        filter: blur(12px);
+      }
+
       /* gradient outline that can't "disappear" */
       .site-header::before {
         content: "";
@@ -416,6 +452,17 @@
         margin: 0;
         color: rgba(255, 255, 255, 0.48);
       }
+
+      @media (prefers-reduced-motion: reduce) {
+        .immersive-reveal,
+        .immersive-reveal::after {
+          transition: none;
+          animation: none;
+          transform: none;
+          filter: none;
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body>
@@ -424,7 +471,7 @@
       <div class="background-circle"></div>
     </div>
     <div class="page">
-      <header class="site-header">
+      <header class="site-header immersive-reveal">
         <div class="logo-details">
           <span class="logo-text">Josh Leavitt</span>
           <div class="role-list">
@@ -437,22 +484,23 @@
         </div>
       </header>      
       <div class="hero">
-      <div class="hero-content">
+      <div class="hero-content immersive-reveal">
         <h1>Design leader who drives clarity, craft, and impact across the financial sector</h1>
         <p>
           10+ years leading design teams and creating experiences that empower clients and deliver measurable results.
         </p>
       </div>
       <a
-        class="resume-button"
+        class="resume-button immersive-reveal"
         href="images/josh_leavitt_resume.pdf"
         target="_blank"
         rel="noopener noreferrer"
+        data-delay="180ms"
       >
         Download Resume
       </a>
     </div>
-  <section class="logo-carousel" aria-label="Companies I've worked with">
+  <section class="logo-carousel immersive-reveal" aria-label="Companies I've worked with">
       <div class="logo-track">
         <div class="logo-item">
           <img src="images/logos/aig.svg" alt="AIG logo" width="64px" height="35px" />
@@ -490,68 +538,93 @@
       </div>
     </section>
 
-    <section class="case-study" aria-labelledby="case-study-1-title">
-      <div>
+    <section class="case-study immersive-reveal" aria-labelledby="case-study-1-title" data-delay="80ms">
+      <div class="immersive-reveal" data-delay="120ms">
         <img src="images/case/Case_1.jpg" alt="Screenshot of Pro Analytics dashboard" />
       </div>
-      <h2 id="case-study-1-title">Analytics Platform</h2>
-      <p>
+      <h2 id="case-study-1-title" class="immersive-reveal" data-delay="180ms">Analytics Platform</h2>
+      <p class="immersive-reveal" data-delay="220ms">
         I accelerated advisor acquisition by launching Pro, an integrated sales-enablement
         platform that equips advisors with real-time insights to drive client outcomes.
         Intuitive workflows include performance analysis, yield forecasting, and account
         management.
       </p>
       <div class="case-metrics">
-        <div class="case-metric-card">
+        <div class="case-metric-card immersive-reveal" data-delay="260ms">
           <h2>300mm</h2>
           <p>Annual AUM</p>
         </div>
-        <div class="case-metric-card">
+        <div class="case-metric-card immersive-reveal" data-delay="320ms">
           <h2>100%</h2>
           <p>Sales Adoption</p>
         </div>
       </div>
     </section>
 
-    <section class="case-study" aria-labelledby="case-study-2-title">
-      <div>
+    <section class="case-study immersive-reveal" aria-labelledby="case-study-2-title" data-delay="120ms">
+      <div class="immersive-reveal" data-delay="160ms">
         <img src="images/case/Case_2.jpg" alt="Client Insights platform screens" />
       </div>
-      <h2 id="case-study-2-title">Global Website</h2>
-      <p>
+      <h2 id="case-study-2-title" class="immersive-reveal" data-delay="220ms">Global Website</h2>
+      <p class="immersive-reveal" data-delay="260ms">
         Led the end-to-end migration of a global marketing platform, aligning component architecture, development velocity, accessibility standards (ADA/WCAG), and cross-functional teams.
       </p>
       <div class="case-metrics">
-        <div class="case-metric-card">
+        <div class="case-metric-card immersive-reveal" data-delay="300ms">
           <h2>50%</h2>
           <p>YOY Cost Reduction</p>
         </div>
-        <div class="case-metric-card">
+        <div class="case-metric-card immersive-reveal" data-delay="340ms">
           <h2>100%</h2>
           <p>Critical Compliance Fixes</p>
         </div>
       </div>
     </section>
 
-    <section class="case-study" aria-labelledby="case-study-3-title">
-      <div>
+    <section class="case-study immersive-reveal" aria-labelledby="case-study-3-title" data-delay="140ms">
+      <div class="immersive-reveal" data-delay="180ms">
         <img src="images/case/Case_3.jpg" alt="Client Insights platform screens" />
       </div>
-      <h2 id="case-study-2-title">AI Sales Copilot</h2>
-      <p>
+      <h2 id="case-study-3-title" class="immersive-reveal" data-delay="240ms">AI Sales Copilot</h2>
+      <p class="immersive-reveal" data-delay="280ms">
         Launched an AI-powered sales copilot integrated with CRM workflows, enabling advisors to access real-time performance, tax, and legal insights during client preparation and live calls.
       </p>
       <div class="case-metrics">
-        <div class="case-metric-card">
+        <div class="case-metric-card immersive-reveal" data-delay="320ms">
           <h2>2x</h2>
           <p>Productivity Gained</p>
         </div>
-        <div class="case-metric-card">
+        <div class="case-metric-card immersive-reveal" data-delay="360ms">
           <h2>#1</h2>
           <p>Internal App</p>
         </div>
       </div>
     </section>
     </div>
+    <script>
+      const revealElements = document.querySelectorAll('.immersive-reveal');
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('in-view');
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        {
+          root: null,
+          rootMargin: '0px 0px -10% 0px',
+          threshold: 0.25,
+        }
+      );
+
+      revealElements.forEach((element, index) => {
+        const delay = element.dataset.delay || `${Math.min(index * 60, 360)}ms`;
+        element.style.setProperty('--reveal-delay', delay);
+        observer.observe(element);
+      });
+    </script>
   </body>
 </html>
