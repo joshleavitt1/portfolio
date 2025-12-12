@@ -97,9 +97,9 @@
         transform: translateY(32px) scale(0.985);
         filter: blur(18px) saturate(0.8);
         transition:
-          opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
-          transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
-          filter 900ms cubic-bezier(0.16, 1, 0.3, 1);
+          opacity 1100ms cubic-bezier(0.16, 1, 0.3, 1),
+          transform 1200ms cubic-bezier(0.16, 1, 0.3, 1),
+          filter 1200ms cubic-bezier(0.16, 1, 0.3, 1);
         transition-delay: var(--reveal-delay);
       }
 
@@ -110,7 +110,7 @@
         background: radial-gradient(circle at 50% 50%, #ffffff0f, transparent 55%);
         opacity: 0;
         filter: blur(30px);
-        transition: opacity 1200ms ease, filter 900ms ease;
+        transition: opacity 1600ms ease, filter 1200ms ease;
         pointer-events: none;
         z-index: -1;
       }
@@ -621,7 +621,7 @@
       );
 
       revealElements.forEach((element, index) => {
-        const delay = element.dataset.delay || `${Math.min(index * 60, 360)}ms`;
+        const delay = element.dataset.delay || `${Math.min(index * 90, 540)}ms`;
         element.style.setProperty('--reveal-delay', delay);
         observer.observe(element);
       });
