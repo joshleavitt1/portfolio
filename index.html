@@ -645,15 +645,17 @@
         observer.observe(element);
       });
 
-      const baseStagger = 200;
+      const stagedDelays = [0, 250, 700, 1150];
+      const fallbackStagger = 260;
 
       stagedElements.forEach((element, index) => {
-        const delay = `${index * baseStagger}ms`;
+        const delayValue = stagedDelays[index] ?? index * fallbackStagger;
+        const delay = `${delayValue}ms`;
         element.style.setProperty('--reveal-delay', delay);
 
         window.setTimeout(() => {
           element.classList.add('in-view');
-        }, index * baseStagger + 60);
+        }, delayValue + 60);
       });
     </script>
   </body>
