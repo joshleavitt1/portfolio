@@ -222,38 +222,22 @@
         padding: 24px 0;
         background: transparent;
         border-radius: 4px;
-        overflow: hidden;
-        position: relative;
-        mask-image: linear-gradient(
-          to right,
-          rgba(0, 0, 0, 0),
-          rgba(0, 0, 0, 1) 10%,
-          rgba(0, 0, 0, 1) 90%,
-          rgba(0, 0, 0, 0)
-        );
-        -webkit-mask-image: linear-gradient(
-          to right,
-          rgba(0, 0, 0, 0),
-          rgba(0, 0, 0, 1) 10%,
-          rgba(0, 0, 0, 1) 90%,
-          rgba(0, 0, 0, 0)
-        );
       }
 
       .logo-track {
-        display: flex;
-        gap: 24px;
-        width: max-content;
-        animation: logo-scroll 30s linear infinite;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 24px 32px;
+        align-items: center;
+        justify-items: center;
+        width: 100%;
       }
 
       .logo-item {
-        min-width: 200px;
-        min-height: 64px;
+        height: 64px;
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-shrink: 0;
       }
 
       .logo-item img {
@@ -263,15 +247,6 @@
 
       .logo-item img.no-filter {
         filter: none;
-      }
-
-      @keyframes logo-scroll {
-        0% {
-          transform: translateX(0);
-        }
-        100% {
-          transform: translateX(-50%);
-        }
       }
 
         h1 {
@@ -534,24 +509,6 @@
         </div>
         <div class="logo-item">
           <img src="images/logos/pimco.svg" alt="PIMCO logo" width="90px" height="17px" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/aig.svg" alt="AIG logo" width="64px" height="35px" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/amex.svg" alt="American Express logo" width="48px" height="48px" class="no-filter" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/blackrock.svg" alt="BlackRock logo" width="96px" height="14px" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/citizens.svg" alt="Citizens logo" width="116px" height="13px" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/pimco.svg" alt="PIMCO logo" width="90px" height="17px" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/aig.svg" alt="AIG logo" width="64px" height="35px" />
         </div>
       </div>
     </section>
