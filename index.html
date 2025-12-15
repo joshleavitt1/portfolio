@@ -38,10 +38,9 @@
       .site-header {
         display: flex;
         align-items: center;
-        gap: 12px;
+        justify-content: center;
 
-        padding: 0 32px;
-        height: 64px;
+        padding: 12px;
         box-sizing: border-box;
 
         align-self: center;
@@ -92,43 +91,36 @@
         filter: blur(12px);
       }
 
-        .logo-details {
-          display: inline-flex;
-          align-items: center;
-          gap: 24px;
-          width: 100%;
-        }
+      /* gradient outline that can't "disappear" */
+      .site-header::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        padding: 1px;              /* outline thickness */
+        border-radius: inherit;
+        pointer-events: none;
 
-      .logo-text {
-        font-family: 'Inter', sans-serif;
-        font-weight: 700;
-        font-size: 16px;
-        color: #0f172a;
-        display: inline-block;
-        letter-spacing: -0.01em;
+        background: linear-gradient(
+          165deg,
+          rgba(255, 255, 255, 0.5),
+          rgba(255, 255, 255, 0.00) 45%,
+          rgba(255, 255, 255, 0.00) 55%,
+          rgba(255, 255, 255, 0.5)
+        );
+
+        /* cut the middle out so only the border shows */
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+                mask-composite: exclude;
       }
 
-      .role-list {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-family: 'Inter', sans-serif;
-        font-size: 14px;
-        font-weight: 400;
-        color: #475569;
-        white-space: nowrap;
-      }
-
-      .role-dot {
-        width: 4px;
-        height: 4px;
+      .headshot-image {
+        width: 72px;
+        height: 72px;
         border-radius: 50%;
-        background-color: #cbd5e1;
-      }
-
-      .role {
-        font-size: 14px;
-        font-weight: 400;
+        object-fit: cover;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 0 32px rgba(0, 0, 0, 0.35);
       }
 
         .hero {
@@ -264,14 +256,6 @@
           justify-content: center;
         }
 
-        .logo-details {
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          gap: 8px;
-        }
-
         .hero {
           flex-direction: column;
           align-items: center;
@@ -400,16 +384,11 @@
   <body>
     <div class="page">
       <header class="site-header immersive-reveal" data-delay="0ms">
-        <div class="logo-details">
-          <span class="logo-text">Josh Leavitt</span>
-          <div class="role-list">
-            <span class="role">Designer</span>
-            <span class="role">/</span>
-            <span class="role">Strategist</span>
-            <span class="role">/</span>
-            <span class="role">Leader</span>
-          </div>
-        </div>
+        <img
+          src="images/headshot.jpg"
+          alt="Headshot of Josh Leavitt"
+          class="headshot-image"
+        />
       </header>
       <div class="hero">
       <div class="hero-content immersive-reveal" data-delay="200ms">
