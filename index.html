@@ -69,10 +69,9 @@
       .site-header {
         display: flex;
         align-items: center;
-        gap: 12px;
+        justify-content: center;
 
-        padding: 0 32px;
-        height: 64px;
+        padding: 12px;
         box-sizing: border-box;
 
         align-self: center;
@@ -150,44 +149,13 @@
                 mask-composite: exclude;
       }
 
-
-        .logo-details {
-          display: inline-flex;
-          align-items: center;
-          gap: 24px;
-          width: 100%;
-        }
-
-      .logo-text {
-        font-family: 'Inter', sans-serif;
-        font-weight: 700;
-        font-size: 16px;
-        color: #ffffff;
-        display: inline-block;
-        letter-spacing: -0.01em;
-      }
-
-      .role-list {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-family: 'Inter', sans-serif;
-        font-size: 14px;
-        font-weight: 400;
-        color: #ffffff80;
-        white-space: nowrap;
-      }
-
-      .role-dot {
-        width: 4px;
-        height: 4px;
+      .headshot-image {
+        width: 72px;
+        height: 72px;
         border-radius: 50%;
-        background-color: rgba(255, 255, 255, 0.48);
-      }
-
-      .role {
-        font-size: 14px;
-        font-weight: 400;
+        object-fit: cover;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 0 32px rgba(0, 0, 0, 0.35);
       }
 
         .hero {
@@ -350,14 +318,6 @@
           justify-content: center;
         }
 
-        .logo-details {
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          gap: 8px;
-        }
-
         .hero {
           flex-direction: column;
           align-items: center;
@@ -490,16 +450,11 @@
     </div>
     <div class="page">
       <header class="site-header immersive-reveal" data-delay="0ms">
-        <div class="logo-details">
-          <span class="logo-text">Josh Leavitt</span>
-          <div class="role-list">
-            <span class="role">Designer</span>
-            <span class="role">/</span>
-            <span class="role">Strategist</span>
-            <span class="role">/</span>
-            <span class="role">Leader</span>
-          </div>
-        </div>
+        <img
+          src="images/headshot.jpg"
+          alt="Headshot of Josh Leavitt"
+          class="headshot-image"
+        />
       </header>
       <div class="hero">
       <div class="hero-content immersive-reveal" data-delay="200ms">
