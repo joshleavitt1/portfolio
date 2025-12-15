@@ -21,17 +21,8 @@
       body {
         margin: 0;
         position: relative;
-        isolation: isolate;
-        background: #000c2a; /* deep navy base */
+        background: #ffffff;
         overflow-x: hidden;
-      }
-
-      .background-layer {
-        position: fixed;
-        inset: 0;
-        overflow: hidden;
-        pointer-events: none;
-        z-index: 0;
       }
 
       .page {
@@ -42,28 +33,6 @@
         justify-content: flex-start;
         position: relative;
         z-index: 1;
-      }
-
-      .background-circle {
-        position: absolute;
-        width: 1000px;
-        height: 1000px;
-        background: #0f51ff;
-        border-radius: 50%;
-        top: -120px;
-        left: 50%;
-        transform: translateX(-50%);
-        pointer-events: none;
-        z-index: -3;
-        filter: blur(50px);
-      }
-
-      .background-circle--navy {
-        background: #000c2a;
-        top: 40px;
-        width: 3200px;
-        height: 2400px;
-        z-index: -2;
       }
 
       .site-header {
@@ -78,17 +47,13 @@
         align-self: center;
         margin-top: 64px;
 
-        border-radius: 999px;
+        border-radius: 12px;
         position: relative;
-        z-index: 2; /* keep it above the glow layers */
+        z-index: 2;
 
-        /* your glass fill */
-        background: rgba(0, 0, 0, 0.16);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-
-        /* subtle inner edge so it reads on dark */
-        box-shadow: 0px 0px 50px 20px #ffffff16;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.04);
       }
 
       .immersive-reveal {
@@ -127,30 +92,6 @@
         filter: blur(12px);
       }
 
-      /* gradient outline that can't "disappear" */
-      .site-header::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        padding: 1px;              /* outline thickness */
-        border-radius: inherit;
-        pointer-events: none;
-
-        background: linear-gradient(
-          165deg,
-          rgba(255, 255, 255, 0.5),
-          rgba(255, 255, 255, 0.00) 45%,
-          rgba(255, 255, 255, 0.00) 55%,
-          rgba(255, 255, 255, 0.5)
-        );
-
-        /* cut the middle out so only the border shows */
-        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-                mask-composite: exclude;
-      }
-
-
         .logo-details {
           display: inline-flex;
           align-items: center;
@@ -162,7 +103,7 @@
         font-family: 'Inter', sans-serif;
         font-weight: 700;
         font-size: 16px;
-        color: #ffffff;
+        color: #0f172a;
         display: inline-block;
         letter-spacing: -0.01em;
       }
@@ -174,7 +115,7 @@
         font-family: 'Inter', sans-serif;
         font-size: 14px;
         font-weight: 400;
-        color: #ffffff80;
+        color: #475569;
         white-space: nowrap;
       }
 
@@ -182,7 +123,7 @@
         width: 4px;
         height: 4px;
         border-radius: 50%;
-        background-color: rgba(255, 255, 255, 0.48);
+        background-color: #cbd5e1;
       }
 
       .role {
@@ -282,13 +223,11 @@
           letter-spacing: -0.04em;
           text-align: center;
           margin: 0 0 16px;
-          background: linear-gradient(to bottom, #ffffff 0%, #ffffff 82%, #494b51 100%);
-          -webkit-background-clip: text;
-          color: transparent;
+          color: #0f172a;
         }
 
         p {
-          color: rgba(255, 255, 255, 0.48);
+          color: #475569;
         font-family: 'Inter', sans-serif;
         font-weight: 200;
         font-size: 20px;
@@ -380,16 +319,16 @@
           font-size: 40px;
           background: none;
           -webkit-background-clip: initial;
-          -webkit-text-fill-color: #ffffff;
-          color: #ffffff;
+          -webkit-text-fill-color: #0f172a;
+          color: #0f172a;
         }
 
         .case-study h2 {
           font-size: 40px;
           background: none;
           -webkit-background-clip: initial;
-          -webkit-text-fill-color: #ffffff;
-          color: #ffffff;
+          -webkit-text-fill-color: #0f172a;
+          color: #0f172a;
         }
 
         .logo-carousel {
@@ -429,7 +368,7 @@
         font-weight: 700;
         font-size: 40px;
         line-height: 1.2;
-        color: #ffffff;
+        color: #0f172a;
         margin: 24px 0 0;
       }
 
@@ -450,8 +389,8 @@
 
       .case-metric-card {
         flex: 1 1 280px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
         border-radius: 12px;
         padding: 20px;
         box-sizing: border-box;
@@ -468,7 +407,7 @@
 
       .case-metric-card p {
         margin: 0;
-        color: rgba(255, 255, 255, 0.48);
+        color: #475569;
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -484,10 +423,6 @@
     </style>
   </head>
   <body>
-    <div class="background-layer" aria-hidden="true">
-      <div class="background-circle background-circle--navy"></div>
-      <div class="background-circle"></div>
-    </div>
     <div class="page">
       <header class="site-header immersive-reveal" data-delay="0ms">
         <div class="logo-details">
