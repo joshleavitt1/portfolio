@@ -21,17 +21,8 @@
       body {
         margin: 0;
         position: relative;
-        isolation: isolate;
-        background: #000c2a; /* deep navy base */
+        background: #ffffff;
         overflow-x: hidden;
-      }
-
-      .background-layer {
-        position: fixed;
-        inset: 0;
-        overflow: hidden;
-        pointer-events: none;
-        z-index: 0;
       }
 
       .page {
@@ -42,28 +33,6 @@
         justify-content: flex-start;
         position: relative;
         z-index: 1;
-      }
-
-      .background-circle {
-        position: absolute;
-        width: 1000px;
-        height: 1000px;
-        background: #0f51ff;
-        border-radius: 50%;
-        top: -120px;
-        left: 50%;
-        transform: translateX(-50%);
-        pointer-events: none;
-        z-index: -3;
-        filter: blur(50px);
-      }
-
-      .background-circle--navy {
-        background: #000c2a;
-        top: 40px;
-        width: 3200px;
-        height: 2400px;
-        z-index: -2;
       }
 
       .site-header {
@@ -77,17 +46,13 @@
         align-self: center;
         margin-top: 64px;
 
-        border-radius: 999px;
+        border-radius: 12px;
         position: relative;
-        z-index: 2; /* keep it above the glow layers */
+        z-index: 2;
 
-        /* your glass fill */
-        background: rgba(0, 0, 0, 0.16);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-
-        /* subtle inner edge so it reads on dark */
-        box-shadow: 0px 0px 50px 20px #ffffff16;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.04);
       }
 
       .immersive-reveal {
@@ -190,38 +155,22 @@
         padding: 24px 0;
         background: transparent;
         border-radius: 4px;
-        overflow: hidden;
-        position: relative;
-        mask-image: linear-gradient(
-          to right,
-          rgba(0, 0, 0, 0),
-          rgba(0, 0, 0, 1) 10%,
-          rgba(0, 0, 0, 1) 90%,
-          rgba(0, 0, 0, 0)
-        );
-        -webkit-mask-image: linear-gradient(
-          to right,
-          rgba(0, 0, 0, 0),
-          rgba(0, 0, 0, 1) 10%,
-          rgba(0, 0, 0, 1) 90%,
-          rgba(0, 0, 0, 0)
-        );
       }
 
       .logo-track {
-        display: flex;
-        gap: 24px;
-        width: max-content;
-        animation: logo-scroll 30s linear infinite;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 24px 32px;
+        align-items: center;
+        justify-items: center;
+        width: 100%;
       }
 
       .logo-item {
-        min-width: 200px;
-        min-height: 64px;
+        height: 64px;
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-shrink: 0;
       }
 
       .logo-item img {
@@ -233,15 +182,6 @@
         filter: none;
       }
 
-      @keyframes logo-scroll {
-        0% {
-          transform: translateX(0);
-        }
-        100% {
-          transform: translateX(-50%);
-        }
-      }
-
         h1 {
           font-family: 'Inter', sans-serif;
           font-weight: 700;
@@ -250,13 +190,11 @@
           letter-spacing: -0.04em;
           text-align: center;
           margin: 0 0 16px;
-          background: linear-gradient(to bottom, #ffffff 0%, #ffffff 82%, #494b51 100%);
-          -webkit-background-clip: text;
-          color: transparent;
+          color: #0f172a;
         }
 
         p {
-          color: rgba(255, 255, 255, 0.48);
+          color: #475569;
         font-family: 'Inter', sans-serif;
         font-weight: 200;
         font-size: 20px;
@@ -340,16 +278,16 @@
           font-size: 40px;
           background: none;
           -webkit-background-clip: initial;
-          -webkit-text-fill-color: #ffffff;
-          color: #ffffff;
+          -webkit-text-fill-color: #0f172a;
+          color: #0f172a;
         }
 
         .case-study h2 {
           font-size: 40px;
           background: none;
           -webkit-background-clip: initial;
-          -webkit-text-fill-color: #ffffff;
-          color: #ffffff;
+          -webkit-text-fill-color: #0f172a;
+          color: #0f172a;
         }
 
         .logo-carousel {
@@ -389,7 +327,7 @@
         font-weight: 700;
         font-size: 40px;
         line-height: 1.2;
-        color: #ffffff;
+        color: #0f172a;
         margin: 24px 0 0;
       }
 
@@ -410,8 +348,8 @@
 
       .case-metric-card {
         flex: 1 1 280px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
         border-radius: 12px;
         padding: 20px;
         box-sizing: border-box;
@@ -428,7 +366,7 @@
 
       .case-metric-card p {
         margin: 0;
-        color: rgba(255, 255, 255, 0.48);
+        color: #475569;
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -444,10 +382,6 @@
     </style>
   </head>
   <body>
-    <div class="background-layer" aria-hidden="true">
-      <div class="background-circle background-circle--navy"></div>
-      <div class="background-circle"></div>
-    </div>
     <div class="page">
       <header class="site-header immersive-reveal" data-delay="0ms">
         <img
@@ -489,24 +423,6 @@
         </div>
         <div class="logo-item">
           <img src="images/logos/pimco.svg" alt="PIMCO logo" width="90px" height="17px" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/aig.svg" alt="AIG logo" width="64px" height="35px" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/amex.svg" alt="American Express logo" width="48px" height="48px" class="no-filter" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/blackrock.svg" alt="BlackRock logo" width="96px" height="14px" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/citizens.svg" alt="Citizens logo" width="116px" height="13px" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/pimco.svg" alt="PIMCO logo" width="90px" height="17px" />
-        </div>
-        <div class="logo-item">
-          <img src="images/logos/aig.svg" alt="AIG logo" width="64px" height="35px" />
         </div>
       </div>
     </section>
