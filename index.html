@@ -154,6 +154,10 @@
         justify-content: center;
       }
 
+      .logo-item[aria-hidden='true'] {
+        display: none;
+      }
+
       .logo-item img {
         display: block;
       }
@@ -311,6 +315,10 @@
         }
 
         .logo-item {
+          display: contents;
+        }
+
+        .logo-item[aria-hidden='true'] {
           display: contents;
         }
 
