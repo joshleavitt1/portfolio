@@ -124,7 +124,7 @@
       .logo-track {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 24px 32px;
+        gap: 64px;
         align-items: center;
         justify-items: center;
         width: 100%;
@@ -132,9 +132,7 @@
 
       .logo-item {
         height: 64px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: contents;
       }
 
       .logo-item[aria-hidden='true'] {
@@ -297,7 +295,10 @@
         }
 
         .logo-item {
-          display: contents;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 64px;
         }
 
         .logo-item[aria-hidden='true'] {
