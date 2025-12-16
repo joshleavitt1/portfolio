@@ -283,13 +283,23 @@
         .logo-track {
           display: flex;
           align-items: center;
-          gap: 24px;
+          gap: 64px;
           width: max-content;
           animation: logo-marquee 22s linear infinite;
+          justify-content: center;
         }
 
         .logo-track:hover {
           animation-play-state: paused;
+        }
+
+        .logo-item {
+          display: contents;
+        }
+
+        .logo-item img {
+          display: block;
+          margin: 0 auto;
         }
 
       }
