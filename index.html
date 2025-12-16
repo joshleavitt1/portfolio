@@ -145,6 +145,16 @@
         filter: none;
       }
 
+      @keyframes logo-marquee {
+        0% {
+          transform: translateX(0);
+        }
+
+        100% {
+          transform: translateX(-50%);
+        }
+      }
+
         h1 {
           font-family: 'Inter', sans-serif;
           font-weight: 500;
@@ -262,10 +272,24 @@
           width: calc(100% - 64px);
           max-width: none;
           margin: 0 32px 64px;
+          overflow: hidden;
+          position: relative;
         }
 
         .logo-item {
           min-width: 160px;
+        }
+
+        .logo-track {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          width: max-content;
+          animation: logo-marquee 22s linear infinite;
+        }
+
+        .logo-track:hover {
+          animation-play-state: paused;
         }
 
       }
@@ -347,6 +371,10 @@
           filter: none;
           opacity: 1;
         }
+
+        .logo-track {
+          animation: none !important;
+        }
       }
     </style>
   </head>
@@ -395,6 +423,21 @@
         </div>
         <div class="logo-item">
           <img src="images/logos/pimco.svg" alt="PIMCO logo" width="72px" height="13px" />
+        </div>
+        <div class="logo-item" aria-hidden="true">
+          <img src="images/logos/aig.svg" alt="" width="50px" height="27px" />
+        </div>
+        <div class="logo-item" aria-hidden="true">
+          <img src="images/logos/amex.svg" alt="" width="36px" height="36px" class="no-filter" />
+        </div>
+        <div class="logo-item" aria-hidden="true">
+          <img src="images/logos/blackrock.svg" alt="" width="90px" height="13px" />
+        </div>
+        <div class="logo-item" aria-hidden="true">
+          <img src="images/logos/citizens.svg" alt="" width="123px" height="18px" />
+        </div>
+        <div class="logo-item" aria-hidden="true">
+          <img src="images/logos/pimco.svg" alt="" width="72px" height="13px" />
         </div>
       </div>
     </section>
