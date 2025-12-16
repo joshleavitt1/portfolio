@@ -21,8 +21,42 @@
       body {
         margin: 0;
         position: relative;
-        background: #ffffff;
         overflow-x: hidden;
+        background:
+          radial-gradient(circle at 18% 20%, #e9f2ff, transparent 36%),
+          radial-gradient(circle at 80% 0%, #f5e9ff, transparent 38%),
+          conic-gradient(from 140deg at 50% 30%, #eff6ff 0deg, #fff7ed 120deg, #eef2ff 220deg, #eff6ff 360deg);
+        background-size: 160% 160%, 160% 160%, auto;
+        background-blend-mode: soft-light, soft-light, normal;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        inset: -10%;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      body::before {
+        background-image:
+          repeating-linear-gradient(0deg, rgba(15, 23, 42, 0.06) 0 1px, transparent 1px 26px),
+          repeating-linear-gradient(90deg, rgba(15, 23, 42, 0.06) 0 1px, transparent 1px 26px);
+        background-size: 360px 360px;
+        opacity: 0.25;
+        mix-blend-mode: multiply;
+        filter: blur(10px);
+      }
+
+      body::after {
+        background:
+          radial-gradient(circle at 30% 40%, rgba(99, 102, 241, 0.12), transparent 40%),
+          radial-gradient(circle at 70% 70%, rgba(59, 130, 246, 0.1), transparent 38%);
+        background-size: 140% 140%;
+        opacity: 0.35;
+        mix-blend-mode: soft-light;
+        filter: blur(6px);
       }
 
       .page {
@@ -41,44 +75,8 @@
         justify-content: center;
         align-self: center;
         position: relative;
-        z-index: 2;
+        z-index: 1;
         margin-top: 72px;
-        padding: 32px 36px;
-        border-radius: 28px;
-        background:
-          radial-gradient(circle at 18% 22%, #e9f2ff, transparent 36%),
-          radial-gradient(circle at 80% 18%, #f5e9ff, transparent 38%),
-          conic-gradient(from 140deg at 50% 50%, #eff6ff 0deg, #fff7ed 120deg, #eef2ff 220deg, #eff6ff 360deg);
-        background-blend-mode: soft-light, soft-light, normal;
-        box-shadow: 0 30px 80px rgba(17, 24, 39, 0.12);
-        overflow: hidden;
-        isolation: isolate;
-      }
-
-      .site-header::before,
-      .site-header::after {
-        content: "";
-        position: absolute;
-        inset: -14%;
-        z-index: -1;
-        mix-blend-mode: multiply;
-        opacity: 0.3;
-        filter: blur(10px);
-        pointer-events: none;
-      }
-
-      .site-header::before {
-        background-image:
-          repeating-linear-gradient(0deg, rgba(15, 23, 42, 0.12) 0 1px, transparent 1px 26px),
-          repeating-linear-gradient(90deg, rgba(15, 23, 42, 0.12) 0 1px, transparent 1px 26px);
-        background-size: 220px 220px;
-      }
-
-      .site-header::after {
-        background:
-          radial-gradient(circle at 30% 40%, rgba(99, 102, 241, 0.18), transparent 40%),
-          radial-gradient(circle at 70% 70%, rgba(59, 130, 246, 0.16), transparent 38%);
-        background-size: 180% 180%;
       }
 
       .immersive-reveal {
@@ -267,23 +265,6 @@
           width: auto;
           max-width: calc(100% - 32px);
           justify-content: center;
-          padding: 24px;
-          border-radius: 22px;
-          background-size:
-            220% 220%,
-            220% 220%,
-            auto;
-        }
-
-        .site-header::before {
-          inset: -10%;
-          background-size: 160px 160px;
-          filter: blur(8px);
-        }
-
-        .site-header::after {
-          inset: -12%;
-          background-size: 140% 140%;
         }
 
         .hero {
