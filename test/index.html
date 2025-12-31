@@ -3,32 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Josh Leavitt — UX Case Study</title>
-    <link
-      rel="preconnect"
-      href="https://fonts.googleapis.com"
-    />
-    <link
-      rel="preconnect"
-      href="https://fonts.gstatic.com"
-      crossorigin
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <title>Josh Leavitt — UX Case Study (Web)</title>
     <style>
       :root {
-        --bg: #050812;
-        --panel: rgba(255, 255, 255, 0.04);
-        --panel-strong: rgba(255, 255, 255, 0.08);
-        --text: #f5f7ff;
-        --muted: #9fb0d3;
-        --accent: #6ddcff;
-        --accent-2: #b26bff;
-        --accent-3: #1ef2c6;
-        --card-radius: 18px;
-        --shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --panel-border: #e2e8f0;
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #0f3edd;
+        --shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
       }
 
       * {
@@ -37,90 +21,79 @@
 
       body {
         margin: 0;
-        font-family: "Inter", system-ui, -apple-system, sans-serif;
-        background: radial-gradient(circle at 20% 20%, #0a1630, transparent 25%),
-          radial-gradient(circle at 80% 0%, #121a33, transparent 30%),
-          radial-gradient(circle at 90% 70%, #0a152c, transparent 30%),
-          var(--bg);
+        font-family: system-ui, -apple-system, "Inter", sans-serif;
+        background: var(--bg);
         color: var(--text);
         min-height: 100vh;
-        overflow-x: hidden;
-      }
-
-      .noise {
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
-        z-index: 0;
       }
 
       header {
         position: sticky;
         top: 0;
         z-index: 10;
-        backdrop-filter: blur(12px);
-        background: linear-gradient(90deg, rgba(5, 8, 18, 0.9), rgba(5, 8, 18, 0.6));
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(248, 250, 252, 0.9);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--panel-border);
       }
 
       .nav {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 18px 20px;
+        padding: 16px 20px;
         display: flex;
         align-items: center;
-        gap: 18px;
+        gap: 14px;
       }
 
       .brand {
         display: flex;
         align-items: center;
         gap: 12px;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: -0.02em;
+        color: var(--text);
       }
 
       .brand img {
         width: 44px;
         height: 44px;
         border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--panel-border);
         box-shadow: var(--shadow);
       }
 
       .nav-actions {
         margin-left: auto;
         display: flex;
-        align-items: center;
         gap: 10px;
+        flex-wrap: wrap;
       }
 
-      a.button,
-      button {
+      a.button {
         padding: 12px 16px;
-        border-radius: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: linear-gradient(120deg, rgba(109, 220, 255, 0.15), rgba(178, 107, 255, 0.2));
+        border-radius: 12px;
+        border: 1px solid var(--panel-border);
+        background: #ffffff;
         color: var(--text);
         font-weight: 600;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        transition: transform 160ms ease, box-shadow 200ms ease, background 180ms ease;
-        cursor: pointer;
+        transition: transform 150ms ease, box-shadow 200ms ease, border-color 150ms ease;
       }
 
-      a.button.secondary {
-        background: var(--panel);
-        color: var(--muted);
+      a.button.primary {
+        background: linear-gradient(120deg, #1237f5, #0f3edd);
+        color: #ffffff;
+        border-color: #0f3edd;
+        box-shadow: 0 12px 30px rgba(15, 62, 221, 0.25);
       }
 
-      a.button:hover,
-      button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+      a.button:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow);
+        border-color: #cbd5e1;
       }
 
       main {
@@ -131,222 +104,64 @@
       section {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 80px 20px 40px;
-      }
-
-      .hero {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 32px;
-        align-items: center;
-        padding-top: 48px;
+        padding: 64px 20px 24px;
       }
 
       h1 {
-        font-family: "Space Grotesk", "Inter", sans-serif;
-        font-size: clamp(34px, 5vw, 58px);
-        letter-spacing: -0.04em;
-        margin: 0 0 18px;
-      }
-
-      h2 {
-        font-family: "Space Grotesk", "Inter", sans-serif;
-        font-size: clamp(26px, 4vw, 36px);
+        font-size: clamp(34px, 5vw, 52px);
         letter-spacing: -0.03em;
-        margin: 0 0 12px;
-      }
-
-      h3 {
-        margin: 0 0 8px;
-        letter-spacing: -0.01em;
+        margin: 0 0 16px;
+        color: var(--text);
       }
 
       p {
-        color: var(--muted);
-        margin: 0 0 14px;
-        line-height: 1.7;
-      }
-
-      .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--accent);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 12px;
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 16px;
-      }
-
-      .card {
-        background: linear-gradient(160deg, var(--panel), rgba(255, 255, 255, 0.03));
-        border: 1px solid rgba(255, 255, 255, 0.07);
-        border-radius: var(--card-radius);
-        padding: 18px 20px;
-        box-shadow: var(--shadow);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at 80% 20%, rgba(109, 220, 255, 0.15), transparent 35%),
-          radial-gradient(circle at 0% 100%, rgba(178, 107, 255, 0.14), transparent 30%);
-        pointer-events: none;
-        opacity: 0.8;
-      }
-
-      .card h3 {
-        z-index: 1;
-        position: relative;
-      }
-
-      .card p,
-      .card ul {
-        position: relative;
-        z-index: 1;
-      }
-
-      .tag-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin: 10px 0 0;
-      }
-
-      .tag {
-        padding: 8px 12px;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.06);
-        color: var(--text);
-        font-weight: 600;
-        letter-spacing: 0.01em;
-      }
-
-      .metrics {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 12px;
-      }
-
-      .metric {
-        background: var(--panel-strong);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        padding: 16px;
-        display: grid;
-        gap: 6px;
-      }
-
-      .metric strong {
-        font-size: 28px;
-        letter-spacing: -0.02em;
-      }
-
-      ul {
-        padding-left: 18px;
-        margin: 6px 0 0;
+        margin: 0 0 16px;
         color: var(--muted);
         line-height: 1.7;
       }
 
-      .dual-column {
+      .intro {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 18px;
-      }
-
-      .timeline {
-        display: grid;
-        gap: 10px;
-      }
-
-      .timeline-item {
-        display: grid;
-        grid-template-columns: 120px 1fr;
-        gap: 14px;
-        align-items: start;
-      }
-
-      .bubble {
-        width: 220px;
-        height: 220px;
-        background: radial-gradient(circle at 20% 20%, rgba(109, 220, 255, 0.3), transparent 50%),
-          radial-gradient(circle at 80% 80%, rgba(178, 107, 255, 0.35), transparent 40%),
-          rgba(255, 255, 255, 0.02);
-        filter: blur(30px);
-        position: absolute;
-        border-radius: 50%;
-        z-index: 0;
-      }
-
-      .hero-visual {
-        position: relative;
-        padding: 22px;
-        border-radius: 22px;
-        background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        box-shadow: var(--shadow);
-      }
-
-      .hero-visual .glow {
-        position: absolute;
-        inset: 8px;
-        border-radius: 18px;
-        background: radial-gradient(circle at 50% 30%, rgba(109, 220, 255, 0.2), transparent 45%),
-          radial-gradient(circle at 30% 70%, rgba(178, 107, 255, 0.25), transparent 45%);
-        filter: blur(30px);
-        pointer-events: none;
-        z-index: 0;
-      }
-
-      .hero-visual .content {
-        position: relative;
-        z-index: 1;
-        display: grid;
-        gap: 12px;
-      }
-
-      .step {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 12px 14px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        display: flex;
-        justify-content: space-between;
+        gap: 24px;
         align-items: center;
       }
 
-      .step span {
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .pdf-frame {
+        width: 100%;
+        min-height: 70vh;
+        border: 1px solid var(--panel-border);
+        border-radius: 16px;
+        overflow: hidden;
+        background: #ffffff;
+        box-shadow: var(--shadow);
+      }
+
+      .pdf-frame embed,
+      .pdf-frame iframe,
+      .pdf-frame object {
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      .notes {
+        font-size: 15px;
         color: var(--muted);
       }
 
       footer {
-        padding: 60px 20px 100px;
+        padding: 48px 20px 80px;
         text-align: center;
         color: var(--muted);
-      }
-
-      .reveal {
-        opacity: 0;
-        transform: translateY(30px);
-        transition: opacity 700ms ease, transform 700ms ease;
-      }
-
-      .reveal.in-view {
-        opacity: 1;
-        transform: translateY(0);
       }
 
       @media (max-width: 720px) {
@@ -354,19 +169,12 @@
           padding: 14px 14px;
         }
         section {
-          padding: 60px 14px 32px;
-        }
-        .timeline-item {
-          grid-template-columns: 1fr;
-        }
-        .bubble {
-          display: none;
+          padding: 48px 14px 16px;
         }
       }
     </style>
   </head>
   <body>
-    <div class="noise" aria-hidden="true"></div>
     <header>
       <nav class="nav">
         <div class="brand">
@@ -377,338 +185,53 @@
           </div>
         </div>
         <div class="nav-actions">
-          <a class="button secondary" href="../images/josh_leavitt_resume.pdf" target="_blank" rel="noreferrer">
-            Resume
-          </a>
-          <a class="button" href="../images/josh_leavitt_casestudy.pdf" target="_blank" rel="noreferrer">
-            Download PDF Case Study
-          </a>
+          <a class="button" href="../images/josh_leavitt_resume.pdf" target="_blank" rel="noreferrer">Resume</a>
+          <a class="button primary" href="../images/josh_leavitt_casestudy.pdf" target="_blank" rel="noreferrer">Download case study (PDF)</a>
         </div>
       </nav>
     </header>
 
     <main>
-      <section class="hero">
-        <div class="hero-copy reveal">
-          <div class="eyebrow">UX Case Study — Financial Services</div>
-          <h1>Orchestrating a unified servicing console for a national bank</h1>
-          <p>
-            Modernized a fragmented servicing ecosystem into one guided workspace that keeps bankers in flow,
-            reduces risk, and lifts customer confidence. I led the discovery-to-delivery arc, partnering with
-            operations, risk, and engineering to ship decisive change quickly.
-          </p>
-          <div class="metrics">
-            <div class="metric">
-              <strong>−42%</strong>
-              <span>Projected reduction in average handle time after pilot</span>
-            </div>
-            <div class="metric">
-              <strong>+18 pts</strong>
-              <span>Modeled improvement in post-call satisfaction (CSAT)</span>
-            </div>
-            <div class="metric">
-              <strong>3.5x</strong>
-              <span>Faster onboarding through guided playbooks &amp; pattern library</span>
-            </div>
-          </div>
-          <div class="tag-row">
-            <div class="tag">Design leadership</div>
-            <div class="tag">Service design</div>
-            <div class="tag">Design systems</div>
-            <div class="tag">Risk &amp; compliance</div>
-          </div>
-        </div>
-        <div class="hero-visual reveal" aria-hidden="true">
-          <div class="glow"></div>
-          <div class="bubble" style="top: -40px; right: -20px;"></div>
-          <div class="bubble" style="bottom: -40px; left: -10px; width: 260px; height: 260px;"></div>
-          <div class="content">
-            <div class="step">
-              <div>
-                <strong>Identity &amp; risk cleared</strong>
-                <p style="margin: 4px 0 0;">Smart verification trims 2 min off every interaction.</p>
-              </div>
-              <span>Step 1</span>
-            </div>
-            <div class="step">
-              <div>
-                <strong>Context within reach</strong>
-                <p style="margin: 4px 0 0;">Relationship pulse, account flags, and holdings in one pane.</p>
-              </div>
-              <span>Step 2</span>
-            </div>
-            <div class="step">
-              <div>
-                <strong>Guided playbooks</strong>
-                <p style="margin: 4px 0 0;">Actions orchestrated with compliance guardrails baked in.</p>
-              </div>
-              <span>Step 3</span>
-            </div>
-            <div class="step">
-              <div>
-                <strong>Signal back to leadership</strong>
-                <p style="margin: 4px 0 0;">Operational telemetry feeds staffing &amp; coaching decisions.</p>
-              </div>
-              <span>Step 4</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="dual-column">
-        <div class="card reveal">
-          <h3>What changed</h3>
-          <p>
-            Bankers previously tabbed through 9+ tools to authenticate customers, understand relationships, and
-            submit service requests—creating long silences and compliance risk. We replaced that maze with a single
-            console that prioritizes clarity, guided flows, and safe automation.
-          </p>
-          <div class="tag-row">
-            <div class="tag">Audience: Wealth &amp; retail servicing</div>
-            <div class="tag">Role: Director of Product Design (IC + lead)</div>
-            <div class="tag">Timeframe: 14 weeks</div>
-          </div>
-        </div>
-        <div class="card reveal">
-          <h3>My responsibilities</h3>
-          <ul>
-            <li>Partnered with Ops &amp; Risk to define north star outcomes and KPIs.</li>
-            <li>Led discovery: diary studies, call-shadowing, and service blueprinting.</li>
-            <li>Established a compact design system and interaction patterns for rapid delivery.</li>
-            <li>Ran weekly playback with executives; aligned pilot scope with engineering.</li>
-            <li>Authored training narratives and measurement plan for rollout.</li>
-          </ul>
-        </div>
-      </section>
-
       <section>
-        <div class="eyebrow reveal">Challenges &amp; constraints</div>
-        <div class="dual-column">
-          <div class="card reveal">
-            <h3>The problem</h3>
-            <ul>
-              <li>Identity verification was manual and varied by line of business.</li>
-              <li>Customer context lived across CRM, core, ticketing, and knowledge base.</li>
-              <li>Service actions were free-form, creating policy drift and rework.</li>
-              <li>Onboarding new associates took 6–8 weeks before handling live calls.</li>
-            </ul>
-          </div>
-          <div class="card reveal">
-            <h3>Success criteria</h3>
-            <ul>
-              <li>Cut handle time by double digits without sacrificing compliance.</li>
-              <li>Reduce training time to under 3 weeks with guided playbooks.</li>
-              <li>Deliver a reusable UI stack that engineering can extend in-house.</li>
-              <li>Prove value via a 90-day pilot with telemetry for staffing decisions.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div class="eyebrow reveal">Research synthesis</div>
-        <div class="grid">
-          <div class="card reveal">
-            <h3>Key insights</h3>
-            <ul>
-              <li>Bankers lose ~2.4 minutes per call revalidating identity across systems.</li>
-              <li>Confidence drops when they cannot see holdings, flags, and tasks together.</li>
-              <li>Supervisors lack real-time visibility into stuck calls and policy drift.</li>
-              <li>Most escalations stem from duplicate data entry and missed required steps.</li>
-            </ul>
-          </div>
-          <div class="card reveal">
-            <h3>Design principles</h3>
-            <ul>
-              <li><strong>Make trust visible:</strong> lead with verification, risk, and sentiment signals.</li>
-              <li><strong>Guide, don’t gate:</strong> allow autonomy while nudging policy adherence.</li>
-              <li><strong>Stay in flow:</strong> keep primary actions within a single pane.</li>
-              <li><strong>Explainable:</strong> every automated decision carries “why” and undo.</li>
-            </ul>
-          </div>
-          <div class="card reveal">
-            <h3>Opportunities</h3>
-            <ul>
-              <li>Unify ID verification across retail &amp; wealth with configurable steps.</li>
-              <li>Auto-populate forms and tickets from CRM + core data to remove rekeying.</li>
-              <li>Embed expert playbooks for common requests (address change, wires, disputes).</li>
-              <li>Surface coaching signals to supervisors for live assist and staffing.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div class="eyebrow reveal">Solution snapshot</div>
-        <div class="grid">
-          <div class="card reveal">
-            <h3>Identity &amp; risk hub</h3>
+        <div class="intro">
+          <div>
+            <p class="notes">UX Case Study • Financial services</p>
+            <h1>Case study — Full PDF fidelity</h1>
             <p>
-              Centralized verification with layered factors and dynamic policies. Risk posture stays
-              sticky across the session so bankers aren’t repeating questions.
+              This page presents the exact content of the published case study in a clean, white layout. The PDF is
+              embedded below for full fidelity while remaining responsive and accessible.
             </p>
-            <div class="tag-row">
-              <div class="tag">Adaptive MFA</div>
-              <div class="tag">Watchlists</div>
-              <div class="tag">Audit-ready</div>
-            </div>
-          </div>
-          <div class="card reveal">
-            <h3>Relationship cockpit</h3>
-            <p>
-              A single pane for accounts, holdings, open tickets, and sentiment cues—organized by job-to-be-done,
-              not system of record.
-            </p>
-            <div class="tag-row">
-              <div class="tag">Context cards</div>
-              <div class="tag">Live insights</div>
-              <div class="tag">Accessibility-first</div>
-            </div>
-          </div>
-          <div class="card reveal">
-            <h3>Guided playbooks</h3>
-            <p>
-              Stepwise flows with inline guardrails for wires, disputes, address changes, and wealth transfers.
-              Tasks auto-generate tickets and notes with a single confirmation.
-            </p>
-            <div class="tag-row">
-              <div class="tag">Error-proofing</div>
-              <div class="tag">Dynamic forms</div>
-              <div class="tag">Policy tips</div>
-            </div>
-          </div>
-          <div class="card reveal">
-            <h3>Operational telemetry</h3>
-            <p>
-              Embedded analytics surface handle time, stuck steps, and coaching opportunities.
-              Supervisors can nudge in-flow without taking control.
-            </p>
-            <div class="tag-row">
-              <div class="tag">Live dashboards</div>
-              <div class="tag">QA tags</div>
-              <div class="tag">Staffing signals</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="dual-column">
-        <div>
-          <div class="eyebrow reveal">Process &amp; approach</div>
-          <div class="timeline card reveal">
-            <div class="timeline-item">
-              <div class="tag">Weeks 1-2</div>
-              <div>
-                <h3>Frame &amp; align</h3>
-                <p>Executive intent workshops; mapped KPIs to call types; defined guardrails with Risk.</p>
-              </div>
-            </div>
-            <div class="timeline-item">
-              <div class="tag">Weeks 3-5</div>
-              <div>
-                <h3>Observe &amp; model</h3>
-                <p>Shadowed 18 calls; cataloged 35 micro-tasks; built current-state blueprint and failure modes.</p>
-              </div>
-            </div>
-            <div class="timeline-item">
-              <div class="tag">Weeks 6-9</div>
-              <div>
-                <h3>Prototype &amp; validate</h3>
-                <p>High-fidelity prototypes in Figma; moderated tests with bankers; iterated on risk and control flows.</p>
-              </div>
-            </div>
-            <div class="timeline-item">
-              <div class="tag">Weeks 10-14</div>
-              <div>
-                <h3>Pilot &amp; handoff</h3>
-                <p>Partnered with engineering on build-ready specs; defined telemetry; crafted rollout training and QA rubric.</p>
+            <div class="panel">
+              <p style="margin: 0; font-weight: 600; color: var(--text);">
+                Download the source PDFs
+              </p>
+              <p class="notes" style="margin: 6px 0 10px;">
+                Links below always reference the canonical documents stored in <code>images/</code>.
+              </p>
+              <div class="nav-actions" style="margin: 0; padding: 0;">
+                <a class="button" href="../images/josh_leavitt_resume.pdf" target="_blank" rel="noreferrer">Resume</a>
+                <a class="button primary" href="../images/josh_leavitt_casestudy.pdf" target="_blank" rel="noreferrer">Case study PDF</a>
               </div>
             </div>
           </div>
-        </div>
-        <div>
-          <div class="eyebrow reveal">What shipped</div>
-          <div class="card reveal">
-            <ul>
-              <li>Configurable identity verification module with audit logging.</li>
-              <li>Relationship cockpit with inline insights and next-best actions.</li>
-              <li>Four guided playbooks covering 60% of call volume out of the gate.</li>
-              <li>Design tokens + compact component library for future flows.</li>
-              <li>Telemetry plan and dashboards for Ops and Coaching leaders.</li>
-            </ul>
-            <div class="tag-row" style="margin-top: 14px;">
-              <div class="tag">Figma prototypes</div>
-              <div class="tag">Design QA</div>
-              <div class="tag">Pilot support</div>
+          <div class="panel">
+            <p style="margin: 0 0 8px; font-weight: 600; color: var(--text);">Preview</p>
+            <p class="notes" style="margin: 0 0 12px;">
+              Scroll, zoom, or download directly. The embedded view will resize for tablets and mobile.
+            </p>
+            <div class="pdf-frame" role="region" aria-label="Embedded PDF of Josh Leavitt case study">
+              <object data="../images/josh_leavitt_casestudy.pdf#toolbar=1&navpanes=0&scrollbar=1" type="application/pdf">
+                <embed src="../images/josh_leavitt_casestudy.pdf" type="application/pdf" />
+              </object>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section>
-        <div class="eyebrow reveal">Impact</div>
-        <div class="metrics">
-          <div class="metric">
-            <strong>−2.4 min</strong>
-            <span>Identity verification steps automated &amp; standardized</span>
-          </div>
-          <div class="metric">
-            <strong>−35%</strong>
-            <span>Fewer escalations projected via guided playbooks</span>
-          </div>
-          <div class="metric">
-            <strong>+32%</strong>
-            <span>First-contact resolution uplift modeled after pilot</span>
-          </div>
-          <div class="metric">
-            <strong>85%</strong>
-            <span>Bankers preferred the unified workspace vs. legacy stack</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="dual-column">
-        <div class="card reveal">
-          <h3>What I’d drive as Head of Design/UX</h3>
-          <ul>
-            <li>Institutionalize the servicing pattern library with accessibility baked in.</li>
-            <li>Partner with Data/ML on proactive outreach triggers based on risk + intent.</li>
-            <li>Scale measurement: connect call telemetry to revenue and retention signals.</li>
-            <li>Mentor and grow IC leaders; set rituals for critique, ops, and design QA.</li>
-            <li>Build cross-functional “control room” for launches with clear SLAs and playbooks.</li>
-          </ul>
-        </div>
-        <div class="card reveal">
-          <h3>Next experiments</h3>
-          <ul>
-            <li>Test generative summaries for faster note-taking, with human-in-the-loop review.</li>
-            <li>Expand to branch tools: appointment prep, over-the-counter exception handling.</li>
-            <li>Introduce customer-facing confirmations to reduce follow-up calls.</li>
-            <li>Apply the telemetry model to workforce forecasting and skills routing.</li>
-          </ul>
         </div>
       </section>
     </main>
 
-    <footer class="reveal">
-      <p>Let’s build the next generation of trustworthy, revenue-positive service experiences.</p>
-      <a class="button" href="mailto:josh@joshleavitt.com">Start a conversation</a>
+    <footer>
+      <p style="margin-bottom: 12px;">Prefer a download? Use the buttons above to open the full-resolution PDFs.</p>
+      <a class="button primary" href="mailto:josh@joshleavitt.com">Start a conversation</a>
     </footer>
-
-    <script>
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add("in-view");
-              observer.unobserve(entry.target);
-            }
-          });
-        },
-        { threshold: 0.15 }
-      );
-
-      document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
-    </script>
   </body>
 </html>
