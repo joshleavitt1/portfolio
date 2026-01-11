@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "modes": [
+    "addition"
+  ],
+  "speedThresholdMs": 3000,
+  "difficulty": {
+    "min": 1,
+    "max": 10,
+    "increaseRule": "Increase by 1 when 3 correct in a row AND answer time < speedThresholdMs.",
+    "decreaseRule": "Decrease by 1 (min 1) when a battle is lost."
+  },
+  "addition": {
+    "gradeSettings": {
+      "2": {
+        "baseMaxAddend": 10,
+        "carryAllowed": true
+      },
+      "3": {
+        "baseMaxAddend": 20,
+        "carryAllowed": true
+      }
+    },
+    "difficultyScale": {
+      "1": {
+        "maxAddendBoost": 0
+      },
+      "2": {
+        "maxAddendBoost": 2
+      },
+      "3": {
+        "maxAddendBoost": 4
+      },
+      "4": {
+        "maxAddendBoost": 6
+      },
+      "5": {
+        "maxAddendBoost": 8
+      },
+      "6": {
+        "maxAddendBoost": 10
+      },
+      "7": {
+        "maxAddendBoost": 12
+      },
+      "8": {
+        "maxAddendBoost": 14
+      },
+      "9": {
+        "maxAddendBoost": 16
+      },
+      "10": {
+        "maxAddendBoost": 18
+      }
+    },
+    "distractors": {
+      "strategy": "nearby",
+      "maxOffset": 6
+    }
+  }
+}

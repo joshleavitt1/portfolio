@@ -1,0 +1,1530 @@
+/* index.css — FULL SWAP-IN */
+/* Math Monsters — single global stylesheet (iOS 17-ish, playful, minimal) */
+
+:root{
+  --mm-font: "Arial Rounded MT Bold", "Arial Rounded", Arial, sans-serif;
+
+  --button-gradient-start: #0095ff;
+  --button-gradient-end: #006aff;
+
+  --ink: #272b34;
+  --ink2: rgba(13,20,32,.70);
+  --white: #FFFFFF;
+
+  --card:  rgba(255,255,255);
+  --glass: rgba(255,255,255,.22);
+  --glass2: rgba(255,255,255,.14);
+  --stroke: rgba(255,255,255,.22);
+  --shadow: 0 18px 40px rgba(0,0,0,.22);
+  --shadow2: 0 10px 22px rgba(0,0,0,.12);
+
+  --accent: #2FD1FF;
+  --accent2:#6CFFB8;
+  --danger: #FF5B6E;
+
+  --r-xl: 28px;
+  --r-lg: 22px;
+  --r-md: 16px;
+
+  --pad: 16px;
+  --gap: 24px;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  --butter: cubic-bezier(.18,.92,.22,1);
+  --spring: cubic-bezier(.22,.85,.34,1);
+  --fast: 180ms;
+  --med: 360ms;
+
+  /* Battle (uniform pacing) */
+  --battle-pause: 600ms;
+  --battle-anim: 360ms; /* match JS + feel consistent */
+  
+  /* Battle pacing scale (JS also slows battle pauses). */
+  --battle-scale: 1;
+  --hero-size: 300px;
+  --monster-size: 300px;
+
+  /* Attack motion (feel) */
+--battle-sprite-in: 760ms;
+--attack-slide-ms: 430ms;
+--hit-shake-ms: 320ms;
+
+/* Friendlier attack tuning */
+--attack-lunge: 56px;        /* was 78px */
+--attack-overshoot: 6px;     /* was 10px */
+--attack-lift: -4px;         /* was -6px */
+
+/* Kid-friendly easing */
+--attack-ease: cubic-bezier(.25,.85,.35,1);
+
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+html,body{ height:100%; }
+
+body.mm{
+  margin:0;
+  font-family: var(--mm-font);
+  color: var(--white);
+  /* App default background (Home/Battle/etc.) */
+  background-color: #0026ac;
+  background-image: linear-gradient(
+    180deg,
+    #2675ff 0%,
+    #0026ac 100%
+  );
+  overflow:hidden;
+}
+
+#app{ position:relative; z-index: 2; }
+.mm-bg{ z-index: 0; }
+
+
+button, input, select, textarea{
+  font-family: inherit;
+}
+
+.mm-bg,
+.mm-bubbles,
+.mm-bubble,
+.mm-vignette{
+  pointer-events: none;
+}
+
+
+/* Landing + Loader use a solid deep-ocean background */
+body.is-landing,
+body.is-loader{
+  background-color: #001b41;
+  background-image: none;
+}
+
+/* Remove bubbles on Landing + Loader */
+body.is-landing .mm-bubbles,
+body.is-loader .mm-bubbles{
+  display: none;
+}
+
+.mm-bg{ position:fixed; inset:0; pointer-events:none; }
+.mm-vignette{
+  position:absolute; inset:-20%;
+  background: radial-gradient(circle at 50% 20%, transparent 0 55%, rgba(0,0,0,.30) 85%, rgba(0,0,0,.50) 100%);
+  filter: blur(0px);
+}
+.mm-bubbles{ position:absolute; inset:0; overflow:hidden; }
+
+.mm-bubble{
+  position:absolute;
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.18);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.64) inset;
+  transform: translate3d(0,0,0);
+  animation: bubbleRise linear infinite;
+}
+@keyframes bubbleRise{
+  from{ transform: translate3d(0, 16vh, 0); opacity: 0; }
+  10%{ opacity: .55; }
+  to{ transform: translate3d(0, -120vh, 0); opacity: 0; }
+}
+
+.mm-app{
+  position:relative;
+  height:100%;
+  padding: calc(var(--pad) + var(--safe-top)) calc(var(--pad) + var(--safe-right))
+           calc(var(--pad) + var(--safe-bottom)) calc(var(--pad) + var(--safe-left));
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+}
+
+.mm-shell{
+  width:min(400px, 100%);
+  margin: 0 auto;
+  display:flex;
+  flex-direction:column;
+  gap: var(--gap);
+  height: 100%;
+  min-height: 100%;
+}
+
+/* (Topbar removed everywhere per spec) */
+
+.mm-card{
+  background: var(--card);
+  color: var(--ink);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  width: 64%;
+  text-align: center;
+
+  display: flex;          /* ✅ required */
+  flex-direction: column; /* common card layout */
+  gap: 8px;               /* now works */
+}
+
+.mm-card__pad{ padding: 24px; }
+
+.mm-glass{
+  background: none;
+  border: 1px solid rgba(255,255,255,0.5);
+  box-shadow: var(--shadow2);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+
+.mm-stack{ display:flex; flex-direction:column; gap: 10px; }
+.mm-row{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+.mm-row--between{ justify-content:space-between; }
+
+.mm-field{
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+}
+.mm-label{
+  font-size: 12px;
+  color: rgba(13,20,32,.65);
+  font-weight: 700;
+}
+.mm-input, .mm-select{
+  appearance:none;
+  width:100%;
+  border-radius: 14px;
+  border: 1px solid rgba(13,20,32,.10);
+  background: rgba(255,255,255,.90);
+  padding: 12px 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  outline:none;
+}
+.mm-input:focus, .mm-select:focus{ border-color: rgba(47,209,255,.65); box-shadow: 0 0 0 4px rgba(47,209,255,.18); }
+
+.mm-btn{
+  width:100%;
+  border:0;
+  border-radius: 18px;
+  padding: 14px 14px;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--ink);
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 14px 26px rgba(0,0,0,.18);
+  transform: translate3d(0,0,0);
+  transition: transform var(--fast) var(--spring), filter var(--fast) var(--spring), opacity var(--fast) var(--spring);
+}
+.mm-btn:active{ transform: translate3d(0,2px,0) scale(.99); filter: brightness(.98); }
+.mm-btn[disabled]{ opacity:.45; transform:none; }
+
+.button--primary{
+  background: linear-gradient(180deg, var(--button-gradient-start), var(--button-gradient-end));
+  color:#fff;
+  border:none;
+}
+
+.mm-btn--ghost{
+  color: var(--white);
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: none;
+}
+.mm-btn--danger{
+  color: #2B0C10;
+  background: linear-gradient(180deg, rgba(255,91,110,.96), rgba(255,91,110,.70));
+}
+
+.mm-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: rgba(255,255,255);
+  font-weight: 950;
+  font-size: 16px;
+  letter-spacing: .2px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+/* ================================
+   Universal Progress Component
+================================ */
+
+.mm-progress{
+  --progress-height: 16px;
+  --progress-bg: transparent; /* neutral default */
+  --progress-border: rgba(255,255,255,.9);
+  background: var(--progress-bg);
+
+  position: relative;
+  width: 100%;
+  height: 16px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* Fill */
+.mm-progress > .mm-progress__fill{
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: 999px;
+
+  /* ✅ TOP → BOTTOM */
+  background: linear-gradient(
+    180deg,
+    var(--progress-gradient-start),
+    var(--progress-gradient-end)
+  );
+
+  transition: width 1800ms var(--spring);
+}
+
+/* Progress utility: render without animating the fill (used on initial Home load) */
+.mm-progress.is-static > .mm-progress__fill{
+  transition: width 520ms var(--butter);
+}
+
+
+/* Inner shine */
+.mm-progress > .mm-progress__fill::after{
+  content:"";
+  position:absolute;
+  inset: 2px 5px 0 2px;
+  height: 5px;
+  border-radius: 999px;
+  background: #ffffff64;
+  pointer-events:none;
+}
+
+/* ================================
+   Battle HP: consistent drop speed
+================================ */
+
+/* Battle HP (and XP if used in battle): springy again */
+body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
+  transition-property: width;
+  transition-duration: calc(520ms * var(--battle-scale));
+  transition-timing-function: var(--spring);
+}
+
+
+/* XP progress bar background */
+.mm-progress--xp{
+  --progress-bg: #00000016; /* #0000004 */
+  --progress-gradient-start: #36dc36;
+  --progress-gradient-end: #00b600;
+}
+
+/* HP progress bar background */
+.mm-progress--hp{
+  --progress-bg: #FFFFFF16;
+  --progress-gradient-start: #ffbf00;
+  --progress-gradient-end: #ff6a00;
+}
+
+/* ================================
+   XP reward burst (Home)
+================================ */
+
+.mm-xpCard{ position:relative; }
+
+.mm-xpReward{
+  position:absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px; /* anchors to the bar area */
+  height: 28px;
+  pointer-events:none;
+  opacity: 0;
+}
+
+.mm-xpReward__label{
+  position:absolute;
+  left: 50%;
+  transform: translate3d(-50%, 10px, 0) scale(.96);
+  bottom: 18px;
+  padding: 6px 14px;
+  border-radius: 999px;
+
+  /* ✅ filled green pill */
+  background: linear-gradient(
+    180deg,
+    #36dc36,
+    #00b600
+  );
+  border: none;
+
+  /* ✅ white text */
+  color: #ffffff;
+  font-weight: 950;
+  letter-spacing: .2px;
+  white-space: nowrap;
+
+  box-shadow:
+    0 12px 24px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+
+.mm-xpReward__spark{
+  position:absolute;
+  left: 50%;
+  bottom: 22px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(255,255,255,.12) 60%, transparent 70%);
+  filter: drop-shadow(0 10px 16px rgba(0,0,0,.18));
+  opacity: 0;
+  transform: translate3d(-50%, 0, 0) scale(.9);
+}
+
+.mm-xpReward.is-show{ opacity: 1; }
+
+.mm-xpReward.is-show .mm-xpReward__label{
+  animation: mmXpLabelPop 2500ms var(--spring) 0ms both;
+}
+
+.mm-xpReward.is-show .mm-xpReward__spark{
+  animation: mmXpSpark 2000ms var(--spring) var(--d, 0ms) both;
+}
+
+@keyframes mmXpLabelPop{
+  0%   { opacity:0; transform: translate3d(-50%, 16px, 0) scale(.92); }
+  15%  { opacity:1; transform: translate3d(-50%, 0px, 0) scale(1.02); }
+  70%  { opacity:1; transform: translate3d(-50%, -6px, 0) scale(1.0); }
+  100% { opacity:0; transform: translate3d(-50%, -16px, 0) scale(.98); }
+}
+
+
+@keyframes mmXpSpark{
+  0%{ opacity:0; transform: translate3d(-50%, 0, 0) scale(.6); }
+  20%{ opacity:1; }
+  100%{ opacity:0; transform: translate3d(calc(-50% + var(--dx, 0px)), calc(var(--dy, -20px)), 0) scale(1.1); }
+}
+
+.mm-progress[data-xp-bar]{
+  position: relative;
+  overflow: hidden;
+}
+
+.mm-progress[data-xp-bar].is-rewarding::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 20%,
+    rgba(0, 182, 0, 0.35) 45%,
+    rgba(0, 182, 0, 0.55) 50%,
+    rgba(0, 182, 0, 0.35) 55%,
+    transparent 80%
+  );
+  transform: translateX(-120%);
+  animation: xpSweep 1800ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes xpSweep {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+.mm-screen{
+  position:relative;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  gap: var(--gap);
+}
+
+.mm-screen__grow{ flex:1 1 auto; display:flex; flex-direction:column; gap: var(--gap); }
+.mm-center{ align-items:center; justify-content:center; text-align:center; }
+
+.mm-hero{
+  width: min(400px, 100%);
+  margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 40px;
+  height: auto;        /* 🔥 important */
+  min-height: unset;  /* 🔥 important */
+}
+
+.mm-homeHero.is-locked{
+  pointer-events: none;
+  cursor: default;
+  filter: saturate(.95) brightness(.95);
+}
+
+
+/* ================================
+   Image-only shimmer (sprite-only)
+================================ */
+
+.mm-heroShimmer{
+  position: absolute;
+  inset: 0;
+  width: var(--hero-size);
+  height: var(--hero-size);
+  display: block;
+
+  /* keeps any blur from “bleeding” past the 300x300 area */
+  overflow: hidden;
+
+  /* helps prevent weird blend artifacts leaking outside */
+  contain: paint;
+}
+
+/* keep the masked layer fixed */
+.mm-heroShimmer::after{
+  content:"";
+  position:absolute;
+  inset: 0;
+  pointer-events:none;
+  z-index: 3;
+
+  /* narrower band so it reads as a sweep, not a full-tint */
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0) 46%,
+    rgba(180,240,255,.22) 49%,
+    rgba(255,255,255,.52) 50%,
+    rgba(180,240,255,.22) 51%,
+    rgba(255,255,255,0) 54%
+  );
+
+  /* IMPORTANT: make the gradient “travel” by moving its position */
+  background-size: 260% 260%;
+  background-position: -180% 50%;
+  opacity: 0;
+
+  mix-blend-mode: screen;
+  filter: none; /* blur can make it feel like a big overlay */
+
+  animation: none; /* ⛔ paused until explicitly enabled */
+
+  /* ✅ alpha mask from the sprite PNG */
+  -webkit-mask-image: var(--mm-sprite-mask);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: 100% 100%;
+
+  mask-image: var(--mm-sprite-mask);
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: 100% 100%;
+}
+
+/* ✅ shimmer only after hero has fully loaded in */
+.mm-heroShimmer.is-shimmering::after{
+  animation: mmHeroShimmerBG 3.2s ease-in-out infinite;
+}
+
+
+/* animate background-position (NOT transform) */
+@keyframes mmHeroShimmerBG{
+  0%   { opacity: 0; background-position: -180% 50%; }
+  14%  { opacity: 1; }
+  60%  { opacity: 1; background-position: 180% 50%; }
+  74%  { opacity: 0; }
+  100% { opacity: 0; background-position: 180% 50%; }
+}
+
+
+
+/* optional micro "click" feel */
+.mm-homeSwim{
+  animation: mmHeroShimmerPulse 2.2s ease-in-out infinite;
+  width:100%; height:100%; display:block; object-fit:contain;
+}
+
+@keyframes mmHeroShimmerPulse{
+  0%,100%{ filter:none; }
+  38%{ filter: brightness(1.05) saturate(1.04); }
+}
+
+
+
+/* ================================
+   Home “Exciting” Intro
+================================ */
+
+/* root hook on Home */
+.mm-homeIntro .mm-homeTop,
+.mm-homeIntro .mm-homeBtns{
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  filter: blur(0px);
+}
+
+/* Staggered reveal */
+.mm-homeIntro.is-in .mm-homeTop{
+  animation: mmHomePop 1000ms var(--spring) 0ms both;
+}
+.mm-homeIntro.is-in .mm-homeBtns{
+  animation: mmHomePop 1000ms var(--spring) 280ms both;
+}
+
+@keyframes mmHomePop{
+  0%   { opacity: 0; transform: translate3d(0, 18px, 0) scale(.98); }
+  60%  { opacity: 1; transform: translate3d(0, -4px, 0) scale(1.02); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+/* Make the hero “arrive” after the top UI */
+.mm-homeIntro .mm-art{
+  position: relative;
+  transform: translate3d(0, 10px, 0) scale(.98);
+  opacity: 0;
+}
+
+.mm-homeIntro.is-in .mm-art{
+  animation: mmHomeHeroIn 620ms var(--spring) 180ms both;
+}
+@keyframes mmHomeHeroIn{
+  0%   { opacity: 0; transform: translate3d(0, 18px, 0) scale(.96); }
+  65%  { opacity: 1; transform: translate3d(0, -6px, 0) scale(1.03); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+/* Sparkle burst behind the hero (no assets needed) */
+.mm-homeIntro .mm-art::before{
+  content:"";
+  position:absolute;
+  left: 50%;
+  top: 52%;
+  width: 260px;
+  height: 260px;
+  transform: translate(-50%, -50%) scale(.6);
+  opacity: 0;
+
+  /* soft “spark” dots */
+  background:
+    radial-gradient(circle, rgba(255,255,255,.85) 0 2px, transparent 3px) 20px 30px / 70px 70px,
+    radial-gradient(circle, rgba(47,209,255,.85) 0 2px, transparent 3px) 10px 50px / 90px 90px,
+    radial-gradient(circle, rgba(108,255,184,.85) 0 2px, transparent 3px) 40px 10px / 80px 80px,
+    radial-gradient(circle, rgba(255,255,255,.65) 0 1.5px, transparent 3px) 0 0 / 60px 60px;
+
+  filter: drop-shadow(0 18px 20px rgba(0,0,0,.18));
+  pointer-events:none;
+}
+
+.mm-homeIntro.is-in .mm-art::before{
+  animation: mmSparkBurst 760ms var(--spring) 240ms both;
+}
+
+@keyframes mmSparkBurst{
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.55) rotate(-8deg); }
+  55%  { opacity: 1; transform: translate(-50%, -50%) scale(1.05) rotate(6deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25) rotate(12deg); }
+}
+
+/* ================================
+   Home Battle Floating Action Button
+================================ */
+
+/* Wrapper that animates BOTH hero sprite + FAB together */
+.mm-homeSwimWrap{
+  position: relative;
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+}
+
+body.is-home .mm-homeSwimWrap{
+  opacity: 0;
+  transform: translate3d(0, 18px, 0) scale(.94);
+
+  animation:
+    mmHeroPopIn 1100ms cubic-bezier(.18,.92,.22,1) 0ms forwards,
+    mmDriftY 4.2s ease-in-out infinite 1750ms;
+
+  will-change: transform, opacity;
+}
+
+/* The hero img just fills the wrapper */
+.mm-homeSwim{
+  position: relative;
+  z-index: 2;
+  width:100%; height:100%;
+  object-fit: contain;
+  transform: translateZ(0);
+  
+}
+
+/* FAB: 140 circle, 100 icon */
+.mm-battle-fab{
+  position: absolute;
+  right: 0px;
+  bottom: 0px;
+
+  width: 140px;
+  height: 140px;
+  border-radius: 999px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow:
+    /* Top-left rim highlight */
+    inset 1px 1px 0px rgba(255, 255, 255, 0.40),
+  
+    /* Bottom-right rim highlight */
+    inset -1px -1px 0px rgba(255, 255, 255, 0.40);
+
+  cursor: pointer;
+  z-index: 3;
+
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.mm-battle-fab img{
+  width: 100px;   /* ← try 72 or 80 */
+  height: 100px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Group wrappers */
+.mm-homeTop{
+  width: 100%;
+  display:flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+.mm-homeBtns{
+  width: 100%;
+  display:flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.mm-big{
+  font-size: 36px;
+  font-weight: 950;
+  letter-spacing: -.2px;
+  color: var(--white);
+}
+.mm-muted{ color: rgba(255,255,255,.74); font-weight: 700; font-size: 14px; }
+
+.mm-art{
+  width: 300px;
+  height: 300px;
+  position: relative;   /* anchor for FAB */
+  overflow: visible;
+}
+
+.mm-art > .mm-homeSwimWrap > .mm-homeSwim{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit: contain;
+}
+
+
+/* Home hero pop-in */
+@keyframes mmHeroPopIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.92);
+  }
+  60% {
+    opacity: 1;
+    transform: translate3d(0, -4px, 0) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes mmDriftY{
+  0%   { transform: translate3d(0, 0px, 0); }
+  50%  { transform: translate3d(0, -10px, 0); }
+  100% { transform: translate3d(0, 0px, 0); }
+}
+
+
+body.is-home .mm-homeSwim{
+  opacity: 1;           /* wrapper handles opacity */
+  will-change: transform;
+}
+
+
+body.is-home .mm-screen__grow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.mm-battleStage,
+.mm-spriteWrap,
+.mm-spriteImg{
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Only reset filter on the image, not the wrapper */
+.mm-spriteImg{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  backface-visibility: hidden;
+  will-change: transform;
+  filter: none; }
+
+
+.mm-battleStage{
+  position: relative;
+  flex: 1 1 auto;
+  overflow:visible;
+}
+
+.mm-spriteWrap{
+  position:absolute;
+  width: 300px;
+  height: 300px;
+  opacity: 0;
+
+  transition-property: transform, opacity;
+  transition-duration: var(--battle-sprite-in), var(--battle-sprite-in);
+  transition-timing-function: var(--spring), var(--butter);
+
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+
+  /* ✅ move shadow here (wrapper is NOT the one doing attack keyframe transforms) */
+  filter: drop-shadow(0 16px 18px rgba(0,0,0,.16));
+}
+
+/* Base positions on WRAPPER */
+.mm-spriteWrap.hero{
+  left: -80px;
+  bottom: 10px;
+  transform: translate3d(-160px, 0, -40px) scale(.95);
+}
+
+.mm-spriteWrap.monster{
+  right: -80px;
+  top: 10px;
+  transform: translate3d(160px, 0, -40px) scale(.95);
+}
+
+.mm-spriteWrap.hero.is-in{
+  opacity: 1;
+  transform: translate3d(16px, -2px, 0) scale(1.02);
+}
+
+.mm-spriteWrap.monster.is-in{
+  opacity: 1;
+  transform: translate3d(-16px, 2px, 0) scale(1.02);
+}
+
+.mm-spriteWrap.is-in.is-settle{
+  transition-property: transform, opacity;
+  transition-duration: 360ms, 280ms;
+  transition-timing-function:
+    cubic-bezier(.12,.75,.25,1),
+    cubic-bezier(.18,.92,.22,1);
+
+  transform: translate3d(0,0,0) scale(1.02);
+}
+
+
+
+
+.mm-stat{
+  /* keep original layout */
+  position:absolute;
+  width: 160px;
+  padding: 16px;
+  border-radius: 12px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+
+  /* updated motion */
+  opacity: 0;
+  transform: translate3d(0,14px,0);
+  transition:
+  transform calc(var(--battle-anim) * var(--battle-scale) * var(--stat-in-scale, 1)) var(--butter),
+  opacity   calc((var(--battle-anim) * .85) * var(--battle-scale) * var(--stat-in-scale, 1)) var(--butter);
+
+}
+
+.mm-stat.is-in{
+  opacity: 1;
+  transform: translate3d(0,0,0);
+}
+
+
+
+.mm-stat.hero{ left: 200px; bottom: calc(10px + var(--hero-size) * .42); }
+.mm-stat.monster{ right: 200px; top: calc(10px + var(--monster-size) * .42); }
+
+.mm-stat__name{
+  font-weight: 500;
+  color: rgba(255,255,255);
+  font-size: 20px;
+  letter-spacing: .2px;
+}
+
+/* Battle stat context */
+.mm-stat .mm-progress{
+  --progress-height: 16px;
+  --progress-bg: rgba(255,255,255,.20);
+  --progress-border: rgba(255,255,255,.18);
+  box-shadow: none;
+}
+
+/* ---------- Attack feel: slide-in + defender shake ---------- */
+
+/* =========================================
+   Simple attacks: hero -> RIGHT, monster -> LEFT
+   Keep attack on INNER img only
+========================================= */
+
+.mm-attack-slide-hero{
+  transform-origin: 50% 60%;
+  animation: mmAttackHeroLR calc(var(--attack-slide-ms) * var(--battle-scale)) var(--attack-ease) 1 both;
+}
+
+.mm-attack-slide-monster{
+  transform-origin: 50% 60%;
+  animation: mmAttackMonsterRL calc(var(--attack-slide-ms) * var(--battle-scale)) var(--attack-ease) 1 both;
+}
+
+/* linear timing + shaped keyframes = consistent “buttery” motion */
+@keyframes mmAttackHeroLR{
+  0%   { transform: translate3d(0,0,0) scale(1); }
+  22%  { transform: translate3d(-8px, 3px, 0) scale(0.985); } /* gentle anticipate */
+  58%  { transform: translate3d(var(--attack-lunge), var(--attack-lift), 0) scale(1.06); } /* smooth peak */
+  74%  { transform: translate3d(18px, -1px, 0) scale(1.02); } /* glide back */
+  100% { transform: translate3d(0,0,0) scale(1); }
+}
+
+@keyframes mmAttackMonsterRL{
+  0%   { transform: translate3d(0,0,0) scale(1); }
+  22%  { transform: translate3d(8px, 3px, 0) scale(0.985); }
+  58%  { transform: translate3d(calc(var(--attack-lunge) * -1), var(--attack-lift), 0) scale(1.06); }
+  74%  { transform: translate3d(-18px, -1px, 0) scale(1.02); }
+  100% { transform: translate3d(0,0,0) scale(1); }
+}
+
+
+.mm-hit-shake{
+  transform-origin: 50% 55%;
+  animation: mmHitSquish calc(var(--hit-shake-ms) * var(--battle-scale)) var(--attack-ease) 1 both;
+}
+
+@keyframes mmHitSquish{
+  0%   { transform: translate3d(0,0,0) scale(1) rotate(0deg); }
+  18%  { transform: translate3d(-6px, 2px,0) scale(0.985, 1.015) rotate(-1.4deg); }
+  40%  { transform: translate3d( 7px,-1px,0) scale(1.01, 0.99)  rotate( 1.1deg); }
+  62%  { transform: translate3d(-3px, 1px,0) scale(0.995, 1.005) rotate(-0.8deg); }
+  100% { transform: translate3d(0,0,0) scale(1) rotate(0deg); }
+}
+
+
+
+.mm-attackFx{
+  position:absolute;
+  width: 180px; height: 180px;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(.7);
+  pointer-events:none;
+  filter: drop-shadow(0 14px 16px rgba(0,0,0,.30));
+}
+.mm-attackFx.is-pop{
+  opacity: 1;
+  transform: scale(1);
+  transition: transform calc(260ms * var(--battle-scale)) var(--spring), opacity calc(260ms * var(--battle-scale)) var(--spring);
+}
+.mm-attackFx.is-out{
+  opacity: 0;
+  transform: scale(.9);
+  transition: transform calc(320ms * var(--battle-scale)) var(--spring),
+              opacity  calc(320ms * var(--battle-scale)) var(--spring);
+}
+
+/* ================================
+   Attack FX: scale-up on hit
+================================ */
+
+@keyframes mmFxHitScale {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.28); }
+  75%  { transform: scale(0.90); }
+  100% { transform: scale(1); }
+}
+
+/* add/remove this class at impact */
+.mm-attackFx.mm-fx-hit {
+  animation: mmFxHitScale calc(220ms * var(--battle-scale)) cubic-bezier(.2,.9,.3,1) 1;
+}
+
+.mm-qCard{
+  /* keep original layout + styling */
+  position:absolute;
+  padding: 24px;
+  border-radius: var(--r-md);
+  left: 12px; right: 12px;
+  bottom: 12px;
+  background: rgba(255,255,255);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  width: 400px;
+
+  /* updated motion */
+  transform: translate3d(0, 18px, 0);
+  opacity: 0;
+  transition:
+  transform calc(var(--battle-anim) * var(--battle-scale)) var(--butter),
+  opacity   calc((var(--battle-anim) * .85) * var(--battle-scale)) var(--butter);
+}
+
+.mm-qCard.is-up{
+  opacity: 1;
+  transform: translate3d(0,0,0);
+}
+
+
+
+.mm-question{
+  font-weight: 500;
+  font-size: 28px;
+  width: 100%;
+  letter-spacing: -.2px;
+  text-align: center;
+  padding: 8px 0px 8px 0px;
+}
+
+.mm-answers{
+  margin-top: 16px;
+  margin-bottom: 16px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.mm-answer{
+  border-radius: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  background: white;
+  height: 64px;
+  font-weight: 500;
+  font-size: 24px;
+  text-align:center;
+  transition: transform var(--fast) var(--spring), box-shadow var(--fast) var(--spring), border-color var(--fast) var(--spring);
+}
+.mm-answer:active{ transform: translate3d(0,2px,0) scale(.99); }
+.mm-answer.is-selected{
+  background: #EBF3FF;
+  border-color: #006AFF;
+  box-shadow: none;
+}
+
+
+.mm-qActions{ margin-top: 12px; display:flex; gap: 10px; }
+.mm-qActions .mm-btn{ padding: 12px 14px; border-radius: 18px; font-size: 15px; }
+
+.mm-overlay{
+  position: fixed;
+  inset: 0;
+  display:none;
+
+  align-items: flex-end;     /* ⬅️ push card to bottom */
+  justify-content: center;   /* horizontal center */
+
+  padding:
+    calc(var(--pad) + var(--safe-top))
+    calc(var(--pad) + var(--safe-right))
+    calc(var(--pad) + var(--safe-bottom))
+    calc(var(--pad) + var(--safe-left));
+
+  background: rgba(0,0,0,.20);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.mm-overlay.is-show{ display:flex; }
+
+/* ================================
+   End of Battle Card
+================================ */
+
+.mm-endCard{
+  width: 400px;
+  text-align: center;
+
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+
+  transition:
+    transform 420ms cubic-bezier(.18,.85,.25,1),
+    opacity   320ms ease-out;
+  will-change: transform, opacity;
+}
+
+.mm-endCard.is-in{
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.mm-endTitle{
+  margin: 0 0 16px 0;
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: -.2px;
+}
+
+.mm-gemBox{
+  width: 100%;
+  background: #F4F6FA;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.mm-gemImg{
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Full-page loader */
+.mm-loaderFull{
+  width: 100%;
+  height: 100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.mm-loaderFull__inner{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap: 24px;
+}
+.mm-loaderLogo{
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 20px rgba(0,0,0,.25));
+}
+.mm-loaderTitle{
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: -.2px;
+  color: rgba(255,255,255,.92);
+}
+
+.mm-spinner{
+  width: 44px; height: 44px;
+  border-radius: 999px;
+  border: 4px solid rgba(255,255,255,.20);
+  border-top-color: rgba(255,255,255,.85);
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+.mm-toast{
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + var(--safe-bottom));
+  transform: translateX(-50%) translateY(20px);
+  opacity: 0;
+  background: rgba(0,0,0,.60);
+  color: rgba(255,255,255,.92);
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: opacity 200ms var(--spring), transform 200ms var(--spring);
+  pointer-events:none;
+}
+.mm-toast.is-show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-height: 700px){
+  :root{ --hero-size: clamp(150px, 38vw, 210px); --monster-size: clamp(150px, 38vw, 210px); }
+  .mm-battleStage{ min-height: 320px; }
+}
+
+/* ---------- Landing Overrides (MM landing v2) ---------- */
+
+.landing-wrap{
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* ✅ vertical center */
+  align-items: center;
+
+  gap: 24px;
+}
+
+
+.landing-brand{
+  display:flex;
+  flex-direction: column;
+  align-items:center;
+  justify-content:center;
+  gap: 14px;
+}
+
+.landing-logo{
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+}
+
+.landing-title{
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  text-align: center;
+  margin: 0;
+}
+
+.landing-tagline{
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 150%;
+  text-align: center;
+  margin: 0;
+  color: rgba(255,255,255,0.5);
+}
+
+.landing-actions{
+  display:flex;
+  flex-direction: column;
+  gap: var(--gap);
+  width: 100%;
+  margin-top: 14px;
+}
+
+/* Button system (Josh spec) */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.button--primary {
+  color: #ffffff;
+  border: none;
+}
+
+.button--outline {
+  background: transparent;
+  color: #ffffff;
+  border: 2px solid var(--button-gradient-end);
+}
+
+/* Hover ONLY when the button is in its normal (unresolved) state */
+.button:not(.is-correct):not(.is-wrong):not(:disabled):hover{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 106, 255, 0.25);
+}
+
+.button:focus {
+  outline: 2px solid rgba(0, 106, 255, 0.6);
+  outline-offset: 2px;
+}
+
+
+/* Answer feedback */
+.mm-answer.is-correct{
+  border-color: #00B600;
+  background: rgba(0, 182, 0, 0.08);
+  color: #00B600;            /* ✅ text highlight */
+  font-weight: 800;
+}
+.mm-answer.is-wrong{
+  border-color: #E20000;
+  background: rgba(226, 0, 0, 0.08);
+  color: #E20000;            /* ✅ text highlight */
+  font-weight: 800;
+}
+.mm-answer[disabled]{
+  opacity: 1;
+  transform: none;
+
+  /* ✅ keep non-right/wrong answers dark */
+  color: var(--ink);
+  -webkit-text-fill-color: var(--ink); /* ✅ Safari fix */
+}
+
+
+
+/* Submit button feedback */
+.button.is-correct{
+  background: #00B600 !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+.button.is-wrong{
+  background: #E20000 !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+/* ================================
+   Evolution Flow (Full-screen)
+================================ */
+
+/* ================================
+   Evolution Flow (Full-screen)
+   "Level Up!" page (landing-like)
+================================ */
+
+.mm-evolve{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  /* fade-in */
+  display: none;
+  opacity: 0;
+  transition: opacity 900ms ease-out; /* ⬅️ slow cinematic fade */
+
+  align-items: center;
+  justify-content: center;
+
+  /* ✅ Blue gradient background (matches app vibe) */
+  background-image: linear-gradient(180deg, #2675ff 0%, #0026ac 100%);
+}
+
+.mm-evolve.is-show{
+  display:flex;
+  opacity: 1;
+}
+
+/* Centered column like landing */
+.mm-evolve__wrap{
+  width: min(520px, 92vw);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap: 24px;
+  text-align:center;
+  transform: translateZ(0);
+}
+
+.mm-evolve__title{
+  font-size: 48px;
+  font-weight: 950;
+  letter-spacing: -0.3px;
+  margin: 0;
+  color: rgba(255,255,255);
+}
+
+/* Stage stays 300x300 hero size */
+.mm-evolve__stage{
+  position: relative;
+  width: var(--hero-size);
+  height: var(--hero-size);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform: translateZ(0);
+}
+
+/* subtle “rising energy” particles (no assets) */
+.mm-evolve__stage::before{
+  content:"";
+  position:absolute;
+  inset: -18%;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.70) 0 1.5px, transparent 2px) 10px 18px / 70px 70px,
+    radial-gradient(circle, rgba(47,209,255,.65) 0 2px, transparent 3px) 30px 44px / 90px 90px,
+    radial-gradient(circle, rgba(108,255,184,.55) 0 1.5px, transparent 3px) 0 0 / 80px 80px;
+  opacity: 0;
+  filter: drop-shadow(0 22px 30px rgba(0,0,0,.28));
+  transform: scale(.9);
+  pointer-events:none;
+}
+
+.mm-evolve.is-show .mm-evolve__stage::before{
+  animation: mmEvolveSpark 1200ms var(--spring) 0ms both;
+}
+@keyframes mmEvolveSpark{
+  0%{ opacity: 0; transform: scale(.86) rotate(-6deg); }
+  55%{ opacity: 1; transform: scale(1.02) rotate(6deg); }
+  100%{ opacity: 0; transform: scale(1.12) rotate(14deg); }
+}
+
+/* sprite layers */
+.mm-evolve__img{
+  position:absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 24px rgba(0,0,0,.28));
+  transform: translateZ(0);
+  will-change: transform, opacity, filter;
+}
+
+/* start state */
+.mm-evolve__img--from{ opacity: 1; transform: scale(1); }
+.mm-evolve__img--to{
+  opacity: 0;
+  transform: scale(.92);
+  filter: blur(10px) drop-shadow(0 18px 24px rgba(0,0,0,.28));
+}
+
+/* ✅ one-shot pulse (JS triggers this 3×) */
+.mm-evolve.is-pulse .mm-evolve__img--from{
+  animation: mmEvolvePulse 520ms var(--spring) 0ms 1;
+}
+@keyframes mmEvolvePulse{
+  0%   { transform: scale(1); filter: drop-shadow(0 18px 24px rgba(0,0,0,.28)); }
+  45%  { transform: scale(1.08); filter: drop-shadow(0 22px 30px rgba(0,0,0,.34)); }
+  100% { transform: scale(1); filter: drop-shadow(0 18px 24px rgba(0,0,0,.28)); }
+}
+
+/* ✅ slower morph timing via --evolve-ms */
+.mm-evolve.is-morph .mm-evolve__img--from{
+  animation: mmEvolveFrom var(--evolve-ms, 1650ms) cubic-bezier(.18,.92,.22,1) 0ms both;
+}
+.mm-evolve.is-morph .mm-evolve__img--to{
+  animation: mmEvolveTo var(--evolve-ms, 1650ms) cubic-bezier(.18,.92,.22,1) 0ms both;
+}
+
+/* “energy ring” wipe */
+.mm-evolve__ring{
+  position:absolute;
+  inset: -18%;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events:none;
+
+  background:
+    radial-gradient(circle at 50% 50%,
+      rgba(255,255,255,0) 56%,
+      rgba(180,240,255,.18) 60%,
+      rgba(47,209,255,.28) 64%,
+      rgba(108,255,184,.18) 68%,
+      rgba(255,255,255,0) 72%
+    );
+
+  filter: blur(1px) drop-shadow(0 0 26px rgba(120,160,255,.28));
+  transform: scale(.78) rotate(-10deg);
+}
+
+.mm-evolve.is-morph .mm-evolve__ring{
+  animation: mmEvolveRing calc(var(--evolve-ms, 1650ms) * .9) var(--spring) 40ms both;
+}
+
+@keyframes mmEvolveRing{
+  0%   { opacity: 0; transform: scale(.72) rotate(-12deg); }
+  22%  { opacity: 1; }
+  70%  { opacity: 1; transform: scale(1.06) rotate(10deg); }
+  100% { opacity: 0; transform: scale(1.22) rotate(16deg); }
+}
+
+@keyframes mmEvolveFrom{
+  0%   { opacity: 1; transform: scale(1); filter: blur(0px) drop-shadow(0 18px 24px rgba(0,0,0,.28)); }
+  35%  { opacity: 1; transform: scale(1.04) rotate(-2deg); }
+  70%  { opacity: .15; transform: scale(1.10) rotate(6deg); filter: blur(12px) drop-shadow(0 24px 30px rgba(0,0,0,.30)); }
+  100% { opacity: 0; transform: scale(1.14) rotate(10deg); filter: blur(16px) drop-shadow(0 24px 30px rgba(0,0,0,.30)); }
+}
+
+@keyframes mmEvolveTo{
+  0%   { opacity: 0; transform: scale(.92); filter: blur(12px) drop-shadow(0 18px 24px rgba(0,0,0,.28)); }
+  40%  { opacity: .55; transform: scale(1.02); filter: blur(6px) drop-shadow(0 18px 24px rgba(0,0,0,.28)); }
+  70%  { opacity: 1; transform: scale(1.06); filter: blur(0px) drop-shadow(0 18px 24px rgba(0,0,0,.28)); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0px) drop-shadow(0 18px 24px rgba(0,0,0,.28)); }
+}
+
+/* ================================
+   Home → Evolution handoff
+   Fade out EVERYTHING except background
+================================ */
+.mm-homeIntro.is-evoFadeOut{
+  opacity: 0;
+  transform: translate3d(0, 8px, 0) scale(.99);
+  transition: opacity 720ms ease-out, transform 720ms ease-out;
+  pointer-events: none;
+}
+
+/* ================================
+   Evolution: keep background from BODY (overlay is transparent)
+   Then fade in title + sprite
+================================ */
+.mm-evolve.mm-evolve--transparent{
+  background: transparent !important;
+  background-image: none !important;
+}
+
+/* hide content initially */
+.mm-evolve__wrap{
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(.98);
+  transition: opacity 820ms ease-out, transform 820ms var(--spring);
+}
+
+/* reveal content after home fades out */
+.mm-evolve.is-reveal .mm-evolve__wrap{
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+/* Fade OUT title + sprite (content) at the end, leaving just background */
+.mm-evolve.is-hide .mm-evolve__wrap{
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(.98);
+}
+
+
+/* ✅ No hover lift when disabled */
+.button[disabled]:hover{ transform:none; box-shadow:none; }
