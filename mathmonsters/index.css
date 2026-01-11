@@ -454,6 +454,42 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
 .mm-screen__grow{ flex:1 1 auto; display:flex; flex-direction:column; gap: var(--gap); }
 .mm-center{ align-items:center; justify-content:center; text-align:center; }
 
+/* ================================
+   ABSOLUTE SPRITE SIZE LOCK
+   (No responsive scaling, ever)
+================================ */
+
+.mm-homeSwimWrap,
+.mm-art,
+.mm-heroShimmer,
+.mm-spriteWrap,
+.mm-evolve__stage {
+  width: 300px !important;
+  height: 300px !important;
+  min-width: 300px !important;
+  min-height: 300px !important;
+  max-width: 300px !important;
+  max-height: 300px !important;
+  flex: 0 0 300px !important;
+}
+
+/* Inner sprite images — never resize */
+.mm-homeSwim,
+.mm-spriteImg,
+.mm-evolve__img,
+.mm-loaderLogo {
+  width: 300px !important;
+  height: 300px !important;
+  min-width: 300px !important;
+  min-height: 300px !important;
+  max-width: 300px !important;
+  max-height: 300px !important;
+
+  object-fit: contain;
+  display: block;
+}
+
+
 .mm-hero{
   width: min(400px, 100%);
   margin: 0 auto;
