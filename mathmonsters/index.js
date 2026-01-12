@@ -833,7 +833,9 @@
 
     const body = `
       <div class="mm-battleStage" data-battle-stage>
-
+<div class="mm-pill mm-diffPill" data-diff-pill>
+  Difficulty: ${state.profile.difficulty ?? 1}
+</div>
         <div class="mm-spriteWrap hero" data-hero-wrap>
           <!-- ✅ Pokemon-style ground shadow -->
           <div class="mm-groundShadow" aria-hidden="true"></div>
@@ -889,6 +891,12 @@
     `;
 
     appEl.innerHTML = shell({ bodyHtml: body });
+    function updateDifficultyPill(){
+      const el = appEl.querySelector("[data-diff-pill]");
+      if (!el) return;
+      el.textContent = `Difficulty: ${state.profile.difficulty ?? 1}`;
+    }
+    
 
     const heroWrap = appEl.querySelector("[data-hero-wrap]"); // wrapper (base pose)
     const monWrap = appEl.querySelector("[data-monster-wrap]"); // wrapper (base pose)
@@ -1047,6 +1055,12 @@
     });
   }
 
+  function updateDifficultyPill(){
+    const el = appEl.querySelector("[data-diff-pill]");
+    if (!el) return;
+    el.textContent = `Difficulty ${state.profile.difficulty ?? 1}`;
+  }  
+
   function updateBattleUI() {
     const heroHpEl = appEl.querySelector("[data-hero-hp]");
     const monHpEl = appEl.querySelector("[data-mon-hp]");
@@ -1121,6 +1135,11 @@
 
     state.profile.xp = Number(state.profile.xp ?? 0) - 1;
     state.profile.difficulty = clamp((state.profile.difficulty ?? 1) - 1, 1, 10);
+    function updateDifficultyPill(){
+      const el = appEl.querySelector("[data-diff-pill]");
+      if (!el) return;
+      el.textContent = `Difficulty: ${state.profile.difficulty ?? 1}`;
+    }    
     saveLocal();
 
     showEndCard({

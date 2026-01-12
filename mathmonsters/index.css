@@ -341,6 +341,20 @@ body.is-loader .mm-bubbles{
   pointer-events:none;
 }
 
+/* Battle difficulty pill */
+.mm-diffPill{
+  position: absolute;
+  left: 50%;
+  top: calc(var(--pad) + var(--safe-top));
+  transform: translateX(-50%);
+  z-index: 20;
+  font-weight: 950;
+  font-size: 16px;
+  letter-spacing: .2px;
+  background: #001B41;
+  pointer-events: none;
+}
+
 /* ================================
    Battle HP: consistent drop speed
 ================================ */
@@ -912,6 +926,12 @@ body.is-home .mm-screen__grow{
   overflow:visible;
 }
 
+/* Battle should ignore .mm-app padding and pin to viewport like the end-card overlay */
+body.is-battle .mm-battleStage{
+  position: fixed;
+  inset: 0;
+}
+
 .mm-spriteWrap{
   position:absolute;
   width: 300px;
@@ -930,28 +950,34 @@ body.is-home .mm-screen__grow{
   filter: drop-shadow(0 16px 18px rgba(0,0,0,.16));
 }
 
-/* Base positions on WRAPPER */
+/* Base positions on WRAPPER — responsive edge inset (no media queries) */
 .mm-spriteWrap.hero{
-  left: -80px;
+  /* on small screens -> -80px (same as now)
+     on wide screens -> grows up to +96px inset */
+  left: clamp(-80px, calc(50vw - 520px), 96px);
   bottom: 10px;
+
+  /* offscreen-ish idle pose */
   transform: translate3d(-160px, 0, -40px) scale(.95);
 }
 
 .mm-spriteWrap.monster{
-  right: -80px;
+  right: clamp(-80px, calc(50vw - 520px), 96px);
   top: 10px;
+
   transform: translate3d(160px, 0, -40px) scale(.95);
 }
 
-.mm-spriteWrap.hero.is-in{
-  opacity: 1;
-  transform: translate3d(16px, -2px, 0) scale(1.02);
+.mm-stat.hero{
+  left: clamp(24px, calc(50vw - 520px + 200px), 260px);
+  bottom: calc(10px + var(--hero-size) * .42);
 }
 
-.mm-spriteWrap.monster.is-in{
-  opacity: 1;
-  transform: translate3d(-16px, 2px, 0) scale(1.02);
+.mm-stat.monster{
+  right: clamp(24px, calc(50vw - 520px + 200px), 260px);
+  top: calc(10px + var(--monster-size) * .42);
 }
+
 
 .mm-spriteWrap.is-in.is-settle{
   transition-property: transform, opacity;
@@ -1103,26 +1129,27 @@ body.is-home .mm-screen__grow{
 .mm-qCard{
   position: absolute;
 
-  left: 50%;
-  right: auto;
+  /* ✅ Match end-card overlay gutters */
+  left: calc(var(--pad) + var(--safe-left));
+  right: calc(var(--pad) + var(--safe-right));
 
-  /* ✅ same logic as end card overlay padding */
+  /* ✅ Same bottom treatment as end card */
   bottom: calc(var(--pad) + var(--safe-bottom));
 
-  /* ✅ match end-card “gutters”: 16px left + 16px right */
-  width: min(420px, calc(100% - (var(--pad) * 2)));
-  max-width: 420px;
+  /* ✅ Same “400 desktop, shrink on mobile” behavior */
+  max-width: 400px;
+  margin: 0 auto;
 
   background: rgba(255,255,255);
   color: var(--ink);
-  border-radius: 20px;
+  border-radius: var(--r-md);
   box-shadow: var(--shadow);
 
-  /* ✅ IMPORTANT: let the inner pad control padding like end card does */
-  padding: 0;
+  /* inner pad controls padding */
+  padding: 24px;
 
-  /* keep your motion, but include X centering */
-  transform: translate3d(-50%, 18px, 0);
+  /* motion: only Y now (no translateX needed) */
+  transform: translate3d(0, 18px, 0);
   opacity: 0;
 
   transition:
@@ -1130,14 +1157,11 @@ body.is-home .mm-screen__grow{
     opacity   calc((var(--battle-anim) * .85) * var(--battle-scale)) var(--butter);
 }
 
-.mm-qCard__pad{
-  padding: var(--pad); /* ✅ 16px everywhere, same token the overlay uses */
-}
-
 .mm-qCard.is-up{
   opacity: 1;
-  transform: translate3d(-50%, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
+
 
 .mm-question{
   font-weight: 500;
