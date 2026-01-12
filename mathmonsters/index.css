@@ -928,7 +928,8 @@ body.is-home .mm-screen__grow{
   /* Sprite arena spacing: keep fighters composed on desktop without media queries */
   --sprite-size: 300px; /* sprites are hard-locked to 300x300 */
   --sprite-half: calc(var(--sprite-size) / 2);
-  --battle-gap: clamp(180px, 32vw, 320px); /* tighter on desktop */
+  --battle-gap: 280px;
+  --battle-y: 180px; /* increase = monster higher + hero lower */
 }
 
 /* Battle should ignore .mm-app padding and pin to viewport like the end-card overlay */
@@ -955,48 +956,45 @@ body.is-battle .mm-battleStage{
   filter: drop-shadow(0 16px 18px rgba(0,0,0,.16));
 }
 
-/* Base positions on WRAPPER — responsive edge inset (no media queries) */
-.mm-spriteWrap.hero{
-  /* Center-anchored arena spacing: keeps sprites together on desktop */
-  left: calc(50% - (var(--battle-gap) / 2) - var(--sprite-half));
-  bottom: 10px;
-
-  /* offscreen-ish idle pose */
-  transform: translate3d(-160px, 0, -40px) scale(.95);
+/* Stats now live inside the wrapper, so lock them there */
+.mm-spriteWrap .mm-stat{
+  position: absolute;
+  z-index: 5; /* above sprite/shadow */
 }
 
-.mm-spriteWrap.monster{
-  /* Center-anchored arena spacing */
-  left: calc(50% + (var(--battle-gap) / 2) - var(--sprite-half));
-  top: 10px;
+/* HERO: centered + 40px RIGHT
+   centered is 70px, so 70 + 40 = 110 */
+.mm-spriteWrap.hero .mm-stat.hero{
+  right: -120px;
+  bottom: 110px;
+}
 
-  transform: translate3d(160px, 0, -40px) scale(.95);
+/* MONSTER: centered + 40px LEFT
+   centered is 70px, so 70 - 40 = 30 */
+.mm-spriteWrap.monster .mm-stat.monster{
+  left: -120px;
+  top: 110px;
 }
 
 /* ✅ Make wrappers visible once battle intro runs */
 .mm-spriteWrap.hero.is-in{
   opacity: 1;
-  transform: translate3d(16px, -2px, 0) scale(1.02);
+  transform: translate3d(16px, calc(-2px + var(--battle-y)), 0) scale(1.02);
 }
 
 .mm-spriteWrap.monster.is-in{
   opacity: 1;
-  transform: translate3d(-16px, -2px, 0) scale(1.02);
+  transform: translate3d(-16px, calc(-2px - var(--battle-y)), 0) scale(1.02);
 }
 
-
-.mm-stat.hero{
-  left: calc(65% - (var(--battle-gap) / 2));
-  bottom: calc(10px + var(--sprite-size) * .42);
-  margin-left: -80px; /* 160px wide pill -> centered */
+/* keep vertical separation after settle */
+.mm-spriteWrap.hero.is-in.is-settle{
+  transform: translate3d(0, var(--battle-y), 0) scale(1.02);
 }
 
-.mm-stat.monster{
-  left: calc(35% + (var(--battle-gap) / 2));
-  top: calc(10px + var(--sprite-size) * .42);
-  margin-left: -80px; /* 160px wide pill -> centered */
+.mm-spriteWrap.monster.is-in.is-settle{
+  transform: translate3d(0, calc(var(--battle-y) * -1), 0) scale(1.02);
 }
-
 
 .mm-spriteWrap.is-in.is-settle{
   transition-property: transform, opacity;
@@ -1008,12 +1006,7 @@ body.is-battle .mm-battleStage{
   transform: translate3d(0,0,0) scale(1.02);
 }
 
-
-
-
 .mm-stat{
-  /* keep original layout */
-  position:absolute;
   width: 160px;
   padding: 16px;
   border-radius: 12px;
@@ -1021,24 +1014,22 @@ body.is-battle .mm-battleStage{
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 16px;
 
-  /* updated motion */
-  opacity: 0;
-  transform: translate3d(0,14px,0);
-  transition:
-  transform calc(var(--battle-anim) * var(--battle-scale) * var(--stat-in-scale, 1)) var(--butter),
-  opacity   calc((var(--battle-anim) * .85) * var(--battle-scale) * var(--stat-in-scale, 1)) var(--butter);
+    backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  transition:
+    transform 360ms cubic-bezier(.18,.92,.22,1),
+    opacity 300ms cubic-bezier(.18,.92,.22,1);
 }
 
 .mm-stat.is-in{
   opacity: 1;
-  transform: translate3d(0,0,0);
+  transform: translate3d(0, 0, 0);
 }
-
-
 
 
 .mm-stat__name{

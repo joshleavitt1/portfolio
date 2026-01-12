@@ -832,64 +832,72 @@
     nextQuestion();
 
     const body = `
-      <div class="mm-battleStage" data-battle-stage>
-<div class="mm-pill mm-diffPill" data-diff-pill>
-  Difficulty: ${state.profile.difficulty ?? 1}
-</div>
-        <div class="mm-spriteWrap hero" data-hero-wrap>
-          <!-- ✅ Pokemon-style ground shadow -->
-          <div class="mm-groundShadow" aria-hidden="true"></div>
-          <img class="mm-spriteImg hero" data-hero-sprite src="${state.profile.heroSprite}" alt="${state.profile.heroName}">
-        </div>
+  <div class="mm-battleStage" data-battle-stage>
+    <div class="mm-pill mm-diffPill" data-diff-pill>
+      Difficulty: ${state.profile.difficulty ?? 1}
+    </div>
 
-        <div class="mm-spriteWrap monster" data-monster-wrap>
-          <!-- ✅ Pokemon-style ground shadow -->
-          <div class="mm-groundShadow" aria-hidden="true"></div>
-          <img class="mm-spriteImg monster" data-monster-sprite src="${state.monster.monsterSprite}" alt="${state.monster.monsterName}">
-        </div>
+    <!-- HERO -->
+    <div class="mm-spriteWrap hero" data-hero-wrap style="left: calc(50% - var(--battle-gap) / 2 - 150px); top: calc(50% - 150px);">
+      <div class="mm-groundShadow" aria-hidden="true"></div>
 
-        <div class="mm-stat mm-glass hero" data-hero-stat>
-          <div class="mm-stat__name">${escapeHtml(state.profile.heroName)}</div>
-          <div class="mm-progress mm-progress--sm mm-progress--hp">
-            <div class="mm-progress__fill" data-hero-hp></div>
-          </div>
-        </div>
+      <img class="mm-spriteImg hero"
+           data-hero-sprite
+           src="${state.profile.heroSprite}"
+           alt="${escapeHtml(state.profile.heroName)}">
 
-        <div class="mm-stat mm-glass monster" data-mon-stat>
-          <div class="mm-stat__name">${escapeHtml(state.monster.monsterName)}</div>
-          <div class="mm-progress mm-progress--sm mm-progress--hp">
-            <div class="mm-progress__fill" data-mon-hp></div>
-          </div>
-        </div>
-
-        <div class="mm-qCard" data-qcard>
-          <div class="mm-qCard__pad">
-            <div class="mm-row">
-              <div class="mm-question" data-qtext></div>
-            </div>
-
-            <div class="mm-answers" data-answers></div>
-
-            <div class="mm-qActions">
-              <button class="button button--primary" data-act="submit">Submit</button>
-            </div>
-          </div>
+      <div class="mm-stat mm-glass hero" data-hero-stat>
+        <div class="mm-stat__name">${escapeHtml(state.profile.heroName)}</div>
+        <div class="mm-progress mm-progress--sm mm-progress--hp">
+          <div class="mm-progress__fill" data-hero-hp></div>
         </div>
       </div>
+    </div>
 
-      <div class="mm-overlay" data-overlay>
-        <div class="mm-endCard mm-card mm-card__pad" data-end-card>
-          <h2 class="mm-endTitle" data-end-title></h2>
+    <!-- MONSTER -->
+    <div class="mm-spriteWrap monster" data-monster-wrap style="left: calc(50% + var(--battle-gap) / 2 - 150px); top: calc(50% - 150px);">
+      <div class="mm-groundShadow" aria-hidden="true"></div>
 
-          <div class="mm-gemBox" data-gem-box style="display:none;">
-            <img class="mm-gemImg" src="images/additional/gem.png" alt="Gem" />
-          </div>
+      <img class="mm-spriteImg monster"
+           data-monster-sprite
+           src="${state.monster.monsterSprite}"
+           alt="${escapeHtml(state.monster.monsterName)}">
 
-          <button class="button button--primary" data-end-btn></button>
+      <div class="mm-stat mm-glass monster" data-mon-stat>
+        <div class="mm-stat__name">${escapeHtml(state.monster.monsterName)}</div>
+        <div class="mm-progress mm-progress--sm mm-progress--hp">
+          <div class="mm-progress__fill" data-mon-hp></div>
         </div>
       </div>
-    `;
+    </div>
 
+    <!-- QUESTION CARD -->
+    <div class="mm-qCard" data-qcard>
+      <div class="mm-row">
+        <div class="mm-question" data-qtext></div>
+      </div>
+
+      <div class="mm-answers" data-answers></div>
+
+      <div class="mm-qActions">
+        <button class="button button--primary" data-act="submit">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- END OVERLAY -->
+  <div class="mm-overlay" data-overlay>
+    <div class="mm-endCard mm-card mm-card__pad" data-end-card>
+      <h2 class="mm-endTitle" data-end-title></h2>
+
+      <div class="mm-gemBox" data-gem-box style="display:none;">
+        <img class="mm-gemImg" src="images/additional/gem.png" alt="Gem" />
+      </div>
+
+      <button class="button button--primary" data-end-btn></button>
+    </div>
+  </div>
+`;
     appEl.innerHTML = shell({ bodyHtml: body });
     function updateDifficultyPill(){
       const el = appEl.querySelector("[data-diff-pill]");
