@@ -287,7 +287,7 @@ body.is-loader .mm-bubbles{
   font-weight: 950;
   font-size: 16px;
   letter-spacing: .2px;
-  background: rgba(0, 0, 0, 0.24);
+  background: #001B41;
 }
 
 /* ================================
@@ -1338,7 +1338,7 @@ body.is-home .mm-screen__grow{
 }
 
 .landing-title{
-  font-size: 40px;
+  font-size: 48px;
   font-weight: 800;
   letter-spacing: -0.3px;
   text-align: center;
@@ -1346,7 +1346,7 @@ body.is-home .mm-screen__grow{
 }
 
 .landing-tagline{
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 400;
   line-height: 150%;
   text-align: center;
