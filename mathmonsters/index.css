@@ -507,10 +507,10 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
 }
 
 /* Inner sprite images — never resize */
+/* Inner sprite images — never resize */
 .mm-homeSwim,
 .mm-spriteImg,
-.mm-evolve__img,
-.mm-loaderLogo {
+.mm-evolve__img{
   width: 300px !important;
   height: 300px !important;
   min-width: 300px !important;
@@ -521,6 +521,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   object-fit: contain;
   display: block;
 }
+
 
 
 .mm-hero{
@@ -1262,11 +1263,16 @@ body.is-home .mm-screen__grow{
   gap: 24px;
 }
 
+/* Loader logo should NOT be sprite-sized */
 .mm-loaderLogo{
-  width: 100px;
-  height: 100px;
+  width: 88px !important;
+  height: 88px !important;
+  min-width: 88px !important;
+  min-height: 88px !important;
+  max-width: 88px !important;
+  max-height: 88px !important;
   object-fit: contain;
-  filter: drop-shadow(0 10px 14px rgba(0,0,0,.22));
+  display: block;
 }
 
 .mm-loaderTitle{
