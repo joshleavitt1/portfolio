@@ -1029,31 +1029,34 @@ body.is-home .mm-screen__grow{
 }
 
 .mm-qCard{
-  /* keep original layout + styling */
   position:absolute;
   padding: 24px;
   border-radius: var(--r-md);
-  left: 12px; right: 12px;
+
+  left: 50%;
+  right: auto;
   bottom: 12px;
+
+  width: min(400px, calc(100% - 24px));
+  max-width: 400px;
+
   background: rgba(255,255,255);
   color: var(--ink);
   box-shadow: var(--shadow);
-  width: 400px;
 
-  /* updated motion */
-  transform: translate3d(0, 18px, 0);
+  /* keep your motion, but include X centering */
+  transform: translate3d(-50%, 18px, 0);
   opacity: 0;
+
   transition:
-  transform calc(var(--battle-anim) * var(--battle-scale)) var(--butter),
-  opacity   calc((var(--battle-anim) * .85) * var(--battle-scale)) var(--butter);
+    transform calc(var(--battle-anim) * var(--battle-scale)) var(--butter),
+    opacity   calc((var(--battle-anim) * .85) * var(--battle-scale)) var(--butter);
 }
 
 .mm-qCard.is-up{
   opacity: 1;
-  transform: translate3d(0,0,0);
+  transform: translate3d(-50%, 0, 0);
 }
-
-
 
 .mm-question{
   font-weight: 500;
@@ -1073,6 +1076,14 @@ body.is-home .mm-screen__grow{
 }
 
 .mm-answer{
+  -webkit-appearance: none;
+  appearance: none;
+
+  color: var(--ink);
+  -webkit-text-fill-color: var(--ink); /* iOS/Safari safety */
+
+  font-family: inherit;
+
   border-radius: 12px;
   border: 2px solid rgba(0, 0, 0, 0.08);
   background: white;
@@ -1080,8 +1091,10 @@ body.is-home .mm-screen__grow{
   font-weight: 500;
   font-size: 24px;
   text-align:center;
+
   transition: transform var(--fast) var(--spring), box-shadow var(--fast) var(--spring), border-color var(--fast) var(--spring);
 }
+
 .mm-answer:active{ transform: translate3d(0,2px,0) scale(.99); }
 .mm-answer.is-selected{
   background: #EBF3FF;
@@ -1169,6 +1182,7 @@ body.is-home .mm-screen__grow{
   align-items:center;
   justify-content:center;
 }
+
 .mm-loaderFull__inner{
   display:flex;
   flex-direction:column;
@@ -1176,12 +1190,14 @@ body.is-home .mm-screen__grow{
   justify-content:center;
   gap: 24px;
 }
+
 .mm-loaderLogo{
-  width: 160px;
-  height: 160px;
+  width: 100px;
+  height: 100px;
   object-fit: contain;
-  filter: drop-shadow(0 14px 20px rgba(0,0,0,.25));
+  filter: drop-shadow(0 10px 14px rgba(0,0,0,.22));
 }
+
 .mm-loaderTitle{
   font-size: 28px;
   font-weight: 950;
