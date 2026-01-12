@@ -624,9 +624,11 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
 .mm-groundShadow{
   position: absolute;
   left: 50%;
-  bottom: 8px;                 /* hero feet alignment */
-  width: 160px;
-  height: 28px;
+  bottom: 8px;
+
+  width: 220px;   /* ⬅️ was 160px */
+  height: 34px;   /* ⬅️ was 28px */
+
   transform: translateX(-50%);
 
   background: radial-gradient(
@@ -638,12 +640,13 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
     rgba(0,0,0,0) 75%
   );
 
-  filter: blur(6px);
+  filter: blur(7px);  /* ⬅️ optional: slightly softer for larger shadow */
   opacity: .75;
 
   pointer-events: none;
-  z-index: 0; /* always behind sprite */
+  z-index: 0;
 }
+
 
 /* Slight shadow squash during attacks */
 .mm-attack-slide-hero ~ .mm-groundShadow,
