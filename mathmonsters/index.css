@@ -1265,12 +1265,12 @@ body.is-home .mm-screen__grow{
 
 /* Loader logo should NOT be sprite-sized */
 .mm-loaderLogo{
-  width: 88px !important;
-  height: 88px !important;
-  min-width: 88px !important;
-  min-height: 88px !important;
-  max-width: 88px !important;
-  max-height: 88px !important;
+  width: 160px !important;
+  height: 160px !important;
+  min-width: 160px !important;
+  min-height: 160px !important;
+  max-width: 160px !important;
+  max-height: 160px !important;
   object-fit: contain;
   display: block;
 }
