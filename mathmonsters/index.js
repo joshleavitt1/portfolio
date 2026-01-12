@@ -6,20 +6,21 @@
   const LS_XP_ANIM = "mm_xp_anim";
   const LS_EVOLVE = "mm_evolve";
 
-
   const appEl = document.getElementById("app");
   const toastEl = document.getElementById("toast");
   const bubblesEl = document.getElementById("bubbles");
   const QCARD_IN_DELAY_MS = 320; // was effectively ~1800ms via battlePause()
 
-
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const raf = () => new Promise(r => requestAnimationFrame(r));
-const raf2 = async () => { await raf(); await raf(); };
+  const raf = () => new Promise((r) => requestAnimationFrame(r));
+  const raf2 = async () => {
+    await raf();
+    await raf();
+  };
 
-const EVOLVE_BEAT_MS = 750;   // “cinematic beat” used for pacing
-const EVOLVE_HOLD_MS = 3000;   // ✅ “admire the new sprite” hold
+  const EVOLVE_BEAT_MS = 750; // “cinematic beat” used for pacing
+  const EVOLVE_HOLD_MS = 3000; // ✅ “admire the new sprite” hold
 
   // Loader: always show for 1.5s, even if assets are already cached.
   const MIN_LOADER_MS = 1500;
@@ -34,12 +35,11 @@ const EVOLVE_HOLD_MS = 3000;   // ✅ “admire the new sprite” hold
   const BATTLE_ANIM_MS = 360;
   const PRE_HP_DROP_BEAT_MS = 180; // pause after hit before HP drops
 
-
   // New attack feel tuning
   const ATTACK_WINDUP_MS = 90; // ⬅️ small anticipatory pause
   const ATTACK_SLIDE_MS = 720;
-  const FX_POP_MS       = 300;
-  const FX_OUT_MS       = 280;
+  const FX_POP_MS = 300;
+  const FX_OUT_MS = 280;
   const FX_HOLD_MS = 220;
 
   const battlePause = () => battleSleep(BATTLE_PAUSE_MS);
@@ -135,124 +135,137 @@ const EVOLVE_HOLD_MS = 3000;   // ✅ “admire the new sprite” hold
   }
 
   // ---------- Home XP animation (only when returning from a win) ----------
-  function setXpAnim(fromXp, toXp){
-    try{
-      localStorage.setItem(LS_XP_ANIM, JSON.stringify({ from: Number(fromXp||0), to: Number(toXp||0), at: Date.now() }));
-    }catch{}
+  function setXpAnim(fromXp, toXp) {
+    try {
+      localStorage.setItem(
+        LS_XP_ANIM,
+        JSON.stringify({
+          from: Number(fromXp || 0),
+          to: Number(toXp || 0),
+          at: Date.now(),
+        })
+      );
+    } catch {}
   }
-  function takeXpAnim(){
-    try{
+  function takeXpAnim() {
+    try {
       const raw = localStorage.getItem(LS_XP_ANIM);
       if (!raw) return null;
       localStorage.removeItem(LS_XP_ANIM);
       const obj = JSON.parse(raw);
-      if (!obj || !Number.isFinite(Number(obj.from)) || !Number.isFinite(Number(obj.to))) return null;
+      if (
+        !obj ||
+        !Number.isFinite(Number(obj.from)) ||
+        !Number.isFinite(Number(obj.to))
+      )
+        return null;
       return { from: Number(obj.from), to: Number(obj.to) };
-    }catch{
+    } catch {
       return null;
     }
   }
 
-    // ---------- Evolution trigger (only for level-ups) ----------
-    function setEvolveAnim(payload){
-      try{
-        localStorage.setItem(LS_EVOLVE, JSON.stringify({ ...payload, at: Date.now() }));
-      }catch{}
-    }
-    function takeEvolveAnim(){
-      try{
-        const raw = localStorage.getItem(LS_EVOLVE);
-        if (!raw) return null;
-        localStorage.removeItem(LS_EVOLVE);
-        const obj = JSON.parse(raw);
-        if (!obj) return null;
-        // minimal validation
-        if (!obj.fromSprite || !obj.toSprite) return null;
-        if (!Number.isFinite(Number(obj.fromXp)) || !Number.isFinite(Number(obj.toXp))) return null;
-        return obj;
-      }catch{
+  // ---------- Evolution trigger (only for level-ups) ----------
+  function setEvolveAnim(payload) {
+    try {
+      localStorage.setItem(
+        LS_EVOLVE,
+        JSON.stringify({ ...payload, at: Date.now() })
+      );
+    } catch {}
+  }
+  function takeEvolveAnim() {
+    try {
+      const raw = localStorage.getItem(LS_EVOLVE);
+      if (!raw) return null;
+      localStorage.removeItem(LS_EVOLVE);
+      const obj = JSON.parse(raw);
+      if (!obj) return null;
+      // minimal validation
+      if (!obj.fromSprite || !obj.toSprite) return null;
+      if (
+        !Number.isFinite(Number(obj.fromXp)) ||
+        !Number.isFinite(Number(obj.toXp))
+      )
         return null;
-      }
+      return obj;
+    } catch {
+      return null;
     }
-  
-    async function launchEvolutionFlow({ fromSprite, toSprite }, opts = {}){
-      const {
-        revealDelayMs = 300,
-        pulseBeatMs = EVOLVE_BEAT_MS,
-        holdMs = EVOLVE_HOLD_MS,   // ✅ NEW
-        onBeforeClose = null,
-      } = opts;
-      
-    
-      await preloadImages([fromSprite, toSprite]);
-    
-      const overlay = document.createElement("div");
-      overlay.className = "mm-evolve is-show mm-evolve--transparent";
-      overlay.style.setProperty("--evolve-ms", "1650ms"); // keep your cinematic morph speed
-    
-      overlay.innerHTML = `
-        <div class="mm-evolve__wrap" role="dialog" aria-label="Level Up Evolution">
-          <h1 class="mm-evolve__title">Level Up!</h1>
-    
-          <div class="mm-evolve__stage">
-            <div class="mm-evolve__ring"></div>
-            <img class="mm-evolve__img mm-evolve__img--from" src="${fromSprite}" alt="Evolution from" />
-            <img class="mm-evolve__img mm-evolve__img--to"   src="${toSprite}"   alt="Evolution to" />
-          </div>
+  }
+
+  async function launchEvolutionFlow({ fromSprite, toSprite }, opts = {}) {
+    const {
+      revealDelayMs = 300,
+      pulseBeatMs = EVOLVE_BEAT_MS,
+      holdMs = EVOLVE_HOLD_MS, // ✅ NEW
+      onBeforeClose = null,
+    } = opts;
+
+    await preloadImages([fromSprite, toSprite]);
+
+    const overlay = document.createElement("div");
+    overlay.className = "mm-evolve is-show mm-evolve--transparent";
+    overlay.style.setProperty("--evolve-ms", "1650ms"); // keep your cinematic morph speed
+
+    overlay.innerHTML = `
+      <div class="mm-evolve__wrap" role="dialog" aria-label="Level Up Evolution">
+        <h1 class="mm-evolve__title">Level Up!</h1>
+
+        <div class="mm-evolve__stage">
+          <div class="mm-evolve__ring"></div>
+          <img class="mm-evolve__img mm-evolve__img--from" src="${fromSprite}" alt="Evolution from" />
+          <img class="mm-evolve__img mm-evolve__img--to"   src="${toSprite}"   alt="Evolution to" />
         </div>
-      `;
-    
-      document.body.appendChild(overlay);
-    
-      // 1) Pause (beats after meter finishes)
-      await sleep(pulseBeatMs);
-    
-      // 2) Fade in title + sprite (content reveal)
-      await sleep(revealDelayMs);
-      void overlay.offsetWidth;   // ✅ ensures initial hidden state is committed
-      overlay.classList.add("is-reveal");
-      
-    
-      // 3) Pause so reveal reads
-      await sleep(pulseBeatMs);
-    
-      // 4) Pulse 3× (your loop)
-      for (let i = 0; i < 3; i++){
-        overlay.classList.remove("is-pulse");
-        void overlay.offsetWidth;
-        overlay.classList.add("is-pulse");
-        await sleep(pulseBeatMs);
-        overlay.classList.remove("is-pulse");
-        await sleep(pulseBeatMs);
-      }
-    
-      // 5) Morph
-      await sleep(pulseBeatMs);
-      overlay.classList.add("is-morph");
-      await sleep(pulseBeatMs);
-    
-      // 6) Hold on new form (pause on the new sprite)
-      await sleep(holdMs);
+      </div>
+    `;
 
-// 7) Fade OUT content (title + sprite), leaving only background
-await raf2(); // if you want it extra stable
-overlay.classList.add("is-hide");
-await sleep(820); // match .mm-evolve__wrap transition
+    document.body.appendChild(overlay);
 
-// 8) Now that only background is visible, reload Home (new sprite)
-if (typeof onBeforeClose === "function") {
-  await onBeforeClose(); // typically: await go("home")
-}
+    // 1) Pause (beats after meter finishes)
+    await sleep(pulseBeatMs);
 
-// 9) Fade out overlay itself + cleanup
-overlay.style.opacity = "0";
-await sleep(420);
-overlay.remove();
+    // 2) Fade in title + sprite (content reveal)
+    await sleep(revealDelayMs);
+    void overlay.offsetWidth; // ✅ ensures initial hidden state is committed
+    overlay.classList.add("is-reveal");
 
+    // 3) Pause so reveal reads
+    await sleep(pulseBeatMs);
+
+    // 4) Pulse 3× (your loop)
+    for (let i = 0; i < 3; i++) {
+      overlay.classList.remove("is-pulse");
+      void overlay.offsetWidth;
+      overlay.classList.add("is-pulse");
+      await sleep(pulseBeatMs);
+      overlay.classList.remove("is-pulse");
+      await sleep(pulseBeatMs);
     }
-       
-  
 
+    // 5) Morph
+    await sleep(pulseBeatMs);
+    overlay.classList.add("is-morph");
+    await sleep(pulseBeatMs);
+
+    // 6) Hold on new form (pause on the new sprite)
+    await sleep(holdMs);
+
+    // 7) Fade OUT content (title + sprite), leaving only background
+    await raf2(); // if you want it extra stable
+    overlay.classList.add("is-hide");
+    await sleep(820); // match .mm-evolve__wrap transition
+
+    // 8) Now that only background is visible, reload Home (new sprite)
+    if (typeof onBeforeClose === "function") {
+      await onBeforeClose(); // typically: await go("home")
+    }
+
+    // 9) Fade out overlay itself + cleanup
+    overlay.style.opacity = "0";
+    await sleep(420);
+    overlay.remove();
+  }
 
   // ---------- Data ----------
   async function loadStaticData() {
@@ -403,7 +416,11 @@ overlay.remove();
     const fastEnough = answerTimeMs < (state.questions.speedThresholdMs || 3000);
 
     if (state.battle.correctStreak >= 3 && fastEnough) {
-      state.profile.difficulty = clamp((state.profile.difficulty || 1) + 1, 1, 10);
+      state.profile.difficulty = clamp(
+        (state.profile.difficulty || 1) + 1,
+        1,
+        10
+      );
       state.battle.correctStreak = 0;
       toast(`Difficulty up → ${state.profile.difficulty}`);
     }
@@ -412,71 +429,62 @@ overlay.remove();
   async function playAttackFx({ who }) {
     const stage = document.querySelector("[data-battle-stage]");
     if (!stage) return;
-  
+
     const heroImg = stage.querySelector("[data-hero-sprite]");
-    const monImg  = stage.querySelector("[data-monster-sprite]");
-  
+    const monImg = stage.querySelector("[data-monster-sprite]");
+
     const attacker = who === "hero" ? heroImg : monImg;
-    const target   = who === "hero" ? monImg  : heroImg;
-  
+    const target = who === "hero" ? monImg : heroImg;
+
     /* 1️⃣ WIND-UP BEAT */
     await sleep(ATTACK_WINDUP_MS);
-  
+
     /* 2️⃣ START ATTACK SLIDE */
     attacker.classList.add(
       who === "hero" ? "mm-attack-slide-hero" : "mm-attack-slide-monster"
     );
-  
+
     /* 3️⃣ WAIT UNTIL IMPACT MOMENT */
     await sleep(ATTACK_SLIDE_MS * 0.55); // sweet spot
-  
+
     /* 4️⃣ IMPACT — SHAKE + FX TOGETHER */
     target.classList.add("mm-hit-shake");
-  
+
     const fx = document.createElement("img");
     fx.className = "mm-attackFx";
-    fx.src = who === "hero"
-      ? state.profile.attackSprite
-      : state.monster.attackSprite;
-  
+    fx.src = who === "hero" ? state.profile.attackSprite : state.monster.attackSprite;
+
     const rect = target.getBoundingClientRect();
     const srect = stage.getBoundingClientRect();
-  
+
     fx.style.left = `${rect.left - srect.left + rect.width / 2 - 90}px`;
-    fx.style.top  = `${rect.top  - srect.top  + rect.height / 2 - 90}px`;
-  
+    fx.style.top = `${rect.top - srect.top + rect.height / 2 - 90}px`;
+
     stage.appendChild(fx);
-  
+
     // 🔥 SAME FRAME
     requestAnimationFrame(() => {
       fx.classList.add("is-pop");
-    
+
       // 🔥 hit-scale pop (restart-safe)
       fx.classList.remove("mm-fx-hit");
       fx.offsetWidth; // force reflow so it can replay
       fx.classList.add("mm-fx-hit");
     });
-    
-  
+
     await sleep(FX_POP_MS);
 
     // ✅ keep it on screen longer
     await sleep(FX_HOLD_MS);
-    
+
     fx.classList.add("is-out");
     await sleep(FX_OUT_MS);
-    
-  
+
     /* 5️⃣ CLEANUP */
-    attacker.classList.remove(
-      "mm-attack-slide-hero",
-      "mm-attack-slide-monster"
-    );
+    attacker.classList.remove("mm-attack-slide-hero", "mm-attack-slide-monster");
     target.classList.remove("mm-hit-shake");
     fx.remove();
   }
-  
-  
 
   // ---------- Screens ----------
   function shell({ bodyHtml, footerHtml }) {
@@ -502,7 +510,11 @@ overlay.remove();
         </div>
 
         <div class="landing-actions">
-          ${saved ? `<button class="button button--primary" type="button" data-act="continue">Continue</button>` : ``}
+          ${
+            saved
+              ? `<button class="button button--primary" type="button" data-act="continue">Continue</button>`
+              : ``
+          }
           <button class="button button--primary" type="button" data-act="newGame">New Game</button>
           <button class="button button--outline" type="button" data-act="level3">Level 1</button>
           <button class="button button--outline" type="button" data-act="level2">Level 2</button>
@@ -513,37 +525,36 @@ overlay.remove();
     appEl.innerHTML = shell({ bodyHtml: body });
 
     appEl
-  .querySelector("[data-act='continue']")
-  ?.addEventListener("click", () => go("loader", { next: "home" }));
+      .querySelector("[data-act='continue']")
+      ?.addEventListener("click", () => go("loader", { next: "home" }));
 
-appEl.querySelector("[data-act='newGame']")?.addEventListener("click", async () => {
-  await loadStaticData();
-  makeDefaultProfile();
-  ensureMonsterForCurrentHero();
-  saveLocal();
-  go("loader", { next: "home" });
-});
+    appEl.querySelector("[data-act='newGame']")?.addEventListener("click", async () => {
+      await loadStaticData();
+      makeDefaultProfile();
+      ensureMonsterForCurrentHero();
+      saveLocal();
+      go("loader", { next: "home" });
+    });
 
-appEl.querySelector("[data-act='level2']")?.addEventListener("click", async () => {
-  await loadStaticData();
-  if (!hasSave()) makeDefaultProfile();
-  state.profile.xp = 19;
-  applyHeroProgressionFromXP();
-  ensureMonsterForCurrentHero();
-  saveLocal();
-  go("loader", { next: "home" });
-});
+    appEl.querySelector("[data-act='level2']")?.addEventListener("click", async () => {
+      await loadStaticData();
+      if (!hasSave()) makeDefaultProfile();
+      state.profile.xp = 19;
+      applyHeroProgressionFromXP();
+      ensureMonsterForCurrentHero();
+      saveLocal();
+      go("loader", { next: "home" });
+    });
 
-appEl.querySelector("[data-act='level3']")?.addEventListener("click", async () => {
-  await loadStaticData();
-  if (!hasSave()) makeDefaultProfile();
-  state.profile.xp = 9;
-  applyHeroProgressionFromXP();
-  ensureMonsterForCurrentHero();
-  saveLocal();
-  go("loader", { next: "home" });
-});
-
+    appEl.querySelector("[data-act='level3']")?.addEventListener("click", async () => {
+      await loadStaticData();
+      if (!hasSave()) makeDefaultProfile();
+      state.profile.xp = 9;
+      applyHeroProgressionFromXP();
+      ensureMonsterForCurrentHero();
+      saveLocal();
+      go("loader", { next: "home" });
+    });
   }
 
   function makeDefaultProfile() {
@@ -580,8 +591,6 @@ appEl.querySelector("[data-act='level3']")?.addEventListener("click", async () =
       </section>
     `;
 
-    const ASSET_LOGO = "images/brand/logo.png";
-
     const urls = [];
     if (state.profile) urls.push(state.profile.heroSprite, state.profile.attackSprite);
     if (state.monster) urls.push(state.monster.monsterSprite, state.monster.attackSprite);
@@ -601,7 +610,6 @@ appEl.querySelector("[data-act='level3']")?.addEventListener("click", async () =
     document.body.classList.toggle("is-battle", screen === "battle");
   }
 
-  
   function renderHome() {
     // One-time XP animation payload (set only when winning a battle)
     const xpAnim = takeXpAnim();
@@ -620,31 +628,31 @@ appEl.querySelector("[data-act='level3']")?.addEventListener("click", async () =
     const fromMod = ((fromXp % 10) + 10) % 10;
     const fromPct = (fromMod / 10) * 100;
 
-    // Special case: level-up (e.g. 9 -> 10 means bar should finish to 100 then snap to 0)
-
-    const isLevelUpWrap = shouldAnimate && (computeLevelFromXP(fromXp) < computeLevelFromXP(xp));
-    const battleLocked = Boolean(evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp);
+    const isLevelUpWrap =
+      shouldAnimate && computeLevelFromXP(fromXp) < computeLevelFromXP(xp);
+    const battleLocked = Boolean(
+      evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp
+    );
 
     // Disable battle tap while Level Up / Evolution is pending
     const heroLinkAttrs = battleLocked
       ? `aria-disabled="true" tabindex="-1"`
       : `data-act="battle" role="button" aria-label="Start Battle"`;
 
-
     // ✅ If this is a level-up, Home should *temporarily* show the PRE-evolution hero
-let displayHero = state.profile;
-let displayLevel = level;
+    let displayHero = state.profile;
+    let displayLevel = level;
 
-if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
-  const fromLvl = state.progression.hero.levels[String(evolveAnim.fromLevel)];
-  if (fromLvl?.heroSprite) {
-    displayHero = {
-      heroName: fromLvl.heroName,
-      heroSprite: fromLvl.heroSprite,
-    };
-    displayLevel = evolveAnim.fromLevel;
-  }
-}
+    if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
+      const fromLvl = state.progression.hero.levels[String(evolveAnim.fromLevel)];
+      if (fromLvl?.heroSprite) {
+        displayHero = {
+          heroName: fromLvl.heroName,
+          heroSprite: fromLvl.heroSprite,
+        };
+        displayLevel = evolveAnim.fromLevel;
+      }
+    }
 
     const body = `
       <div class="mm-hero mm-homeIntro" data-home-intro>
@@ -681,15 +689,16 @@ if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
         </div>
 
         <div class="mm-homeSwimWrap">
-<div class="mm-heroShimmer" style="--mm-sprite-mask: url('${displayHero.heroSprite}')">
-<img class="mm-homeSwim mm-homeHero ${battleLocked ? "is-locked" : ""}"
-  src="${displayHero.heroSprite}"
-  alt="${displayHero.heroName}"
-  ${heroLinkAttrs} />
+          <!-- ✅ Pokemon-style ground shadow -->
+          <div class="mm-groundShadow" aria-hidden="true"></div>
 
-</div>
-
-</div>
+          <div class="mm-heroShimmer" style="--mm-sprite-mask: url('${displayHero.heroSprite}')">
+            <img class="mm-homeSwim mm-homeHero ${battleLocked ? "is-locked" : ""}"
+              src="${displayHero.heroSprite}"
+              alt="${displayHero.heroName}"
+              ${heroLinkAttrs} />
+          </div>
+        </div>
       </div>
     `;
 
@@ -705,7 +714,6 @@ if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
         go("battle");
       });
     });
-    
 
     const intro = appEl.querySelector("[data-home-intro]");
     const bar = appEl.querySelector("[data-xp-bar]");
@@ -713,7 +721,6 @@ if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
     const xpText = appEl.querySelector("[data-xp-text]");
     const reward = appEl.querySelector("[data-xp-reward]");
     const rewardLabel = appEl.querySelector("[data-xp-reward-label]");
-
 
     const popXpReward = (delta) => {
       const d = Math.max(1, Number(delta || 1));
@@ -725,31 +732,31 @@ if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
       clearTimeout(popXpReward._t);
       popXpReward._t = setTimeout(() => reward.classList.remove("is-show"), 2400);
     };
-    
+
     // Always: Home intro animation (staggered)
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         intro?.classList.add("is-in");
-    
+
         // ✨ Start hero shimmer AFTER home intro finishes
         // Delay shimmer an extra 1s when returning from a win so the +1 Gem moment can finish
         const SHIMMER_BASE_DELAY = 1400;
         const SHIMMER_WIN_EXTRA_DELAY = 1000;
-    
+
         clearTimeout(renderHome._shimmerT);
         renderHome._shimmerT = setTimeout(() => {
           const shimmer = document.querySelector(".mm-heroShimmer");
           if (!shimmer) return;
-    
+
           // Level-up ceremony: keep shimmer OFF
           if (shouldAnimate && isLevelUpWrap) {
             shimmer.classList.remove("is-shimmering");
             return;
           }
-    
+
           shimmer.classList.add("is-shimmering");
         }, SHIMMER_BASE_DELAY + (shouldAnimate ? SHIMMER_WIN_EXTRA_DELAY : 0));
-    
+
         // Home XP behavior:
         // - Normal Home load: render at pct with NO fill animation.
         // - Return from win: animate from previous XP -> new XP.
@@ -758,38 +765,38 @@ if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
           if (fill) fill.style.width = `${pct}%`;
           return;
         }
-    
+
         // Animate after a small beat so it feels connected to "Claim Gem"
         setTimeout(() => {
           if (!bar || !fill) return;
-    
+
           // Enable transition for the animation run
           bar.classList.remove("is-static");
-    
+
           // ✅ START GREEN SWEEP (premium reward)
           bar.classList.add("is-rewarding");
           clearTimeout(renderHome._xpSweepT);
           renderHome._xpSweepT = setTimeout(() => {
             bar.classList.remove("is-rewarding");
           }, 1800);
-    
+
           // Reward burst ties to XP gain
           popXpReward(xpDelta);
-    
+
           if (isLevelUpWrap) {
             // 9/10 -> 10/10: fill to 100% then transition to Level Up screen
             if (xpText) xpText.textContent = `10 / 10`;
             fill.style.width = `100%`;
-    
+
             const onDone = async () => {
               // 1) Pause on full bar so it reads
               await sleep(EVOLVE_BEAT_MS);
-    
+
               // 2) Fade OUT home UI (everything except background)
               const introEl = appEl.querySelector("[data-home-intro]");
               introEl?.classList.add("is-evoFadeOut");
               await sleep(740);
-    
+
               // 3) Evolution flow (transparent overlay; content fades in)
               if (evolveAnim && Number(evolveAnim.toXp) === xp) {
                 await launchEvolutionFlow(evolveAnim, {
@@ -801,15 +808,15 @@ if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
                 });
                 return;
               }
-    
+
               // Fallback
               await go("home");
             };
-    
+
             fill.addEventListener("transitionend", onDone, { once: true });
             return;
           }
-    
+
           // Standard: animate to new pct
           fill.style.width = `${pct}%`;
         }, 340);
@@ -828,14 +835,18 @@ if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
 
     const body = `
       <div class="mm-battleStage" data-battle-stage>
+
         <div class="mm-spriteWrap hero" data-hero-wrap>
-  <img class="mm-spriteImg hero" data-hero-sprite src="${state.profile.heroSprite}" alt="${state.profile.heroName}">
-</div>
+          <!-- ✅ Pokemon-style ground shadow -->
+          <div class="mm-groundShadow" aria-hidden="true"></div>
+          <img class="mm-spriteImg hero" data-hero-sprite src="${state.profile.heroSprite}" alt="${state.profile.heroName}">
+        </div>
 
-<div class="mm-spriteWrap monster" data-monster-wrap>
-  <img class="mm-spriteImg monster" data-monster-sprite src="${state.monster.monsterSprite}" alt="${state.monster.monsterName}">
-</div>
-
+        <div class="mm-spriteWrap monster" data-monster-wrap>
+          <!-- ✅ Pokemon-style ground shadow -->
+          <div class="mm-groundShadow" aria-hidden="true"></div>
+          <img class="mm-spriteImg monster" data-monster-sprite src="${state.monster.monsterSprite}" alt="${state.monster.monsterName}">
+        </div>
 
         <div class="mm-stat mm-glass hero" data-hero-stat>
           <div class="mm-stat__name">${escapeHtml(state.profile.heroName)}</div>
@@ -854,20 +865,19 @@ if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
         <div class="mm-qCard" data-qcard>
           <div class="mm-qCard__pad">
             <div class="mm-row">
-                <div class="mm-question" data-qtext></div>
+              <div class="mm-question" data-qtext></div>
             </div>
-
 
             <div class="mm-answers" data-answers></div>
 
             <div class="mm-qActions">
-            <button class="button button--primary" data-act="submit">Submit</button>
+              <button class="button button--primary" data-act="submit">Submit</button>
             </div>
           </div>
         </div>
       </div>
 
-         <div class="mm-overlay" data-overlay>
+      <div class="mm-overlay" data-overlay>
         <div class="mm-endCard mm-card mm-card__pad" data-end-card>
           <h2 class="mm-endTitle" data-end-title></h2>
 
@@ -878,17 +888,13 @@ if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
           <button class="button button--primary" data-end-btn></button>
         </div>
       </div>
-
     `;
 
     appEl.innerHTML = shell({ bodyHtml: body });
 
-    const hero = appEl.querySelector("[data-hero-sprite]");     // inner img (attacks)
-    const mon  = appEl.querySelector("[data-monster-sprite]");  // inner img (attacks)
-    
-    const heroWrap = appEl.querySelector("[data-hero-wrap]");   // wrapper (base pose)
-    const monWrap  = appEl.querySelector("[data-monster-wrap]");// wrapper (base pose)
-    
+    const heroWrap = appEl.querySelector("[data-hero-wrap]"); // wrapper (base pose)
+    const monWrap = appEl.querySelector("[data-monster-wrap]"); // wrapper (base pose)
+
     const heroStat = appEl.querySelector("[data-hero-stat]");
     const monStat = appEl.querySelector("[data-mon-stat]");
     const qcard = appEl.querySelector("[data-qcard]");
@@ -901,30 +907,28 @@ if (evolveAnim && isLevelUpWrap && Number(evolveAnim.toXp) === xp) {
     (async () => {
       // ✅ Ensure initial styles paint BEFORE we toggle end-state classes
       await raf2();
-    
+
       // reset in case of re-entry
-      heroWrap.classList.remove("is-in","is-settle");
-      monWrap.classList.remove("is-in","is-settle");
-      
+      heroWrap.classList.remove("is-in", "is-settle");
+      monWrap.classList.remove("is-in", "is-settle");
+
       // 1) slide in to overshoot pose
       heroWrap.classList.add("is-in");
       monWrap.classList.add("is-in");
-      
+
       // 2) let the overshoot land, then settle back
       await battleSleep(180);
       heroWrap.classList.add("is-settle");
       monWrap.classList.add("is-settle");
-      
 
-// keep your existing pacing
-await battleSleep(260);
+      // keep your existing pacing
+      await battleSleep(260);
 
-heroStat.classList.add("is-in");
-monStat.classList.add("is-in");
-await battleSleep(QCARD_IN_DELAY_MS);
-qcard.classList.add("is-up");
-
-    })();    
+      heroStat.classList.add("is-in");
+      monStat.classList.add("is-in");
+      await battleSleep(QCARD_IN_DELAY_MS);
+      qcard.classList.add("is-up");
+    })();
   }
 
   function bindBattleUI() {
@@ -934,25 +938,19 @@ qcard.classList.add("is-up");
 
     let resolving = false;
 
-
     function renderAnswers() {
       const q = state.battle.currentQ;
       answersEl.innerHTML = q.answers
-        .map(
-          (n) =>
-            `<button class="mm-answer" data-ans="${n}" aria-pressed="false">${n}</button>`
-        )
+        .map((n) => `<button class="mm-answer" data-ans="${n}" aria-pressed="false">${n}</button>`)
         .join("");
 
       answersEl.querySelectorAll("[data-ans]").forEach((btn) => {
         btn.addEventListener("click", () => {
           if (resolving) return;
-          answersEl
-            .querySelectorAll(".mm-answer")
-            .forEach((b) => {
-              b.classList.remove("is-selected");
-              b.setAttribute("aria-pressed", "false");
-            });
+          answersEl.querySelectorAll(".mm-answer").forEach((b) => {
+            b.classList.remove("is-selected");
+            b.setAttribute("aria-pressed", "false");
+          });
           btn.classList.add("is-selected");
           btn.setAttribute("aria-pressed", "true");
           state.battle.selected = Number(btn.getAttribute("data-ans"));
@@ -963,96 +961,93 @@ qcard.classList.add("is-up");
     renderAnswers();
 
     submitBtn?.addEventListener("click", async () => {
-    if (resolving) return;
+      if (resolving) return;
 
-    const q = state.battle.currentQ;
-    if (state.battle.selected === null) {
-      toast("Pick an answer");
-      return;
-    }
+      const q = state.battle.currentQ;
+      if (state.battle.selected === null) {
+        toast("Pick an answer");
+        return;
+      }
 
-    resolving = true;
-    submitBtn.disabled = true;
+      resolving = true;
+      submitBtn.disabled = true;
 
-    // Evaluate
-    const answerTime = performance.now() - state.battle.qStartTs;
-    const correct = state.battle.selected === q.correct;
+      // Evaluate
+      const answerTime = performance.now() - state.battle.qStartTs;
+      const correct = state.battle.selected === q.correct;
 
-    maybeIncreaseDifficulty(answerTime, correct);
+      maybeIncreaseDifficulty(answerTime, correct);
 
-    // Lock answers + show feedback colors
-    const ansBtns = Array.from(answersEl.querySelectorAll("[data-ans]"));
-    ansBtns.forEach((b) => {
-      b.disabled = true;
-      const val = Number(b.getAttribute("data-ans"));
-      if (val === q.correct) b.classList.add("is-correct");
+      // Lock answers + show feedback colors
+      const ansBtns = Array.from(answersEl.querySelectorAll("[data-ans]"));
+      ansBtns.forEach((b) => {
+        b.disabled = true;
+        const val = Number(b.getAttribute("data-ans"));
+        if (val === q.correct) b.classList.add("is-correct");
+      });
+
+      const selectedBtn = ansBtns.find(
+        (b) => Number(b.getAttribute("data-ans")) === state.battle.selected
+      );
+      if (selectedBtn && !correct) selectedBtn.classList.add("is-wrong");
+
+      // Submit button feedback
+      submitBtn.classList.remove("is-correct", "is-wrong");
+      submitBtn.classList.add(correct ? "is-correct" : "is-wrong");
+      submitBtn.textContent = correct ? "Correct" : "Incorrect";
+
+      await battlePause();
+      qcard.classList.remove("is-up");
+      await battleSleep(260); // gives the fade a moment to read
+      await playAttackFx({ who: correct ? "hero" : "monster" });
+
+      // Small beat after impact so the hit “lands”
+      await battleSleep(0);
+
+      // Apply damage AFTER the attack so the HP drop reads clearly
+      const dmg = correct
+        ? Number(state.profile.attack || 0)
+        : Number(state.monster.attack || 0);
+
+      if (dmg > 0) {
+        // 🫁 small beat so impact lands before HP moves
+        await battleSleep(PRE_HP_DROP_BEAT_MS);
+
+        if (correct) state.monster.damage += dmg;
+        else state.profile.damage += dmg;
+
+        updateBattleUI();
+
+        // Let HP meter animate down
+        await battleSleep(420);
+
+        if (didWin()) {
+          endBattle({ won: true });
+          return;
+        }
+        if (didLose()) {
+          endBattle({ won: false });
+          return;
+        }
+
+        // Next question
+        nextQuestion();
+      } else {
+        // No damage → repeat the same question
+        state.battle.qStartTs = performance.now();
+      }
+
+      // Reset UI for (next or repeated) question
+      updateBattleUI();
+      renderAnswers();
+
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("is-correct", "is-wrong");
+      submitBtn.textContent = "Submit";
+      resolving = false;
+      qcard.classList.add("is-up");
     });
-
-    const selectedBtn = ansBtns.find(
-      (b) => Number(b.getAttribute("data-ans")) === state.battle.selected
-    );
-    if (selectedBtn && !correct) selectedBtn.classList.add("is-wrong");
-
-    // Submit button feedback
-    submitBtn.classList.remove("is-correct", "is-wrong");
-    submitBtn.classList.add(correct ? "is-correct" : "is-wrong");
-    submitBtn.textContent = correct ? "Correct" : "Incorrect";
-
-    await battlePause();
-    qcard.classList.remove("is-up");
-    await battleSleep(260); // gives the fade a moment to read
-    await playAttackFx({ who: correct ? "hero" : "monster" });
-    
-    
-    // Small beat after impact so the hit “lands”
-    await battleSleep(0);
-    
-
-// Apply damage AFTER the attack so the HP drop reads clearly
-const dmg = correct
-  ? Number(state.profile.attack || 0)
-  : Number(state.monster.attack || 0);
-
-if (dmg > 0) {
-  // 🫁 small beat so impact lands before HP moves
-  await battleSleep(PRE_HP_DROP_BEAT_MS);
-
-  if (correct) state.monster.damage += dmg;
-  else state.profile.damage += dmg;
-
-  updateBattleUI();
-
-  // Let HP meter animate down
-  await battleSleep(420);
-
-
-      if (didWin()) {
-        endBattle({ won: true });
-        return;
-      }
-      if (didLose()) {
-        endBattle({ won: false });
-        return;
-      }
-
-      // Next question
-      nextQuestion();
-    } else {
-      // No damage → repeat the same question
-      state.battle.qStartTs = performance.now();
-    }
-
-    // Reset UI for (next or repeated) question
-    updateBattleUI();
-    renderAnswers();
-
-    submitBtn.disabled = false;
-    submitBtn.classList.remove("is-correct", "is-wrong");
-    submitBtn.textContent = "Submit";
-    resolving = false;
-    qcard.classList.add("is-up");
-  });
-}
+  }
 
   function updateBattleUI() {
     const heroHpEl = appEl.querySelector("[data-hero-hp]");
@@ -1087,34 +1082,36 @@ if (dmg > 0) {
   async function endBattle({ won }) {
     // 🫁 let the final hit + HP drain fully land
     await battleSleep(END_BATTLE_BEAT_MS);
-  
+
     if (won) {
       const fromXp = Number(state.profile.xp ?? 0);
       const toXp = fromXp + 1;
-    
+
       // store a one-time "animate XP" instruction for Home
       setXpAnim(fromXp, toXp);
-    
+
       // Detect level up (10,20,30...) AFTER this win
       const fromLevel = computeLevelFromXP(fromXp);
-      const toLevel   = computeLevelFromXP(toXp);
-    
+      const toLevel = computeLevelFromXP(toXp);
+
       if (toLevel > fromLevel) {
         // snapshot sprites for the evolution overlay
         const fromLvl = state.progression.hero.levels[String(fromLevel)];
-        const toLvl   = state.progression.hero.levels[String(toLevel)];
-    
+        const toLvl = state.progression.hero.levels[String(toLevel)];
+
         setEvolveAnim({
-          fromXp, toXp,
-          fromLevel, toLevel,
+          fromXp,
+          toXp,
+          fromLevel,
+          toLevel,
           fromSprite: fromLvl?.heroSprite,
           toSprite: toLvl?.heroSprite,
         });
       }
-    
+
       state.profile.xp = toXp;
       saveLocal();
-    
+
       showEndCard({
         title: "Great Job!",
         showGem: true,
@@ -1123,16 +1120,11 @@ if (dmg > 0) {
       });
       return;
     }
-    
-  
+
     state.profile.xp = Number(state.profile.xp ?? 0) - 1;
-    state.profile.difficulty = clamp(
-      (state.profile.difficulty ?? 1) - 1,
-      1,
-      10
-    );
+    state.profile.difficulty = clamp((state.profile.difficulty ?? 1) - 1, 1, 10);
     saveLocal();
-  
+
     showEndCard({
       title: "Sorry!",
       showGem: false,
@@ -1140,16 +1132,10 @@ if (dmg > 0) {
       onBtn: () => go("battle"),
     });
   }
-  
 
   // ---------- Router ----------
   async function go(screen, opts = {}) {
-    document.body.classList.remove(
-      "is-landing",
-      "is-home",
-      "is-battle",
-      "is-loader"
-    );
+    document.body.classList.remove("is-landing", "is-home", "is-battle", "is-loader");
 
     state.screen = screen;
     syncBubblesForScreen(screen);
