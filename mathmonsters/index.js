@@ -505,8 +505,6 @@
       <section class="landing-wrap" aria-label="Math Monsters Landing">
         <div class="landing-brand">
           <img class="landing-logo" src="images/brand/logo.png" alt="Math Monsters" />
-          <h1 class="landing-title">Math Monsters</h1>
-          <p class="landing-tagline">Flip homework battles into monster battles. Make every lesson feel like play.</p>
         </div>
 
         <div class="landing-actions">
