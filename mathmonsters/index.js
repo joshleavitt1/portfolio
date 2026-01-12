@@ -517,8 +517,17 @@
           <div class="mm-attackMini__count" data-mini-count>3</div>
           <div class="mm-attackMini__sub" data-mini-sub>Tap the enemy to power up your attack</div>
 
+          <div class="mm-attackMini__meterRow">
+            <div class="mm-attackMini__meterLabel">Power</div>
+            <div class="mm-attackMini__meterBonus" data-mini-bonus>+0</div>
+          </div>
+
           <div class="mm-attackMini__meter" aria-hidden="true">
-            <div class="mm-attackMini__meterFill" data-mini-fill></div>
+            <div class="mm-attackMini__meterFill" data-mini-power></div>
+          </div>
+
+          <div class="mm-attackMini__timer" aria-hidden="true">
+            <div class="mm-attackMini__timerFill" data-mini-timer></div>
           </div>
 
           <div class="mm-attackMini__hits" data-mini-hits>Hits: 0</div>
@@ -531,10 +540,12 @@
     const titleEl = overlay.querySelector("[data-mini-title]");
     const countEl = overlay.querySelector("[data-mini-count]");
     const subEl = overlay.querySelector("[data-mini-sub]");
-    const fillEl = overlay.querySelector("[data-mini-fill]");
+    const powerEl = overlay.querySelector("[data-mini-power]");
+    const timerEl = overlay.querySelector("[data-mini-timer]");
+    const bonusEl = overlay.querySelector("[data-mini-bonus]");
     const hitsEl = overlay.querySelector("[data-mini-hits]");
 
-    // Create a tap-target ring positioned over the monster sprite
+    const maxTaps = Math.max(1, Math.ceil(maxBonus / Math.max(0.0001, bonusPerTap)));// Create a tap-target ring positioned over the monster sprite
     const stageRect = stage.getBoundingClientRect();
     const monRect = monImg.getBoundingClientRect();
 
@@ -563,7 +574,9 @@
     titleEl.textContent = "Countdown to attack";
     subEl.textContent = "Get ready…";
     hitsEl.textContent = "Hits: 0";
-    if (fillEl) fillEl.style.width = "0%";
+    if (powerEl) powerEl.style.width = "0%";
+    if (timerEl) timerEl.style.width = "0%";
+    if (bonusEl) bonusEl.textContent = "+0";
 
     for (let n = countdownFrom; n >= 1; n--) {
       countEl.textContent = String(n);
@@ -580,28 +593,53 @@
     let taps = 0;
     let live = true;
 
-    const spawnSpark = (clientX, clientY) => {
+    const spawnBurst = (clientX, clientY) => {
       const sr = stage.getBoundingClientRect();
-      const s = document.createElement("div");
-      s.className = "mm-miniSpark";
-      s.style.left = `${clientX - sr.left}px`;
-      s.style.top = `${clientY - sr.top}px`;
-      stage.appendChild(s);
-      setTimeout(() => s.remove(), 420);
+      const b = document.createElement("div");
+      b.className = "mm-miniBurst";
+      b.style.left = `${clientX - sr.left}px`;
+      b.style.top = `${clientY - sr.top}px`;
+
+      // 6 particle dots
+      for (let i = 0; i < 6; i++) {
+        const p = document.createElement("span");
+        p.className = "mm-miniBurst__p";
+        const a = (Math.PI * 2 * i) / 6 + (Math.random() * 0.35);
+        const d = 18 + Math.random() * 18;
+        const s = 3 + Math.random() * 3;
+        p.style.setProperty("--a", `${a}rad`);
+        p.style.setProperty("--d", `${d}px`);
+        p.style.setProperty("--s", `${s}px`);
+        b.appendChild(p);
+      }
+
+      stage.appendChild(b);
+      setTimeout(() => b.remove(), 560);
     };
 
     const onTap = (e) => {
       if (!live) return;
       e.preventDefault();
+
       taps += 1;
+
+      // Power meter is based on taps (capped by maxTaps)
+      const cappedTaps = Math.min(taps, maxTaps);
+      const powerPct = (cappedTaps / maxTaps) * 100;
+      if (powerEl) powerEl.style.width = `${powerPct}%`;
+
+      const bonusNow = Math.min(cappedTaps * bonusPerTap, maxBonus);
+      if (bonusEl) bonusEl.textContent = `+${Math.max(0, Math.round(bonusNow))}`;
+
       if (hitsEl) hitsEl.textContent = `Hits: ${taps}`;
-      // tiny feedback
-      monImg.classList.remove("mm-mini-hit");
+
+      // punchy feedback
+      monImg.classList.remove("mm-mini-hit", "mm-mini-flash");
       monImg.offsetWidth; // restart-safe
-      monImg.classList.add("mm-mini-hit");
+      monImg.classList.add("mm-mini-hit", "mm-mini-flash");
 
       const pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
-      spawnSpark(pt.clientX, pt.clientY);
+      spawnBurst(pt.clientX, pt.clientY);
     };
 
     target.addEventListener("pointerdown", onTap, { passive: false });
@@ -612,7 +650,7 @@
       if (!live) return;
       const elapsed = performance.now() - t0;
       const pct = clamp((elapsed / windowMs) * 100, 0, 100);
-      if (fillEl) fillEl.style.width = `${pct}%`;
+      if (timerEl) timerEl.style.width = `${pct}%`;
       if (elapsed >= windowMs) {
         live = false;
         return;
@@ -629,8 +667,9 @@
 
     // Result moment
     overlay.classList.remove("is-live");
-    titleEl.textContent = "Nice!";
-    subEl.textContent = "Attack powered up";
+    const bonusNow = Math.min(Math.min(taps, maxTaps) * bonusPerTap, maxBonus);
+    titleEl.textContent = "Power Up!";
+    subEl.textContent = `Bonus +${Math.max(0, Math.round(bonusNow))} dmg`;
     countEl.textContent = "";
     await battleSleep(260);
 
