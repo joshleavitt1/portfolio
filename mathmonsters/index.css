@@ -973,14 +973,26 @@ body.is-battle .mm-battleStage{
   transform: translate3d(160px, 0, -40px) scale(.95);
 }
 
+/* ✅ Make wrappers visible once battle intro runs */
+.mm-spriteWrap.hero.is-in{
+  opacity: 1;
+  transform: translate3d(16px, -2px, 0) scale(1.02);
+}
+
+.mm-spriteWrap.monster.is-in{
+  opacity: 1;
+  transform: translate3d(-16px, -2px, 0) scale(1.02);
+}
+
+
 .mm-stat.hero{
-  left: calc(50% - (var(--battle-gap) / 2));
+  left: calc(65% - (var(--battle-gap) / 2));
   bottom: calc(10px + var(--sprite-size) * .42);
   margin-left: -80px; /* 160px wide pill -> centered */
 }
 
 .mm-stat.monster{
-  left: calc(50% + (var(--battle-gap) / 2));
+  left: calc(35% + (var(--battle-gap) / 2));
   top: calc(10px + var(--sprite-size) * .42);
   margin-left: -80px; /* 160px wide pill -> centered */
 }
