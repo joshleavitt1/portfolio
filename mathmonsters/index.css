@@ -628,7 +628,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   bottom: 8px;
 
   width: 220px;   /* ⬅️ was 160px */
-  height: 34px;   /* ⬅️ was 28px */
+  height: 40px;   /* ⬅️ was 28px */
 
   transform: translateX(-50%);
 
@@ -1265,12 +1265,12 @@ body.is-home .mm-screen__grow{
 
 /* Loader logo should NOT be sprite-sized */
 .mm-loaderLogo{
-  width: 160px !important;
-  height: 160px !important;
-  min-width: 160px !important;
-  min-height: 160px !important;
-  max-width: 160px !important;
-  max-height: 160px !important;
+  width: 200px !important;
+  height: 200px !important;
+  min-width: 200px !important;
+  min-height: 200px !important;
+  max-width: 200px !important;
+  max-height: 200px !important;
   object-fit: contain;
   display: block;
 }
@@ -1341,8 +1341,8 @@ body.is-home .mm-screen__grow{
 }
 
 .landing-logo{
-  width: 160px;
-  height: 160px;
+  width: 200px;
+  height: 200px;
   object-fit: contain;
 }
 
