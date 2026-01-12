@@ -1,12 +1,19 @@
 {
+  "attackMini": {
+  "countdownFrom": 3,
+  "countdownStepMs": 320,
+  "windowMs": 2200,
+  "bonusPerTap": 1,
+  "maxBonus": 6
+},
   "hero": {
     "levels": {
       "1": {
         "heroName": "Shellfin",
         "heroSprite": "images/hero/level1/hero_sprite_1.png",
         "attackSprite": "images/hero/level1/attack_sprite_1.png",
-        "attack": 1,
-        "health": 1,
+        "attack": 2,
+        "health": 12,
         "damage": 0
       },
       "2": {

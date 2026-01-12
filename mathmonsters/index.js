@@ -485,6 +485,161 @@
     target.classList.remove("mm-hit-shake");
     fx.remove();
   }
+  // ---------- Damage Mini Game (tap-to-attack) ----------
+  // Runs only on correct answers. Returns BONUS damage (integer >= 0).
+  async function runTapAttackMiniGame() {
+    const stage = document.querySelector("[data-battle-stage]");
+    if (!stage) return 0;
+
+    const monImg = stage.querySelector("[data-monster-sprite]");
+    if (!monImg) return 0;
+
+    const cfg = (state.progression && state.progression.attackMini) ? state.progression.attackMini : {};
+    const countdownFrom = Number.isFinite(Number(cfg.countdownFrom)) ? Number(cfg.countdownFrom) : 3;
+    const countdownStepMs = Number.isFinite(Number(cfg.countdownStepMs)) ? Number(cfg.countdownStepMs) : 320;
+    const windowMs = Number.isFinite(Number(cfg.windowMs)) ? Number(cfg.windowMs) : 2200;
+    const bonusPerTap = Number.isFinite(Number(cfg.bonusPerTap)) ? Number(cfg.bonusPerTap) : 1;
+    const maxBonus = Number.isFinite(Number(cfg.maxBonus)) ? Number(cfg.maxBonus) : 6;
+
+    // Reduced-motion: skip mini game entirely
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return 0;
+    }
+
+    // Build overlay
+    const overlay = document.createElement("div");
+    overlay.className = "mm-attackMini";
+
+    overlay.innerHTML = `
+      <div class="mm-attackMini__wrap" role="dialog" aria-label="Attack mini game">
+        <div class="mm-attackMini__card mm-card mm-card__pad">
+          <div class="mm-attackMini__title" data-mini-title>Get Ready</div>
+          <div class="mm-attackMini__count" data-mini-count>3</div>
+          <div class="mm-attackMini__sub" data-mini-sub>Tap the enemy to power up your attack</div>
+
+          <div class="mm-attackMini__meter" aria-hidden="true">
+            <div class="mm-attackMini__meterFill" data-mini-fill></div>
+          </div>
+
+          <div class="mm-attackMini__hits" data-mini-hits>Hits: 0</div>
+        </div>
+      </div>
+    `;
+
+    stage.appendChild(overlay);
+
+    const titleEl = overlay.querySelector("[data-mini-title]");
+    const countEl = overlay.querySelector("[data-mini-count]");
+    const subEl = overlay.querySelector("[data-mini-sub]");
+    const fillEl = overlay.querySelector("[data-mini-fill]");
+    const hitsEl = overlay.querySelector("[data-mini-hits]");
+
+    // Create a tap-target ring positioned over the monster sprite
+    const stageRect = stage.getBoundingClientRect();
+    const monRect = monImg.getBoundingClientRect();
+
+    const target = document.createElement("div");
+    target.className = "mm-attackMini__target";
+    target.style.left = `${monRect.left - stageRect.left}px`;
+    target.style.top = `${monRect.top - stageRect.top}px`;
+    target.style.width = `${monRect.width}px`;
+    target.style.height = `${monRect.height}px`;
+    stage.appendChild(target);
+
+    // Lock page scroll while the mini game is up
+    const prevOverscroll = document.body.style.overscrollBehavior;
+    const prevTouchAction = document.body.style.touchAction;
+    document.body.style.overscrollBehavior = "none";
+    document.body.style.touchAction = "none";
+
+    const cleanup = () => {
+      target.remove();
+      overlay.remove();
+      document.body.style.overscrollBehavior = prevOverscroll;
+      document.body.style.touchAction = prevTouchAction;
+    };
+
+    // Countdown
+    titleEl.textContent = "Countdown to attack";
+    subEl.textContent = "Get ready…";
+    hitsEl.textContent = "Hits: 0";
+    if (fillEl) fillEl.style.width = "0%";
+
+    for (let n = countdownFrom; n >= 1; n--) {
+      countEl.textContent = String(n);
+      await battleSleep(countdownStepMs);
+    }
+
+    // Tap window
+    titleEl.textContent = "ATTACK!";
+    countEl.textContent = "";
+    subEl.textContent = "Tap the enemy as fast as you can!";
+    overlay.classList.add("is-live");
+    target.classList.add("is-live");
+
+    let taps = 0;
+    let live = true;
+
+    const spawnSpark = (clientX, clientY) => {
+      const sr = stage.getBoundingClientRect();
+      const s = document.createElement("div");
+      s.className = "mm-miniSpark";
+      s.style.left = `${clientX - sr.left}px`;
+      s.style.top = `${clientY - sr.top}px`;
+      stage.appendChild(s);
+      setTimeout(() => s.remove(), 420);
+    };
+
+    const onTap = (e) => {
+      if (!live) return;
+      e.preventDefault();
+      taps += 1;
+      if (hitsEl) hitsEl.textContent = `Hits: ${taps}`;
+      // tiny feedback
+      monImg.classList.remove("mm-mini-hit");
+      monImg.offsetWidth; // restart-safe
+      monImg.classList.add("mm-mini-hit");
+
+      const pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
+      spawnSpark(pt.clientX, pt.clientY);
+    };
+
+    target.addEventListener("pointerdown", onTap, { passive: false });
+    target.addEventListener("touchstart", onTap, { passive: false });
+
+    const t0 = performance.now();
+    const tick = () => {
+      if (!live) return;
+      const elapsed = performance.now() - t0;
+      const pct = clamp((elapsed / windowMs) * 100, 0, 100);
+      if (fillEl) fillEl.style.width = `${pct}%`;
+      if (elapsed >= windowMs) {
+        live = false;
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+
+    await sleep(windowMs);
+
+    live = false;
+    target.removeEventListener("pointerdown", onTap);
+    target.removeEventListener("touchstart", onTap);
+
+    // Result moment
+    overlay.classList.remove("is-live");
+    titleEl.textContent = "Nice!";
+    subEl.textContent = "Attack powered up";
+    countEl.textContent = "";
+    await battleSleep(260);
+
+    cleanup();
+
+    const bonus = Math.min(taps * bonusPerTap, maxBonus);
+    return Math.max(0, Math.round(bonus));
+  }
+
 
   // ---------- Screens ----------
   function shell({ bodyHtml, footerHtml }) {
@@ -1013,15 +1168,23 @@
       await battlePause();
       qcard.classList.remove("is-up");
       await battleSleep(260); // gives the fade a moment to read
+
+      // ✅ If correct, run a quick tap-to-attack mini game to earn BONUS damage
+      let dmg = correct
+        ? Number(state.profile.attack || 0)
+        : Number(state.monster.attack || 0);
+
+      if (correct) {
+        const bonus = await runTapAttackMiniGame();
+        dmg += Number(bonus || 0);
+      }
+
       await playAttackFx({ who: correct ? "hero" : "monster" });
 
       // Small beat after impact so the hit “lands”
       await battleSleep(0);
 
       // Apply damage AFTER the attack so the HP drop reads clearly
-      const dmg = correct
-        ? Number(state.profile.attack || 0)
-        : Number(state.monster.attack || 0);
 
       if (dmg > 0) {
         // 🫁 small beat so impact lands before HP moves
