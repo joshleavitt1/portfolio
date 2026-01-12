@@ -72,12 +72,23 @@ html, body{
   width: 100%;
   height: 100%;
   margin: 0;
+  background: #0026ac; /* match your app bg so any exposed area blends */
   overflow: hidden;        /* no scrolling */
   overscroll-behavior: none; /* stops bounce on supported browsers */
 }
 
+@supports (height: 100dvh){
+  body.mm{
+    height: 100dvh;   /* dynamic viewport height */
+  }
+  .mm-bg{
+    height: 100dvh;
+  }
+}
+
 /* iOS Safari: prevent “page pan” / rubber-band */
 body.mm{
+  padding-bottom: env(safe-area-inset-bottom);
   position: fixed;
   inset: 0;
   width: 100vw;
