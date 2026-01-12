@@ -1101,20 +1101,25 @@ body.is-home .mm-screen__grow{
 }
 
 .mm-qCard{
-  position:absolute;
-  padding: 24px;
-  border-radius: var(--r-md);
+  position: absolute;
 
   left: 50%;
   right: auto;
-  bottom: 12px;
 
-  width: min(400px, calc(100% - 24px));
-  max-width: 400px;
+  /* ✅ same logic as end card overlay padding */
+  bottom: calc(var(--pad) + var(--safe-bottom));
+
+  /* ✅ match end-card “gutters”: 16px left + 16px right */
+  width: min(420px, calc(100% - (var(--pad) * 2)));
+  max-width: 420px;
 
   background: rgba(255,255,255);
   color: var(--ink);
+  border-radius: 20px;
   box-shadow: var(--shadow);
+
+  /* ✅ IMPORTANT: let the inner pad control padding like end card does */
+  padding: 0;
 
   /* keep your motion, but include X centering */
   transform: translate3d(-50%, 18px, 0);
@@ -1123,6 +1128,10 @@ body.is-home .mm-screen__grow{
   transition:
     transform calc(var(--battle-anim) * var(--battle-scale)) var(--butter),
     opacity   calc((var(--battle-anim) * .85) * var(--battle-scale)) var(--butter);
+}
+
+.mm-qCard__pad{
+  padding: var(--pad); /* ✅ 16px everywhere, same token the overlay uses */
 }
 
 .mm-qCard.is-up{
