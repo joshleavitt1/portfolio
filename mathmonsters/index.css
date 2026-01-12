@@ -63,6 +63,43 @@
 
 }
 
+/* ================================
+   MOBILE: LOCK VIEWPORT (no drag/scroll)
+================================ */
+
+/* Lock page to the device viewport */
+html, body{
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;        /* no scrolling */
+  overscroll-behavior: none; /* stops bounce on supported browsers */
+}
+
+/* iOS Safari: prevent “page pan” / rubber-band */
+body.mm{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  touch-action: none;      /* stops panning/zoom gestures on body */
+}
+
+/* Ensure your background truly fills and stays pinned */
+.mm-bg{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Allow tapping inside the app even though body is locked */
+#app, #app *{
+  touch-action: manipulation;
+}
+
+
 *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
 html,body{ height:100%; }
 
