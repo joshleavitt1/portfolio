@@ -924,6 +924,11 @@ body.is-home .mm-screen__grow{
   position: relative;
   flex: 1 1 auto;
   overflow:visible;
+
+  /* Sprite arena spacing: keep fighters composed on desktop without media queries */
+  --sprite-size: 300px; /* sprites are hard-locked to 300x300 */
+  --sprite-half: calc(var(--sprite-size) / 2);
+  --battle-gap: clamp(180px, 32vw, 320px); /* tighter on desktop */
 }
 
 /* Battle should ignore .mm-app padding and pin to viewport like the end-card overlay */
@@ -952,9 +957,8 @@ body.is-battle .mm-battleStage{
 
 /* Base positions on WRAPPER — responsive edge inset (no media queries) */
 .mm-spriteWrap.hero{
-  /* on small screens -> -80px (same as now)
-     on wide screens -> grows up to +96px inset */
-  left: clamp(-80px, calc(50vw - 520px), 96px);
+  /* Center-anchored arena spacing: keeps sprites together on desktop */
+  left: calc(50% - (var(--battle-gap) / 2) - var(--sprite-half));
   bottom: 10px;
 
   /* offscreen-ish idle pose */
@@ -962,20 +966,23 @@ body.is-battle .mm-battleStage{
 }
 
 .mm-spriteWrap.monster{
-  right: clamp(-80px, calc(50vw - 520px), 96px);
+  /* Center-anchored arena spacing */
+  left: calc(50% + (var(--battle-gap) / 2) - var(--sprite-half));
   top: 10px;
 
   transform: translate3d(160px, 0, -40px) scale(.95);
 }
 
 .mm-stat.hero{
-  left: clamp(24px, calc(50vw - 520px + 200px), 260px);
-  bottom: calc(10px + var(--hero-size) * .42);
+  left: calc(50% - (var(--battle-gap) / 2));
+  bottom: calc(10px + var(--sprite-size) * .42);
+  margin-left: -80px; /* 160px wide pill -> centered */
 }
 
 .mm-stat.monster{
-  right: clamp(24px, calc(50vw - 520px + 200px), 260px);
-  top: calc(10px + var(--monster-size) * .42);
+  left: calc(50% + (var(--battle-gap) / 2));
+  top: calc(10px + var(--sprite-size) * .42);
+  margin-left: -80px; /* 160px wide pill -> centered */
 }
 
 
@@ -1021,8 +1028,6 @@ body.is-battle .mm-battleStage{
 
 
 
-.mm-stat.hero{ left: 200px; bottom: calc(10px + var(--hero-size) * .42); }
-.mm-stat.monster{ right: 200px; top: calc(10px + var(--monster-size) * .42); }
 
 .mm-stat__name{
   font-weight: 500;

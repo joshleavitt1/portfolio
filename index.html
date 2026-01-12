@@ -26,33 +26,30 @@
       }
 
       .page {
-        min-height: 100svh;
+        min-height: 100vh;
         display: flex;
-        align-items: center;
-        justify-content: center;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
         position: relative;
         z-index: 1;
-        box-sizing: border-box;
       }
 
       .hero-shell {
         position: relative;
-        width: min(1100px, 100%);
+        width: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: clamp(24px, 2.5vw, 48px);
-        box-sizing: border-box;
       }
 
       .hero-backdrop {
         position: absolute;
-        width: clamp(480px, 80vw, 900px);
-        height: clamp(480px, 80vw, 900px);
+        width: 700px;
+        height: 700px;
         left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
+        top: 20px;
+        transform: translateX(-50%);
         border-radius: 50%;
         pointer-events: none;
         z-index: 0;
@@ -91,7 +88,7 @@
         align-self: center;
         position: relative;
         z-index: 1;
-        margin: 0;
+        margin-top: 72px;
       }
 
       .immersive-reveal {
@@ -141,10 +138,9 @@
         align-items: center;
         justify-content: center;
         width: 100%;
-        max-width: 1000px;
+        max-width: 1100px;
         margin: 0 auto;
-        padding: clamp(12px, 4vw, 32px) clamp(32px, 8vw, 80px)
-          clamp(64px, 10vw, 80px);
+        padding: 40px 120px 80px 120px;
         box-sizing: border-box;
         text-align: center;
         position: relative;
@@ -160,6 +156,51 @@
         max-width: 600px;
         margin-left: auto;
         margin-right: auto;
+      }
+
+      .logo-carousel {
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto 80px;
+        padding: 24px 0;
+        background: transparent;
+        border-radius: 4px;
+      }
+
+      .logo-track {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 40px;
+        align-items: center;
+        justify-items: center;
+        width: 100%;
+      }
+
+      .logo-item {
+        height: 64px;
+        display: contents;
+      }
+
+      .logo-item[aria-hidden='true'] {
+        display: none;
+      }
+
+      .logo-item img {
+        display: block;
+      }
+
+      .logo-item img.no-filter {
+        filter: none;
+      }
+
+      @keyframes logo-marquee {
+        0% {
+          transform: translateX(0);
+        }
+
+        100% {
+          transform: translateX(-50%);
+        }
       }
 
         h1 {
@@ -228,8 +269,82 @@
         text-decoration: none;
       }
 
+      .case-study {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin: 0 auto 120px;
+        padding: 0 24px;
+        box-sizing: border-box;
+        text-align: center;
+      }
+
+      .case-study img {
+        width: 100%;
+        max-width: 960px;
+        border-radius: 12px;
+        object-fit: cover;
+        box-shadow: 0 0 100px rgba(0, 0, 0, 0.05);
+      }
+
+      .case-study h2 {
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 40px;
+        line-height: 1.2;
+        color: #0f172a;
+        margin: 24px 0 0;
+      }
+
+      .case-study p {
+        max-width: 800px;
+        margin: 0;
+      }
+
+      .case-metrics {
+        display: flex;
+        gap: 24px;
+        width: 100%;
+        max-width: 800px;
+        margin: 8px auto 0;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .case-metric-card {
+        flex: 1 1 280px;
+        background: #fff;
+        border: 0px;
+        border-radius: 12px;
+        padding: 20px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 0 100px rgba(0, 0, 0, 0.05);
+      }
+
+      .case-metric-card h2 {
+        margin: 0;
+        font-size: 32px;
+      }
+
+      .case-metric-card p {
+        margin: 0;
+        color: #737373;
+      }
+
       @media (max-width: 900px) {
+        .page {
+          align-items: center;
+        }
+
         .site-header {
+          margin: 48px 16px 0;
           width: auto;
           max-width: calc(100% - 32px);
           justify-content: center;
@@ -238,11 +353,9 @@
         .hero {
           flex-direction: column;
           align-items: center;
-          padding: 40px 16px 56px;
+          padding: 48px 32px;
           text-align: center;
           min-height: auto;
-          max-width: 600px;
-          gap: 24px;
         }
 
         .hero-content {
@@ -250,13 +363,14 @@
           text-align: center;
         }
 
-        .hero p {
-          display: none;
-        }
-
         h1,
         p {
           text-align: center;
+        }
+
+        /* Hide carousel on mobile */
+        .logo-carousel {
+          display: none;
         }
 
         h1 {
@@ -265,6 +379,47 @@
           -webkit-background-clip: initial;
           -webkit-text-fill-color: #0f172a;
           color: #0f172a;
+        }
+
+        .case-study h2 {
+          font-size: 32px;
+          background: none;
+          -webkit-background-clip: initial;
+          -webkit-text-fill-color: #0f172a;
+          color: #0f172a;
+        }
+
+        .logo-item {
+          min-width: 160px;
+        }
+
+        .logo-track {
+          display: flex;
+          align-items: center;
+          gap: 64px;
+          width: max-content;
+          animation: logo-marquee 22s linear infinite;
+          justify-content: center;
+        }
+
+        .logo-track:hover {
+          animation-play-state: paused;
+        }
+
+        .logo-item {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 64px;
+        }
+
+        .logo-item[aria-hidden='true'] {
+          display: contents;
+        }
+
+        .logo-item img {
+          display: block;
+          margin: 0 auto;
         }
 
       }
@@ -277,6 +432,10 @@
           transform: none;
           filter: none;
           opacity: 1;
+        }
+
+        .logo-track {
+          animation: none !important;
         }
       }
     </style>
@@ -295,30 +454,128 @@
         <div class="hero">
           <div class="hero-content immersive-reveal" data-delay="200ms">
             <h1>
-              UX leader who drives clarity, craft, and impact across the
+              Design leader who drives clarity, craft, and impact across the
               <span class="financial-sector">financial sector</span>
             </h1>
             <p>
-              10+ years leading UX teams and creating experiences that empower clients and deliver measurable results.
+              10+ years leading design teams and creating experiences that empower clients and deliver measurable results.
             </p>
           </div>
           <a
             class="resume-button immersive-reveal"
-            href="images/josh_leavitt_casestudy.pdf"
+            href="images/josh_leavitt_resume.pdf"
             target="_blank"
             rel="noopener noreferrer"
             data-delay="400ms"
           >
-            Download Case Study
+            Download Resume
           </a>
         </div>
       </div>
+      <section class="logo-carousel immersive-reveal" aria-label="Companies I've worked with" data-delay="600ms">
+        <div class="logo-track">
+          <div class="logo-item">
+            <div class="logo-item">
+              <img src="images/logos/pimco.svg" alt="PIMCO logo" width="72px" height="13px" />
+            </div>
+            <img src="images/logos/aig.svg" alt="AIG logo" width="50px" height="27px" />
+          </div>
+          <div class="logo-item">
+            <img src="images/logos/amex.svg" alt="American Express logo" width="36px" height="36px" class="no-filter" />
+          </div>
+          <div class="logo-item">
+            <img src="images/logos/blackrock.svg" alt="BlackRock logo" width="90px" height="13px" />
+          </div>
+          <div class="logo-item">
+            <img src="images/logos/citizens.svg" alt="Citizens logo" width="93px" height="15px" />
+          </div>
+          <div class="logo-item" aria-hidden="true">
+            <img src="images/logos/pimco.svg" alt="" width="72px" height="13px" />
+          </div>
+          <div class="logo-item" aria-hidden="true">
+            <img src="images/logos/aig.svg" alt="" width="50px" height="27px" />
+          </div>
+          <div class="logo-item" aria-hidden="true">
+            <img src="images/logos/amex.svg" alt="" width="36px" height="36px" class="no-filter" />
+          </div>
+          <div class="logo-item" aria-hidden="true">
+            <img src="images/logos/blackrock.svg" alt="" width="90px" height="13px" />
+          </div>
+          <div class="logo-item" aria-hidden="true">
+            <img src="images/logos/citizens.svg" alt="" width="93px" height="15px" />
+          </div>
+        </div>
+      </section>
+
+    <section class="case-study" aria-labelledby="case-study-1-title">
+      <div>
+        <img src="images/case/Case_1.jpg" alt="Screenshot of Pro Analytics dashboard" />
+      </div>
+      <h2 id="case-study-1-title">Analytics Platform</h2>
+      <p>
+        I accelerated advisor acquisition by launching Pro, an integrated sales-enablement
+        platform that equips advisors with real-time insights to drive client outcomes.
+        Intuitive workflows include performance analysis, yield forecasting, and account
+        management.
+      </p>
+      <div class="case-metrics">
+        <div class="case-metric-card">
+          <h2>300mm</h2>
+          <p>Annual AUM</p>
+        </div>
+        <div class="case-metric-card">
+          <h2>100%</h2>
+          <p>Sales Adoption</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="case-study" aria-labelledby="case-study-2-title">
+      <div>
+        <img src="images/case/Case_2.jpg" alt="Client Insights platform screens" />
+      </div>
+      <h2 id="case-study-2-title">Global Website</h2>
+      <p>
+        Led the end-to-end migration of a global marketing platform, aligning component architecture, development velocity, accessibility standards (ADA/WCAG), and cross-functional teams.
+      </p>
+      <div class="case-metrics">
+        <div class="case-metric-card">
+          <h2>50%</h2>
+          <p>YOY Cost Reduction</p>
+        </div>
+        <div class="case-metric-card">
+          <h2>100%</h2>
+          <p>Critical Compliance Fixes</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="case-study" aria-labelledby="case-study-3-title">
+      <div>
+        <img src="images/case/Case_3.jpg" alt="Client Insights platform screens" />
+      </div>
+      <h2 id="case-study-3-title">AI Sales Copilot</h2>
+      <p>
+        Launched an AI-powered sales copilot enabling advisors to access real-time performance, CRM, tax, and legal insights during client preparation and live calls.
+      </p>
+      <div class="case-metrics">
+        <div class="case-metric-card">
+          <h2>2x</h2>
+          <p>Productivity Gained</p>
+        </div>
+        <div class="case-metric-card">
+          <h2>#1</h2>
+          <p>Internal App</p>
+        </div>
+      </div>
+    </section>
     </div>
     <script>
       const stagedElements = [
         { selector: '.site-header', delay: 100 },
         { selector: '.hero-content', delay: 300 },
         { selector: '.resume-button', delay: 1000 },
+        { selector: '.logo-carousel', delay: 700 },
       ]
         .map(({ selector, delay }) => {
           const element = document.querySelector(selector);
