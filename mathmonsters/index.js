@@ -520,24 +520,22 @@ function makeAdditionQuestion(grade, difficulty) {
     overlay.innerHTML = `
       <div class="mm-attackMini__wrap" role="dialog" aria-label="Attack mini game">
         <div class="mm-attackMini__card mm-card mm-card__pad">
-          <div class="mm-attackMini__title" data-mini-title>Get Ready</div>
-          <div class="mm-attackMini__count" data-mini-count>3</div>
-          <div class="mm-attackMini__sub" data-mini-sub>Tap the enemy to power up your attack</div>
+          <div class="mm-attackMini__title" data-mini-title>Attack Countdown</div>
+          <div class="mm-attackMini__sub" data-mini-sub>Tap the enemy as fast as you can.</div>
 
-          <div class="mm-attackMini__meterRow">
-            <div class="mm-attackMini__meterLabel">Power</div>
-            <div class="mm-attackMini__meterBonus" data-mini-bonus>+0</div>
+          <!-- Countdown number (hidden during live ATTACK) -->
+          <div class="mm-attackMini__count" data-mini-count>3</div>
+
+          <!-- Circular timer (shown during live ATTACK) -->
+          <div class="mm-attackMini__circle" data-mini-circle style="--p:0">
+            <div class="mm-attackMini__circleInner" aria-hidden="true"></div>
           </div>
+
+          <div class="mm-attackMini__meterLabelSolo">Power Bar</div>
 
           <div class="mm-attackMini__meter" aria-hidden="true">
             <div class="mm-attackMini__meterFill" data-mini-power></div>
           </div>
-
-          <div class="mm-attackMini__timer" aria-hidden="true">
-            <div class="mm-attackMini__timerFill" data-mini-timer></div>
-          </div>
-
-          <div class="mm-attackMini__hits" data-mini-hits>Hits: 0</div>
         </div>
       </div>
     `;
@@ -547,12 +545,12 @@ function makeAdditionQuestion(grade, difficulty) {
     const titleEl = overlay.querySelector("[data-mini-title]");
     const countEl = overlay.querySelector("[data-mini-count]");
     const subEl = overlay.querySelector("[data-mini-sub]");
+    const circleEl = overlay.querySelector("[data-mini-circle]");
     const powerEl = overlay.querySelector("[data-mini-power]");
-    const timerEl = overlay.querySelector("[data-mini-timer]");
-    const bonusEl = overlay.querySelector("[data-mini-bonus]");
-    const hitsEl = overlay.querySelector("[data-mini-hits]");
 
-    const maxTaps = Math.max(1, Math.ceil(maxBonus / Math.max(0.0001, bonusPerTap)));// Create a tap-target ring positioned over the monster sprite
+    const maxTaps = Math.max(1, Math.ceil(maxBonus / Math.max(0.0001, bonusPerTap)));
+
+    // Create an invisible tap-target positioned over the monster sprite
     const stageRect = stage.getBoundingClientRect();
     const monRect = monImg.getBoundingClientRect();
 
@@ -582,12 +580,11 @@ function makeAdditionQuestion(grade, difficulty) {
     
 
     // Countdown
-    titleEl.textContent = "Countdown to attack";
-    subEl.textContent = "Get ready…";
-    hitsEl.textContent = "Hits: 0";
+    overlay.classList.remove("is-live");
+    titleEl.textContent = "Attack Countdown";
+    subEl.textContent = "Tap the enemy as fast as you can.";
     if (powerEl) powerEl.style.width = "0%";
-    if (timerEl) timerEl.style.width = "0%";
-    if (bonusEl) bonusEl.textContent = "+0";
+    if (circleEl) circleEl.style.setProperty("--p", "0");
 
     for (let n = countdownFrom; n >= 1; n--) {
       countEl.textContent = String(n);
@@ -595,9 +592,9 @@ function makeAdditionQuestion(grade, difficulty) {
     }
 
     // Tap window
-    titleEl.textContent = "ATTACK!";
+    titleEl.textContent = "Attack!";
     countEl.textContent = "";
-    subEl.textContent = "Tap the enemy as fast as you can!";
+    subEl.textContent = "Tap the enemy as fast as you can.";
     overlay.classList.add("is-live");
     target.classList.add("is-live");
 
@@ -639,10 +636,7 @@ function makeAdditionQuestion(grade, difficulty) {
       const powerPct = (cappedTaps / maxTaps) * 100;
       if (powerEl) powerEl.style.width = `${powerPct}%`;
 
-      const bonusNow = Math.min(cappedTaps * bonusPerTap, maxBonus);
-      if (bonusEl) bonusEl.textContent = `+${Math.max(0, Math.round(bonusNow))}`;
-
-      if (hitsEl) hitsEl.textContent = `Hits: ${taps}`;
+      // (bonus is computed at the end; we don't show it in the UI)
 
       // punchy feedback
       monImg.classList.remove("mm-mini-hit", "mm-mini-flash");
@@ -661,7 +655,7 @@ function makeAdditionQuestion(grade, difficulty) {
       if (!live) return;
       const elapsed = performance.now() - t0;
       const pct = clamp((elapsed / windowMs) * 100, 0, 100);
-      if (timerEl) timerEl.style.width = `${pct}%`;
+      if (circleEl) circleEl.style.setProperty("--p", String(pct));
       if (elapsed >= windowMs) {
         live = false;
         return;
@@ -676,13 +670,12 @@ function makeAdditionQuestion(grade, difficulty) {
     target.removeEventListener("pointerdown", onTap);
     target.removeEventListener("touchstart", onTap);
 
-    // Result moment
+    // Result moment (quick beat, then close)
     overlay.classList.remove("is-live");
-    const bonusNow = Math.min(Math.min(taps, maxTaps) * bonusPerTap, maxBonus);
-    titleEl.textContent = "Power Up!";
-    subEl.textContent = `Bonus +${Math.max(0, Math.round(bonusNow))} dmg`;
+    titleEl.textContent = "Attack!";
+    subEl.textContent = "Nice!";
     countEl.textContent = "";
-    await battleSleep(260);
+    await battleSleep(180);
 
     cleanup();
 

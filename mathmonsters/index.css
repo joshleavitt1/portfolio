@@ -1743,27 +1743,59 @@ body.is-battle .mm-battleStage{
    Damage Mini Game (Tap-to-Attack)
 ================================ */
 
+/* ================================
+   Attack Mini Game (tap-to-attack)
+   Match QCARD bottom placement
+================================ */
+
+/* ================================
+   Mini-game info card — QCARD-aligned (FORCE OVERRIDES)
+   Paste at VERY BOTTOM of index.css
+================================ */
+
 .mm-attackMini{
-  position: absolute;
-  inset: 0;
-  z-index: 60;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  pointer-events:none; /* target handles taps */
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 60 !important;
+
+  display: flex !important;
+  align-items: flex-end !important;   /* bottom like qcard */
+  justify-content: center !important;
+
+  /* 16px gutters + safe area */
+  padding:
+    calc(16px + var(--safe-top)) 
+    calc(16px + var(--safe-right))
+    calc(16px + var(--safe-bottom))
+    calc(16px + var(--safe-left)) !important;
+
+  pointer-events: none !important;
 }
 
 .mm-attackMini__wrap{
-  width: min(420px, calc(100% - (var(--pad) * 2) - var(--safe-left) - var(--safe-right)));
-  pointer-events:none;
+  width: min(400px, calc(100% - 32px - var(--safe-left) - var(--safe-right))) !important;
+  margin: 0 auto !important;
+  pointer-events: none !important;
 }
 
 .mm-attackMini__card{
-  pointer-events:none;
-  text-align:center;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  width: 100% !important; /* overrides .mm-card { width:64% } */
+  text-align: center;
 }
+
+/* (Optional) if you want 16px inside padding instead of mm-card__pad's 24px */
+.mm-attackMini__card.mm-card__pad{
+  padding: 16px !important;
+}
+
+.mm-attackMini__card .mm-attackMini__sub{
+  margin-bottom: 14px;
+}
+
+/* Show/hide pieces by state */
+.mm-attackMini__circle{ display:none; }
+.mm-attackMini.is-live .mm-attackMini__circle{ display:flex; }
+.mm-attackMini.is-live .mm-attackMini__count{ display:none; }
 
 .mm-attackMini__title{
   font-weight: 950;
@@ -1778,6 +1810,30 @@ body.is-battle .mm-battleStage{
   line-height: 1;
   color: #001B41;
   margin: 0 0 10px 0;
+}
+
+/* Circular timer (only during ATTACK window) */
+.mm-attackMini__circle{
+  --p: 0; /* 0..100 */
+  width: 82px;
+  height: 82px;
+  border-radius: 999px;
+  margin: 2px auto 12px;
+  align-items:center;
+  justify-content:center;
+
+  background:
+    conic-gradient(rgba(255,91,110,.92) calc(var(--p) * 1%), rgba(0,0,0,.06) 0);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.60),
+    0 10px 22px rgba(0,0,0,.10);
+}
+.mm-attackMini__circleInner{
+  width: 70px;
+  height: 70px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
 }
 
 .mm-attackMini__sub{
@@ -1800,28 +1856,24 @@ body.is-battle .mm-battleStage{
   color: rgba(13,20,32,.70);
   letter-spacing: .2px;
 }
+
+/* Simple centered label (requested) */
+.mm-attackMini__meterLabelSolo{
+  margin: 4px 0 8px;
+  font-weight: 950;
+  font-size: 12px;
+  color: rgba(13,20,32,.70);
+  letter-spacing: .2px;
+}
 .mm-attackMini__meterBonus{
   font-weight: 950;
   font-size: 12px;
   color: #001B41;
 }
 
-.mm-attackMini__timer{
-  width: 100%;
-  height: 6px;
-  border-radius: 999px;
-  overflow: hidden;
-  margin-top: 10px;
-  background: rgba(0,0,0,.06);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
-}
-.mm-attackMini__timerFill{
-  height: 100%;
-  width: 0%;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255,91,110,.92), rgba(255,91,110,.60));
-  transition: width 80ms linear;
-}
+/* Legacy linear timer is no longer shown (keeping the nodes harmless) */
+.mm-attackMini__timer{ display:none; }
+.mm-attackMini__timerFill{ display:none; }
 
 
 .mm-attackMini__hits{
@@ -1854,16 +1906,15 @@ body.is-battle .mm-battleStage{
   pointer-events:auto;
   touch-action: none;
 
-  /* subtle “hit me” ring */
-  box-shadow:
-    0 0 0 2px rgba(255,255,255,.55),
-    0 0 0 10px rgba(47,209,255,.14);
-  opacity: .9;
+  /* ✅ Invisible hit-target (no ring around sprite) */
+  box-shadow: none;
+  background: transparent;
+  opacity: 0;
   transform: translateZ(0);
 }
 
 .mm-attackMini__target.is-live{
-  animation: mmTargetPulse 760ms ease-in-out infinite;
+  animation: none;
 }
 
 .mm-attackMini__target.is-live:active{
@@ -1976,4 +2027,3 @@ body.is-battle .mm-battleStage{
   14%  { opacity: 1; }
   100% { opacity: 0; transform: rotate(var(--a, 0rad)) translateX(calc(var(--d, 26px) * 1.45)) scale(1.18); }
 }
-
