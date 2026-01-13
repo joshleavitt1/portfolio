@@ -200,25 +200,25 @@
       pulseBeatMs = EVOLVE_BEAT_MS,
       holdMs = EVOLVE_HOLD_MS, // ✅ NEW
       onBeforeClose = null,
+      transparent = true,
     } = opts;
 
     await preloadImages([fromSprite, toSprite]);
 
     const overlay = document.createElement("div");
-    overlay.className = "mm-evolve is-show mm-evolve--transparent";
+    overlay.className = `mm-evolve is-show${transparent ? " mm-evolve--transparent" : ""}`;
     overlay.style.setProperty("--evolve-ms", "1650ms"); // keep your cinematic morph speed
 
     overlay.innerHTML = `
-      <div class="mm-evolve__wrap" role="dialog" aria-label="Level Up Evolution">
-        <h1 class="mm-evolve__title">Level Up!</h1>
-
-        <div class="mm-evolve__stage">
-          <div class="mm-evolve__ring"></div>
-          <img class="mm-evolve__img mm-evolve__img--from" src="${fromSprite}" alt="Evolution from" />
-          <img class="mm-evolve__img mm-evolve__img--to"   src="${toSprite}"   alt="Evolution to" />
-        </div>
+    <div class="mm-evolve__wrap" role="dialog" aria-label="Evolution">
+      <div class="mm-evolve__stage">
+        <div class="mm-evolve__ring"></div>
+        <img class="mm-evolve__img mm-evolve__img--from" src="${fromSprite}" />
+        <img class="mm-evolve__img mm-evolve__img--to"   src="${toSprite}" />
       </div>
-    `;
+    </div>
+  `;
+  
 
     document.body.appendChild(overlay);
 
@@ -297,7 +297,7 @@
 
   // ---------- Progression + derived rules ----------
   function computeLevelFromXP(xp) {
-    return clamp(Math.floor((xp || 0) / 10) + 1, 1, 3);
+    return clamp(Math.floor((xp || 0) / 10) + 1, 1, 10);
   }
 
   function applyHeroProgressionFromXP() {
@@ -337,44 +337,51 @@
     state.monster.damage = 0;
   }
 
-  // ---------- Questions (Addition only) ----------
-  function makeAdditionQuestion(grade, difficulty) {
-    const cfg = state.questions.addition;
-    const g = cfg.gradeSettings[String(grade)] || cfg.gradeSettings["2"];
-    const scale =
-      cfg.difficultyScale[String(difficulty)] || cfg.difficultyScale["1"];
-    const maxAddend = clamp(
-      g.baseMaxAddend + (scale.maxAddendBoost || 0),
-      5,
-      99
-    );
+// ---------- Questions (Addition only) ----------
+function randInt(min, max) {
+  const a = Math.ceil(min);
+  const b = Math.floor(max);
+  return a + Math.floor(Math.random() * (b - a + 1));
+}
 
-    const a = 1 + Math.floor(Math.random() * maxAddend);
-    const b = 1 + Math.floor(Math.random() * maxAddend);
-    const correct = a + b;
+function makeAdditionQuestion(grade, difficulty) {
+  const cfg = state.questions.addition;
+  const g = cfg.gradeSettings[String(grade)] || cfg.gradeSettings["2"];
+  const scale = cfg.difficultyScale[String(difficulty)] || cfg.difficultyScale["1"];
 
-    const maxOffset = cfg.distractors?.maxOffset ?? 6;
-    const answers = new Set([correct]);
+  // Back-compat path: old config still works
+  const baseMax = Number(g.baseMaxAddend ?? 10);
+  const boostedMax = baseMax + Number(scale.maxAddendBoost ?? 0);
 
-    while (answers.size < 4) {
-      const offset =
-        Math.floor(Math.random() * (maxOffset * 2 + 1)) - maxOffset;
-      const candidate = correct + offset;
-      if (candidate >= 0) answers.add(candidate);
-    }
+  // New path: range-based difficulty (preferred when present)
+  const minAddend = Number.isFinite(Number(scale.minAddend)) ? Number(scale.minAddend) : 1;
+  const maxAddend = Number.isFinite(Number(scale.maxAddend)) ? Number(scale.maxAddend) : boostedMax;
 
-    const arr = Array.from(answers);
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
+  // IMPORTANT: remove the 99 cap so Level 9–10 can reach 250–500
+  const minA = clamp(minAddend, 1, 500);
+  const maxA = clamp(maxAddend, minA, 500);
 
-    return {
-      prompt: `${a} + ${b} = ?`,
-      correct,
-      answers: arr,
-    };
+  const a = randInt(minA, maxA);
+  const b = randInt(minA, maxA);
+  const correct = a + b;
+
+  const maxOffset = cfg.distractors?.maxOffset ?? 6;
+  const answers = new Set([correct]);
+
+  while (answers.size < 4) {
+    const offset = Math.floor(Math.random() * (maxOffset * 2 + 1)) - maxOffset;
+    const candidate = correct + offset;
+    if (candidate >= 0) answers.add(candidate);
   }
+
+  const arr = Array.from(answers);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+
+  return { prompt: `${a} + ${b} = ?`, correct, answers: arr };
+}
 
   function nextQuestion() {
     const grade = state.profile.playerGrade ?? 2;
@@ -564,11 +571,15 @@
     document.body.style.touchAction = "none";
 
     const cleanup = () => {
+      // ✅ release monster sprite from mini-game animation classes
+      monImg.classList.remove("mm-mini-hit", "mm-mini-flash");
+    
       target.remove();
       overlay.remove();
       document.body.style.overscrollBehavior = prevOverscroll;
       document.body.style.touchAction = prevTouchAction;
     };
+    
 
     // Countdown
     titleEl.textContent = "Countdown to attack";
@@ -725,7 +736,30 @@
       makeDefaultProfile();
       ensureMonsterForCurrentHero();
       saveLocal();
-      go("loader", { next: "home" });
+      go("loader", {
+        next: async () => {
+          const lvl1Sprite =
+            (state.progression?.hero?.levels &&
+              state.progression.hero.levels["1"]?.heroSprite) ||
+            "images/hero/level1/hero_sprite_1.png";
+
+          await launchEvolutionFlow(
+            {
+              fromSprite: "images/additional/egg.png",
+              toSprite: lvl1Sprite,
+            },
+            {
+              transparent: false,
+              title: "Hatched!",
+              // Slightly shorter hold for the intro ceremony
+              holdMs: 2200,
+              onBeforeClose: async () => {
+                await go("home");
+              },
+            }
+          );
+        },
+      });
     });
 
     appEl.querySelector("[data-act='level2']")?.addEventListener("click", async () => {
@@ -1027,10 +1061,6 @@
 
     const body = `
   <div class="mm-battleStage" data-battle-stage>
-    <div class="mm-pill mm-diffPill" data-diff-pill>
-      Difficulty: ${state.profile.difficulty ?? 1}
-    </div>
-
     <!-- HERO -->
     <div class="mm-spriteWrap hero" data-hero-wrap style="left: calc(50% - var(--battle-gap) / 2 - 150px); top: calc(50% - 150px);">
       <div class="mm-groundShadow" aria-hidden="true"></div>
@@ -1093,13 +1123,6 @@
   </div>
 `;
     appEl.innerHTML = shell({ bodyHtml: body });
-    function updateDifficultyPill(){
-      const el = appEl.querySelector("[data-diff-pill]");
-      if (!el) return;
-      el.textContent = `Difficulty: ${state.profile.difficulty ?? 1}`;
-    }
-    
-
     const heroWrap = appEl.querySelector("[data-hero-wrap]"); // wrapper (base pose)
     const monWrap = appEl.querySelector("[data-monster-wrap]"); // wrapper (base pose)
 
@@ -1234,17 +1257,31 @@
 
         updateBattleUI();
 
-        // Let HP meter animate down
-        await battleSleep(420);
+// If this hit ends the battle, add a bigger final shake before the overlay
+if (didWin() || didLose()) {
+  const stage = document.querySelector("[data-battle-stage]");
+  const target = correct
+    ? stage?.querySelector("[data-monster-sprite]")
+    : stage?.querySelector("[data-hero-sprite]");
 
-        if (didWin()) {
-          endBattle({ won: true });
-          return;
-        }
-        if (didLose()) {
-          endBattle({ won: false });
-          return;
-        }
+  if (target) {
+/* 4️⃣ IMPACT — SHAKE + FX TOGETHER */
+target.classList.remove("mm-mini-hit", "mm-mini-flash"); // ✅ make sure shake can win
+target.offsetWidth; // restart-safe
+target.classList.add("mm-hit-shake");
+
+  }
+
+  // let the final shake read (and HP hit 0)
+  await battleSleep(520);
+
+  if (didWin()) { await endBattle({ won: true }); return; }
+  if (didLose()) { await endBattle({ won: false }); return; }
+}
+
+// Otherwise, normal pacing
+await battleSleep(420);
+
 
         // Next question
         nextQuestion();
@@ -1265,12 +1302,6 @@
     });
   }
 
-  function updateDifficultyPill(){
-    const el = appEl.querySelector("[data-diff-pill]");
-    if (!el) return;
-    el.textContent = `Difficulty ${state.profile.difficulty ?? 1}`;
-  }  
-
   function updateBattleUI() {
     const heroHpEl = appEl.querySelector("[data-hero-hp]");
     const monHpEl = appEl.querySelector("[data-mon-hp]");
@@ -1279,7 +1310,7 @@
 
     const qtext = appEl.querySelector("[data-qtext]");
     qtext.textContent = state.battle.currentQ.prompt;
-  }
+  } 
 
   function showEndCard({ title, showGem, btnText, onBtn }) {
     const overlay = appEl.querySelector("[data-overlay]");
@@ -1345,11 +1376,6 @@
 
     state.profile.xp = Number(state.profile.xp ?? 0) - 1;
     state.profile.difficulty = clamp((state.profile.difficulty ?? 1) - 1, 1, 10);
-    function updateDifficultyPill(){
-      const el = appEl.querySelector("[data-diff-pill]");
-      if (!el) return;
-      el.textContent = `Difficulty: ${state.profile.difficulty ?? 1}`;
-    }    
     saveLocal();
 
     showEndCard({
