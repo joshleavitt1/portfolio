@@ -7,8 +7,14 @@
   --button-gradient-start: #0095ff;
   --button-gradient-end: #006aff;
 
-  --mm-app-bg: #0057ff;
-
+  --mm-bg-base: #0057ff;
+  --mm-bg-radial: radial-gradient(
+    circle at 50% 25%,
+    rgba(0,0,0,0.10) 0%,
+    rgba(0,0,0,0.06) 28%,
+    rgba(0,0,0,0.00) 60%
+  );
+  
   --ink: #272b34;
   --ink2: rgba(13,20,32,.70);
   --white: #FFFFFF;
@@ -96,7 +102,20 @@ body.mm{
   height: 100vh;
 }
 
+body.is-home,
+body.is-battle,
+body.is-loader,
+.mm-evolve {
+  background:
+    var(--mm-bg-radial),
+    var(--mm-bg-base);
+}
 
+html,
+body {
+  background-color: var(--mm-bg-base);
+  overscroll-behavior: none;
+}
 
 *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
 html,body{ height:100%; }
@@ -105,11 +124,10 @@ body.mm{
   margin:0;
   font-family: var(--mm-font);
   color: var(--white);
-  /* App default background (Home/Battle/etc.) */
-  background-color: var(--mm-app-bg);
-  background-image: none;
   overflow:hidden;
+  background-color: var(--mm-bg-base); /* safe fallback */
 }
+
 
 #app{ position:relative; z-index: 2; }
 .mm-bg{ z-index: 0; }
@@ -124,11 +142,6 @@ button, input, select, textarea{
 .mm-bubble,
 .mm-vignette{
   pointer-events: none;
-}
-
-body.is-home,
-body.is-battle{
-  background-color: var(--mm-app-bg);
 }
 
 /* Landing + Loader use a solid deep-ocean background */
@@ -1534,7 +1547,6 @@ body.is-battle .mm-battleStage{
   align-items: center;
   justify-content: center;
 
-  background-color: var(--mm-app-bg);
   background-image: none;
 }
 
