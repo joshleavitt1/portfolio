@@ -565,10 +565,7 @@ async function runTapAttackMiniGame() {
   overlay.innerHTML = `
     <div class="mm-attackMini__wrap" role="dialog" aria-label="Attack mini game">
       <div class="mm-attackMini__card mm-card mm-card__pad">
-        <div class="mm-attackMini__title" data-mini-title>Get Ready!</div>
-        <div class="mm-attackMini__sub" data-mini-sub>Hit the targets as fast as you can.</div>
-
-        <div class="mm-attackMini__timeSlot" aria-hidden="true">
+<div class="mm-attackMini__timeSlot" aria-hidden="true">
           <!-- legacy countdown node (kept for layout compatibility, never used) -->
           <div class="mm-attackMini__count" data-mini-count></div>
 
@@ -576,6 +573,9 @@ async function runTapAttackMiniGame() {
             <div class="mm-spinnerBasic" data-mini-spinner-el></div>
           </div>
         </div>
+
+        <div class="mm-attackMini__title" data-mini-title>Get Ready!</div>
+        <div class="mm-attackMini__sub" data-mini-sub>Hit the targets as fast as you can.</div>
 
         <div class="mm-attackMini__meterWrap" data-mini-meter>
           <div class="mm-attackMini__meterLabelSolo" data-mini-meter-label>
@@ -694,18 +694,19 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "1");
 if (spinnerEl) spinnerEl.classList.add("is-pulsing");
 // Let CSS run 3 pulses (1s each = 3s total)
 await sleep(3000);
-
-await sleep(3000);
 if (spinnerEl) spinnerEl.classList.remove("is-pulsing");
 overlay.classList.remove("is-ready");
 
 
-  // ------------------------
-  // ATTACK: enable tapping + drain timer
-  // ------------------------
-  titleEl.textContent = "Attack!";
-  subEl.textContent = "";
-  overlay.classList.add("is-live");
+// ------------------------
+// ATTACK: enable tapping + drain timer
+// ------------------------
+titleEl.textContent = "Attack!";
+subEl.innerHTML = `Hits: <strong><span data-live-hits>0</span></strong>`;
+overlay.classList.add("is-live");
+
+const liveHitsEl = subEl.querySelector("[data-live-hits]");
+
 
   let taps = 0;
   let live = true;
@@ -763,6 +764,7 @@ if (stepMs > 0) {
     const powerPct = (cappedTaps / maxTaps) * 100;
     if (powerEl) powerEl.style.width = `${powerPct}%`;
     if (scoreEl) scoreEl.textContent = String(taps);
+    if (liveHitsEl) liveHitsEl.textContent = String(taps);
 
     // punchy feedback
     monImg.classList.remove("mm-mini-hit", "mm-mini-flash");
