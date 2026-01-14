@@ -1,5 +1,5 @@
-/* index.js — FULL SWAP-IN */
-/* Math Monsters — MVP Single-Page App (no frameworks) */
+/* index.js â€” FULL SWAP-IN */
+/* Math Monsters â€” MVP Single-Page App (no frameworks) */
 (() => {
   const LS_PROFILE = "mm_profile";
   const LS_MONSTER = "mm_monster";
@@ -58,8 +58,8 @@
     await raf();
   };
 
-  const EVOLVE_BEAT_MS = 750; // “cinematic beat” used for pacing
-  const EVOLVE_HOLD_MS = 3000; // ✅ “admire the new sprite” hold
+  const EVOLVE_BEAT_MS = 750; // â€œcinematic beatâ€ used for pacing
+  const EVOLVE_HOLD_MS = 3000; // âœ… â€œadmire the new spriteâ€ hold
 
   // Loader: always show for 1.5s, even if assets are already cached.
   const MIN_LOADER_MS = 1500;
@@ -75,7 +75,7 @@
   const PRE_HP_DROP_BEAT_MS = 180; // pause after hit before HP drops
 
   // New attack feel tuning
-  const ATTACK_WINDUP_MS = 90; // ⬅️ small anticipatory pause
+  const ATTACK_WINDUP_MS = 90; // â¬…ï¸ small anticipatory pause
   const ATTACK_SLIDE_MS = 720;
   const FX_POP_MS = 300;
   const FX_OUT_MS = 280;
@@ -237,7 +237,7 @@
     const {
       revealDelayMs = 300,
       pulseBeatMs = EVOLVE_BEAT_MS,
-      holdMs = EVOLVE_HOLD_MS, // ✅ NEW
+      holdMs = EVOLVE_HOLD_MS, // âœ… NEW
       onBeforeClose = null,
       transparent = true,
     } = opts;
@@ -266,13 +266,13 @@
 
     // 2) Fade in title + sprite (content reveal)
     await sleep(revealDelayMs);
-    void overlay.offsetWidth; // ✅ ensures initial hidden state is committed
+    void overlay.offsetWidth; // âœ… ensures initial hidden state is committed
     overlay.classList.add("is-reveal");
 
     // 3) Pause so reveal reads
     await sleep(pulseBeatMs);
 
-    // 4) Pulse 3× (your loop)
+    // 4) Pulse 3Ã— (your loop)
     for (let i = 0; i < 3; i++) {
       overlay.classList.remove("is-pulse");
       void overlay.offsetWidth;
@@ -396,7 +396,7 @@ function makeAdditionQuestion(grade, difficulty) {
   const minAddend = Number.isFinite(Number(scale.minAddend)) ? Number(scale.minAddend) : 1;
   const maxAddend = Number.isFinite(Number(scale.maxAddend)) ? Number(scale.maxAddend) : boostedMax;
 
-  // IMPORTANT: remove the 99 cap so Level 9–10 can reach 250–500
+  // IMPORTANT: remove the 99 cap so Level 9â€“10 can reach 250â€“500
   const minA = clamp(minAddend, 1, 500);
   const maxA = clamp(maxAddend, minA, 500);
 
@@ -468,7 +468,7 @@ function makeAdditionQuestion(grade, difficulty) {
         10
       );
       state.battle.correctStreak = 0;
-      toast(`Difficulty up → ${state.profile.difficulty}`);
+      toast(`Difficulty up â†’ ${state.profile.difficulty}`);
     }
   }
 
@@ -482,18 +482,18 @@ function makeAdditionQuestion(grade, difficulty) {
     const attacker = who === "hero" ? heroImg : monImg;
     const target = who === "hero" ? monImg : heroImg;
 
-    /* 1️⃣ WIND-UP BEAT */
+    /* 1ï¸âƒ£ WIND-UP BEAT */
     await sleep(ATTACK_WINDUP_MS);
 
-    /* 2️⃣ START ATTACK SLIDE */
+    /* 2ï¸âƒ£ START ATTACK SLIDE */
     attacker.classList.add(
       who === "hero" ? "mm-attack-slide-hero" : "mm-attack-slide-monster"
     );
 
-    /* 3️⃣ WAIT UNTIL IMPACT MOMENT */
+    /* 3ï¸âƒ£ WAIT UNTIL IMPACT MOMENT */
     await sleep(ATTACK_SLIDE_MS * 0.55); // sweet spot
 
-    /* 4️⃣ IMPACT — SHAKE + FX TOGETHER */
+    /* 4ï¸âƒ£ IMPACT â€” SHAKE + FX TOGETHER */
     target.classList.add("mm-hit-shake");
 
     const fx = document.createElement("img");
@@ -508,11 +508,11 @@ function makeAdditionQuestion(grade, difficulty) {
 
     stage.appendChild(fx);
 
-    // 🔥 SAME FRAME
+    // ðŸ”¥ SAME FRAME
     requestAnimationFrame(() => {
       fx.classList.add("is-pop");
 
-      // 🔥 hit-scale pop (restart-safe)
+      // ðŸ”¥ hit-scale pop (restart-safe)
       fx.classList.remove("mm-fx-hit");
       fx.offsetWidth; // force reflow so it can replay
       fx.classList.add("mm-fx-hit");
@@ -520,215 +520,288 @@ function makeAdditionQuestion(grade, difficulty) {
 
     await sleep(FX_POP_MS);
 
-    // ✅ keep it on screen longer
+    // âœ… keep it on screen longer
     await sleep(FX_HOLD_MS);
 
     fx.classList.add("is-out");
     await sleep(FX_OUT_MS);
 
-    /* 5️⃣ CLEANUP */
+    /* 5ï¸âƒ£ CLEANUP */
     attacker.classList.remove("mm-attack-slide-hero", "mm-attack-slide-monster");
     target.classList.remove("mm-hit-shake");
     fx.remove();
   }
-  // ---------- Damage Mini Game (tap-to-attack) ----------
-  // Runs only on correct answers. Returns BONUS damage (integer >= 0).
-  async function runTapAttackMiniGame() {
-    const stage = document.querySelector("[data-battle-stage]");
-    if (!stage) return 0;
+// ---------- Damage Mini Game (tap-to-attack) ----------
+// Runs only on correct answers. Returns BONUS damage (integer >= 0).
+async function runTapAttackMiniGame() {
+  const stage = document.querySelector("[data-battle-stage]");
+  if (!stage) return 0;
 
-    const monImg = stage.querySelector("[data-monster-sprite]");
-    if (!monImg) return 0;
+  const monImg = stage.querySelector("[data-monster-sprite]");
+  if (!monImg) return 0;
 
-    const cfg = (state.progression && state.progression.attackMini) ? state.progression.attackMini : {};
-    const countdownFrom = Number.isFinite(Number(cfg.countdownFrom)) ? Number(cfg.countdownFrom) : 3;
-    const countdownStepMs = Number.isFinite(Number(cfg.countdownStepMs)) ? Number(cfg.countdownStepMs) : 320;
-    const windowMs = Number.isFinite(Number(cfg.windowMs)) ? Number(cfg.windowMs) : 2200;
-    const bonusPerTap = Number.isFinite(Number(cfg.bonusPerTap)) ? Number(cfg.bonusPerTap) : 1;
-    const maxBonus = Number.isFinite(Number(cfg.maxBonus)) ? Number(cfg.maxBonus) : 6;
+  const cfg =
+    state.progression && state.progression.attackMini
+      ? state.progression.attackMini
+      : {};
 
-    // Reduced-motion: skip mini game entirely
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return 0;
-    }
+  // NOTE: countdownFrom/countdownStepMs are intentionally unused now (no 3-2-1 UX)
+  const windowMs = Number.isFinite(Number(cfg.windowMs)) ? Number(cfg.windowMs) : 2200;
+  const bonusPerTap = Number.isFinite(Number(cfg.bonusPerTap)) ? Number(cfg.bonusPerTap) : 1;
+  const maxBonus = Number.isFinite(Number(cfg.maxBonus)) ? Number(cfg.maxBonus) : 6;
 
-    // Build overlay
-    const overlay = document.createElement("div");
-    overlay.className = "mm-attackMini";
+  // Reduced-motion: skip mini game entirely
+  if (
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return 0;
+  }
 
-    overlay.innerHTML = `
-      <div class="mm-attackMini__wrap" role="dialog" aria-label="Attack mini game">
-        <div class="mm-attackMini__card mm-card mm-card__pad">
-          <div class="mm-attackMini__title" data-mini-title>Attack</div>
-          <div class="mm-attackMini__sub" data-mini-sub>Tap the enemy as fast as you can.</div>
+  // Build overlay
+  const overlay = document.createElement("div");
+  overlay.className = "mm-attackMini";
 
-          <!-- Countdown morphs into circular timer in-place -->
-          <div class="mm-attackMini__timeSlot" aria-hidden="true">
-            <div class="mm-attackMini__count" data-mini-count>3</div>
-            <div class="mm-attackMini__circle" data-mini-circle style="--p:0">
-              <div class="mm-attackMini__circleInner" aria-hidden="true"></div>
-            </div>
+  overlay.innerHTML = `
+    <div class="mm-attackMini__wrap" role="dialog" aria-label="Attack mini game">
+      <div class="mm-attackMini__card mm-card mm-card__pad">
+        <div class="mm-attackMini__title" data-mini-title>Get Ready!</div>
+        <div class="mm-attackMini__sub" data-mini-sub>Hit the targets as fast as you can.</div>
+
+        <div class="mm-attackMini__timeSlot" aria-hidden="true">
+          <!-- legacy countdown node (kept for layout compatibility, never used) -->
+          <div class="mm-attackMini__count" data-mini-count></div>
+
+          <div class="mm-attackMini__spinner" aria-hidden="true" data-mini-spinner>
+            <div class="mm-spinnerBasic" data-mini-spinner-el></div>
+          </div>
+        </div>
+
+        <div class="mm-attackMini__meterWrap" data-mini-meter>
+          <div class="mm-attackMini__meterLabelSolo" data-mini-meter-label>
+            Hits: <span class="mm-attackMini__score" data-mini-score>0</span>
           </div>
 
-          <div class="mm-attackMini__meterWrap" data-mini-meter>
-            <div class="mm-attackMini__meterLabelSolo" data-mini-meter-label>Power Bar</div>
-
-            <div class="mm-progress mm-progress--power mm-attackMini__progress" aria-hidden="true">
-              <div class="mm-progress__fill" data-mini-power></div>
-            </div>
+          <div class="mm-progress mm-progress--power mm-attackMini__progress" aria-hidden="true">
+            <div class="mm-progress__fill" data-mini-power></div>
           </div>
         </div>
       </div>
-    `;
+    </div>
+  `;
 
-    stage.appendChild(overlay);
+  stage.appendChild(overlay);
 
-    // slide/fade the card up into place
-    await raf2();
-    overlay.classList.add("is-in");
+  // slide/fade the card up into place
+  await raf2();
+  overlay.classList.add("is-in");
 
-    const titleEl = overlay.querySelector("[data-mini-title]");
-    const countEl = overlay.querySelector("[data-mini-count]");
-    const subEl = overlay.querySelector("[data-mini-sub]");
-    const circleEl = overlay.querySelector("[data-mini-circle]");
-    const powerEl = overlay.querySelector("[data-mini-power]");
+  const titleEl = overlay.querySelector("[data-mini-title]");
+  const subEl = overlay.querySelector("[data-mini-sub]");
+  const powerEl = overlay.querySelector("[data-mini-power]");
+  const scoreEl = overlay.querySelector("[data-mini-score]");
+  const countEl = overlay.querySelector("[data-mini-count]"); // kept but hidden/unused
+  const spinnerEl = overlay.querySelector("[data-mini-spinner-el]");
 
-    const maxTaps = Math.max(1, Math.ceil(maxBonus / Math.max(0.0001, bonusPerTap)));
+  const maxTaps = Math.max(1, Math.ceil(maxBonus / Math.max(0.0001, bonusPerTap)));
 
-    // Create an invisible tap-target positioned over the monster sprite
+  // Create a visible hit-target that spawns randomly OVER the monster sprite.
+  const hitTarget = document.createElement("button");
+  hitTarget.type = "button";
+  hitTarget.className = "mm-attackMini__hitTarget";
+  hitTarget.setAttribute("aria-label", "Hit target");
+  hitTarget.innerHTML = `<span class="mm-attackMini__hitDot" aria-hidden="true"></span>`;
+  stage.appendChild(hitTarget);
+
+  const placeHitTarget = () => {
     const stageRect = stage.getBoundingClientRect();
     const monRect = monImg.getBoundingClientRect();
 
-    const target = document.createElement("div");
-    target.className = "mm-attackMini__target";
-    target.style.left = `${monRect.left - stageRect.left}px`;
-    target.style.top = `${monRect.top - stageRect.top}px`;
-    target.style.width = `${monRect.width}px`;
-    target.style.height = `${monRect.height}px`;
-    stage.appendChild(target);
+    const monLeft = monRect.left - stageRect.left;
+    const monTop = monRect.top - stageRect.top;
 
-    // Lock page scroll while the mini game is up
-    const prevOverscroll = document.body.style.overscrollBehavior;
-    const prevTouchAction = document.body.style.touchAction;
-    document.body.style.overscrollBehavior = "none";
-    document.body.style.touchAction = "none";
+    const tSize = clamp(monRect.width * 0.22, 44, 76);
+    const pad = clamp(monRect.width * 0.12, 14, 28);
 
-    const cleanup = () => {
-      // ✅ release monster sprite from mini-game animation classes
-      monImg.classList.remove("mm-mini-hit", "mm-mini-flash");
-    
-      target.remove();
-      overlay.remove();
-      document.body.style.overscrollBehavior = prevOverscroll;
-      document.body.style.touchAction = prevTouchAction;
-    };
-    
+    const minX = monLeft + pad;
+    const maxX = monLeft + Math.max(pad, monRect.width - pad - tSize);
+    const minY = monTop + pad;
+    const maxY = monTop + Math.max(pad, monRect.height - pad - tSize);
 
-    // Countdown
-    overlay.classList.remove("is-live");
-    titleEl.textContent = "Attack";
-    subEl.textContent = "Tap the enemy as fast as you can.";
-    if (powerEl) powerEl.style.width = "0%";
-    if (circleEl) circleEl.style.setProperty("--p", "0");
+    const x = minX + Math.random() * Math.max(0, maxX - minX);
+    const y = minY + Math.random() * Math.max(0, maxY - minY);
 
-    for (let n = countdownFrom; n >= 1; n--) {
-      countEl.textContent = String(n);
-      await battleSleep(countdownStepMs);
+    hitTarget.style.width = `${tSize}px`;
+    hitTarget.style.height = `${tSize}px`;
+    hitTarget.style.left = `${x}px`;
+    hitTarget.style.top = `${y}px`;
+  };
+
+  // Lock page scroll while the mini game is up
+  const prevOverscroll = document.body.style.overscrollBehavior;
+  const prevTouchAction = document.body.style.touchAction;
+  document.body.style.overscrollBehavior = "none";
+  document.body.style.touchAction = "none";
+
+  const cleanup = () => {
+    monImg.classList.remove("mm-mini-hit", "mm-mini-flash");
+    hitTarget.remove();
+    overlay.remove();
+    document.body.style.overscrollBehavior = prevOverscroll;
+    document.body.style.touchAction = prevTouchAction;
+  };
+
+  // Burst FX helper
+  const spawnBurst = (clientX, clientY) => {
+    const sr = stage.getBoundingClientRect();
+    const b = document.createElement("div");
+    b.className = "mm-miniBurst";
+    b.style.left = `${clientX - sr.left}px`;
+    b.style.top = `${clientY - sr.top}px`;
+
+    for (let i = 0; i < 6; i++) {
+      const p = document.createElement("span");
+      p.className = "mm-miniBurst__p";
+      const a = (Math.PI * 2 * i) / 6 + Math.random() * 0.35;
+      const d = 18 + Math.random() * 18;
+      const s = 3 + Math.random() * 3;
+      p.style.setProperty("--a", `${a}rad`);
+      p.style.setProperty("--d", `${d}px`);
+      p.style.setProperty("--s", `${s}px`);
+      b.appendChild(p);
     }
 
-    // Tap window
-    titleEl.textContent = "Attack";
-    subEl.textContent = "Tap the enemy as fast as you can.";
+    stage.appendChild(b);
+    setTimeout(() => b.remove(), 560);
+  };
 
-    // Start the morph (countdown → circle) in-place
-    overlay.classList.add("is-live");
-    // Let the count fade/scale out before clearing text
-    await sleep(120);
-    countEl.textContent = "";
-    target.classList.add("is-live");
+// ------------------------
+// READY (3s): full spinner + pulse 3×, bar empty, NO taps
+// ------------------------
+overlay.classList.remove("is-live");
+overlay.classList.add("is-ready");
 
-    let taps = 0;
-    let live = true;
+titleEl.textContent = "Get Ready!";
+subEl.textContent = "Hit targets as fast as you can!";
 
-    const spawnBurst = (clientX, clientY) => {
-      const sr = stage.getBoundingClientRect();
-      const b = document.createElement("div");
-      b.className = "mm-miniBurst";
-      b.style.left = `${clientX - sr.left}px`;
-      b.style.top = `${clientY - sr.top}px`;
+if (powerEl) powerEl.style.width = "0%";
+if (scoreEl) scoreEl.textContent = "0";
+if (countEl) countEl.textContent = ""; // ensure legacy countdown never appears
 
-      // 6 particle dots
-      for (let i = 0; i < 6; i++) {
-        const p = document.createElement("span");
-        p.className = "mm-miniBurst__p";
-        const a = (Math.PI * 2 * i) / 6 + (Math.random() * 0.35);
-        const d = 18 + Math.random() * 18;
-        const s = 3 + Math.random() * 3;
-        p.style.setProperty("--a", `${a}rad`);
-        p.style.setProperty("--d", `${d}px`);
-        p.style.setProperty("--s", `${s}px`);
-        b.appendChild(p);
-      }
+// spinner is FULL during ready
+if (spinnerEl) spinnerEl.style.setProperty("--p", "1");
 
-      stage.appendChild(b);
-      setTimeout(() => b.remove(), 560);
-    };
+if (spinnerEl) spinnerEl.classList.add("is-pulsing");
+// Let CSS run 3 pulses (1s each = 3s total)
+await sleep(3000);
 
-    const onTap = (e) => {
-      if (!live) return;
-      e.preventDefault();
+await sleep(3000);
+if (spinnerEl) spinnerEl.classList.remove("is-pulsing");
+overlay.classList.remove("is-ready");
 
-      taps += 1;
 
-      // Power meter is based on taps (capped by maxTaps)
-      const cappedTaps = Math.min(taps, maxTaps);
-      const powerPct = (cappedTaps / maxTaps) * 100;
-      if (powerEl) powerEl.style.width = `${powerPct}%`;
+  // ------------------------
+  // ATTACK: enable tapping + drain timer
+  // ------------------------
+  titleEl.textContent = "Attack!";
+  subEl.textContent = "";
+  overlay.classList.add("is-live");
 
-      // (bonus is computed at the end; we don't show it in the UI)
+  let taps = 0;
+  let live = true;
 
-      // punchy feedback
-      monImg.classList.remove("mm-mini-hit", "mm-mini-flash");
-      monImg.offsetWidth; // restart-safe
-      monImg.classList.add("mm-mini-hit", "mm-mini-flash");
+// start draining --p from 1 -> 0 across windowMs (respect countdownStepMs if provided)
+let rafId = 0;
+let intervalId = 0;
 
-      const pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
-      spawnBurst(pt.clientX, pt.clientY);
-    };
+const stepMs = 0; // force super-smooth drain (no stepping)
 
-    target.addEventListener("pointerdown", onTap, { passive: false });
-    target.addEventListener("touchstart", onTap, { passive: false });
+const t0 = performance.now();
+const tEnd = t0 + windowMs;
 
-    const t0 = performance.now();
-    const tick = () => {
-      if (!live) return;
-      const elapsed = performance.now() - t0;
-      const pct = clamp((elapsed / windowMs) * 100, 0, 100);
-      if (circleEl) circleEl.style.setProperty("--p", String(pct));
-      if (elapsed >= windowMs) {
-        live = false;
-        return;
-      }
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
+const setPFromNow = (now) => {
+  const remaining = Math.max(0, tEnd - now);
+  const p = remaining / windowMs;
+  if (spinnerEl) spinnerEl.style.setProperty("--p", String(p));
+  return remaining;
+};
 
-    await sleep(windowMs);
+if (stepMs > 0) {
+  // stepped drain (your requested behavior)
+  setPFromNow(performance.now());
+  intervalId = window.setInterval(() => {
+    if (!live) return;
+    const remaining = setPFromNow(performance.now());
+    if (remaining <= 0) {
+      window.clearInterval(intervalId);
+      intervalId = 0;
+    }
+  }, stepMs);
+} else {
+  // smooth drain fallback
+  const tick = (now) => {
+    if (!live) return;
+    const remaining = setPFromNow(now);
+    if (remaining > 0) rafId = requestAnimationFrame(tick);
+  };
+  rafId = requestAnimationFrame(tick);
+}
 
-    live = false;
-    target.removeEventListener("pointerdown", onTap);
-    target.removeEventListener("touchstart", onTap);
 
-    // Time's up → tiny beat → card slides out → proceed
-    await battleSleep(180);
-    overlay.classList.add("is-out");
-    await sleep(420);
-    cleanup();
+  // let the card settle before enabling the target
+  await sleep(120);
+  hitTarget.classList.add("is-live");
+  placeHitTarget();
 
-    const bonus = Math.min(taps * bonusPerTap, maxBonus);
-    return Math.max(0, Math.round(bonus));
-  }
+  const onTap = (e) => {
+    if (!live) return;
+    e.preventDefault();
 
+    taps += 1;
+
+    const cappedTaps = Math.min(taps, maxTaps);
+    const powerPct = (cappedTaps / maxTaps) * 100;
+    if (powerEl) powerEl.style.width = `${powerPct}%`;
+    if (scoreEl) scoreEl.textContent = String(taps);
+
+    // punchy feedback
+    monImg.classList.remove("mm-mini-hit", "mm-mini-flash");
+    monImg.offsetWidth; // restart-safe
+    monImg.classList.add("mm-mini-hit", "mm-mini-flash");
+
+    const pt = e.touches && e.touches[0] ? e.touches[0] : e;
+    spawnBurst(pt.clientX, pt.clientY);
+
+    // respawn target
+    hitTarget.classList.remove("is-pop");
+    hitTarget.offsetWidth;
+    hitTarget.classList.add("is-pop");
+    placeHitTarget();
+  };
+
+  hitTarget.addEventListener("pointerdown", onTap, { passive: false });
+
+  await sleep(windowMs);
+
+// stop
+live = false;
+hitTarget.removeEventListener("pointerdown", onTap);
+
+if (rafId) cancelAnimationFrame(rafId);
+if (intervalId) window.clearInterval(intervalId);
+
+if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
+
+
+  // exit animation + cleanup
+  await battleSleep(180);
+  overlay.classList.add("is-out");
+  await sleep(420);
+  cleanup();
+
+  const bonus = Math.min(taps * bonusPerTap, maxBonus);
+  return Math.max(0, Math.round(bonus));
+}
 
   // ---------- Screens ----------
   function shell({ bodyHtml, footerHtml }) {
@@ -846,9 +919,9 @@ function makeAdditionQuestion(grade, difficulty) {
     // show loader visuals
     document.body.classList.add("is-loader");
 
-      // ✅ hard cleanup: if mini-game UI was ever present, remove it
+      // âœ… hard cleanup: if mini-game UI was ever present, remove it
   document.querySelectorAll(
-    ".mm-attackMini, .mm-attackMini__target, .mm-miniBurst"
+    ".mm-attackMini, .mm-attackMini__target, .mm-attackMini__hitTarget, .mm-miniBurst"
   ).forEach((el) => el.remove());
 
     appEl.innerHTML = `
@@ -909,7 +982,7 @@ function makeAdditionQuestion(grade, difficulty) {
       ? `aria-disabled="true" tabindex="-1"`
       : `data-act="battle" role="button" aria-label="Start Battle"`;
 
-    // ✅ If this is a level-up, Home should *temporarily* show the PRE-evolution hero
+    // âœ… If this is a level-up, Home should *temporarily* show the PRE-evolution hero
     let displayHero = state.profile;
     let displayLevel = level;
 
@@ -968,7 +1041,7 @@ function makeAdditionQuestion(grade, difficulty) {
         </div>
 
         <div class="mm-homeSwimWrap">
-          <!-- ✅ Pokemon-style ground shadow -->
+          <!-- âœ… Pokemon-style ground shadow -->
           <div class="mm-groundShadow" aria-hidden="true"></div>
 
           <div class="mm-heroShimmer" style="--mm-sprite-mask: url('${displayHero.heroSprite}')">
@@ -1040,7 +1113,7 @@ function makeAdditionQuestion(grade, difficulty) {
       requestAnimationFrame(() => {
         intro?.classList.add("is-in");
 
-        // ✨ Start hero shimmer AFTER home intro finishes
+        // âœ¨ Start hero shimmer AFTER home intro finishes
         // Delay shimmer an extra 1s when returning from a win so the +1 Gem moment can finish
         const SHIMMER_BASE_DELAY = 1400;
         const SHIMMER_WIN_EXTRA_DELAY = 1000;
@@ -1075,7 +1148,7 @@ function makeAdditionQuestion(grade, difficulty) {
           // Enable transition for the animation run
           bar.classList.remove("is-static");
 
-          // ✅ START GREEN SWEEP (premium reward)
+          // âœ… START GREEN SWEEP (premium reward)
           bar.classList.add("is-rewarding");
           clearTimeout(renderHome._xpSweepT);
           renderHome._xpSweepT = setTimeout(() => {
@@ -1104,7 +1177,7 @@ function makeAdditionQuestion(grade, difficulty) {
                 await launchEvolutionFlow(evolveAnim, {
                   pulseBeatMs: EVOLVE_BEAT_MS,
                   onBeforeClose: async () => {
-                    // ✅ Render updated Home (new sprite) while overlay still covers screen
+                    // âœ… Render updated Home (new sprite) while overlay still covers screen
                     await go("home");
                   },
                 });
@@ -1210,9 +1283,9 @@ function makeAdditionQuestion(grade, difficulty) {
     updateBattleUI();
 
     // Intro sequence:
-    // sprites in → stat boxes up → pause → qcard up
+    // sprites in â†’ stat boxes up â†’ pause â†’ qcard up
     (async () => {
-      // ✅ Ensure initial styles paint BEFORE we toggle end-state classes
+      // âœ… Ensure initial styles paint BEFORE we toggle end-state classes
       await raf2();
 
       // reset in case of re-entry
@@ -1307,7 +1380,7 @@ function makeAdditionQuestion(grade, difficulty) {
       qcard.classList.remove("is-up");
       await battleSleep(260); // gives the fade a moment to read
 
-      // ✅ If correct, run a quick tap-to-attack mini game to earn BONUS damage
+      // âœ… If correct, run a quick tap-to-attack mini game to earn BONUS damage
       let dmg = correct
         ? Number(state.profile.attack || 0)
         : Number(state.monster.attack || 0);
@@ -1319,13 +1392,13 @@ function makeAdditionQuestion(grade, difficulty) {
 
       await playAttackFx({ who: correct ? "hero" : "monster" });
 
-      // Small beat after impact so the hit “lands”
+      // Small beat after impact so the hit â€œlandsâ€
       await battleSleep(0);
 
       // Apply damage AFTER the attack so the HP drop reads clearly
 
       if (dmg > 0) {
-        // 🫁 small beat so impact lands before HP moves
+        // ðŸ« small beat so impact lands before HP moves
         await battleSleep(PRE_HP_DROP_BEAT_MS);
 
         if (correct) state.monster.damage += dmg;
@@ -1341,8 +1414,8 @@ if (didWin() || didLose()) {
     : stage?.querySelector("[data-hero-sprite]");
 
   if (target) {
-/* 4️⃣ IMPACT — SHAKE + FX TOGETHER */
-target.classList.remove("mm-mini-hit", "mm-mini-flash"); // ✅ make sure shake can win
+/* 4ï¸âƒ£ IMPACT â€” SHAKE + FX TOGETHER */
+target.classList.remove("mm-mini-hit", "mm-mini-flash"); // âœ… make sure shake can win
 target.offsetWidth; // restart-safe
 target.classList.add("mm-hit-shake");
 
@@ -1362,7 +1435,7 @@ await battleSleep(420);
         // Next question
         nextQuestion();
       } else {
-        // No damage → repeat the same question
+        // No damage â†’ repeat the same question
         state.battle.qStartTs = performance.now();
       }
 
@@ -1409,7 +1482,7 @@ await battleSleep(420);
   }
 
   async function endBattle({ won }) {
-    // 🫁 let the final hit + HP drain fully land
+    // ðŸ« let the final hit + HP drain fully land
     await battleSleep(END_BATTLE_BEAT_MS);
 
     if (won) {

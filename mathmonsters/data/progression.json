@@ -2,7 +2,7 @@
   "attackMini": {
   "countdownFrom": 3,
   "countdownStepMs": 320,
-  "windowMs": 1600,
+  "windowMs": 3200,
   "bonusPerTap": 0.5,
   "maxBonus": 3
 },

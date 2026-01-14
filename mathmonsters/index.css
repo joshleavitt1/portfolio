@@ -1,5 +1,5 @@
-/* index.css — FULL SWAP-IN */
-/* Math Monsters — single global stylesheet (iOS 17-ish, playful, minimal) */
+/* index.css â€” FULL SWAP-IN */
+/* Math Monsters â€” single global stylesheet (iOS 17-ish, playful, minimal) */
 
 :root{
   --mm-font: "Arial Rounded MT Bold", "Arial Rounded", Arial, sans-serif;
@@ -86,7 +86,7 @@ html, body{
   overscroll-behavior: none; /* stops bounce on supported browsers */
 }
 
-/* iOS Safari: prevent “page pan” / rubber-band */
+/* iOS Safari: prevent â€œpage panâ€ / rubber-band */
 body.mm{
   font-weight: 800;
 
@@ -233,7 +233,7 @@ body.is-loader .mm-bubbles{
   width: 64%;
   text-align: center;
 
-  display: flex;          /* ✅ required */
+  display: flex;          /* âœ… required */
   flex-direction: column; /* common card layout */
   gap: 8px;               /* now works */
 }
@@ -350,7 +350,7 @@ body.is-loader .mm-bubbles{
   width: 0%;
   border-radius: 999px;
 
-  /* ✅ TOP → BOTTOM */
+  /* âœ… TOP â†’ BOTTOM */
   background: linear-gradient(
     180deg,
     var(--progress-gradient-start),
@@ -441,7 +441,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   padding: 6px 14px;
   border-radius: 999px;
 
-  /* ✅ filled green pill */
+  /* âœ… filled green pill */
   background: linear-gradient(
     180deg,
     #36dc36,
@@ -449,7 +449,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   );
   border: none;
 
-  /* ✅ white text */
+  /* âœ… white text */
   color: #ffffff;
   font-weight: 800;
   letter-spacing: .2px;
@@ -916,8 +916,8 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   flex: 0 0 300px !important;
 }
 
-/* Inner sprite images — never resize */
-/* Inner sprite images — never resize */
+/* Inner sprite images â€” never resize */
+/* Inner sprite images â€” never resize */
 .mm-homeSwim,
 .mm-spriteImg,
 .mm-evolve__img{
@@ -944,8 +944,8 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   justify-content: center;
 
   gap: 40px;
-  height: auto;        /* 🔥 important */
-  min-height: unset;  /* 🔥 important */
+  height: auto;        /* ðŸ”¥ important */
+  min-height: unset;  /* ðŸ”¥ important */
 }
 
 .mm-homeHero.is-locked{
@@ -966,7 +966,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   height: var(--hero-size);
   display: block;
 
-  /* keeps any blur from “bleeding” past the 300x300 area */
+  /* keeps any blur from â€œbleedingâ€ past the 300x300 area */
   overflow: hidden;
 
   /* helps prevent weird blend artifacts leaking outside */
@@ -991,7 +991,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
     rgba(255,255,255,0) 54%
   );
 
-  /* IMPORTANT: make the gradient “travel” by moving its position */
+  /* IMPORTANT: make the gradient â€œtravelâ€ by moving its position */
   background-size: 260% 260%;
   background-position: -180% 50%;
   opacity: 0;
@@ -999,9 +999,9 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   mix-blend-mode: screen;
   filter: none; /* blur can make it feel like a big overlay */
 
-  animation: none; /* ⛔ paused until explicitly enabled */
+  animation: none; /* â›” paused until explicitly enabled */
 
-  /* ✅ alpha mask from the sprite PNG */
+  /* âœ… alpha mask from the sprite PNG */
   -webkit-mask-image: var(--mm-sprite-mask);
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
@@ -1013,7 +1013,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   mask-size: 100% 100%;
 }
 
-/* ✅ shimmer only after hero has fully loaded in */
+/* âœ… shimmer only after hero has fully loaded in */
 .mm-heroShimmer.is-shimmering::after{
   animation: mmHeroShimmerBG 3.2s ease-in-out infinite;
 }
@@ -1037,8 +1037,8 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   left: 50%;
   bottom: 8px;
 
-  width: 220px;   /* ⬅️ was 160px */
-  height: 40px;   /* ⬅️ was 28px */
+  width: 220px;   /* â¬…ï¸ was 160px */
+  height: 40px;   /* â¬…ï¸ was 28px */
 
   transform: translateX(-50%);
 
@@ -1051,7 +1051,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
     rgba(0,0,0,0) 75%
   );
 
-  filter: blur(7px);  /* ⬅️ optional: slightly softer for larger shadow */
+  filter: blur(7px);  /* â¬…ï¸ optional: slightly softer for larger shadow */
   opacity: .75;
 
   pointer-events: none;
@@ -1082,7 +1082,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
 
 
 /* ================================
-   Home “Exciting” Intro
+   Home â€œExcitingâ€ Intro
 ================================ */
 
 /* root hook on Home */
@@ -1107,7 +1107,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 
-/* Make the hero “arrive” after the top UI */
+/* Make the hero â€œarriveâ€ after the top UI */
 .mm-homeIntro .mm-art{
   position: relative;
   transform: translate3d(0, 10px, 0) scale(.98);
@@ -1134,7 +1134,7 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   transform: translate(-50%, -50%) scale(.6);
   opacity: 0;
 
-  /* soft “spark” dots */
+  /* soft â€œsparkâ€ dots */
   background:
     radial-gradient(circle, rgba(255,255,255,.85) 0 2px, transparent 3px) 20px 30px / 70px 70px,
     radial-gradient(circle, rgba(47,209,255,.85) 0 2px, transparent 3px) 10px 50px / 90px 90px,
@@ -1219,7 +1219,7 @@ body.is-home .mm-homeSwimWrap{
 }
 
 .mm-battle-fab img{
-  width: 100px;   /* ← try 72 or 80 */
+  width: 100px;   /* â† try 72 or 80 */
   height: 100px;
   object-fit: contain;
   pointer-events: none;
@@ -1311,6 +1311,10 @@ body.is-home .mm-screen__grow{
   width: 100%;
   height: 100%;
   object-fit: contain;
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
   backface-visibility: hidden;
   will-change: transform;
   filter: none;
@@ -1375,12 +1379,12 @@ body.is-battle .mm-battleStage{
 }
 
 /* ================================
-   Battle LOADING (intro) — horizontal slide-in
-   hero: left ➜ right
-   monster: right ➜ left
+   Battle LOADING (intro) â€” horizontal slide-in
+   hero: left âžœ right
+   monster: right âžœ left
 ================================ */
 
-/* Start OFF-position (hidden) — then JS adds .is-in and we slide toward center */
+/* Start OFF-position (hidden) â€” then JS adds .is-in and we slide toward center */
 .mm-spriteWrap.hero{
   transform: translate3d(-96px, var(--battle-y), 0) scale(1.02);
 }
@@ -1389,7 +1393,7 @@ body.is-battle .mm-battleStage{
   transform: translate3d(96px, calc(var(--battle-y) * -1), 0) scale(1.02);
 }
 
-/* ✅ Make wrappers visible once battle intro runs */
+/* âœ… Make wrappers visible once battle intro runs */
 .mm-spriteWrap.hero.is-in{
   opacity: 1;
   transform: translate3d(16px, calc(-2px + var(--battle-y)), 0) scale(1.02);
@@ -1474,7 +1478,7 @@ body.is-battle .mm-battleStage{
   animation: mmAttackMonsterRL calc(var(--attack-slide-ms) * var(--battle-scale)) var(--attack-ease) 1 both;
 }
 
-/* linear timing + shaped keyframes = consistent “buttery” motion */
+/* linear timing + shaped keyframes = consistent â€œbutteryâ€ motion */
 @keyframes mmAttackHeroLR{
   0%   { transform: translate3d(0,0,0) scale(1); }
   22%  { transform: translate3d(-8px, 3px, 0) scale(0.985); } /* gentle anticipate */
@@ -1559,14 +1563,14 @@ body.is-battle .mm-battleStage{
 .mm-qCard{
   position: absolute;
 
-  /* ✅ Match end-card overlay gutters */
+  /* âœ… Match end-card overlay gutters */
   left: calc(var(--pad) + var(--safe-left));
   right: calc(var(--pad) + var(--safe-right));
 
-  /* ✅ Same bottom treatment as end card */
+  /* âœ… Same bottom treatment as end card */
   bottom: calc(var(--pad) + var(--safe-bottom));
 
-  /* ✅ Same “400 desktop, shrink on mobile” behavior */
+  /* âœ… Same â€œ400 desktop, shrink on mobileâ€ behavior */
   max-width: 400px;
   margin: 0 auto;
 
@@ -1646,7 +1650,7 @@ body.is-battle .mm-battleStage{
   inset: 0;
   display:none;
 
-  align-items: flex-end;     /* ⬅️ push card to bottom */
+  align-items: flex-end;     /* â¬…ï¸ push card to bottom */
   justify-content: center;   /* horizontal center */
 
   padding:
@@ -1788,7 +1792,7 @@ body.is-battle .mm-battleStage{
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center; /* ✅ vertical center */
+  justify-content: center; /* âœ… vertical center */
   align-items: center;
 
   gap: 24px;
@@ -1875,22 +1879,22 @@ body.is-battle .mm-battleStage{
 .mm-answer.is-correct{
   border-color: #00B600;
   background: rgba(0, 182, 0, 0.08);
-  color: #00B600;            /* ✅ text highlight */
+  color: #00B600;            /* âœ… text highlight */
   font-weight: 800;
 }
 .mm-answer.is-wrong{
   border-color: #E20000;
   background: rgba(226, 0, 0, 0.08);
-  color: #E20000;            /* ✅ text highlight */
+  color: #E20000;            /* âœ… text highlight */
   font-weight: 800;
 }
 .mm-answer[disabled]{
   opacity: 1;
   transform: none;
 
-  /* ✅ keep non-right/wrong answers dark */
+  /* âœ… keep non-right/wrong answers dark */
   color: var(--ink);
-  -webkit-text-fill-color: var(--ink); /* ✅ Safari fix */
+  -webkit-text-fill-color: var(--ink); /* âœ… Safari fix */
 }
 
 
@@ -1924,7 +1928,7 @@ body.is-battle .mm-battleStage{
   /* fade-in */
   display: none;
   opacity: 0;
-  transition: opacity 900ms ease-out; /* ⬅️ slow cinematic fade */
+  transition: opacity 900ms ease-out; /* â¬…ï¸ slow cinematic fade */
 
   align-items: center;
   justify-content: center;
@@ -1968,7 +1972,7 @@ body.is-battle .mm-battleStage{
   transform: translateZ(0);
 }
 
-/* subtle “rising energy” particles (no assets) */
+/* subtle â€œrising energyâ€ particles (no assets) */
 .mm-evolve__stage::before{
   content:"";
   position:absolute;
@@ -2013,7 +2017,7 @@ body.is-battle .mm-battleStage{
   filter: blur(10px) drop-shadow(0 18px 24px rgba(0,0,0,.28));
 }
 
-/* ✅ one-shot pulse (JS triggers this 3×) */
+/* âœ… one-shot pulse (JS triggers this 3Ã—) */
 .mm-evolve.is-pulse .mm-evolve__img--from{
   animation: mmEvolvePulse 520ms var(--spring) 0ms 1;
 }
@@ -2023,7 +2027,7 @@ body.is-battle .mm-battleStage{
   100% { transform: scale(1); filter: drop-shadow(0 18px 24px rgba(0,0,0,.28)); }
 }
 
-/* ✅ slower morph timing via --evolve-ms */
+/* âœ… slower morph timing via --evolve-ms */
 .mm-evolve.is-morph .mm-evolve__img--from{
   animation: mmEvolveFrom var(--evolve-ms, 1650ms) cubic-bezier(.18,.92,.22,1) 0ms both;
 }
@@ -2031,7 +2035,7 @@ body.is-battle .mm-battleStage{
   animation: mmEvolveTo var(--evolve-ms, 1650ms) cubic-bezier(.18,.92,.22,1) 0ms both;
 }
 
-/* “energy ring” wipe */
+/* â€œenergy ringâ€ wipe */
 .mm-evolve__ring{
   position:absolute;
   inset: -18%;
@@ -2078,7 +2082,7 @@ body.is-battle .mm-battleStage{
 }
 
 /* ================================
-   Home → Evolution handoff
+   Home â†’ Evolution handoff
    Fade out EVERYTHING except background
 ================================ */
 .mm-homeIntro.is-evoFadeOut{
@@ -2117,7 +2121,7 @@ body.is-battle .mm-battleStage{
 }
 
 
-/* ✅ No hover lift when disabled */
+/* âœ… No hover lift when disabled */
 .button[disabled]:hover{ transform:none; box-shadow:none; }
 
 
@@ -2168,6 +2172,8 @@ body.is-battle .mm-battleStage{
 .mm-attackMini .mm-card{ width: 100%; }
 .mm-attackMini__card{
   width: 100%;
+  display: flex;
+  flex-direction: column;
   text-align: center;
   pointer-events: auto; /* card can receive taps if needed */
 }
@@ -2175,32 +2181,24 @@ body.is-battle .mm-battleStage{
 /* Keep your existing 24px inner padding */
 .mm-attackMini__card.mm-card__pad{ padding: 24px; }
 
-/* ================================
-   Timer slot (countdown -> ring)
-   Fixes the “glitchy line” by:
-   - removing borders/shadows
-   - forcing GPU layer + tiny rotate
-   - avoiding edge antialias seams
-================================ */
+/* Put hit bar ABOVE spinner (both ready + live) */
+.mm-attackMini__title{ order: 1; }
+.mm-attackMini__sub{ order: 2; }
+.mm-attackMini__meterWrap{ order: 3; margin: 10px 0 14px; }
+.mm-attackMini__timeSlot{ order: 4; }
+
+/* We show Hits in the subline during live, so hide the old label next to the bar */
+.mm-attackMini__meterLabelSolo{ display: none !important; }
 
 /* ================================
-   MINI TIMER: Rounded Rectangle
+   MINI TIMER
 ================================ */
 
-/* Timer slot becomes a pill/rounded-rect */
-/* ================================
-   MINI TIMER: Small Circle + Thin Red Ring
-================================ */
-
-/* ================================
-   MINI TIMER: 80x80 + half-thickness ring
-================================ */
-
-/* Timer slot */
+/* --- MINI GAME: countdown text centered in the circle --- */
 .mm-attackMini__timeSlot{
   position: relative;
-  width: 80px;      /* ✅ 80x80 */
-  height: 80px;     /* ✅ 80x80 */
+  width: 80px;
+  height: 80px;
   margin: 4px auto 12px;
 
   display: flex;
@@ -2208,105 +2206,147 @@ body.is-battle .mm-battleStage{
   justify-content: center;
 
   border-radius: 999px;
-  background: rgba(0,0,0,.08);
   overflow: hidden;
-
-  transform: translateZ(0);
-  backface-visibility: hidden;
 }
 
-/* Both states sit in the same slot */
-.mm-attackMini__count,
-.mm-attackMini__circle{
+/* Countdown number sits perfectly centered inside the circle */
+.mm-attackMini__count{
   position: absolute;
   inset: 0;
   margin: 0;
+
   display: flex;
   align-items: center;
   justify-content: center;
-}
 
-/* Countdown number (3,2,1) */
-.mm-attackMini__count{
-  font-weight: 800;
-  font-size: 28px; /* scales better in 80x80 (was 24px) */
+  width: 100%;
+  height: 100%;
+
+  font-family: var(--mm-font);
+  font-size: 48px;
+  font-weight: 900;
   line-height: 1;
-  color: var(--ink);
 
-  opacity: 1;
-  transform: scale(1);
-  transition:
-    opacity 180ms var(--butter),
-    transform 220ms var(--spring);
+  /* IMPORTANT: remove the dark rounded-rect */
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+
+  color: var(--ink);
 }
 
-/* Live timer ring */
-.mm-attackMini__circle{
-  /* Progress (0–100) is driven by JS via --p */
-  --p: 0;
+/* --- MINI GAME: spinner uses the element your JS actually creates --- */
+.mm-attackMini__spinner{
+  position: absolute;
+  inset: 0;
 
-  /* Hot gradient */
-  --hot-red: #ff3b2f;
-  --hot-orange: #ff8a00;
-  --hot-yellow: #ffc400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  /* Ring thickness */
-  --mini-ring: 0.75px; /* half thickness */
-
-  border-radius: 999px;
-  overflow: hidden;
-
-  /* Appear / morph */
   opacity: 0;
   transform: scale(.92) translateZ(0);
   transition:
     opacity 220ms var(--butter),
     transform 300ms var(--spring);
 
-  /* Hot glow */
-  box-shadow:
-    0 0 0 2px rgba(255,255,255,.25) inset,
-    0 0 14px rgba(255,90,40,.45),
-    0 0 28px rgba(255,120,0,.25);
-
-  /* Progress ring (filled part = hot gradient, remainder = faint white) */
-  background: conic-gradient(
-    from -90deg,
-    var(--hot-yellow) 0%,
-    var(--hot-orange) 35%,
-    var(--hot-red) 65%,
-    rgba(255,255,255,.15) calc(var(--p) * 1%),
-    rgba(255,255,255,.15) 100%
-  );
-
-  /* Hollow out the center to form a ring */
-  -webkit-mask: radial-gradient(
-    farthest-side,
-    transparent calc(50% - var(--mini-ring)),
-    #000        calc(50% - var(--mini-ring))
-  );
-  mask: radial-gradient(
-    farthest-side,
-    transparent calc(50% - var(--mini-ring)),
-    #000        calc(50% - var(--mini-ring))
-  );
+  pointer-events: none;
 }
 
+.mm-spinnerBasic{
+  /* JS writes --p from 1 → 0 */
+  --p: 1;
 
-/* Red arc */
-.mm-attackMini__circle::before{
-  content:"";
-  position:absolute;
-  inset: 0;
+  /* 🎨 default theme (ATTACK) */
+  --spin-color: #FF5B6E;
+  --spin-track: rgba(255,255,255,.22);
+
+  position: relative;
+  width: 80px;
+  height: 80px;
   border-radius: 999px;
 
   background: conic-gradient(
-    rgba(255, 0, 30, 0.92) calc(var(--p) * 1%),
-    rgba(255, 0, 30, 0) 0
+    from -90deg,
+    var(--spin-color) 0deg,
+    var(--spin-color) calc(var(--p) * 1turn),
+    var(--spin-track) calc(var(--p) * 1turn),
+    var(--spin-track) 360deg
   );
 
-  transform: rotate(-90deg); /* start at top */
+  /* ring mask */
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(50% - 1.5px),
+    #000        calc(50% - 1.5px)
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(50% - 1.5px),
+    #000        calc(50% - 1.5px)
+  );
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.25) inset,
+    0 10px 18px rgba(0,0,0,.18);
 }
+
+.mm-attackMini.is-ready .mm-spinnerBasic{
+  --spin-color: #2FD1FF;
+}
+
+.mm-spinnerBasic{
+  filter:
+    drop-shadow(
+      0 0
+      calc((1 - var(--p)) * 10px)
+      rgba(255,90,60,.45)
+    );
+}
+
+
+/* When live, show spinner and hide countdown */
+.mm-attackMini.is-live .mm-attackMini__spinner{
+  opacity: 1;
+  transform: scale(1) translateZ(0);
+}
+.mm-attackMini.is-live .mm-attackMini__count{
+  opacity: 0;
+  transform: scale(.85);
+}
+
+@keyframes mmMiniSpin{ to{ transform: rotate(360deg); } }
+
+/* READY: show spinner + pulse 3× over 3 seconds */
+.mm-attackMini.is-ready .mm-attackMini__spinner{
+  opacity: 1;
+  transform: scale(1) translateZ(0);
+}
+
+/* Pulse feel (1s each, 3 iterations = 3 seconds total) */
+.mm-attackMini.is-ready .mm-spinnerBasic{
+  animation: mmReadyPulse 1000ms ease-in-out 3;
+}
+
+@keyframes mmReadyPulse{
+  0%   { transform: scale(1);    filter: brightness(1); }
+  35%  { transform: scale(1.08); filter: brightness(1.45); }
+  70%  { transform: scale(1.02); filter: brightness(1.15); }
+  100% { transform: scale(1);    filter: brightness(1); }
+}
+
+/* READY: hide "Hits: X" label until live (but keep power bar visible + empty) */
+.mm-attackMini:not(.is-live) .mm-attackMini__meterLabelSolo{
+  opacity: 0;
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+
+/* Ensure the old numeric countdown never shows */
+.mm-attackMini__count{ display:none !important; }
+
 
 /* Live state toggles */
 .mm-attackMini.is-live .mm-attackMini__circle{
@@ -2390,6 +2430,115 @@ body.is-battle .mm-battleStage{
 
 .mm-attackMini__target.is-live:active{
   transform: translateZ(0) scale(0.96);
+}
+
+
+/* Visible random hit target (spawns over monster) */
+.mm-attackMini__hitTarget{
+  position: absolute;
+  z-index: 68;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  border-radius: 999px;
+  background: transparent;
+  pointer-events: none;
+  touch-action: none;
+  opacity: 0;
+  transform: translateZ(0) scale(.92);
+  transition:
+    opacity 180ms var(--butter),
+    transform 260ms var(--spring),
+    filter 220ms var(--butter);
+  filter:
+    drop-shadow(0 14px 18px rgba(0,0,0,.20))
+    drop-shadow(0 0 18px rgba(47,209,255,.24));
+}
+
+.mm-attackMini__hitTarget.is-live{
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateZ(0) scale(1);
+}
+
+.mm-attackMini__hitTarget::before{
+  content:"";
+  position:absolute;
+  inset: 0;
+  border-radius: 999px;
+
+  /* glossy ring */
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(255,255,255,0) 60%),
+    conic-gradient(from -90deg,
+      rgba(47,209,255,.95),
+      rgba(108,255,184,.92),
+      rgba(47,209,255,.95)
+    );
+
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(50% - 3px),
+    #000        calc(50% - 3px)
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(50% - 3px),
+    #000        calc(50% - 3px)
+  );
+
+  opacity: .98;
+}
+
+.mm-attackMini__hitTarget::after{
+  content:"";
+  position:absolute;
+  left: 50%;
+  top: 50%;
+  width: 70%;
+  height: 70%;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+/* inner dot */
+.mm-attackMini__hitDot{
+  position:absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%,
+    rgba(255,255,255,.98),
+    rgba(47,209,255,.78) 55%,
+    rgba(0,106,255,.24) 78%,
+    rgba(0,106,255,0) 92%
+  );
+  box-shadow:
+    0 10px 16px rgba(0,0,0,.16),
+    0 0 16px rgba(47,209,255,.26);
+}
+
+/* punchy "pop" when re-spawning */
+.mm-attackMini__hitTarget.is-pop{
+  animation: mmMiniTargetPop 240ms var(--spring) 1;
+}
+@keyframes mmMiniTargetPop{
+  0%   { transform: translateZ(0) scale(.86); }
+  60%  { transform: translateZ(0) scale(1.10); }
+  100% { transform: translateZ(0) scale(1); }
+}
+
+/* score number style inside label */
+.mm-attackMini__score{
+  display:inline-block;
+  min-width: 2ch;
+  font-variant-numeric: tabular-nums;
+  color: rgba(13,20,32,.85);
 }
 
 /* Tap burst + hit FX (kept from your current file) */
@@ -2495,3 +2644,12 @@ body.is-loader .mm-attackMini{ display: none !important; }
 
 /* Global type weight override */
 html, body, button, input, select, textarea{ font-weight: 800; }
+
+@keyframes mm-miniPulse{
+  0%, 100%{ transform: scale(1); filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
+  50%{ transform: scale(0.92); }
+}
+.mm-spinnerBasic.is-pulsing{
+  animation: mm-miniPulse 1s ease-in-out 3;
+}
+
