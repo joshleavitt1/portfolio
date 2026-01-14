@@ -11,6 +11,45 @@
   const bubblesEl = document.getElementById("bubbles");
   const QCARD_IN_DELAY_MS = 320; // was effectively ~1800ms via battlePause()
 
+  // ---------- iOS Safari: prevent double-tap / pinch zoom ----------
+  // (Useful for game-like tap interactions. Keeps scrolling/zooming from hijacking rapid taps.)
+  (function lockZoomGestures() {
+    // 1) Block browser "dblclick" zoom (some WebViews / desktop Safari)
+    document.addEventListener(
+      "dblclick",
+      (e) => {
+        e.preventDefault();
+      },
+      { passive: false }
+    );
+
+    // 2) Block iOS gesture zoom (pinch)
+    ["gesturestart", "gesturechange", "gestureend"].forEach((evt) => {
+      document.addEventListener(
+        evt,
+        (e) => {
+          e.preventDefault();
+        },
+        { passive: false }
+      );
+    });
+
+    // 3) Block iOS double-tap zoom (touchend heuristic)
+    let lastTouchEnd = 0;
+    document.addEventListener(
+      "touchend",
+      (e) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+          e.preventDefault();
+        }
+        lastTouchEnd = now;
+      },
+      { passive: false }
+    );
+  })();
+
+
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const raf = () => new Promise((r) => requestAnimationFrame(r));
@@ -520,27 +559,33 @@ function makeAdditionQuestion(grade, difficulty) {
     overlay.innerHTML = `
       <div class="mm-attackMini__wrap" role="dialog" aria-label="Attack mini game">
         <div class="mm-attackMini__card mm-card mm-card__pad">
-          <div class="mm-attackMini__title" data-mini-title>Attack Countdown</div>
+          <div class="mm-attackMini__title" data-mini-title>Attack</div>
           <div class="mm-attackMini__sub" data-mini-sub>Tap the enemy as fast as you can.</div>
 
-          <!-- Countdown number (hidden during live ATTACK) -->
-          <div class="mm-attackMini__count" data-mini-count>3</div>
-
-          <!-- Circular timer (shown during live ATTACK) -->
-          <div class="mm-attackMini__circle" data-mini-circle style="--p:0">
-            <div class="mm-attackMini__circleInner" aria-hidden="true"></div>
+          <!-- Countdown morphs into circular timer in-place -->
+          <div class="mm-attackMini__timeSlot" aria-hidden="true">
+            <div class="mm-attackMini__count" data-mini-count>3</div>
+            <div class="mm-attackMini__circle" data-mini-circle style="--p:0">
+              <div class="mm-attackMini__circleInner" aria-hidden="true"></div>
+            </div>
           </div>
 
-          <div class="mm-attackMini__meterLabelSolo">Power Bar</div>
+          <div class="mm-attackMini__meterWrap" data-mini-meter>
+            <div class="mm-attackMini__meterLabelSolo" data-mini-meter-label>Power Bar</div>
 
-          <div class="mm-attackMini__meter" aria-hidden="true">
-            <div class="mm-attackMini__meterFill" data-mini-power></div>
+            <div class="mm-progress mm-progress--power mm-attackMini__progress" aria-hidden="true">
+              <div class="mm-progress__fill" data-mini-power></div>
+            </div>
           </div>
         </div>
       </div>
     `;
 
     stage.appendChild(overlay);
+
+    // slide/fade the card up into place
+    await raf2();
+    overlay.classList.add("is-in");
 
     const titleEl = overlay.querySelector("[data-mini-title]");
     const countEl = overlay.querySelector("[data-mini-count]");
@@ -581,7 +626,7 @@ function makeAdditionQuestion(grade, difficulty) {
 
     // Countdown
     overlay.classList.remove("is-live");
-    titleEl.textContent = "Attack Countdown";
+    titleEl.textContent = "Attack";
     subEl.textContent = "Tap the enemy as fast as you can.";
     if (powerEl) powerEl.style.width = "0%";
     if (circleEl) circleEl.style.setProperty("--p", "0");
@@ -592,10 +637,14 @@ function makeAdditionQuestion(grade, difficulty) {
     }
 
     // Tap window
-    titleEl.textContent = "Attack!";
-    countEl.textContent = "";
+    titleEl.textContent = "Attack";
     subEl.textContent = "Tap the enemy as fast as you can.";
+
+    // Start the morph (countdown → circle) in-place
     overlay.classList.add("is-live");
+    // Let the count fade/scale out before clearing text
+    await sleep(120);
+    countEl.textContent = "";
     target.classList.add("is-live");
 
     let taps = 0;
@@ -670,13 +719,10 @@ function makeAdditionQuestion(grade, difficulty) {
     target.removeEventListener("pointerdown", onTap);
     target.removeEventListener("touchstart", onTap);
 
-    // Result moment (quick beat, then close)
-    overlay.classList.remove("is-live");
-    titleEl.textContent = "Attack!";
-    subEl.textContent = "Nice!";
-    countEl.textContent = "";
+    // Time's up → tiny beat → card slides out → proceed
     await battleSleep(180);
-
+    overlay.classList.add("is-out");
+    await sleep(420);
     cleanup();
 
     const bonus = Math.min(taps * bonusPerTap, maxBonus);
@@ -800,6 +846,11 @@ function makeAdditionQuestion(grade, difficulty) {
     // show loader visuals
     document.body.classList.add("is-loader");
 
+      // ✅ hard cleanup: if mini-game UI was ever present, remove it
+  document.querySelectorAll(
+    ".mm-attackMini, .mm-attackMini__target, .mm-miniBurst"
+  ).forEach((el) => el.remove());
+
     appEl.innerHTML = `
       <section class="mm-loaderFull" aria-label="Loading">
         <div class="mm-loaderFull__inner">
@@ -896,13 +947,22 @@ function makeAdditionQuestion(grade, difficulty) {
 
             <!-- XP reward burst (only shown when returning from a win) -->
             <div class="mm-xpReward" data-xp-reward aria-hidden="true">
-              <div class="mm-xpReward__label" data-xp-reward-label>+${xpDelta || 1} XP</div>
+              <div class="mm-xpReward__label" data-xp-reward-label>+${xpDelta || 1} Gem</div>
               <div class="mm-xpReward__spark" style="--dx:-54px; --dy:-26px; --d:0ms"></div>
               <div class="mm-xpReward__spark" style="--dx:-18px; --dy:-42px; --d:40ms"></div>
               <div class="mm-xpReward__spark" style="--dx:22px; --dy:-44px; --d:80ms"></div>
               <div class="mm-xpReward__spark" style="--dx:56px; --dy:-24px; --d:120ms"></div>
               <div class="mm-xpReward__spark" style="--dx:-36px; --dy:6px; --d:60ms"></div>
               <div class="mm-xpReward__spark" style="--dx:40px; --dy:8px; --d:100ms"></div>
+
+              <!-- extra confetti dots (v2) -->
+              <div class="mm-xpReward__confetti" data-xp-confetti style="--dx:-70px; --dy:-32px; --d:0ms"></div>
+              <div class="mm-xpReward__confetti" data-xp-confetti style="--dx:-34px; --dy:-54px; --d:40ms"></div>
+              <div class="mm-xpReward__confetti" data-xp-confetti style="--dx:6px;   --dy:-62px; --d:70ms"></div>
+              <div class="mm-xpReward__confetti" data-xp-confetti style="--dx:46px;  --dy:-50px; --d:95ms"></div>
+              <div class="mm-xpReward__confetti" data-xp-confetti style="--dx:76px;  --dy:-30px; --d:120ms"></div>
+              <div class="mm-xpReward__confetti" data-xp-confetti style="--dx:-50px; --dy:10px;  --d:60ms"></div>
+              <div class="mm-xpReward__confetti" data-xp-confetti style="--dx:58px;  --dy:12px;  --d:100ms"></div>
             </div>
           </div>
         </div>
@@ -935,21 +995,44 @@ function makeAdditionQuestion(grade, difficulty) {
     });
 
     const intro = appEl.querySelector("[data-home-intro]");
+    const xpCard = appEl.querySelector(".mm-xpCard");
     const bar = appEl.querySelector("[data-xp-bar]");
     const fill = appEl.querySelector("[data-xp-fill]");
     const xpText = appEl.querySelector("[data-xp-text]");
     const reward = appEl.querySelector("[data-xp-reward]");
     const rewardLabel = appEl.querySelector("[data-xp-reward-label]");
+    const xpCardEl = appEl.querySelector(".mm-xpCard");
 
     const popXpReward = (delta) => {
       const d = Math.max(1, Number(delta || 1));
       if (!reward || !rewardLabel) return;
-      rewardLabel.textContent = `+${d} Gem`;
+
+      // Label: gem icon + number
+      rewardLabel.innerHTML = `
+        <img class="mm-xpReward__gem" src="images/additional/gem.png" alt="" aria-hidden="true" />
+        <span class="mm-xpReward__num">+${d}</span>
+        <span class="mm-xpReward__txt">Gem</span>
+      `;
+
+      // Restart reward animation
       reward.classList.remove("is-show");
-      void reward.offsetWidth; // restart animation
+      void reward.offsetWidth;
       reward.classList.add("is-show");
+
+      // Premium micro-pop on the card + bar glint
+      const card = reward.closest(".mm-xpCard");
+      card?.classList.remove("is-gemPop");
+      bar?.classList.remove("is-gemPop");
+      void card?.offsetWidth;
+      card?.classList.add("is-gemPop");
+      bar?.classList.add("is-gemPop");
+
       clearTimeout(popXpReward._t);
-      popXpReward._t = setTimeout(() => reward.classList.remove("is-show"), 2400);
+      popXpReward._t = setTimeout(() => {
+        reward.classList.remove("is-show");
+        card?.classList.remove("is-gemPop");
+        bar?.classList.remove("is-gemPop");
+      }, 2400);
     };
 
     // Always: Home intro animation (staggered)

@@ -13,7 +13,7 @@
         "heroSprite": "images/hero/level1/hero_sprite_1.png",
         "attackSprite": "images/hero/level1/attack_sprite_1.png",
         "attack": 1,
-        "health": 24,
+        "health": 1,
         "damage": 0
       },
       "2": {
@@ -21,7 +21,7 @@
         "heroSprite": "images/hero/level2/hero_sprite_2.png",
         "attackSprite": "images/hero/level2/attack_sprite_2.png",
         "attack": 1,
-        "health": 24,
+        "health": 1,
         "damage": 0
       },
       "3": {
@@ -29,7 +29,7 @@
         "heroSprite": "images/hero/level3/hero_sprite_3.png",
         "attackSprite": "images/hero/level3/attack_sprite_3.png",
         "attack": 1,
-        "health": 24,
+        "health": 1,
         "damage": 0
       }
     }

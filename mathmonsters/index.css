@@ -9,11 +9,13 @@
 
   --mm-bg-base: #0057ff;
   --mm-bg-radial: radial-gradient(
-    circle at 50% 25%,
-    rgba(0,0,0,0.10) 0%,
-    rgba(0,0,0,0.06) 28%,
-    rgba(0,0,0,0.00) 60%
-  );
+    circle at 50% 50%,
+    rgba(0, 0, 0, 0.16) 0%,
+    rgba(0, 0, 0, 0.12) 32%,
+    rgba(0, 0, 0, 0.08) 48%,
+    rgba(0, 0, 0, 0.04) 64%,
+    rgba(0, 0, 0, 0.00) 80%
+  );  
   
   --ink: #272b34;
   --ink2: rgba(13,20,32,.70);
@@ -86,6 +88,8 @@ html, body{
 
 /* iOS Safari: prevent “page pan” / rubber-band */
 body.mm{
+  font-weight: 800;
+
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -118,6 +122,24 @@ body {
 }
 
 *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+
+/* ---------- iOS Safari: prevent double-tap zoom + selection/callout ---------- */
+html, body{
+  -webkit-text-size-adjust: 100%;
+}
+
+body, #app{
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow taps, but don't let the browser interpret them as zoom gestures */
+#app, .mm-shell, .mm-screen, .mm-battleStage, .mm-homeHero, .mm-spriteImg, .mm-qCard{
+  touch-action: manipulation;
+}
+
 html,body{ height:100%; }
 
 body.mm{
@@ -242,7 +264,7 @@ body.is-loader .mm-bubbles{
 .mm-label{
   font-size: 12px;
   color: rgba(13,20,32,.65);
-  font-weight: 700;
+  font-weight: 800;
 }
 .mm-input, .mm-select{
   appearance:none;
@@ -252,7 +274,7 @@ body.is-loader .mm-bubbles{
   background: rgba(255,255,255,.90);
   padding: 12px 12px;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--ink);
   outline:none;
 }
@@ -264,7 +286,7 @@ body.is-loader .mm-bubbles{
   border-radius: 18px;
   padding: 14px 14px;
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 800;
   color: var(--ink);
   background: rgba(255,255,255,.92);
   box-shadow: 0 14px 26px rgba(0,0,0,.18);
@@ -298,7 +320,7 @@ body.is-loader .mm-bubbles{
   padding: 8px 12px;
   border-radius: 8px;
   color: rgba(255,255,255);
-  font-weight: 950;
+  font-weight: 800;
   font-size: 16px;
   letter-spacing: .2px;
   background: #001B41;
@@ -362,7 +384,7 @@ body.is-loader .mm-bubbles{
   top: calc(var(--pad) + var(--safe-top));
   transform: translateX(-50%);
   z-index: 20;
-  font-weight: 950;
+  font-weight: 800;
   font-size: 16px;
   letter-spacing: .2px;
   background: #001B41;
@@ -429,15 +451,258 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
 
   /* ✅ white text */
   color: #ffffff;
-  font-weight: 950;
+  font-weight: 800;
   letter-spacing: .2px;
   white-space: nowrap;
 
+  /* Gem reward v2 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
   box-shadow:
+    0 0 0 1px rgba(255,255,255,.16),
+    0 18px 30px rgba(0,0,0,.22),
+
     0 12px 24px rgba(0,0,0,.18),
     inset 0 1px 0 rgba(255,255,255,.35);
 }
 
+
+/* Gem reward label inner layout */
+.mm-xpReward__label{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.mm-xpReward__gem{
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.16));
+}
+.mm-xpReward__num{
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: .2px;
+  color: #ffffff;
+}
+.mm-xpReward__txt{
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: .2px;
+  color: rgba(255,255,255,.95);
+}
+
+/* Radiant burst behind the label */
+.mm-xpReward::before,
+.mm-xpReward::after{
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  width: 84px;
+  height: 84px;
+  border-radius: 999px;
+  transform: translate3d(-50%, 0, 0) scale(.55) rotate(-14deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* soft ring */
+.mm-xpReward::before{
+  background: radial-gradient(circle at 50% 50%,
+    rgba(255,255,255,.70) 0 1.5px,
+    rgba(108,255,184,.35) 18%,
+    rgba(47,209,255,.22) 36%,
+    rgba(0,106,255,0) 66%
+  );
+  filter: drop-shadow(0 18px 22px rgba(0,0,0,.18));
+}
+
+/* rays */
+.mm-xpReward::after{
+  background: conic-gradient(
+    from 0deg,
+    rgba(255,255,255,0) 0 10deg,
+    rgba(255,255,255,.32) 10deg 16deg,
+    rgba(255,255,255,0) 16deg 26deg,
+    rgba(108,255,184,.28) 26deg 32deg,
+    rgba(255,255,255,0) 32deg 44deg,
+    rgba(47,209,255,.28) 44deg 50deg,
+    rgba(255,255,255,0) 50deg 62deg
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent 44%, #000 52%);
+  mask: radial-gradient(farthest-side, transparent 44%, #000 52%);
+  filter: drop-shadow(0 18px 22px rgba(0,0,0,.18));
+}
+
+/* Premium micro-bounce + glow when gems pop */
+.mm-xpCard.is-gemPop{
+  animation: mmGemCardPop 820ms var(--spring) 0ms 1 both;
+}
+@keyframes mmGemCardPop{
+  0%   { transform: translate3d(0,0,0) scale(1); }
+  28%  { transform: translate3d(0,-6px,0) scale(1.02); }
+  52%  { transform: translate3d(0,2px,0) scale(1.00); }
+  100% { transform: translate3d(0,0,0) scale(1); }
+}
+
+/* Glint sweep across the bar */
+.mm-progress[data-xp-bar].is-gemPop::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 18%,
+    rgba(255,255,255,.18) 42%,
+    rgba(255,255,255,.34) 50%,
+    rgba(255,255,255,.18) 58%,
+    transparent 82%
+  );
+  transform: translateX(-120%);
+  animation: xpGemGlint 980ms ease-out forwards;
+  pointer-events: none;
+}
+@keyframes xpGemGlint{ to{ transform: translateX(120%); } }
+
+/* Upgrade the existing reward label pop: add a tiny rotation + extra lift */
+.mm-xpReward.is-show .mm-xpReward__label{
+  animation: mmXpLabelPopPlus 2600ms var(--spring) 0ms both;
+}
+@keyframes mmXpLabelPopPlus{
+  0%   { opacity:0; transform: translate3d(-50%, 18px, 0) scale(.90) rotate(-2deg); }
+  16%  { opacity:1; transform: translate3d(-50%, -1px, 0) scale(1.04) rotate(1deg); }
+  70%  { opacity:1; transform: translate3d(-50%, -10px, 0) scale(1.0) rotate(0deg); }
+  100% { opacity:0; transform: translate3d(-50%, -18px, 0) scale(.98) rotate(0deg); }
+}
+
+
+/* Gem reward: premium pop */
+.mm-xpReward__gem{
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 10px 12px rgba(0,0,0,.18));
+}
+
+/* Rays behind the pill */
+.mm-xpReward__label::before{
+  content:"";
+  position:absolute;
+  left: 50%;
+  top: 50%;
+  width: 88px;
+  height: 88px;
+  transform: translate(-50%, -50%) scale(.75) rotate(-10deg);
+  opacity: 0;
+  border-radius: 999px;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255,255,255,0) 0 18deg,
+    rgba(255,255,255,.52) 18deg 22deg,
+    rgba(255,255,255,0) 22deg 40deg,
+    rgba(255,255,255,.42) 40deg 44deg,
+    rgba(255,255,255,0) 44deg 62deg,
+    rgba(255,255,255,.52) 62deg 66deg,
+    rgba(255,255,255,0) 66deg 360deg
+  );
+  filter: drop-shadow(0 18px 22px rgba(0,0,0,.18));
+  pointer-events:none;
+  z-index: -1;
+}
+
+/* Extra glint sweep ON the pill */
+.mm-xpReward__label::after{
+  content:"";
+  position:absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0) 20%,
+    rgba(255,255,255,.55) 48%,
+    rgba(255,255,255,0) 72%
+  );
+  transform: translateX(-140%);
+  opacity: .0;
+  pointer-events:none;
+}
+
+/* Make the whole XP card feel like it "accepts" the gem */
+.mm-xpCard.is-gemPop{
+  animation: mmGemCardPop 780ms var(--spring) 0ms 1 both;
+}
+@keyframes mmGemCardPop{
+  0%{ transform: translate3d(0,0,0) scale(1); }
+  30%{ transform: translate3d(0,-3px,0) scale(1.02); }
+  60%{ transform: translate3d(0,0,0) scale(0.995); }
+  100%{ transform: translate3d(0,0,0) scale(1); }
+}
+
+/* Small glow pulse on the bar while rewarding */
+.mm-progress[data-xp-bar].is-gemPop{
+  animation: mmGemBarGlow 900ms ease-out 0ms 1 both;
+}
+@keyframes mmGemBarGlow{
+  0%{ filter: none; }
+  35%{ filter: drop-shadow(0 10px 18px rgba(0,182,0,.22)); }
+  100%{ filter: none; }
+}
+
+/* Tie new micro-animations to your existing .is-show */
+.mm-xpReward.is-show .mm-xpReward__label{
+  animation: mmGemLabelPop 2500ms var(--spring) 0ms both;
+}
+
+/* Override your old keyframes with a slightly punchier version */
+@keyframes mmGemLabelPop{
+  0%   { opacity:0; transform: translate3d(-50%, 18px, 0) scale(.90) rotate(-1deg); }
+  14%  { opacity:1; transform: translate3d(-50%, 0px, 0) scale(1.04) rotate(0deg); }
+  48%  { opacity:1; transform: translate3d(-50%, -6px, 0) scale(1.00) rotate(.3deg); }
+  72%  { opacity:1; transform: translate3d(-50%, -8px, 0) scale(1.00) rotate(0deg); }
+  100% { opacity:0; transform: translate3d(-50%, -18px, 0) scale(.98) rotate(0deg); }
+}
+
+.mm-xpReward.is-show .mm-xpReward__label::before{
+  animation: mmGemRays 820ms var(--spring) 0ms both;
+}
+@keyframes mmGemRays{
+  0%{ opacity:0; transform: translate(-50%, -50%) scale(.55) rotate(-18deg); }
+  45%{ opacity:.95; transform: translate(-50%, -50%) scale(1.02) rotate(10deg); }
+  100%{ opacity:0; transform: translate(-50%, -50%) scale(1.25) rotate(18deg); }
+}
+
+.mm-xpReward.is-show .mm-xpReward__label::after{
+  opacity: .75;
+  animation: mmGemGlint 980ms ease-out 0ms 1 both;
+}
+@keyframes mmGemGlint{
+  0%{ transform: translateX(-140%); }
+  55%{ transform: translateX(140%); }
+  100%{ transform: translateX(140%); }
+}
+
+/* Burst behind label when showing */
+.mm-xpReward.is-show::before{
+  animation: mmGemRing 920ms var(--spring) 0ms 1 both;
+}
+.mm-xpReward.is-show::after{
+  animation: mmGemRays 1100ms var(--spring) 40ms 1 both;
+}
+@keyframes mmGemRing{
+  0%   { opacity: 0; transform: translate3d(-50%, 0, 0) scale(.45) rotate(-10deg); }
+  34%  { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(-50%, -6px, 0) scale(1.18) rotate(10deg); }
+}
+@keyframes mmGemRays{
+  0%   { opacity: 0; transform: translate3d(-50%, 0, 0) scale(.52) rotate(-18deg); }
+  30%  { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(-50%, -8px, 0) scale(1.32) rotate(26deg); }
+}
 
 .mm-xpReward__spark{
   position:absolute;
@@ -452,10 +717,127 @@ body.is-battle .mm-stat .mm-progress > .mm-progress__fill{
   transform: translate3d(-50%, 0, 0) scale(.9);
 }
 
+/* Gem reward v2 (Home): icon + rays + confetti */
+.mm-xpReward__icon{
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 14px rgba(0,0,0,.18));
+}
+
+/* Rays behind the pill */
+.mm-xpReward__label::before,
+.mm-xpReward__label::after{
+  content:"";
+  position:absolute;
+  left: 50%;
+  top: 50%;
+  width: 74px;
+  height: 74px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%) scale(.55) rotate(0deg);
+  opacity: 0;
+  pointer-events:none;
+}
+
+.mm-xpReward__label::before{
+  background: conic-gradient(
+    from 0deg,
+    rgba(255,255,255,0) 0deg,
+    rgba(255,255,255,.55) 28deg,
+    rgba(255,255,255,0) 56deg,
+    rgba(255,255,255,.45) 92deg,
+    rgba(255,255,255,0) 140deg,
+    rgba(255,255,255,.40) 168deg,
+    rgba(255,255,255,0) 220deg,
+    rgba(255,255,255,.35) 252deg,
+    rgba(255,255,255,0) 360deg
+  );
+  filter: blur(.2px) drop-shadow(0 18px 22px rgba(0,0,0,.20));
+}
+
+.mm-xpReward__label::after{
+  background: radial-gradient(circle at 50% 50%,
+    rgba(255,255,255,.55) 0% ,
+    rgba(54,220,54,.28) 38% ,
+    rgba(0,182,0,.14) 56% ,
+    rgba(0,182,0,0) 72%
+  );
+  filter: drop-shadow(0 16px 22px rgba(0,0,0,.18));
+}
+
+/* Tiny confetti dots emitted from the pill */
+.mm-xpReward__confetti{
+  position:absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.6);
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(47,209,255,.55) 55%, rgba(0,106,255,.18) 75%, transparent 85%);
+  filter: drop-shadow(0 12px 16px rgba(0,0,0,.16));
+  pointer-events:none;
+}
+
+/* Pop animation for the reward container */
+.mm-xpReward.is-show .mm-xpReward__label{
+  animation: mmGemPop 1750ms var(--spring) 0ms both;
+}
+
+.mm-xpReward.is-show .mm-xpReward__label::before{
+  animation: mmGemRays 980ms var(--spring) 0ms both;
+}
+.mm-xpReward.is-show .mm-xpReward__label::after{
+  animation: mmGemHalo 980ms var(--spring) 0ms both;
+}
+
+.mm-xpReward.is-show .mm-xpReward__confetti{
+  animation: mmGemConfetti 980ms var(--spring) var(--d, 0ms) both;
+}
+
+@keyframes mmGemPop{
+  0%   { opacity:0; transform: translate3d(-50%, 14px, 0) scale(.86); }
+  16%  { opacity:1; transform: translate3d(-50%, 0px, 0) scale(1.08); }
+  46%  { opacity:1; transform: translate3d(-50%, -6px, 0) scale(1.02); }
+  100% { opacity:0; transform: translate3d(-50%, -18px, 0) scale(.98); }
+}
+
+@keyframes mmGemRays{
+  0%   { opacity:0; transform: translate(-50%, -50%) scale(.40) rotate(-10deg); }
+  22%  { opacity:1; }
+  70%  { opacity:1; transform: translate(-50%, -50%) scale(1.05) rotate(22deg); }
+  100% { opacity:0; transform: translate(-50%, -50%) scale(1.25) rotate(42deg); }
+}
+
+@keyframes mmGemHalo{
+  0%   { opacity:0; transform: translate(-50%, -50%) scale(.55); }
+  30%  { opacity:1; }
+  100% { opacity:0; transform: translate(-50%, -50%) scale(1.30); }
+}
+
+@keyframes mmGemConfetti{
+  0%   { opacity:0; transform: translate(-50%, -50%) scale(.55); }
+  18%  { opacity:1; }
+  100% { opacity:0; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px)), 0) scale(1.15); }
+}
+
+/* Make the XP card do a micro 'thunk' when a gem is awarded */
+.mm-xpCard.is-gemPop{
+  animation: mmGemCardThump 520ms var(--spring) 0ms 1;
+}
+
+@keyframes mmGemCardThump{
+  0%   { transform: translate3d(0,0,0) scale(1); }
+  40%  { transform: translate3d(0,-4px,0) scale(1.01); }
+  100% { transform: translate3d(0,0,0) scale(1); }
+}
+
 .mm-xpReward.is-show{ opacity: 1; }
 
 .mm-xpReward.is-show .mm-xpReward__label{
-  animation: mmXpLabelPop 2500ms var(--spring) 0ms both;
+  animation: mmGemLabelPop 2500ms var(--spring) 0ms both;
 }
 
 .mm-xpReward.is-show .mm-xpReward__spark{
@@ -860,11 +1242,11 @@ body.is-home .mm-homeSwimWrap{
 
 .mm-big{
   font-size: 36px;
-  font-weight: 950;
+  font-weight: 800;
   letter-spacing: -.2px;
   color: var(--white);
 }
-.mm-muted{ color: rgba(255,255,255,.74); font-weight: 700; font-size: 14px; }
+.mm-muted{ color: rgba(255,255,255,.74); font-weight: 800; font-size: 14px; }
 
 .mm-art{
   width: 300px;
@@ -1061,7 +1443,7 @@ body.is-battle .mm-battleStage{
 
 
 .mm-stat__name{
-  font-weight: 500;
+  font-weight: 800;
   color: rgba(255,255,255);
   font-size: 20px;
   letter-spacing: .2px;
@@ -1212,7 +1594,7 @@ body.is-battle .mm-battleStage{
 
 
 .mm-question{
-  font-weight: 500;
+  font-weight: 800;
   font-size: 28px;
   width: 100%;
   letter-spacing: -.2px;
@@ -1241,7 +1623,7 @@ body.is-battle .mm-battleStage{
   border: 2px solid rgba(0, 0, 0, 0.08);
   background: white;
   height: 64px;
-  font-weight: 500;
+  font-weight: 800;
   font-size: 24px;
   text-align:center;
 
@@ -1304,7 +1686,7 @@ body.is-battle .mm-battleStage{
 
 .mm-endTitle{
   margin: 0 0 16px 0;
-  font-weight: 500;
+  font-weight: 800;
   font-size: 28px;
   letter-spacing: -.2px;
 }
@@ -1358,7 +1740,7 @@ body.is-battle .mm-battleStage{
 
 .mm-loaderTitle{
   font-size: 28px;
-  font-weight: 950;
+  font-weight: 800;
   letter-spacing: -.2px;
   color: rgba(255,255,255,.92);
 }
@@ -1437,7 +1819,7 @@ body.is-battle .mm-battleStage{
 
 .landing-tagline{
   font-size: 20px;
-  font-weight: 400;
+  font-weight: 800;
   line-height: 150%;
   text-align: center;
   margin: 0;
@@ -1460,7 +1842,7 @@ body.is-battle .mm-battleStage{
   height: 64px;
   border-radius: 12px;
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 800;
   text-decoration: none;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
@@ -1547,7 +1929,7 @@ body.is-battle .mm-battleStage{
   align-items: center;
   justify-content: center;
 
-  background-image: none;
+  background: var(--mm-bg-radial), var(--mm-bg-base);
 }
 
 .mm-evolve.is-show{
@@ -1569,7 +1951,7 @@ body.is-battle .mm-battleStage{
 
 .mm-evolve__title{
   font-size: 48px;
-  font-weight: 950;
+  font-weight: 800;
   letter-spacing: -0.3px;
   margin: 0;
   color: rgba(255,255,255);
@@ -1741,197 +2123,280 @@ body.is-battle .mm-battleStage{
 
 /* ================================
    Damage Mini Game (Tap-to-Attack)
+   Clean + QCARD-aligned
+   (Replaces previous mini-game block)
 ================================ */
 
-/* ================================
-   Attack Mini Game (tap-to-attack)
-   Match QCARD bottom placement
-================================ */
-
-/* ================================
-   Mini-game info card — QCARD-aligned (FORCE OVERRIDES)
-   Paste at VERY BOTTOM of index.css
-================================ */
-
+/* Overlay root (doesn't affect layout; just pins UI) */
 .mm-attackMini{
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 60 !important;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
 
-  display: flex !important;
-  align-items: flex-end !important;   /* bottom like qcard */
-  justify-content: center !important;
-
-  /* 16px gutters + safe area */
-  padding:
-    calc(16px + var(--safe-top)) 
-    calc(16px + var(--safe-right))
-    calc(16px + var(--safe-bottom))
-    calc(16px + var(--safe-left)) !important;
-
-  pointer-events: none !important;
+  pointer-events: none; /* only interactive children opt-in */
 }
 
+/* QCARD-aligned bottom card */
 .mm-attackMini__wrap{
-  width: min(400px, calc(100% - 32px - var(--safe-left) - var(--safe-right))) !important;
-  margin: 0 auto !important;
-  pointer-events: none !important;
+  position: absolute;
+  left: calc(var(--pad) + var(--safe-left));
+  right: calc(var(--pad) + var(--safe-right));
+  bottom: calc(var(--pad) + var(--safe-bottom));
+  max-width: 400px;
+  margin: 0 auto;
+
+  pointer-events: none;
+
+  opacity: 0;
+  transform: translate3d(0, 16px, 0) scale(.99);
+  transition:
+    transform 420ms var(--spring),
+    opacity  360ms var(--butter);
 }
 
+/* show/hide */
+.mm-attackMini.is-in .mm-attackMini__wrap{
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+.mm-attackMini.is-out .mm-attackMini__wrap{
+  opacity: 0;
+  transform: translate3d(0, 16px, 0) scale(.99);
+}
+
+/* Ensure the mini-game card ignores .mm-card default width */
+.mm-attackMini .mm-card{ width: 100%; }
 .mm-attackMini__card{
-  width: 100% !important; /* overrides .mm-card { width:64% } */
+  width: 100%;
   text-align: center;
+  pointer-events: auto; /* card can receive taps if needed */
 }
 
-/* (Optional) if you want 16px inside padding instead of mm-card__pad's 24px */
-.mm-attackMini__card.mm-card__pad{
-  padding: 16px !important;
+/* Keep your existing 24px inner padding */
+.mm-attackMini__card.mm-card__pad{ padding: 24px; }
+
+/* ================================
+   Timer slot (countdown -> ring)
+   Fixes the “glitchy line” by:
+   - removing borders/shadows
+   - forcing GPU layer + tiny rotate
+   - avoiding edge antialias seams
+================================ */
+
+/* ================================
+   MINI TIMER: Rounded Rectangle
+================================ */
+
+/* Timer slot becomes a pill/rounded-rect */
+/* ================================
+   MINI TIMER: Small Circle + Thin Red Ring
+================================ */
+
+/* ================================
+   MINI TIMER: 80x80 + half-thickness ring
+================================ */
+
+/* Timer slot */
+.mm-attackMini__timeSlot{
+  position: relative;
+  width: 80px;      /* ✅ 80x80 */
+  height: 80px;     /* ✅ 80x80 */
+  margin: 4px auto 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+  background: rgba(0,0,0,.08);
+  overflow: hidden;
+
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
-.mm-attackMini__card .mm-attackMini__sub{
+/* Both states sit in the same slot */
+.mm-attackMini__count,
+.mm-attackMini__circle{
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Countdown number (3,2,1) */
+.mm-attackMini__count{
+  font-weight: 800;
+  font-size: 28px; /* scales better in 80x80 (was 24px) */
+  line-height: 1;
+  color: var(--ink);
+
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 180ms var(--butter),
+    transform 220ms var(--spring);
+}
+
+/* Live timer ring */
+.mm-attackMini__circle{
+  /* Progress (0–100) is driven by JS via --p */
+  --p: 0;
+
+  /* Hot gradient */
+  --hot-red: #ff3b2f;
+  --hot-orange: #ff8a00;
+  --hot-yellow: #ffc400;
+
+  /* Ring thickness */
+  --mini-ring: 0.75px; /* half thickness */
+
+  border-radius: 999px;
+  overflow: hidden;
+
+  /* Appear / morph */
+  opacity: 0;
+  transform: scale(.92) translateZ(0);
+  transition:
+    opacity 220ms var(--butter),
+    transform 300ms var(--spring);
+
+  /* Hot glow */
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.25) inset,
+    0 0 14px rgba(255,90,40,.45),
+    0 0 28px rgba(255,120,0,.25);
+
+  /* Progress ring (filled part = hot gradient, remainder = faint white) */
+  background: conic-gradient(
+    from -90deg,
+    var(--hot-yellow) 0%,
+    var(--hot-orange) 35%,
+    var(--hot-red) 65%,
+    rgba(255,255,255,.15) calc(var(--p) * 1%),
+    rgba(255,255,255,.15) 100%
+  );
+
+  /* Hollow out the center to form a ring */
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(50% - var(--mini-ring)),
+    #000        calc(50% - var(--mini-ring))
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(50% - var(--mini-ring)),
+    #000        calc(50% - var(--mini-ring))
+  );
+}
+
+
+/* Red arc */
+.mm-attackMini__circle::before{
+  content:"";
+  position:absolute;
+  inset: 0;
+  border-radius: 999px;
+
+  background: conic-gradient(
+    rgba(255, 0, 30, 0.92) calc(var(--p) * 1%),
+    rgba(255, 0, 30, 0) 0
+  );
+
+  transform: rotate(-90deg); /* start at top */
+}
+
+/* Live state toggles */
+.mm-attackMini.is-live .mm-attackMini__circle{
+  opacity: 1;
+  transform: scale(1) translateZ(0);
+}
+.mm-attackMini.is-live .mm-attackMini__count{
+  opacity: 0;
+  transform: scale(.85);
+}
+
+/* Mini title */
+.mm-attackMini__title{
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: -.2px;
+  color: var(--ink);
   margin-bottom: 14px;
 }
 
-/* Show/hide pieces by state */
-.mm-attackMini__circle{ display:none; }
-.mm-attackMini.is-live .mm-attackMini__circle{ display:flex; }
-.mm-attackMini.is-live .mm-attackMini__count{ display:none; }
-
-.mm-attackMini__title{
-  font-weight: 950;
-  font-size: 18px;
-  color: var(--ink);
-  margin-bottom: 10px;
-}
-
-.mm-attackMini__count{
-  font-weight: 950;
-  font-size: 52px;
-  line-height: 1;
-  color: #001B41;
-  margin: 0 0 10px 0;
-}
-
-/* Circular timer (only during ATTACK window) */
-.mm-attackMini__circle{
-  --p: 0; /* 0..100 */
-  width: 82px;
-  height: 82px;
-  border-radius: 999px;
-  margin: 2px auto 12px;
-  align-items:center;
-  justify-content:center;
-
-  background:
-    conic-gradient(rgba(255,91,110,.92) calc(var(--p) * 1%), rgba(0,0,0,.06) 0);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.60),
-    0 10px 22px rgba(0,0,0,.10);
-}
-.mm-attackMini__circleInner{
-  width: 70px;
-  height: 70px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.92);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
-}
-
+/* Mini instruction line */
 .mm-attackMini__sub{
   font-weight: 800;
-  font-size: 14px;
-  color: rgba(13,20,32,.70);
+  font-size: 16px;
+  color: rgba(13,20,32,.65);
+  letter-spacing: -.2px;
   margin-bottom: 14px;
 }
 
-.mm-attackMini__meterRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 10px;
-  margin: 2px 0 8px 0;
-}
-.mm-attackMini__meterLabel{
-  font-weight: 950;
-  font-size: 12px;
-  color: rgba(13,20,32,.70);
-  letter-spacing: .2px;
-}
 
-/* Simple centered label (requested) */
 .mm-attackMini__meterLabelSolo{
-  margin: 4px 0 8px;
-  font-weight: 950;
-  font-size: 12px;
-  color: rgba(13,20,32,.70);
-  letter-spacing: .2px;
-}
-.mm-attackMini__meterBonus{
-  font-weight: 950;
-  font-size: 12px;
-  color: #001B41;
+  font-weight: 800;
+  font-size: 16px;
+  color: rgba(13,20,32,.65);
+  letter-spacing: -.2px;
+  margin-bottom: 14px;
 }
 
-/* Legacy linear timer is no longer shown (keeping the nodes harmless) */
+/* Legacy linear timer nodes stay hidden */
 .mm-attackMini__timer{ display:none; }
 .mm-attackMini__timerFill{ display:none; }
 
-
-.mm-attackMini__hits{
-  margin-top: 12px;
-  font-weight: 900;
-  color: rgba(13,20,32,.70);
+/* Power Bar uses shared .mm-progress */
+.mm-progress--power{
+  --progress-bg: #00000016;          /* match XP feel */
+  --progress-gradient-start: #36dc36; /* home XP green */
+  --progress-gradient-end:   #00b600; /* home XP green */
 }
 
-.mm-attackMini__meter{
-  width: 100%;
-  height: 12px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: rgba(0,0,0,.08);
+/* Match old mini-meter height + snappy fill */
+.mm-attackMini__progress{
+  height: 16px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
 }
-
-.mm-attackMini__meterFill{
-  height: 100%;
-  width: 0%;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(0,149,255,.92), rgba(0,106,255,.92));
+.mm-attackMini__progress > .mm-progress__fill{
   transition: width 80ms linear;
 }
+.mm-attackMini__progress > .mm-progress__fill::after{
+  height: 4px;
+}
 
+/* Invisible tap target over the monster */
 .mm-attackMini__target{
   position:absolute;
   z-index: 65;
   border-radius: 999px;
-  pointer-events:auto;
+  pointer-events: none;
   touch-action: none;
 
-  /* ✅ Invisible hit-target (no ring around sprite) */
-  box-shadow: none;
   background: transparent;
+  box-shadow: none;
   opacity: 0;
+
   transform: translateZ(0);
 }
 
 .mm-attackMini__target.is-live{
-  animation: none;
+  pointer-events: auto;
+  opacity: 0; /* remain invisible */
 }
 
 .mm-attackMini__target.is-live:active{
-  transform: scale(0.96);
+  transform: translateZ(0) scale(0.96);
 }
 
-@keyframes mmTargetPulse{
-  0%   { box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 0 10px rgba(47,209,255,.10); transform: scale(1); }
-  50%  { box-shadow: 0 0 0 2px rgba(255,255,255,.70), 0 0 0 14px rgba(47,209,255,.18); transform: scale(1.03); }
-  100% { box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 0 0 10px rgba(47,209,255,.10); transform: scale(1); }
-}
-
+/* Tap burst + hit FX (kept from your current file) */
 .mm-mini-hit{
   animation: mmMiniHit 260ms cubic-bezier(.18,.92,.22,1) 1;
   transform-origin: 50% 55%;
 }
-
 @keyframes mmMiniHit{
   0%   { transform: translate3d(0,0,0) scale(1) rotate(0deg); }
   18%  { transform: translate3d(-14px, 4px,0) scale(0.975,1.035) rotate(-3.6deg); }
@@ -1943,7 +2408,6 @@ body.is-battle .mm-battleStage{
 .mm-mini-flash{
   animation: mmMiniFlash 220ms ease-out 1;
 }
-
 @keyframes mmMiniFlash{
   0%   { filter: none; }
   30%  {
@@ -1956,7 +2420,6 @@ body.is-battle .mm-battleStage{
   100% { filter: none; }
 }
 
-/* little “burst” pop at tap point (more explosive) */
 .mm-miniBurst{
   position:absolute;
   left: 0;
@@ -1973,8 +2436,8 @@ body.is-battle .mm-battleStage{
   position:absolute;
   left: 0;
   top: 0;
-  width: 64px;   /* was 44 */
-  height: 64px;  /* was 44 */
+  width: 64px;
+  height: 64px;
   border-radius: 999px;
   transform: translate(-50%, -50%) scale(.35);
   opacity: 0;
@@ -1996,12 +2459,11 @@ body.is-battle .mm-battleStage{
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); }
 }
 
-
 .mm-miniBurst__p{
   position:absolute;
   left: 0;
   top: 0;
-  width: var(--s, 6px);   /* was 4px default */
+  width: var(--s, 6px);
   height: var(--s, 6px);
   border-radius: 999px;
 
@@ -2027,3 +2489,9 @@ body.is-battle .mm-battleStage{
   14%  { opacity: 1; }
   100% { opacity: 0; transform: rotate(var(--a, 0rad)) translateX(calc(var(--d, 26px) * 1.45)) scale(1.18); }
 }
+
+/* Hide mini-game UI during loader */
+body.is-loader .mm-attackMini{ display: none !important; }
+
+/* Global type weight override */
+html, body, button, input, select, textarea{ font-weight: 800; }
