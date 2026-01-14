@@ -2657,7 +2657,12 @@ html, body, button, input, select, textarea{ font-weight: 800; }
 
 /* remove variable-animation pulse (delete your @keyframes mmSpinnerPulse and animation rules) */
 
-/* Add a pulse overlay ring */
+/* ================================
+   Spinner pulse (20% white overlay)
+   - simple + reliable
+================================ */
+
+/* uniform white overlay, masked to the ring area */
 .mm-spinnerBasic::before{
   content:"";
   position:absolute;
@@ -2665,43 +2670,37 @@ html, body, button, input, select, textarea{ font-weight: 800; }
   border-radius: 999px;
   pointer-events:none;
 
-  /* This overlay is a lighter version of the active spin color */
-  background: conic-gradient(
-    from -90deg,
-    rgba(255,255,255,.0) 0deg,
-    rgba(255,255,255,.35) calc(var(--p) * 360deg),
-    rgba(255,255,255,.0) calc(var(--p) * 360deg),
-    rgba(255,255,255,.0) 360deg
-  );
+  /* ✅ 20% white overlay */
+  background: rgba(255,255,255,.32);
 
-  /* cut into a ring same thickness as spinner */
+  /* ✅ cut a hole the same as your ring thickness */
   -webkit-mask: radial-gradient(
     farthest-side,
     transparent calc(50% - var(--ring)),
-    #000        calc(50% - var(--ring))
+    #000       calc(50% - var(--ring) + 1px)
   );
   mask: radial-gradient(
     farthest-side,
     transparent calc(50% - var(--ring)),
-    #000        calc(50% - var(--ring))
+    #000       calc(50% - var(--ring) + 1px)
   );
 
   opacity: 0;
-  transform: scale(1);
+  transform: translateZ(0) scale(1);
+  will-change: opacity, transform;
 }
 
-/* Pulse animation (real properties, not vars) */
-@keyframes mmSpinnerGlowPulse{
-  0%   { opacity: 0; transform: scale(1); }
-  45%  { opacity: .9; transform: scale(1.015); }
-  100% { opacity: 0; transform: scale(1); }
+/* pulse animation */
+@keyframes mmSpinnerWhitePulse{
+  0%   { opacity: 0;   transform: scale(1); }
+  45%  { opacity: 1;   transform: scale(1.015); }
+  100% { opacity: 0;   transform: scale(1); }
 }
 
 /* Apply pulse in ready/live */
 .mm-attackMini.is-ready .mm-spinnerBasic::before{
-  animation: mmSpinnerGlowPulse 1000ms var(--spring) infinite;
+  animation: mmSpinnerWhitePulse 1000ms var(--spring) infinite;
 }
 .mm-attackMini.is-live .mm-spinnerBasic::before{
-  animation: mmSpinnerGlowPulse 800ms var(--spring) infinite;
+  animation: mmSpinnerWhitePulse 800ms var(--spring) infinite;
 }
-
