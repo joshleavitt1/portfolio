@@ -825,26 +825,21 @@ async function runTapAttackMiniGame() {
   const placeHitTarget = () => {
     const stageRect = stage.getBoundingClientRect();
     const monRect = monImg.getBoundingClientRect();
-
-    const monLeft = monRect.left - stageRect.left;
-    const monTop = monRect.top - stageRect.top;
-
+  
     const tSize = clamp(monRect.width * 0.22, 44, 76);
-    const pad = clamp(monRect.width * 0.12, 14, 28);
-
-    const minX = monLeft + pad;
-    const maxX = monLeft + Math.max(pad, monRect.width - pad - tSize);
-    const minY = monTop + pad;
-    const maxY = monTop + Math.max(pad, monRect.height - pad - tSize);
-
-    const x = minX + Math.random() * Math.max(0, maxX - minX);
-    const y = minY + Math.random() * Math.max(0, maxY - minY);
-
+  
+    const centerX =
+      monRect.left - stageRect.left + monRect.width / 2 - tSize / 2;
+  
+    const centerY =
+      monRect.top - stageRect.top + monRect.height / 2 - tSize / 2;
+  
     hitTarget.style.width = `${tSize}px`;
     hitTarget.style.height = `${tSize}px`;
-    hitTarget.style.left = `${x}px`;
-    hitTarget.style.top = `${y}px`;
+    hitTarget.style.left = `${centerX}px`;
+    hitTarget.style.top = `${centerY}px`;
   };
+  
 
   // Lock page scroll while the mini game is up
   const prevOverscroll = document.body.style.overscrollBehavior;
@@ -898,11 +893,27 @@ if (scoreEl) scoreEl.textContent = "0";
 if (countEl) countEl.textContent = ""; // ensure legacy countdown never appears
 
 // spinner is FULL during ready
-if (spinnerEl) spinnerEl.style.setProperty("--p", "1");
+if (spinnerEl) {
+  spinnerEl.style.setProperty("--p", "1");   // full ring
+  spinnerEl.classList.remove("is-pulsing");  // ensure no pulse yet
+}
 
-if (spinnerEl) spinnerEl.classList.add("is-pulsing");
-// Let CSS run 3 pulses (1s each = 3s total)
-await sleep(3000);
+const READY_HOLD_MS = 450;   // <-- shows full thick ring first (tune this)
+const PULSE_MS = 1000;       // must match your CSS pulse duration
+const PULSES = 3;
+
+await sleep(READY_HOLD_MS);
+
+// Start pulses (restart-safe)
+if (spinnerEl) {
+  spinnerEl.classList.remove("is-pulsing");
+  spinnerEl.offsetWidth; // force reflow so animation restarts cleanly
+  spinnerEl.classList.add("is-pulsing");
+}
+
+// Let CSS run exactly 3 pulses
+await sleep(PULSE_MS * PULSES);
+
 if (spinnerEl) spinnerEl.classList.remove("is-pulsing");
 overlay.classList.remove("is-ready");
 
