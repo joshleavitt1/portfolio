@@ -478,6 +478,56 @@ function makeQuestion() {
     ).then(() => undefined);
   }
 
+  const GLOBAL_ASSETS = [
+    "images/brand/logo.png",
+    "images/brand/icon-192.svg",
+    "images/brand/icon-512.svg",
+    "images/brand/icon-512-maskable.svg",
+  ];
+
+  const HOME_UI_ASSETS = [
+    "images/additional/egg.png",
+    "images/additional/gem.png",
+  ];
+
+  const BATTLE_UI_ASSETS = [
+    "images/monster/monster_sprite_a.png",
+    "images/monster/monster_sprite_b.png",
+    "images/monster/monster_sprite_c.png",
+  ];
+
+  const MINI_GAME_ASSETS = [
+    "images/monster/monster_attack_a.png",
+    "images/monster/monster_attack_b.png",
+    "images/monster/monster_attack_c.png",
+  ];
+
+  function getHeroAssets(gameState = {}) {
+    const heroLevel = Number(gameState.heroLevel ?? 1);
+    return [
+      `images/hero/level${heroLevel}/hero_sprite_${heroLevel}.png`,
+      `images/hero/level${heroLevel}/attack_sprite_${heroLevel}.png`,
+    ];
+  }
+
+  function getEnemyAssets(gameState = {}) {
+    const enemyId = gameState.enemyId ?? "default";
+    return [
+      `images/enemy/${enemyId}/idle.png`,
+      `images/enemy/${enemyId}/attack.png`,
+    ];
+  }
+
+  function getAssetsForHomeAndBattle(gameState = {}) {
+    const manifest = [
+      ...GLOBAL_ASSETS,
+      ...HOME_UI_ASSETS,
+      ...BATTLE_UI_ASSETS,
+      ...MINI_GAME_ASSETS,
+    ];
+    return [...manifest, ...getHeroAssets(gameState), ...getEnemyAssets(gameState)];
+  }
+
   // ---------- Progression + derived rules ----------
   function computeLevelFromXP(xp) {
     return clamp(Math.floor((xp || 0) / 10) + 1, 1, 10);
