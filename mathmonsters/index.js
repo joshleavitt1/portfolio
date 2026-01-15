@@ -6,6 +6,13 @@
   const LS_XP_ANIM = "mm_xp_anim";
   const LS_EVOLVE = "mm_evolve";
 
+  const SUPABASE_URL = "TODO_SUPABASE_URL";
+  const SUPABASE_ANON_KEY = "TODO_SUPABASE_ANON_KEY";
+
+  const supabase = window.supabase
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
   const appEl = document.getElementById("app");
   const toastEl = document.getElementById("toast");
   const bubblesEl = document.getElementById("bubbles");
@@ -48,6 +55,67 @@
       { passive: false }
     );
   })();
+
+  async function getAuthSession() {
+    if (!supabase) return null;
+    try {
+      const { data } = await supabase.auth.getSession();
+      return data.session || null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function sendMagicLink(email) {
+    if (!supabase) {
+      throw new Error("Supabase not configured");
+    }
+    await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
+  }
+
+  async function loadCloudSave() {
+    if (!supabase) return null;
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from("game_saves")
+        .select("payload")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error || !data) return null;
+      return data.payload;
+    } catch {
+      return null;
+    }
+  }
+
+  async function saveCloudSave(payload) {
+    if (!supabase) return;
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase.from("game_saves").upsert({
+        user_id: user.id,
+        payload,
+        updated_at: new Date().toISOString(),
+      });
+    } catch {}
+  }
 
 
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
@@ -296,6 +364,64 @@ function makeQuestion() {
     return p;
   }
 
+  function safeParseJson(raw) {
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  function buildCurrentGamePayload() {
+    return {
+      profile: state.profile ? { ...state.profile } : null,
+      monster: state.monster ? { ...state.monster } : null,
+      xpAnim: safeParseJson(localStorage.getItem(LS_XP_ANIM)),
+      evolveAnim: safeParseJson(localStorage.getItem(LS_EVOLVE)),
+    };
+  }
+
+  function hydrateFromCloudPayload(payload) {
+    if (!payload || typeof payload !== "object") return;
+
+    const profile = normalizeProfile(payload.profile);
+    const monster = payload.monster || null;
+
+    state.profile = profile;
+    state.monster = monster;
+
+    if (profile) {
+      localStorage.setItem(LS_PROFILE, JSON.stringify(profile));
+    } else {
+      localStorage.removeItem(LS_PROFILE);
+    }
+
+    if (monster) {
+      localStorage.setItem(LS_MONSTER, JSON.stringify(monster));
+    } else {
+      localStorage.removeItem(LS_MONSTER);
+    }
+
+    if (payload.xpAnim) {
+      localStorage.setItem(LS_XP_ANIM, JSON.stringify(payload.xpAnim));
+    } else {
+      localStorage.removeItem(LS_XP_ANIM);
+    }
+
+    if (payload.evolveAnim) {
+      localStorage.setItem(LS_EVOLVE, JSON.stringify(payload.evolveAnim));
+    } else {
+      localStorage.removeItem(LS_EVOLVE);
+    }
+  }
+
+  function hasLocalGameData() {
+    const profile = normalizeProfile(safeParseJson(localStorage.getItem(LS_PROFILE)));
+    const monster = safeParseJson(localStorage.getItem(LS_MONSTER));
+    return Boolean(profile && monster);
+  }
+
   function loadLocal() {
     try {
       state.profile = normalizeProfile(
@@ -343,6 +469,9 @@ function makeQuestion() {
   function saveLocal() {
     localStorage.setItem(LS_PROFILE, JSON.stringify(state.profile));
     localStorage.setItem(LS_MONSTER, JSON.stringify(state.monster));
+    try {
+      void saveCloudSave(buildCurrentGamePayload());
+    } catch {}
   }
 
   function hasSave() {
@@ -1037,6 +1166,143 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
     `;
   }
 
+  function setNeutralScreen(screen) {
+    document.body.classList.remove("is-landing", "is-home", "is-battle", "is-loader");
+    state.screen = screen;
+    syncBubblesForScreen("home");
+  }
+
+  function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  function renderStartupSplashAndResume() {
+    setNeutralScreen("startup");
+    appEl.innerHTML = `
+      <div class="mm-startup">
+        <div class="mm-startupInner">
+          <img class="mm-startupLogo" src="images/brand/logo.png" alt="Math Monsters" />
+          <div class="mm-startupText">Resuming your adventure…</div>
+          <div class="mm-startupSpinner" aria-label="Loading"></div>
+        </div>
+      </div>
+    `;
+
+    setTimeout(() => {
+      void enterMainGame();
+    }, 380);
+  }
+
+  function renderWelcomeScreen() {
+    setNeutralScreen("welcome");
+    appEl.innerHTML = `
+      <div class="mm-authShell mm-authShell--bottom">
+        <div class="mm-authCard">
+          <div class="mm-authLogo">
+            <img src="images/brand/logo.png" alt="Math Monsters" />
+          </div>
+          <div class="mm-authTitle">Math Monsters</div>
+          <div class="mm-authBody">Start a new adventure or restore your progress.</div>
+          <div class="mm-authActions">
+            <button class="mm-authPrimaryBtn" type="button" data-act="new-game">New Game</button>
+            <button class="mm-authSecondaryBtn" type="button" data-act="restore-progress">Restore Progress</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    appEl
+      .querySelector("[data-act='new-game']")
+      ?.addEventListener("click", () => renderNewGameEmailScreen());
+    appEl
+      .querySelector("[data-act='restore-progress']")
+      ?.addEventListener("click", () => renderLoginEmailScreen());
+  }
+
+  function renderAuthEmailScreen({ title, body, confirmTitle, confirmBody }) {
+    setNeutralScreen("auth");
+    appEl.innerHTML = `
+      <div class="mm-authShell">
+        <div class="mm-authCard" data-auth-card>
+          <div class="mm-authLogo">
+            <img src="images/brand/logo.png" alt="Math Monsters" />
+          </div>
+          <div class="mm-authTitle">${title}</div>
+          <div class="mm-authBody">${body}</div>
+          <form class="mm-authForm" data-auth-form>
+            <div class="mm-authFieldGroup">
+              <input class="mm-authInput" type="email" name="email" placeholder="you@example.com" autocomplete="email" required />
+              <div class="mm-authError" data-auth-error></div>
+            </div>
+            <button class="mm-authPrimaryBtn" type="submit">Send magic link</button>
+          </form>
+          <div class="mm-authSecondaryLink">
+            <button type="button" data-act="back">Back</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const card = appEl.querySelector("[data-auth-card]");
+    const form = appEl.querySelector("[data-auth-form]");
+    const input = appEl.querySelector(".mm-authInput");
+    const errorEl = appEl.querySelector("[data-auth-error]");
+    const submitBtn = appEl.querySelector(".mm-authPrimaryBtn");
+
+    appEl.querySelector("[data-act='back']")?.addEventListener("click", () => {
+      renderWelcomeScreen();
+    });
+
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const email = input.value.trim();
+      if (!isValidEmail(email)) {
+        errorEl.textContent = "Please enter a valid email.";
+        return;
+      }
+
+      errorEl.textContent = "";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sending…";
+
+      try {
+        await sendMagicLink(email);
+        card.innerHTML = `
+          <div class="mm-authLogo">
+            <img src="images/brand/logo.png" alt="Math Monsters" />
+          </div>
+          <div class="mm-authTitle">${confirmTitle}</div>
+          <div class="mm-authBody">${confirmBody}</div>
+        `;
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Send magic link";
+        errorEl.textContent =
+          err && err.message === "Supabase not configured"
+            ? "Email sign-in is unavailable right now."
+            : "Something went wrong. Try again.";
+      }
+    });
+  }
+
+  function renderNewGameEmailScreen() {
+    renderAuthEmailScreen({
+      title: "Save your progress",
+      body: "We’ll email you a magic link so you can keep playing on any device.",
+      confirmTitle: "Check your email",
+      confirmBody: "Tap the link we sent to start your adventure.",
+    });
+  }
+
+  function renderLoginEmailScreen() {
+    renderAuthEmailScreen({
+      title: "Restore progress",
+      body: "Enter your email and we’ll send a magic link to continue your adventure.",
+      confirmTitle: "Check your email",
+      confirmBody: "Tap the link to continue where you left off.",
+    });
+  }
+
   function renderLanding() {
     const saved = hasSave();
 
@@ -1066,34 +1332,7 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
       ?.addEventListener("click", () => go("loader", { next: "home" }));
 
     appEl.querySelector("[data-act='newGame']")?.addEventListener("click", async () => {
-      await loadStaticData();
-      makeDefaultProfile();
-      ensureMonsterForCurrentHero();
-      saveLocal();
-      go("loader", {
-        next: async () => {
-          const lvl1Sprite =
-            (state.progression?.hero?.levels &&
-              state.progression.hero.levels["1"]?.heroSprite) ||
-            "images/hero/level1/hero_sprite_1.png";
-
-          await launchEvolutionFlow(
-            {
-              fromSprite: "images/additional/egg.png",
-              toSprite: lvl1Sprite,
-            },
-            {
-              transparent: false,
-              title: "Hatched!",
-              // Slightly shorter hold for the intro ceremony
-              holdMs: 2200,
-              onBeforeClose: async () => {
-                await go("home");
-              },
-            }
-          );
-        },
-      });
+      await startNewGameWithEvolution();
     });
 
     appEl.querySelector("[data-act='level2']")?.addEventListener("click", async () => {
@@ -1114,6 +1353,44 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
       ensureMonsterForCurrentHero();
       saveLocal();
       go("loader", { next: "home" });
+    });
+  }
+
+  async function startNewGameWithEvolution({ saveToCloud = false } = {}) {
+    await loadStaticData();
+    makeDefaultProfile();
+    ensureMonsterForCurrentHero();
+    saveLocal();
+
+    if (saveToCloud) {
+      try {
+        await saveCloudSave(buildCurrentGamePayload());
+      } catch {}
+    }
+
+    go("loader", {
+      next: async () => {
+        const lvl1Sprite =
+          (state.progression?.hero?.levels &&
+            state.progression.hero.levels["1"]?.heroSprite) ||
+          "images/hero/level1/hero_sprite_1.png";
+
+        await launchEvolutionFlow(
+          {
+            fromSprite: "images/additional/egg.png",
+            toSprite: lvl1Sprite,
+          },
+          {
+            transparent: false,
+            title: "Hatched!",
+            // Slightly shorter hold for the intro ceremony
+            holdMs: 2200,
+            onBeforeClose: async () => {
+              await go("home");
+            },
+          }
+        );
+      },
     });
   }
 
@@ -1826,6 +2103,28 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
     }
   }
 
+  async function enterMainGame() {
+    await loadStaticData();
+    loadLocal();
+    if (!hasSave()) {
+      renderWelcomeScreen();
+      return;
+    }
+
+    applyHeroProgressionFromXP();
+    ensureMonsterForCurrentHero();
+    saveLocal();
+
+    const gameState = loadGameStateFromStorage();
+    const assets = getAssetsForHomeAndBattle(gameState);
+    await Promise.all([preloadImages(assets), sleep(MIN_LOADER_MS)]);
+
+    state.screen = "home";
+    syncBubblesForScreen("home");
+    applyScreenClasses("home");
+    renderHome();
+  }
+
   async function runBootstrapFlow() {
     showPreloader();
     await loadStaticData();
@@ -1902,6 +2201,29 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
     navigator.serviceWorker.register("./service-worker.js").catch(() => {});
   }
 
+  async function initApp() {
+    const session = await getAuthSession();
+    const hasLocal = hasLocalGameData();
+
+    if (session && supabase) {
+      const cloud = await loadCloudSave();
+      if (cloud) {
+        hydrateFromCloudPayload(cloud);
+        await enterMainGame();
+      } else {
+        await startNewGameWithEvolution({ saveToCloud: true });
+      }
+      return;
+    }
+
+    if (!session && hasLocal) {
+      renderStartupSplashAndResume();
+      return;
+    }
+
+    renderWelcomeScreen();
+  }
+
   function boot() {
     registerServiceWorker();
     window.addEventListener(
@@ -1912,7 +2234,7 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
       { passive: true }
     );
 
-    runBootstrapFlow();
+    void initApp();
   }
 
   boot();

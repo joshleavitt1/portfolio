@@ -2527,3 +2527,187 @@ html, body, button, input, select, textarea{ font-weight: 800; }
   opacity: 0 !important;
 }
 
+/* ================================
+   Startup + Auth Screens
+================================ */
+.mm-authShell{
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.mm-authShell--bottom{
+  align-items: flex-end;
+  padding-bottom: calc(24px + var(--safe-bottom));
+}
+
+.mm-authCard{
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px 16px 18px;
+  border-radius: var(--r-xl);
+  background: var(--card);
+  box-shadow: var(--shadow2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--ink);
+}
+
+.mm-authLogo{
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.mm-authLogo img{
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+}
+
+.mm-authTitle{
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--ink);
+}
+
+.mm-authBody{
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--ink2);
+  margin-bottom: 6px;
+}
+
+.mm-authActions{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mm-authFieldGroup{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  margin-bottom: 6px;
+}
+
+.mm-authInput{
+  width: 100%;
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid var(--stroke);
+  font-family: var(--mm-font);
+  font-size: 14px;
+  outline: none;
+}
+
+.mm-authInput:focus{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(47, 209, 255, 0.25);
+}
+
+.mm-authError{
+  min-height: 16px;
+  font-size: 12px;
+  color: var(--danger);
+  text-align: center;
+}
+
+.mm-authPrimaryBtn,
+.mm-authSecondaryBtn{
+  width: 100%;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  font-family: var(--mm-font);
+}
+
+.mm-authPrimaryBtn{
+  background-image: linear-gradient(
+    135deg,
+    var(--button-gradient-start),
+    var(--button-gradient-end)
+  );
+  color: var(--white);
+  box-shadow: var(--shadow2);
+}
+
+.mm-authPrimaryBtn:disabled{
+  opacity: 0.6;
+  cursor: default;
+  box-shadow: none;
+}
+
+.mm-authSecondaryBtn{
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(13,20,32,0.15);
+  margin-top: 4px;
+}
+
+.mm-authSecondaryLink{
+  margin-top: 4px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink2);
+}
+
+.mm-authSecondaryLink button{
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.mm-startup{
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.mm-startupInner{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.mm-startupLogo{
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+}
+
+.mm-startupText{
+  font-size: 14px;
+  color: var(--white);
+  opacity: 0.85;
+}
+
+.mm-startupSpinner{
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: rgba(255,255,255,0.9);
+  animation: mm-spin 800ms linear infinite;
+}
+
+@keyframes mm-spin{
+  to{ transform: rotate(360deg); }
+}
