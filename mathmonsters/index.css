@@ -88,7 +88,7 @@ html, body{
 
 /* iOS Safari: prevent â€œpage panâ€ / rubber-band */
 body.mm{
-  font-weight: 800;
+  font-weight: 600;
 
   position: fixed;
   inset: 0;
