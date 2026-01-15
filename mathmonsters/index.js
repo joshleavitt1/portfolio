@@ -462,70 +462,44 @@ function makeQuestion() {
   }
 
   // ---------- Image preloading ----------
+  const imageCache = new Map();
+
+  function updatePreloaderProgress(progress) {
+    const progressEl = document.querySelector("[data-preloader-progress]");
+    if (!progressEl) return;
+    progressEl.style.width = `${Math.round(progress * 100)}%`;
+  }
+
   function preloadImages(urls) {
     const unique = Array.from(new Set(urls.filter(Boolean)));
-    if (!unique.length) return Promise.resolve();
+    const toLoad = unique.filter((src) => !imageCache.has(src));
+    if (!toLoad.length) return Promise.resolve();
+    let loadedCount = 0;
+    const totalCount = toLoad.length;
     return Promise.all(
-      unique.map(
+      toLoad.map(
         (src) =>
           new Promise((resolve) => {
             const img = new Image();
-            img.onload = () => resolve();
-            img.onerror = () => resolve(); // fail-soft
+            imageCache.set(src, img);
+            const markDone = () => {
+              loadedCount += 1;
+              updatePreloaderProgress(loadedCount / totalCount);
+              resolve();
+            };
+            img.onload = () => markDone();
+            img.onerror = () => {
+              console.warn(`Failed to preload image: ${src}`);
+              markDone();
+            };
             img.src = src;
           })
       )
     ).then(() => undefined);
   }
 
-  const GLOBAL_ASSETS = [
-    "images/brand/logo.png",
-    "images/brand/icon-192.svg",
-    "images/brand/icon-512.svg",
-    "images/brand/icon-512-maskable.svg",
-  ];
-
-  const HOME_UI_ASSETS = [
-    "images/additional/egg.png",
-    "images/additional/gem.png",
-  ];
-
-  const BATTLE_UI_ASSETS = [
-    "images/monster/monster_sprite_a.png",
-    "images/monster/monster_sprite_b.png",
-    "images/monster/monster_sprite_c.png",
-  ];
-
-  const MINI_GAME_ASSETS = [
-    "images/monster/monster_attack_a.png",
-    "images/monster/monster_attack_b.png",
-    "images/monster/monster_attack_c.png",
-  ];
-
-  function getHeroAssets(gameState = {}) {
-    const heroLevel = Number(gameState.heroLevel ?? 1);
-    return [
-      `images/hero/level${heroLevel}/hero_sprite_${heroLevel}.png`,
-      `images/hero/level${heroLevel}/attack_sprite_${heroLevel}.png`,
-    ];
-  }
-
-  function getEnemyAssets(gameState = {}) {
-    const enemyId = gameState.enemyId ?? "default";
-    return [
-      `images/enemy/${enemyId}/idle.png`,
-      `images/enemy/${enemyId}/attack.png`,
-    ];
-  }
-
-  function getAssetsForHomeAndBattle(gameState = {}) {
-    const manifest = [
-      ...GLOBAL_ASSETS,
-      ...HOME_UI_ASSETS,
-      ...BATTLE_UI_ASSETS,
-      ...MINI_GAME_ASSETS,
-    ];
-    return [...manifest, ...getHeroAssets(gameState), ...getEnemyAssets(gameState)];
+  function getPreloadedImage(url) {
+    return imageCache.get(url) || null;
   }
 
   // ---------- Progression + derived rules ----------
