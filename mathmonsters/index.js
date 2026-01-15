@@ -100,6 +100,150 @@
     },
   };
 
+  // (Attack FX helpers removed — using playAttackFx() below)
+
+  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  const pickWeighted = (weightsObj) => {
+    const entries = Object.entries(weightsObj);
+    const total = entries.reduce((s, [, w]) => s + w, 0);
+    let r = Math.random() * total;
+    for (const [k, w] of entries) {
+      r -= w;
+      if (r <= 0) return k;
+    }
+    return entries[0][0];
+  };
+  
+  const uniquePush = (arr, v) => { if (!arr.includes(v)) arr.push(v); };
+  
+  const makeNearbyChoices = ({ correct, count, maxOffset }) => {
+    const choices = [correct];
+    while (choices.length < count) {
+      const offset = randInt(-maxOffset, maxOffset);
+      if (offset === 0) continue;
+      const v = correct + offset;
+      if (v < 0) continue;
+      uniquePush(choices, v);
+    }
+    // shuffle
+    for (let i = choices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [choices[i], choices[j]] = [choices[j], choices[i]];
+    }
+    return choices;
+  };
+
+  function generateAdditionQuestion(cfg, difficulty) {
+    const add = cfg.addition;
+  
+    const scale =
+      add.difficultyScale[String(difficulty)] ||
+      add.difficultyScale["1"]; // ✅ fallback so scale is never undefined
+  
+    const weights =
+      add.formatWeightsByDifficulty[String(difficulty)] || { direct: 100 };
+  
+    const formatKey = pickWeighted(weights);
+  
+    // Base numbers
+    let a = randInt(scale.minAddend, scale.maxAddend);
+    let b = randInt(scale.minAddend, scale.maxAddend);
+    const sum = a + b;
+  
+    const choiceCount = add.formatSettings?.choices?.count ?? 4;
+    const maxOffset = add.distractors?.maxOffset ?? 6;
+
+  let prompt = "";
+  let correctAnswer = null;
+  let choices = [];
+
+  // ---- Formats ----
+  if (formatKey === "direct") {
+    prompt = `${a} + ${b} = ?`;
+    correctAnswer = sum;
+    choices = makeNearbyChoices({ correct: correctAnswer, count: choiceCount, maxOffset });
+
+  } else if (formatKey === "missing_left") {
+    prompt = `? + ${b} = ${sum}`;
+    correctAnswer = a;
+    choices = makeNearbyChoices({ correct: correctAnswer, count: choiceCount, maxOffset });
+
+  } else if (formatKey === "missing_right") {
+    prompt = `${a} + ? = ${sum}`;
+    correctAnswer = b;
+    choices = makeNearbyChoices({ correct: correctAnswer, count: choiceCount, maxOffset });
+
+  } else if (formatKey === "result_first") {
+    prompt = `${sum} = ${a} + ?`;
+    correctAnswer = b;
+    choices = makeNearbyChoices({ correct: correctAnswer, count: choiceCount, maxOffset });
+
+  } else if (formatKey === "fill_blank") {
+    prompt = `${a} + ___ = ${sum}`;
+    correctAnswer = b;
+    choices = makeNearbyChoices({ correct: correctAnswer, count: choiceCount, maxOffset });
+
+  } else if (formatKey === "true_false") {
+    const tf = add.formatSettings?.trueFalse || { falseChance: 0.5, maxLieOffset: 6 };
+    const isFalse = Math.random() < tf.falseChance;
+
+    let shown = sum;
+    if (isFalse) {
+      let lie;
+      do {
+        lie = sum + randInt(-tf.maxLieOffset, tf.maxLieOffset);
+      } while (lie === sum || lie < 0);
+      shown = lie;
+    }
+
+    prompt = `True or False:\n${a} + ${b} = ${shown}`;
+    correctAnswer = isFalse ? 0 : 1; // 1=true, 0=false
+    choices = [1, 0]; // show buttons "True" / "False" via rendering mapping
+
+  } else if (formatKey === "compare") {
+    // Make a second expression close-ish but different
+    const comp = add.formatSettings?.compare || { differenceMin: 1, differenceMax: 10 };
+    const targetDiff = randInt(comp.differenceMin, comp.differenceMax);
+
+    const left = sum;
+    let right = left + (Math.random() < 0.5 ? -targetDiff : targetDiff);
+    if (right < 0) right = left + targetDiff;
+
+    // Build c+d = right
+    let c = randInt(scale.minAddend, scale.maxAddend);
+    let d = Math.max(scale.minAddend, right - c);
+    // clamp d into range if needed
+    if (d > scale.maxAddend) {
+      d = randInt(scale.minAddend, scale.maxAddend);
+      c = Math.max(scale.minAddend, right - d);
+    }
+    // Ensure sums match right
+    const rightSum = c + d;
+
+    prompt = `Which is bigger?\n${a} + ${b}  OR  ${c} + ${d}`;
+    correctAnswer = left > rightSum ? 0 : (left < rightSum ? 1 : 2); // 0=left,1=right,2=tie
+    choices = (correctAnswer === 2) ? [0,1,2] : [0,1]; // you can omit tie if you prefer
+  }
+
+  return { formatKey, prompt, correctAnswer, choices, meta: { a, b, sum } };
+}
+
+function makeQuestion() {
+  const difficulty = clamp(state.profile.difficulty ?? 1, 1, 10);
+
+  // generate from questions.json that you fetch into state.questions
+  const q = generateAdditionQuestion(state.questions, difficulty);
+
+  // ✅ normalize to your existing UI contract
+  return {
+    prompt: q.prompt,
+    correct: q.correctAnswer,
+    answers: q.choices,
+    formatKey: q.formatKey,
+  };
+}
+
   function syncBubblesForScreen(screen) {
     // No bubbles on landing or loader
     const off = screen === "landing" || screen === "loader";
@@ -377,60 +521,20 @@
   }
 
 // ---------- Questions (Addition only) ----------
-function randInt(min, max) {
-  const a = Math.ceil(min);
-  const b = Math.floor(max);
-  return a + Math.floor(Math.random() * (b - a + 1));
+
+function nextQuestion() {
+  const q = makeQuestion();
+  state.battle.currentQ = q;
+  state.battle.selected = null;
+  state.battle.qStartTs = performance.now();
+  state.battle.asked += 1;
 }
 
-function makeAdditionQuestion(grade, difficulty) {
-  const cfg = state.questions.addition;
-  const g = cfg.gradeSettings[String(grade)] || cfg.gradeSettings["2"];
-  const scale = cfg.difficultyScale[String(difficulty)] || cfg.difficultyScale["1"];
-
-  // Back-compat path: old config still works
-  const baseMax = Number(g.baseMaxAddend ?? 10);
-  const boostedMax = baseMax + Number(scale.maxAddendBoost ?? 0);
-
-  // New path: range-based difficulty (preferred when present)
-  const minAddend = Number.isFinite(Number(scale.minAddend)) ? Number(scale.minAddend) : 1;
-  const maxAddend = Number.isFinite(Number(scale.maxAddend)) ? Number(scale.maxAddend) : boostedMax;
-
-  // IMPORTANT: remove the 99 cap so Level 9â€“10 can reach 250â€“500
-  const minA = clamp(minAddend, 1, 500);
-  const maxA = clamp(maxAddend, minA, 500);
-
-  const a = randInt(minA, maxA);
-  const b = randInt(minA, maxA);
-  const correct = a + b;
-
-  const maxOffset = cfg.distractors?.maxOffset ?? 6;
-  const answers = new Set([correct]);
-
-  while (answers.size < 4) {
-    const offset = Math.floor(Math.random() * (maxOffset * 2 + 1)) - maxOffset;
-    const candidate = correct + offset;
-    if (candidate >= 0) answers.add(candidate);
-  }
-
-  const arr = Array.from(answers);
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-
-  return { prompt: `${a} + ${b} = ?`, correct, answers: arr };
+function choiceLabel(q, value) {
+  if (q.formatKey === "true_false") return value === 1 ? "True" : "False";
+  if (q.formatKey === "compare") return value === 0 ? "Left" : (value === 1 ? "Right" : "Tie");
+  return String(value);
 }
-
-  function nextQuestion() {
-    const grade = state.profile.playerGrade ?? 2;
-    const difficulty = clamp(state.profile.difficulty ?? 1, 1, 10);
-    const q = makeAdditionQuestion(grade, difficulty);
-    state.battle.currentQ = q;
-    state.battle.selected = null;
-    state.battle.qStartTs = performance.now();
-    state.battle.asked += 1;
-  }
 
   // ---------- Battle mechanics ----------
   function resetBattleDamages() {
@@ -475,62 +579,65 @@ function makeAdditionQuestion(grade, difficulty) {
   async function playAttackFx({ who }) {
     const stage = document.querySelector("[data-battle-stage]");
     if (!stage) return;
-
+  
     const heroImg = stage.querySelector("[data-hero-sprite]");
     const monImg = stage.querySelector("[data-monster-sprite]");
-
+    if (!heroImg || !monImg) return;
+  
     const attacker = who === "hero" ? heroImg : monImg;
-    const target = who === "hero" ? monImg : heroImg;
-
-    /* 1ï¸âƒ£ WIND-UP BEAT */
-    await sleep(ATTACK_WINDUP_MS);
-
-    /* 2ï¸âƒ£ START ATTACK SLIDE */
-    attacker.classList.add(
-      who === "hero" ? "mm-attack-slide-hero" : "mm-attack-slide-monster"
-    );
-
-    /* 3ï¸âƒ£ WAIT UNTIL IMPACT MOMENT */
-    await sleep(ATTACK_SLIDE_MS * 0.55); // sweet spot
-
-    /* 4ï¸âƒ£ IMPACT â€” SHAKE + FX TOGETHER */
-    target.classList.add("mm-hit-shake");
-
-    const fx = document.createElement("img");
-    fx.className = "mm-attackFx";
-    fx.src = who === "hero" ? state.profile.attackSprite : state.monster.attackSprite;
-
-    const rect = target.getBoundingClientRect();
-    const srect = stage.getBoundingClientRect();
-
-    fx.style.left = `${rect.left - srect.left + rect.width / 2 - 90}px`;
-    fx.style.top = `${rect.top - srect.top + rect.height / 2 - 90}px`;
-
-    stage.appendChild(fx);
-
-    // ðŸ”¥ SAME FRAME
-    requestAnimationFrame(() => {
-      fx.classList.add("is-pop");
-
-      // ðŸ”¥ hit-scale pop (restart-safe)
-      fx.classList.remove("mm-fx-hit");
-      fx.offsetWidth; // force reflow so it can replay
-      fx.classList.add("mm-fx-hit");
-    });
-
-    await sleep(FX_POP_MS);
-
-    // âœ… keep it on screen longer
-    await sleep(FX_HOLD_MS);
-
-    fx.classList.add("is-out");
-    await sleep(FX_OUT_MS);
-
-    /* 5ï¸âƒ£ CLEANUP */
-    attacker.classList.remove("mm-attack-slide-hero", "mm-attack-slide-monster");
-    target.classList.remove("mm-hit-shake");
-    fx.remove();
+    const target   = who === "hero" ? monImg : heroImg;
+  
+    let fx = null;
+  
+    try {
+      // 1) wind-up
+      await sleep(ATTACK_WINDUP_MS);
+  
+      // 2) slide
+      attacker.classList.add(
+        who === "hero" ? "mm-attack-slide-hero" : "mm-attack-slide-monster"
+      );
+  
+      // 3) wait to impact
+      await sleep(ATTACK_SLIDE_MS * 0.55);
+  
+      // 4) impact shake (restart-safe)
+      target.classList.remove("mm-hit-shake");
+      target.offsetWidth;
+      target.classList.add("mm-hit-shake");
+  
+      // 5) spawn FX sprite
+      fx = document.createElement("img");
+      fx.className = "mm-attackFx";
+      fx.src = who === "hero" ? state.profile.attackSprite : state.monster.attackSprite;
+  
+      const rect = target.getBoundingClientRect();
+      const srect = stage.getBoundingClientRect();
+      fx.style.left = `${rect.left - srect.left + rect.width / 2 - 90}px`;
+      fx.style.top  = `${rect.top  - srect.top  + rect.height / 2 - 90}px`;
+  
+      stage.appendChild(fx);
+  
+      requestAnimationFrame(() => {
+        fx.classList.add("is-pop");
+        fx.classList.remove("mm-fx-hit");
+        fx.offsetWidth;
+        fx.classList.add("mm-fx-hit");
+      });
+  
+      await sleep(FX_POP_MS);
+      await sleep(FX_HOLD_MS);
+  
+      fx.classList.add("is-out");
+      await sleep(FX_OUT_MS);
+    } finally {
+      // ✅ ALWAYS cleanup so shake never “sticks”
+      attacker.classList.remove("mm-attack-slide-hero", "mm-attack-slide-monster");
+      target.classList.remove("mm-hit-shake");
+      if (fx && fx.parentNode) fx.remove();
+    }
   }
+  
 // ---------- Damage Mini Game (tap-to-attack) ----------
 // Runs only on correct answers. Returns BONUS damage (integer >= 0).
 async function runTapAttackMiniGame() {
@@ -1322,23 +1429,29 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
 
     function renderAnswers() {
       const q = state.battle.currentQ;
+    
       answersEl.innerHTML = q.answers
-        .map((n) => `<button class="mm-answer" data-ans="${n}" aria-pressed="false">${n}</button>`)
+        .map((val) => {
+          const label = choiceLabel(q, val);
+          return `<button class="mm-answer" data-ans="${val}" aria-pressed="false">${label}</button>`;
+        })
         .join("");
-
+    
       answersEl.querySelectorAll("[data-ans]").forEach((btn) => {
         btn.addEventListener("click", () => {
           if (resolving) return;
+    
           answersEl.querySelectorAll(".mm-answer").forEach((b) => {
             b.classList.remove("is-selected");
             b.setAttribute("aria-pressed", "false");
           });
+    
           btn.classList.add("is-selected");
           btn.setAttribute("aria-pressed", "true");
           state.battle.selected = Number(btn.getAttribute("data-ans"));
         });
       });
-    }
+    }    
 
     renderAnswers();
 
@@ -1399,8 +1512,9 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
 
       // Apply damage AFTER the attack so the HP drop reads clearly
 
+      // Apply damage AFTER the attack so the HP drop reads clearly
       if (dmg > 0) {
-        // ðŸ« small beat so impact lands before HP moves
+        // small beat so impact lands before HP moves
         await battleSleep(PRE_HP_DROP_BEAT_MS);
 
         if (correct) state.monster.damage += dmg;
@@ -1408,36 +1522,19 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
 
         updateBattleUI();
 
-// If this hit ends the battle, add a bigger final shake before the overlay
-if (didWin() || didLose()) {
-  const stage = document.querySelector("[data-battle-stage]");
-  const target = correct
-    ? stage?.querySelector("[data-monster-sprite]")
-    : stage?.querySelector("[data-hero-sprite]");
+        // let the final shake read (and HP hit 0)
+        await battleSleep(520);
 
-  if (target) {
-/* 4ï¸âƒ£ IMPACT â€” SHAKE + FX TOGETHER */
-target.classList.remove("mm-mini-hit", "mm-mini-flash"); // âœ… make sure shake can win
-target.offsetWidth; // restart-safe
-target.classList.add("mm-hit-shake");
+        if (didWin()) { await endBattle({ won: true }); return; }
+        if (didLose()) { await endBattle({ won: false }); return; }
 
-  }
-
-  // let the final shake read (and HP hit 0)
-  await battleSleep(520);
-
-  if (didWin()) { await endBattle({ won: true }); return; }
-  if (didLose()) { await endBattle({ won: false }); return; }
-}
-
-// Otherwise, normal pacing
-await battleSleep(420);
-
+        // Otherwise, normal pacing
+        await battleSleep(420);
 
         // Next question
         nextQuestion();
       } else {
-        // No damage â†’ repeat the same question
+        // No damage → repeat the same question
         state.battle.qStartTs = performance.now();
       }
 
@@ -1460,7 +1557,8 @@ await battleSleep(420);
     monHpEl.style.width = `${healthPct(state.monster.health, state.monster.damage)}%`;
 
     const qtext = appEl.querySelector("[data-qtext]");
-    qtext.textContent = state.battle.currentQ.prompt;
+    qtext.innerHTML = String(state.battle.currentQ.prompt).replace(/\n/g, "<br/>");
+
   } 
 
   function showEndCard({ title, showGem, btnText, onBtn }) {
