@@ -6,8 +6,8 @@
   const LS_XP_ANIM = "mm_xp_anim";
   const LS_EVOLVE = "mm_evolve";
 
-  const SUPABASE_URL = "TODO_SUPABASE_URL";
-  const SUPABASE_ANON_KEY = "TODO_SUPABASE_ANON_KEY";
+  const SUPABASE_URL = "https://jxlxpumcoihfapmrsaqd.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4bHhwdW1jb2loZmFwbXJzYXFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MjE3MDcsImV4cCI6MjA3Mjk5NzcwN30.PJiDPZ_Dqli_42isJexeYgsf0ebWbCSOwHtR7lsQTN0";
 
   const supabase = window.supabase
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)

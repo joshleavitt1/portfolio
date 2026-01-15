@@ -5,9 +5,9 @@
   --mm-font: "Arial Rounded MT Bold", "Arial Rounded", Arial, sans-serif;
 
   --button-gradient-start: #0095ff;
-  --button-gradient-end: #006aff;
+  --button-gradient-end: #0035ff;
 
-  --mm-bg-base: #0057ff;
+  --mm-bg-base: #0035ff;
   --mm-bg-radial: radial-gradient(
     circle at 50% 50%,
     rgba(0, 0, 0, 0.16) 0%,
