@@ -2180,8 +2180,7 @@ body.is-battle .mm-battleStage{
   position:absolute;
   left:50%;
   top:50%;
-  transform: translate(-50%, -50%) translate(1px, 1px);
-
+  transform: translate(-50%, -50%);
   
   width:14px;
   height:14px;

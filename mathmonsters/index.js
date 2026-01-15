@@ -955,19 +955,39 @@ async function runTapAttackMiniGame() {
     const stageRect = stage.getBoundingClientRect();
     const monRect = monImg.getBoundingClientRect();
   
+    // Keep your sizing logic
     const tSize = clamp(monRect.width * 0.22, 44, 76);
   
-    const centerX =
-      monRect.left - stageRect.left + monRect.width / 2 - tSize / 2;
+    // Monster area in stage coordinates
+    const areaLeft   = monRect.left - stageRect.left;
+    const areaTop    = monRect.top  - stageRect.top;
+    const areaWidth  = monRect.width;
+    const areaHeight = monRect.height;
   
-    const centerY =
-      monRect.top - stageRect.top + monRect.height / 2 - tSize / 2;
+    // Keep the target away from the extreme edges a bit
+    const padX = tSize * 0.4;
+    const padY = tSize * 0.4;
   
-    hitTarget.style.width = `${tSize}px`;
+    const minLeft = areaLeft + padX;
+    const maxLeft = areaLeft + areaWidth  - padX - tSize;
+    const minTop  = areaTop  + padY;
+    const maxTop  = areaTop  + areaHeight - padY - tSize;
+  
+    // Safety guards in case monster is very small / weird aspect
+    const safeMinLeft = Math.min(minLeft, maxLeft);
+    const safeMaxLeft = Math.max(minLeft, maxLeft);
+    const safeMinTop  = Math.min(minTop, maxTop);
+    const safeMaxTop  = Math.max(minTop, maxTop);
+  
+    // Use your existing randInt helper (already defined globally)
+    const left = safeMinLeft + randInt(0, Math.max(0, Math.round(safeMaxLeft - safeMinLeft)));
+    const top  = safeMinTop  + randInt(0, Math.max(0, Math.round(safeMaxTop  - safeMinTop)));
+  
+    hitTarget.style.width  = `${tSize}px`;
     hitTarget.style.height = `${tSize}px`;
-    hitTarget.style.left = `${centerX}px`;
-    hitTarget.style.top = `${centerY}px`;
-  };
+    hitTarget.style.left   = `${left}px`;
+    hitTarget.style.top    = `${top}px`;
+  };  
   
 
   // Lock page scroll while the mini game is up
