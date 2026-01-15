@@ -308,6 +308,38 @@ function makeQuestion() {
     }
   }
 
+  function loadGameStateFromStorage() {
+    let profile = null;
+    let monster = null;
+    try {
+      profile = normalizeProfile(
+        JSON.parse(localStorage.getItem(LS_PROFILE) || "null")
+      );
+      monster = JSON.parse(localStorage.getItem(LS_MONSTER) || "null");
+    } catch {
+      profile = null;
+      monster = null;
+    }
+
+    const heroLevelRaw = Number(profile?.level);
+    const heroLevel = Number.isFinite(heroLevelRaw)
+      ? heroLevelRaw
+      : profile
+        ? computeLevelFromXP(profile.xp ?? 0)
+        : null;
+
+    return {
+      hasSave: Boolean(profile),
+      heroId: profile?.heroType || profile?.heroName || null,
+      heroLevel,
+      heroSprite: profile?.heroSprite || null,
+      heroAttackSprite: profile?.attackSprite || null,
+      enemyId: monster?.monsterName || null,
+      enemySprite: monster?.monsterSprite || null,
+      enemyAttackSprite: monster?.attackSprite || null,
+    };
+  }
+
   function saveLocal() {
     localStorage.setItem(LS_PROFILE, JSON.stringify(state.profile));
     localStorage.setItem(LS_MONSTER, JSON.stringify(state.monster));
@@ -498,8 +530,13 @@ function makeQuestion() {
     ).then(() => undefined);
   }
 
-  function getPreloadedImage(url) {
-    return imageCache.get(url) || null;
+  function getAssetsForHomeAndBattle(gameState) {
+    return [
+      gameState?.heroSprite,
+      gameState?.heroAttackSprite,
+      gameState?.enemySprite,
+      gameState?.enemyAttackSprite,
+    ].filter(Boolean);
   }
 
   // ---------- Progression + derived rules ----------
@@ -1046,18 +1083,8 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
     };
   }
 
-  // Loader that preloads current hero/monster assets, then routes or calls a callback.
-  // IMPORTANT: It forces a dark loader bg via body.is-loader no matter what screen called it.
-  function renderLoader(next) {
-    // show loader visuals
-    document.body.classList.add("is-loader");
-
-      // âœ… hard cleanup: if mini-game UI was ever present, remove it
-  document.querySelectorAll(
-    ".mm-attackMini, .mm-attackMini__target, .mm-attackMini__hitTarget, .mm-miniBurst"
-  ).forEach((el) => el.remove());
-
-    appEl.innerHTML = `
+  function getLoaderMarkup() {
+    return `
       <section class="mm-loaderFull" aria-label="Loading">
         <div class="mm-loaderFull__inner">
           <img class="mm-loaderLogo" src="images/brand/logo.png" alt="Math Monsters" />
@@ -1066,6 +1093,31 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
         </div>
       </section>
     `;
+  }
+
+  function showPreloader() {
+    document.body.classList.remove("is-landing", "is-home", "is-battle");
+    document.body.classList.add("is-loader");
+    state.screen = "loader";
+    syncBubblesForScreen("loader");
+
+    // ✅ hard cleanup: if mini-game UI was ever present, remove it
+    document.querySelectorAll(
+      ".mm-attackMini, .mm-attackMini__target, .mm-attackMini__hitTarget, .mm-miniBurst"
+    ).forEach((el) => el.remove());
+
+    appEl.innerHTML = getLoaderMarkup();
+  }
+
+  function hidePreloader() {
+    document.body.classList.remove("is-loader");
+  }
+
+  // Loader that preloads current hero/monster assets, then routes or calls a callback.
+  // IMPORTANT: It forces a dark loader bg via body.is-loader no matter what screen called it.
+  function renderLoader(next) {
+    // show loader visuals
+    showPreloader();
 
     const urls = [];
     if (state.profile) urls.push(state.profile.heroSprite, state.profile.attackSprite);
@@ -1073,7 +1125,7 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
 
     Promise.all([preloadImages(urls), sleep(MIN_LOADER_MS)]).then(() => {
       // hide loader visuals
-      document.body.classList.remove("is-loader");
+      hidePreloader();
 
       if (typeof next === "function") next();
       else if (next) go(next);
@@ -1722,6 +1774,62 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
     }
   }
 
+  async function runBootstrapFlow() {
+    showPreloader();
+    await loadStaticData();
+    loadLocal();
+
+    if (!hasSave()) {
+      hidePreloader();
+      await go("landing");
+      return;
+    }
+
+    applyHeroProgressionFromXP();
+    ensureMonsterForCurrentHero();
+    saveLocal();
+
+    const gameState = loadGameStateFromStorage();
+    const assets = getAssetsForHomeAndBattle(gameState);
+    await Promise.all([preloadImages(assets), sleep(MIN_LOADER_MS)]);
+
+    hidePreloader();
+    state.screen = "home";
+    syncBubblesForScreen("home");
+    applyScreenClasses("home");
+    renderHome();
+  }
+
+  async function prepareNextSegmentAfterBattle(currentGameState) {
+    const nextState = {
+      ...currentGameState,
+      ...loadGameStateFromStorage(),
+    };
+
+    showPreloader();
+    const assets = getAssetsForHomeAndBattle(nextState);
+    await Promise.all([preloadImages(assets), sleep(MIN_LOADER_MS)]);
+    hidePreloader();
+
+    loadLocal();
+    if (state.profile) {
+      applyHeroProgressionFromXP();
+      ensureMonsterForCurrentHero();
+      saveLocal();
+    }
+
+    const targetScreen = nextState?.nextScreen === "battle" ? "battle" : "home";
+    state.screen = targetScreen;
+    syncBubblesForScreen(targetScreen);
+    applyScreenClasses(targetScreen);
+
+    if (targetScreen === "battle") {
+      renderBattle();
+    } else {
+      renderHome();
+    }
+  }
+
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, (m) => ({
       "&": "&amp;",
@@ -1752,8 +1860,7 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
       { passive: true }
     );
 
-    loadLocal();
-    go("landing");
+    runBootstrapFlow();
   }
 
   boot();
