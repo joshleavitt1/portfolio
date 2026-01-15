@@ -2221,7 +2221,16 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
     navigator.serviceWorker.register("./service-worker.js").catch(() => {});
   }
 
+  // Builder bypass: add ?builder to return to the legacy landing screen.
+  const isBuilderBypass = () =>
+    new URLSearchParams(window.location.search).has("builder");
+
   async function initApp() {
+    if (isBuilderBypass()) {
+      renderLanding();
+      return;
+    }
+
     const session = await getAuthSession();
     const hasLocal = hasLocalGameData();
 
