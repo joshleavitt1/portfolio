@@ -2223,7 +2223,7 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
 
   // Builder bypass: add ?builder to return to the legacy landing screen.
   const isBuilderBypass = () =>
-    new URLSearchParams(window.location.search).has("builder");
+    new URLSearchParams(window.location.search).has("dev");
 
   async function initApp() {
     if (isBuilderBypass()) {
