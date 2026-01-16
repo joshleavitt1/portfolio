@@ -22,7 +22,10 @@
   <main id="app" class="mm-app" role="main"></main>
 
   <div id="toast" class="mm-toast" role="status" aria-live="polite" aria-atomic="true"></div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="index.js" defer></script>
+<!-- MUST come first -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- MUST come second -->
+<script src="index.js"></script>
 </body>
 </html>

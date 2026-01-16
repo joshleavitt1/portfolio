@@ -68,16 +68,33 @@
 
   async function sendMagicLink(email) {
     if (!supabase) {
-      throw new Error("Supabase not configured");
+      throw new Error("Supabase not configured (window.supabase missing)");
     }
-    await supabase.auth.signInWithOtp({
+  
+    // Figure out *this* page's URL and use it as redirect_to
+    // Works for:
+    // - https://joshleavitt.com/mathmonsters
+    // - http://localhost:8080/whatever-path
+    const redirectTo =
+      window.location.origin +
+      window.location.pathname.replace(/index\.html$/, "");
+  
+    const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: redirectTo,
       },
     });
+  
+    console.log("signInWithOtp result:", { data, error, redirectTo });
+  
+    if (error) {
+      // bubble up so UI can show the message
+      throw error;
+    }
   }
-
+  
+  
   async function loadCloudSave() {
     if (!supabase) return null;
     try {
@@ -1295,13 +1312,15 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
           <div class="mm-authBody">${confirmBody}</div>
         `;
       } catch (err) {
+        console.error("Magic link failed:", err);
         submitBtn.disabled = false;
         submitBtn.textContent = "Send magic link";
         errorEl.textContent =
-          err && err.message === "Supabase not configured"
-            ? "Email sign-in is unavailable right now."
-            : "Something went wrong. Try again.";
+          err?.message ||
+          "Something went wrong sending the sign-in email. Check your connection and try again.";
       }
+      
+      
     });
   }
 
