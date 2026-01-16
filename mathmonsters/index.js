@@ -1352,7 +1352,9 @@ if (spinnerEl) spinnerEl.style.setProperty("--p", "0");
       ?.addEventListener("click", () => go("loader", { next: "home" }));
 
     appEl.querySelector("[data-act='newGame']")?.addEventListener("click", async () => {
-      await startNewGameWithEvolution();
+      const session = await waitForSupabaseSession();
+await startNewGameWithEvolution({ saveToCloud: !!session });
+
     });
 
     appEl.querySelector("[data-act='level2']")?.addEventListener("click", async () => {
