@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Equation Cards</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <main class="game">
+      <!-- Title ABOVE the equation -->
+      <header class="app-header">
+        <h1>Equation Cards</h1>
+        <p class="instruction">Make a true math sentence.</p>
+      </header>
+
+      <!-- Equation Area -->
+      <section class="equation-area">
+        <div class="equation-rail" id="equation-rail">
+          <!-- slots populated by JS -->
+        </div>
+      </section>
+
+      <!-- Card Hand -->
+      <section class="hand-area">
+        <h2 class="hand-title">Cards to use</h2>
+        <div class="card-hand" id="card-hand">
+          <!-- cards populated by JS -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Result Modal -->
+  <div
+    class="modal-backdrop"
+    id="result-modal"
+    aria-hidden="true"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="modal">
+      <h2 class="modal-title" id="modal-title"></h2>
+      <p class="modal-message" id="modal-message"></p>
+      <button class="primary-btn" id="modal-primary-btn">
+        Play Another
+      </button>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

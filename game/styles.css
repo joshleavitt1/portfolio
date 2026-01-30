@@ -1,0 +1,298 @@
+/* --------------------------------------------------------------------- */
+/* Reset                                                                 */
+/* --------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* --------------------------------------------------------------------- */
+/* Design tokens                                                         */
+/* --------------------------------------------------------------------- */
+
+:root {
+  /* Card sizing — mobile first */
+  --card-width: min(18vw, 72px);
+  --card-height: calc(var(--card-width) * 1.25);
+  --card-gap: 10px;
+
+  /* Colors */
+  --bg-page: #f4f6fa;
+  --surface: #ffffff;
+
+  --ink: #001b41;
+  --ink-muted: #64748b;
+
+  --slot-border: #cbd5e1;
+
+  --cta-start: #0095ff;
+  --cta-end: #0055fc;
+}
+
+/* --------------------------------------------------------------------- */
+/* Base                                                                  */
+/* --------------------------------------------------------------------- */
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: var(--bg-page);
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------------------- */
+/* App centering (THIS is the key change)                                 */
+/* --------------------------------------------------------------------- */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;        /* vertical centering */
+  justify-content: center;    /* horizontal centering */
+  padding: 16px;
+}
+
+/* Game board */
+.game {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+/* --------------------------------------------------------------------- */
+/* Header                                                                */
+/* --------------------------------------------------------------------- */
+
+.app-header {
+  text-align: center;
+}
+
+.app-header h1 {
+  font-size: 1.75rem;
+  margin: 0;
+}
+
+.instruction {
+  margin-top: 0px;
+  font-size: 1.1rem;
+  color: var(--ink-muted);
+}
+
+/* --------------------------------------------------------------------- */
+/* Equation rail (NO container background)                                */
+/* --------------------------------------------------------------------- */
+
+.equation-area {
+  width: 100%;
+}
+
+.equation-rail {
+  display: flex;
+  justify-content: center;
+  gap: var(--card-gap);
+}
+
+/* --------------------------------------------------------------------- */
+/* Slots                                                                 */
+/* --------------------------------------------------------------------- */
+
+.slot {
+  width: var(--card-width);
+  height: var(--card-height);
+  border-radius: 14px;
+  border: 2px dashed var(--slot-border);
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Hide border once card is placed so it feels perfectly flush */
+.slot.filled {
+  border-color: transparent;
+}
+
+/* Hover highlight */
+.slot.slot-hover {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* Card fills slot EXACTLY */
+.slot .card {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+/* --------------------------------------------------------------------- */
+/* Hand area                                                             */
+/* --------------------------------------------------------------------- */
+
+.hand-area {
+  width: 100%;
+  text-align: center;
+}
+
+.hand-title {
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+  color: var(--ink-muted);
+}
+
+.card-hand {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--card-gap);
+  min-height: var(--card-height);
+}
+
+/* --------------------------------------------------------------------- */
+/* Cards — WHITE with soft shadow                                         */
+/* --------------------------------------------------------------------- */
+
+.card {
+  width: var(--card-width);
+  height: var(--card-height);
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 6px 16px rgba(15, 23, 42, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: grab;
+  user-select: none;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    opacity 0.12s ease;
+}
+
+/* Subtle tint by type (still white cards) */
+.card.number {
+  color: #1d4ed8;
+}
+
+.card.operator {
+  color: #dc2626;
+}
+
+.card.equal {
+  color: #16a34a;
+}
+
+/* Dragging */
+.card.dragging {
+  cursor: grabbing;
+  transform: scale(1.06);
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.25);
+  opacity: 0.95;
+}
+
+/* --------------------------------------------------------------------- */
+/* Wiggle feedback                                                       */
+/* --------------------------------------------------------------------- */
+
+.slot.wiggle {
+  animation: wiggle 0.15s ease-in-out 2;
+}
+
+@keyframes wiggle {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(-3px); }
+  50%  { transform: translateX(3px); }
+  75%  { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+
+/* --------------------------------------------------------------------- */
+/* CTA Button                                                            */
+/* --------------------------------------------------------------------- */
+
+.primary-btn {
+  padding: 14px 22px;
+  border-radius: 999px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+  box-shadow: 0 8px 18px rgba(0, 85, 252, 0.35);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.primary-btn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 4px 12px rgba(0, 85, 252, 0.45);
+}
+
+/* --------------------------------------------------------------------- */
+/* Modal                                                                 */
+/* --------------------------------------------------------------------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
+
+.modal-backdrop.show {
+  display: flex;
+}
+
+.modal {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.3);
+}
+
+.modal-title {
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+}
+
+.modal-message {
+  font-size: 0.95rem;
+  color: var(--ink-muted);
+  margin-bottom: 20px;
+}
+
+/* --------------------------------------------------------------------- */
+/* Desktop cap                                                           */
+/* --------------------------------------------------------------------- */
+
+@media (min-width: 768px) {
+  :root {
+    --card-width: 72px;
+  }
+}
