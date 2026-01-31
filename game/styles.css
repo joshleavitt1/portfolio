@@ -301,6 +301,12 @@ body {
   z-index: 3000;
   padding: 24px;
   text-align: center;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.orientation-overlay.show ~ .app {
+  pointer-events: none;
 }
 
 .orientation-overlay.show {

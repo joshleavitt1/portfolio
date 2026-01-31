@@ -37,25 +37,34 @@
 
   // --- Orientation helpers -------------------------------------------------
   function updateOrientationOverlay() {
-    if (!orientationOverlayEl) return;
-
-    // Treat small screens as "mobile-ish"
-    const isSmallScreen = window.innerWidth <= 900;
-    // Use matchMedia if available, otherwise fallback to width/height check
+    const isMobile = window.innerWidth <= 900;
+  
     const isPortrait =
-      window.matchMedia &&
-      window.matchMedia("(orientation: portrait)").matches
-        ? true
-        : window.innerHeight > window.innerWidth;
-
-    if (isSmallScreen && isPortrait) {
+      window.matchMedia("(orientation: portrait)").matches ||
+      window.innerHeight > window.innerWidth;
+  
+    if (isMobile && isPortrait) {
       orientationOverlayEl.classList.add("show");
       orientationOverlayEl.setAttribute("aria-hidden", "false");
+      lockScreen();
     } else {
       orientationOverlayEl.classList.remove("show");
       orientationOverlayEl.setAttribute("aria-hidden", "true");
+      unlockScreen();
     }
   }
+
+  function lockScreen() {
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+  }
+  
+  function unlockScreen() {
+    document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.width = "";
+  }  
 
   window.addEventListener("resize", updateOrientationOverlay);
   window.addEventListener("orientationchange", updateOrientationOverlay);
@@ -409,3 +418,8 @@
   renderPuzzle();
   updateOrientationOverlay();
 })();
+
+window.addEventListener("load", () => {
+  setTimeout(updateOrientationOverlay, 100);
+});
+
