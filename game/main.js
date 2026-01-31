@@ -25,6 +25,11 @@
   // Orientation overlay
   const orientationOverlayEl = document.getElementById("orientation-overlay");
 
+  // Combat UI elements (Knight / Dragon)
+  const knightHpEl = document.getElementById("knight-hp");
+  const dragonHpEl = document.getElementById("dragon-hp");
+  const dragonAvatarEl = document.getElementById("dragon-avatar");
+
   let modalState = null; // "success" | "error" | null
 
   // --- Drag state ----------------------------------------------------------
@@ -38,11 +43,11 @@
   // --- Orientation helpers -------------------------------------------------
   function updateOrientationOverlay() {
     const isMobile = window.innerWidth <= 900;
-  
+
     const isPortrait =
       window.matchMedia("(orientation: portrait)").matches ||
       window.innerHeight > window.innerWidth;
-  
+
     if (isMobile && isPortrait) {
       orientationOverlayEl.classList.add("show");
       orientationOverlayEl.setAttribute("aria-hidden", "false");
@@ -59,12 +64,12 @@
     document.body.style.position = "fixed";
     document.body.style.width = "100%";
   }
-  
+
   function unlockScreen() {
     document.body.style.overflow = "";
     document.body.style.position = "";
     document.body.style.width = "";
-  }  
+  }
 
   window.addEventListener("resize", updateOrientationOverlay);
   window.addEventListener("orientationchange", updateOrientationOverlay);
@@ -74,11 +79,11 @@
     modalState = type;
 
     if (type === "success") {
-      modalTitleEl.textContent = "Nice! That works!";
-      modalMessageEl.textContent = "Want to try another one?";
+      modalTitleEl.textContent = "Direct hit!";
+      modalMessageEl.textContent = "Your attack landed. Want another battle?";
       modalPrimaryBtn.textContent = "Play Another";
     } else {
-      modalTitleEl.textContent = "That doesn’t balance yet.";
+      modalTitleEl.textContent = "That attack didn’t land.";
       modalMessageEl.textContent =
         message || "Try moving the cards around and balance both sides.";
       modalPrimaryBtn.textContent = "Try Again";
@@ -109,6 +114,27 @@
     }
   });
 
+  // --- Combat feedback helpers --------------------------------------------
+  function clearDragonAnimation() {
+    if (!dragonAvatarEl) return;
+    dragonAvatarEl.classList.remove("hit");
+    dragonAvatarEl.classList.remove("miss");
+  }
+
+  function playDragonHit() {
+    if (!dragonAvatarEl) return;
+    clearDragonAnimation();
+    void dragonAvatarEl.offsetWidth; // force reflow
+    dragonAvatarEl.classList.add("hit");
+  }
+
+  function playDragonMiss() {
+    if (!dragonAvatarEl) return;
+    clearDragonAnimation();
+    void dragonAvatarEl.offsetWidth; // force reflow
+    dragonAvatarEl.classList.add("miss");
+  }
+
   // --- Render functions ----------------------------------------------------
   function renderPuzzle() {
     const puzzle = puzzles[currentPuzzleIndex];
@@ -118,6 +144,11 @@
     railEl.innerHTML = "";
     handEl.innerHTML = "";
     hideResultModal();
+    clearDragonAnimation();
+
+    // Optional: reset HP labels (for now they are static)
+    if (knightHpEl) knightHpEl.textContent = "2 / 2";
+    if (dragonHpEl) dragonHpEl.textContent = "2 / 2";
 
     // Create slots
     for (let i = 0; i < puzzle.slots; i++) {
@@ -339,15 +370,20 @@
     const result = validateEquation(tokens);
 
     if (result.valid) {
+      playDragonHit();
       showResultModal("success");
     } else {
       wiggleSlots();
+      playDragonMiss();
       showResultModal("error", result.message);
     }
   }
 
   function validateEquation(tokens) {
-    // Ensure exactly one '=' token
+    // tokens = your full attack sentence
+    // e.g. ["1", "+", "1", "=", "2"]
+
+    // 1) Ensure exactly one "=" token
     const eqIndices = tokens
       .map((t, idx) => (t === "=" ? idx : -1))
       .filter((idx) => idx >= 0);
@@ -357,28 +393,42 @@
     }
 
     const eqIndex = eqIndices[0];
-    const leftTokens = tokens.slice(0, eqIndex);
-    const rightTokens = tokens.slice(eqIndex + 1);
 
-    if (leftTokens.length === 0 || rightTokens.length === 0) {
+    // 2) Split into attack side (left) and result side (right)
+    const attackTokens = tokens.slice(0, eqIndex);
+    const resultTokens = tokens.slice(eqIndex + 1);
+
+    if (attackTokens.length === 0 || resultTokens.length === 0) {
       return { valid: false, message: "Both sides need numbers." };
     }
 
-    const leftVal = evalSimpleSide(leftTokens);
-    const rightVal = evalSimpleSide(rightTokens);
+    // 3) Evaluate numeric meaning of each side
+    const attackPower = evalSimpleSide(attackTokens);   // total attack
+    const finalDamage = evalSimpleSide(resultTokens);   // declared damage
 
-    if (leftVal === null || rightVal === null) {
+    if (attackPower === null || finalDamage === null) {
       return {
         valid: false,
-        message: "That doesn’t look like a math sentence yet.",
+        message: "That doesn’t look like an attack sentence yet.",
       };
     }
 
-    if (leftVal === rightVal) {
-      return { valid: true };
+    // 4) Core rule: attack must match declared damage
+    if (attackPower === finalDamage) {
+      return {
+        valid: true,
+        combat: {
+          attackPower,
+          finalDamage,
+        },
+      };
     }
 
-    return { valid: false, message: "That doesn’t balance yet." };
+    return {
+      valid: false,
+      message: "That attack doesn’t balance yet.",
+      combat: { attackPower, finalDamage },
+    };
   }
 
   // Only supports forms: A op B, e.g. 1 + 1 or 4 - 2
@@ -420,6 +470,9 @@
 })();
 
 window.addEventListener("load", () => {
-  setTimeout(updateOrientationOverlay, 100);
+  setTimeout(() => {
+    // Call again on load to be extra safe on mobile
+    const evt = new Event("resize");
+    window.dispatchEvent(evt);
+  }, 100);
 });
-
