@@ -21,7 +21,7 @@ body {
 
 :root {
   /* Card sizing — mobile first */
-  --card-width: min(18vw, 72px);
+  --card-width: min(27vw, 108px);
   --card-height: calc(var(--card-width) * 1.25);
   --card-gap: 10px;
 
@@ -50,7 +50,7 @@ body {
 }
 
 /* --------------------------------------------------------------------- */
-/* App centering (THIS is the key change)                                 */
+/* App centering                                                         */
 /* --------------------------------------------------------------------- */
 
 .app {
@@ -64,7 +64,6 @@ body {
 /* Game board */
 .game {
   width: 100%;
-  max-width: 420px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -91,7 +90,7 @@ body {
 }
 
 /* --------------------------------------------------------------------- */
-/* Equation rail (NO container background)                                */
+/* Equation rail                                                         */
 /* --------------------------------------------------------------------- */
 
 .equation-area {
@@ -162,7 +161,7 @@ body {
 }
 
 /* --------------------------------------------------------------------- */
-/* Cards — WHITE with soft shadow                                         */
+/* Cards                                                                 */
 /* --------------------------------------------------------------------- */
 
 .card {
@@ -181,6 +180,7 @@ body {
   color: var(--ink);
   cursor: grab;
   user-select: none;
+  touch-action: none;              /* <-- prevent scroll/zoom while dragging */
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease,
@@ -288,11 +288,46 @@ body {
 }
 
 /* --------------------------------------------------------------------- */
+/* Orientation overlay                                                   */
+/* --------------------------------------------------------------------- */
+
+.orientation-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85); /* 85% black */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  padding: 24px;
+  text-align: center;
+}
+
+.orientation-overlay.show {
+  display: flex;
+}
+
+.orientation-modal {
+  max-width: 360px;
+  color: #ffffff;
+}
+
+.orientation-modal h2 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.orientation-modal p {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+/* --------------------------------------------------------------------- */
 /* Desktop cap                                                           */
 /* --------------------------------------------------------------------- */
 
 @media (min-width: 768px) {
   :root {
-    --card-width: 72px;
+    --card-width: 108px;
   }
 }

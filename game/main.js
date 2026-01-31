@@ -22,6 +22,9 @@
   const modalMessageEl = document.getElementById("modal-message");
   const modalPrimaryBtn = document.getElementById("modal-primary-btn");
 
+  // Orientation overlay
+  const orientationOverlayEl = document.getElementById("orientation-overlay");
+
   let modalState = null; // "success" | "error" | null
 
   // --- Drag state ----------------------------------------------------------
@@ -31,6 +34,31 @@
   let activeDrag = null;
   // activeDrag = { card, cardEl, offsetX, offsetY, pointerId }
   let highlightedSlot = null;
+
+  // --- Orientation helpers -------------------------------------------------
+  function updateOrientationOverlay() {
+    if (!orientationOverlayEl) return;
+
+    // Treat small screens as "mobile-ish"
+    const isSmallScreen = window.innerWidth <= 900;
+    // Use matchMedia if available, otherwise fallback to width/height check
+    const isPortrait =
+      window.matchMedia &&
+      window.matchMedia("(orientation: portrait)").matches
+        ? true
+        : window.innerHeight > window.innerWidth;
+
+    if (isSmallScreen && isPortrait) {
+      orientationOverlayEl.classList.add("show");
+      orientationOverlayEl.setAttribute("aria-hidden", "false");
+    } else {
+      orientationOverlayEl.classList.remove("show");
+      orientationOverlayEl.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  window.addEventListener("resize", updateOrientationOverlay);
+  window.addEventListener("orientationchange", updateOrientationOverlay);
 
   // --- Modal helpers -------------------------------------------------------
   function showResultModal(type, message) {
@@ -174,7 +202,7 @@
     cardEl.style.left = `${x}px`;
     cardEl.style.top = `${y}px`;
 
-    // --- SNAP HINT: detect slot under cursor, ignoring the dragged card ---
+    // SNAP HINT: detect slot under cursor, ignoring the dragged card
     const prevPointerEvents = cardEl.style.pointerEvents;
     cardEl.style.pointerEvents = "none";
     const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
@@ -379,4 +407,5 @@
 
   // --- Init ----------------------------------------------------------------
   renderPuzzle();
+  updateOrientationOverlay();
 })();
