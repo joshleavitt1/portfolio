@@ -13,6 +13,22 @@
   let slotState = []; // { slotIndex, cardId, value }
   let cardState = []; // { id, value, inSlot: number|null }
 
+    // --- Double-tap zoom guard (iOS Safari) ----------------------------------
+    let lastTouchEnd = 0;
+    document.addEventListener(
+      "touchend",
+      (event) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+          // Prevent the second tap from triggering zoom
+          event.preventDefault();
+        }
+        lastTouchEnd = now;
+      },
+      false
+    );
+  
+
   const railEl = document.getElementById("equation-rail");
   const handEl = document.getElementById("card-hand");
 
@@ -29,6 +45,13 @@
   const knightHpEl = document.getElementById("knight-hp");
   const dragonHpEl = document.getElementById("dragon-hp");
   const dragonAvatarEl = document.getElementById("dragon-avatar");
+
+  const knightHpFillEl = document.getElementById("knight-hp-fill");
+  const dragonHpFillEl = document.getElementById("dragon-hp-fill");
+
+  const MAX_HP = 10;
+  let knightHp = MAX_HP;
+  let dragonHp = MAX_HP;
 
   let modalState = null; // "success" | "error" | null
 
@@ -135,6 +158,27 @@
     dragonAvatarEl.classList.add("miss");
   }
 
+  function updateHpUI() {
+    if (knightHpEl) knightHpEl.textContent = `${knightHp} / ${MAX_HP}`;
+    if (dragonHpEl) dragonHpEl.textContent = `${dragonHp} / ${MAX_HP}`;
+
+    if (knightHpFillEl) {
+      const pct = (knightHp / MAX_HP) * 100;
+      knightHpFillEl.style.width = `${pct}%`;
+    }
+
+    if (dragonHpFillEl) {
+      const pct = (dragonHp / MAX_HP) * 100;
+      dragonHpFillEl.style.width = `${pct}%`;
+    }
+  }
+
+  function resetHpStats() {
+    knightHp = MAX_HP;
+    dragonHp = MAX_HP;
+    updateHpUI();
+  }
+
   // --- Render functions ----------------------------------------------------
   function renderPuzzle() {
     const puzzle = puzzles[currentPuzzleIndex];
@@ -146,9 +190,8 @@
     hideResultModal();
     clearDragonAnimation();
 
-    // Optional: reset HP labels (for now they are static)
-    if (knightHpEl) knightHpEl.textContent = "2 / 2";
-    if (dragonHpEl) dragonHpEl.textContent = "2 / 2";
+    // Reset HP each puzzle
+    resetHpStats();
 
     // Create slots
     for (let i = 0; i < puzzle.slots; i++) {
@@ -370,8 +413,9 @@
     const result = validateEquation(tokens);
 
     if (result.valid) {
-      playDragonHit();
-      showResultModal("success");
+      // Use the declared damage on the right side as the HP hit
+      const damage = result.combat?.finalDamage;
+      playAttackSequence(damage);
     } else {
       wiggleSlots();
       playDragonMiss();
@@ -462,6 +506,38 @@
       void slot.offsetWidth;
       slot.classList.add("wiggle");
     });
+  }
+
+  function playAttackSequence(damage) {
+    // Ensure at least 1 damage, and don't go below 0 HP
+    const dmg = Math.max(1, Math.min(damage || 1, dragonHp));
+
+    // 1) Cards charge up
+    railEl.classList.add("attack-charge");
+
+    setTimeout(() => {
+      // Remove charge state
+      railEl.classList.remove("attack-charge");
+
+      // 2) Dragon gets hit (shake/scale from existing CSS)
+      playDragonHit();
+
+      // 3) Lower dragon HP and animate the bar
+      dragonHp = Math.max(0, dragonHp - dmg);
+      updateHpUI();
+
+      if (dragonHpFillEl) {
+        dragonHpFillEl.classList.remove("health-hit");
+        // force reflow to restart animation
+        void dragonHpFillEl.offsetWidth;
+        dragonHpFillEl.classList.add("health-hit");
+      }
+
+      // 4) Show success modal slightly after the impact
+      setTimeout(() => {
+        showResultModal("success");
+      }, 300);
+    }, 450); // charge duration
   }
 
   // --- Init ----------------------------------------------------------------

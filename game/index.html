@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>Equation Cards</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -21,25 +23,38 @@
           <!-- Left side: Knight -->
           <div class="combat-side combat-side--left">
             <div class="combat-avatar knight-avatar" id="knight-avatar"></div>
+          
+            <!-- Knight health bar -->
+            <div class="health-bar">
+              <div class="health-bar-fill" id="knight-hp-fill"></div>
+            </div>
+          
             <div class="combat-label">
               <span class="combat-name">Knight</span>
-              <span class="combat-hp" id="knight-hp">2 / 2</span>
+              <span class="combat-hp" id="knight-hp">10 / 10</span>
             </div>
           </div>
+          
 
           <!-- Equation Rail -->
           <div class="equation-rail" id="equation-rail">
             <!-- slots populated by JS -->
           </div>
 
-          <!-- Right side: Dragon -->
           <div class="combat-side combat-side--right">
             <div class="combat-avatar dragon-avatar" id="dragon-avatar"></div>
+          
+            <!-- Dragon health bar -->
+            <div class="health-bar">
+              <div class="health-bar-fill" id="dragon-hp-fill"></div>
+            </div>
+          
             <div class="combat-label">
               <span class="combat-name">Dragon</span>
-              <span class="combat-hp" id="dragon-hp">2 / 2</span>
+              <span class="combat-hp" id="dragon-hp">10 / 10</span>
             </div>
           </div>
+          
         </div>
       </section>
 
