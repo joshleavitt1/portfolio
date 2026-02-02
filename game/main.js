@@ -13,21 +13,20 @@
   let slotState = []; // { slotIndex, cardId, value }
   let cardState = []; // { id, value, inSlot: number|null }
 
-    // --- Double-tap zoom guard (iOS Safari) ----------------------------------
-    let lastTouchEnd = 0;
-    document.addEventListener(
-      "touchend",
-      (event) => {
-        const now = Date.now();
-        if (now - lastTouchEnd <= 300) {
-          // Prevent the second tap from triggering zoom
-          event.preventDefault();
-        }
-        lastTouchEnd = now;
-      },
-      false
-    );
-  
+  // --- Double-tap zoom guard (iOS Safari) ----------------------------------
+  let lastTouchEnd = 0;
+  document.addEventListener(
+    "touchend",
+    (event) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        // Prevent the second tap from triggering zoom
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    },
+    false
+  );
 
   const railEl = document.getElementById("equation-rail");
   const handEl = document.getElementById("card-hand");
@@ -41,19 +40,16 @@
   // Orientation overlay
   const orientationOverlayEl = document.getElementById("orientation-overlay");
 
-  // Combat UI elements (Knight / Dragon)
-  const knightHpEl = document.getElementById("knight-hp");
-  const dragonHpEl = document.getElementById("dragon-hp");
-  const dragonAvatarEl = document.getElementById("dragon-avatar");
+  // Cinematic elements
+  const cinematicEl = document.getElementById("cinematic");
+  const equationAreaEl = document.querySelector(".equation-area");
+  const handAreaEl = document.querySelector(".hand-area");
 
-  const knightHpFillEl = document.getElementById("knight-hp-fill");
-  const dragonHpFillEl = document.getElementById("dragon-hp-fill");
-
-  const MAX_HP = 10;
-  let knightHp = MAX_HP;
-  let dragonHp = MAX_HP;
-
-  let modalState = null; // "success" | "error" | null
+  const cinematicKnight = document.getElementById("cinematic-knight");
+  const cinematicDragon = document.getElementById("cinematic-dragon");
+  const cinematicVs = document.getElementById("cinematic-vs");
+  const cinematicAttack = document.getElementById("cinematic-attack");
+  const cinematicStage = document.querySelector(".cinematic-stage");
 
   // --- Drag state ----------------------------------------------------------
   let cardIdCounter = 0;
@@ -62,6 +58,38 @@
   let activeDrag = null;
   // activeDrag = { card, cardEl, offsetX, offsetY, pointerId }
   let highlightedSlot = null;
+
+  // --- Dragon Attack Helper
+  function positionAttackOverDragon() {
+    if (!cinematicStage || !cinematicDragon || !cinematicAttack) return;
+  
+    const stageRect = cinematicStage.getBoundingClientRect();
+    const dragonRect = cinematicDragon.getBoundingClientRect();
+  
+    // Center of the dragon relative to the stage
+    const centerX = dragonRect.left + dragonRect.width / 2 - stageRect.left;
+    const centerY = dragonRect.top + dragonRect.height / 2 - stageRect.top;
+  
+    const attackWidth = 200;   // match CSS width
+    const attackHeight = 200;  // match CSS height
+  
+    cinematicAttack.style.left = `${centerX - attackWidth / 2}px`;
+    cinematicAttack.style.top = `${centerY - attackHeight / 2}px`;
+  }
+  
+
+  // --- Timing helpers ------------------------------------------------------
+  function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function restartAnimation(el, className) {
+    if (!el) return;
+    el.classList.remove(className);
+    // force reflow
+    void el.offsetWidth;
+    el.classList.add(className);
+  }
 
   // --- Orientation helpers -------------------------------------------------
   function updateOrientationOverlay() {
@@ -97,101 +125,175 @@
   window.addEventListener("resize", updateOrientationOverlay);
   window.addEventListener("orientationchange", updateOrientationOverlay);
 
-  // --- Modal helpers -------------------------------------------------------
-  function showResultModal(type, message) {
-    modalState = type;
+  // --- Section visibility helpers -----------------------------------------
+  function showCinematic() {
+    if (cinematicEl) cinematicEl.classList.remove("is-hidden");
+  }
 
-    if (type === "success") {
-      modalTitleEl.textContent = "Direct hit!";
-      modalMessageEl.textContent = "Your attack landed. Want another battle?";
-      modalPrimaryBtn.textContent = "Play Another";
-    } else {
-      modalTitleEl.textContent = "That attack didn’t land.";
-      modalMessageEl.textContent =
-        message || "Try moving the cards around and balance both sides.";
-      modalPrimaryBtn.textContent = "Try Again";
+  function hideCinematic() {
+    if (cinematicEl) cinematicEl.classList.add("is-hidden");
+  }
+
+  function showCards() {
+    if (equationAreaEl) equationAreaEl.classList.remove("is-hidden");
+    if (handAreaEl) handAreaEl.classList.remove("is-hidden");
+  }
+
+  function hideCards() {
+    if (equationAreaEl) equationAreaEl.classList.add("is-hidden");
+    if (handAreaEl) handAreaEl.classList.add("is-hidden");
+  }
+
+  function resetCinematicSprites() {
+    if (!cinematicKnight || !cinematicDragon || !cinematicVs || !cinematicAttack) {
+      return;
     }
+  
+    cinematicKnight.style.opacity = "0";
+    cinematicDragon.style.opacity = "0";
+    cinematicVs.style.opacity = "0";
+    cinematicAttack.style.opacity = "0";
+  
+    cinematicKnight.classList.remove("cinematic-in", "cinematic-fade-out");
+    cinematicDragon.classList.remove("cinematic-in", "cinematic-hit", "cinematic-fade-out");
+    cinematicVs.classList.remove("cinematic-show", "cinematic-fade-out");
+    cinematicAttack.classList.remove("cinematic-attack-in");
+  }
+  
+  // --- Modal helpers -------------------------------------------------------
+  function hideModal() {
+    modalEl.classList.remove("show");
+    modalEl.setAttribute("aria-hidden", "true");
+  }
+
+  function showModal(title, message, buttonLabel, onPrimaryClick) {
+    modalTitleEl.textContent = title;
+    modalMessageEl.textContent = message;
+    modalPrimaryBtn.textContent = buttonLabel;
+
+    modalPrimaryBtn.onclick = () => {
+      hideModal();
+      if (typeof onPrimaryClick === "function") {
+        onPrimaryClick();
+      }
+    };
 
     modalEl.classList.add("show");
     modalEl.setAttribute("aria-hidden", "false");
   }
 
-  function hideResultModal() {
-    modalEl.classList.remove("show");
-    modalEl.setAttribute("aria-hidden", "true");
-    modalState = null;
+  function showLossModal() {
+    showModal(
+      "Try Again!",
+      "Your attack just missed. Give it another try.",
+      "Redo",
+      () => {
+        // Reset same puzzle and stay in cards phase
+        resetPuzzle();
+        showCards();
+      }
+    );
   }
 
-  modalPrimaryBtn.addEventListener("click", () => {
-    if (modalState === "success") {
-      currentPuzzleIndex = (currentPuzzleIndex + 1) % puzzles.length;
-      renderPuzzle();
+  function showWinModal() {
+    showModal(
+      "Nice Job!",
+      "You slayed the dragon! Continue on your quest.",
+      "Onward",
+      () => {
+        // Next puzzle + re-run intro for the new battle
+        currentPuzzleIndex = (currentPuzzleIndex + 1) % puzzles.length;
+        resetPuzzle();
+        runIntroSequence();
+      }
+    );
+  }
+
+  // --- Cinematic sequences -------------------------------------------------
+  async function runIntroSequence() {
+    showCinematic();
+    hideCards();
+    resetCinematicSprites();
+  
+    // 1s pause before sprites slide in (was 2s)
+    await delay(500);
+  
+    // Knight + Dragon slide in simultaneously
+    restartAnimation(cinematicKnight, "cinematic-in");
+    restartAnimation(cinematicDragon, "cinematic-in");
+  
+    // Wait for slide + 1s pause (was 2s)
+    await delay(1500);
+  
+    // VS springs into center
+    restartAnimation(cinematicVs, "cinematic-show");
+  
+    // 1s pause while VS is visible (was 2s)
+    await delay(3000);
+  
+    // NEW: all three sprites fade out together
+    restartAnimation(cinematicKnight, "cinematic-fade-out");
+    restartAnimation(cinematicDragon, "cinematic-fade-out");
+    restartAnimation(cinematicVs, "cinematic-fade-out");
+  
+    // Let fade-out play
+    await delay(1000);
+  
+    // End Intro → show cards puzzle with a fade-in
+    hideCinematic();
+    showCards();
+  
+    // Animate equation row + hand fading in
+    if (equationAreaEl) {
+      restartAnimation(equationAreaEl, "cards-fade-in");
     }
-    hideResultModal();
-  });
-
-  // Optional: click backdrop to close error state only
-  modalEl.addEventListener("click", (e) => {
-    if (e.target === modalEl && modalState === "error") {
-      hideResultModal();
-    }
-  });
-
-  // --- Combat feedback helpers --------------------------------------------
-  function clearDragonAnimation() {
-    if (!dragonAvatarEl) return;
-    dragonAvatarEl.classList.remove("hit");
-    dragonAvatarEl.classList.remove("miss");
-  }
-
-  function playDragonHit() {
-    if (!dragonAvatarEl) return;
-    clearDragonAnimation();
-    void dragonAvatarEl.offsetWidth; // force reflow
-    dragonAvatarEl.classList.add("hit");
-  }
-
-  function playDragonMiss() {
-    if (!dragonAvatarEl) return;
-    clearDragonAnimation();
-    void dragonAvatarEl.offsetWidth; // force reflow
-    dragonAvatarEl.classList.add("miss");
-  }
-
-  function updateHpUI() {
-    if (knightHpEl) knightHpEl.textContent = `${knightHp} / ${MAX_HP}`;
-    if (dragonHpEl) dragonHpEl.textContent = `${dragonHp} / ${MAX_HP}`;
-
-    if (knightHpFillEl) {
-      const pct = (knightHp / MAX_HP) * 100;
-      knightHpFillEl.style.width = `${pct}%`;
-    }
-
-    if (dragonHpFillEl) {
-      const pct = (dragonHp / MAX_HP) * 100;
-      dragonHpFillEl.style.width = `${pct}%`;
+    if (handAreaEl) {
+      restartAnimation(handAreaEl, "cards-fade-in");
     }
   }
+  
 
-  function resetHpStats() {
-    knightHp = MAX_HP;
-    dragonHp = MAX_HP;
-    updateHpUI();
+  async function runResultSequence(playerWon) {
+    showCinematic();
+    hideCards();
+    resetCinematicSprites();
+
+    // 2s pause
+    await delay(500);
+
+    // Knight + Dragon slide in again
+    restartAnimation(cinematicKnight, "cinematic-in");
+    restartAnimation(cinematicDragon, "cinematic-in");
+
+    // 2s pause
+    await delay(1500);
+
+    if (playerWon) {
+      // Position attack sprite over the dragon, then animate attack + dragon shake
+      positionAttackOverDragon();
+      restartAnimation(cinematicAttack, "cinematic-attack-in");
+      restartAnimation(cinematicDragon, "cinematic-hit");
+    }    
+
+    // 2s pause
+    await delay(2500);
+
+    if (playerWon) {
+      showWinModal();
+    }
   }
 
   // --- Render functions ----------------------------------------------------
-  function renderPuzzle() {
+  function resetPuzzle() {
     const puzzle = puzzles[currentPuzzleIndex];
     slotState = [];
     cardState = [];
     highlightedSlot = null;
+
     railEl.innerHTML = "";
     handEl.innerHTML = "";
-    hideResultModal();
-    clearDragonAnimation();
-
-    // Reset HP each puzzle
-    resetHpStats();
+    railEl.classList.remove("resolve", "resolve-win", "resolve-error");
+    hideModal();
 
     // Create slots
     for (let i = 0; i < puzzle.slots; i++) {
@@ -390,6 +492,52 @@
   }
 
   // --- Validation ----------------------------------------------------------
+  async function runCardsResolution(isWin) {
+    // NEW: compute how far we need to move the rail
+    // so its center lines up with the center of the game area
+    const gameEl = document.querySelector(".game");
+    if (gameEl) {
+      const gameRect = gameEl.getBoundingClientRect();
+      const railRect = railEl.getBoundingClientRect();
+  
+      const gameCenterY = gameRect.top + gameRect.height / 2;
+      const railCenterY = railRect.top + railRect.height / 2;
+      const offsetY = gameCenterY - railCenterY;
+  
+      railEl.style.setProperty("--resolve-translateY", `${offsetY}px`);
+    }
+  
+    // Slide the cards down as a group
+    railEl.classList.add("resolve");
+  
+    // Wait for slide animation
+    await delay(400);
+  
+    if (isWin) {
+      // WIN: cards bounce left-to-right, then go to result
+      railEl.classList.add("resolve-win");
+  
+      const cards = railEl.querySelectorAll(".card");
+      cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 80}ms`;
+      });
+  
+      await delay(800); // let bounce finish
+  
+      // Hide cards and show result cinematic
+      hideCards();
+      await runResultSequence(true);
+    } else {
+      // LOSS: group wiggle to show error
+      railEl.classList.add("resolve-error");
+  
+      await delay(2000); // 2s pause after wiggle
+  
+      // Show Try Again modal
+      showLossModal();
+    }
+  }  
+
   function checkIfReadyToValidate() {
     const puzzle = puzzles[currentPuzzleIndex];
     const slots = railEl.querySelectorAll(".slot");
@@ -413,13 +561,9 @@
     const result = validateEquation(tokens);
 
     if (result.valid) {
-      // Use the declared damage on the right side as the HP hit
-      const damage = result.combat?.finalDamage;
-      playAttackSequence(damage);
+      runCardsResolution(true);
     } else {
-      wiggleSlots();
-      playDragonMiss();
-      showResultModal("error", result.message);
+      runCardsResolution(false);
     }
   }
 
@@ -498,51 +642,15 @@
     return /^[0-9]+$/.test(str);
   }
 
-  function wiggleSlots() {
-    const slots = railEl.querySelectorAll(".slot");
-    slots.forEach((slot) => {
-      slot.classList.remove("wiggle");
-      // force reflow
-      void slot.offsetWidth;
-      slot.classList.add("wiggle");
-    });
-  }
-
-  function playAttackSequence(damage) {
-    // Ensure at least 1 damage, and don't go below 0 HP
-    const dmg = Math.max(1, Math.min(damage || 1, dragonHp));
-
-    // 1) Cards charge up
-    railEl.classList.add("attack-charge");
-
-    setTimeout(() => {
-      // Remove charge state
-      railEl.classList.remove("attack-charge");
-
-      // 2) Dragon gets hit (shake/scale from existing CSS)
-      playDragonHit();
-
-      // 3) Lower dragon HP and animate the bar
-      dragonHp = Math.max(0, dragonHp - dmg);
-      updateHpUI();
-
-      if (dragonHpFillEl) {
-        dragonHpFillEl.classList.remove("health-hit");
-        // force reflow to restart animation
-        void dragonHpFillEl.offsetWidth;
-        dragonHpFillEl.classList.add("health-hit");
-      }
-
-      // 4) Show success modal slightly after the impact
-      setTimeout(() => {
-        showResultModal("success");
-      }, 300);
-    }, 450); // charge duration
-  }
-
   // --- Init ----------------------------------------------------------------
-  renderPuzzle();
-  updateOrientationOverlay();
+  function init() {
+    resetPuzzle();
+    updateOrientationOverlay();
+    hideCards();          // start with Intro only
+    runIntroSequence();   // kick off Intro → Cards
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
 })();
 
 window.addEventListener("load", () => {
@@ -552,3 +660,10 @@ window.addEventListener("load", () => {
     window.dispatchEvent(evt);
   }, 100);
 });
+
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    window.scrollTo(0, 1);
+  }, 50);
+});
+
