@@ -59,6 +59,48 @@
   // activeDrag = { card, cardEl, offsetX, offsetY, pointerId }
   let highlightedSlot = null;
 
+  // --- Hand reflow animation (smooth slide) --------------------------------
+let lastHandSnapshot = null;
+
+function captureHandSnapshot() {
+  if (!handEl) return null;
+  const cards = Array.from(handEl.children);
+  const snapshot = new Map();
+  cards.forEach((card) => {
+    snapshot.set(card, card.getBoundingClientRect());
+  });
+  return snapshot;
+}
+
+function animateHandFromSnapshot(snapshot) {
+  if (!snapshot || !handEl) return;
+
+  const cards = Array.from(handEl.children);
+  cards.forEach((card) => {
+    const first = snapshot.get(card);
+    if (!first) return;
+
+    const last = card.getBoundingClientRect();
+    const dx = first.left - last.left;
+    const dy = first.top - last.top;
+
+    // Ignore tiny moves
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+
+    // Start from old position
+    card.style.transition = "none";
+    card.style.transform = `translate(${dx}px, ${dy}px)`;
+
+    // Next frame: animate back to natural layout
+    requestAnimationFrame(() => {
+      card.style.transition =
+        "transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1)";
+      card.style.transform = "translate(0, 0)";
+    });
+  });
+}
+
+
   // --- Dragon Attack Helper
   function positionAttackOverDragon() {
     if (!cinematicStage || !cinematicDragon || !cinematicAttack) return;
@@ -198,8 +240,8 @@
   function showWinModal() {
     showModal(
       "Nice Job!",
-      "You slayed the dragon! Continue on your quest.",
-      "Onward",
+      "You slayed the dragon! Prepare for the next battle.",
+      "Next",
       () => {
         // Next puzzle + re-run intro for the new battle
         currentPuzzleIndex = (currentPuzzleIndex + 1) % puzzles.length;
@@ -229,7 +271,7 @@
     restartAnimation(cinematicVs, "cinematic-show");
   
     // 1s pause while VS is visible (was 2s)
-    await delay(3000);
+    await delay(1500);
   
     // NEW: all three sprites fade out together
     restartAnimation(cinematicKnight, "cinematic-fade-out");
@@ -292,8 +334,13 @@
 
     railEl.innerHTML = "";
     handEl.innerHTML = "";
-    railEl.classList.remove("resolve", "resolve-win", "resolve-error");
-    hideModal();
+    railEl.classList.remove(
+      "resolve",
+      "resolve-win",
+      "resolve-error",
+      "resolve-fade-out"
+    );
+    hideModal();    
 
     // Create slots
     for (let i = 0; i < puzzle.slots; i++) {
@@ -337,10 +384,13 @@
     const cardId = cardEl.dataset.cardId;
     const card = cardState.find((c) => c.id === cardId);
     if (!card) return;
-
+  
     e.preventDefault();
     cardEl.setPointerCapture(e.pointerId);
-
+  
+    // Snapshot hand layout BEFORE this card leaves
+    lastHandSnapshot = captureHandSnapshot();
+  
     // If card was already in a slot, free that slot immediately
     if (card.inSlot !== null && card.inSlot !== undefined) {
       const index = card.inSlot;
@@ -371,6 +421,9 @@
 
     // Move into body so it can float above everything
     document.body.appendChild(cardEl);
+
+    // Animate the remaining hand cards sliding together
+    animateHandFromSnapshot(lastHandSnapshot);
 
     document.addEventListener("pointermove", onPointerMove);
     document.addEventListener("pointerup", onPointerUp, { once: true });
@@ -442,9 +495,12 @@
     } else {
       // Drop back into hand
       card.inSlot = null;
+    
+      const snapshot = captureHandSnapshot();
       handEl.appendChild(cardEl);
+      animateHandFromSnapshot(snapshot);
     }
-
+    
     activeDrag = null;
     document.removeEventListener("pointermove", onPointerMove);
     checkIfReadyToValidate();
@@ -477,11 +533,13 @@
           `.card[data-card-id="${existingCard.id}"]`
         );
         if (existingCardEl) {
+          const snapshot = captureHandSnapshot();
           handEl.appendChild(existingCardEl);
+          animateHandFromSnapshot(snapshot);
         }
       }
       slotState = slotState.filter((item) => item.slotIndex !== slotIndex);
-    }
+    }    
 
     card.inSlot = slotIndex;
     slotState.push({ slotIndex, cardId: card.id, value: card.value });
@@ -492,51 +550,71 @@
   }
 
   // --- Validation ----------------------------------------------------------
-  async function runCardsResolution(isWin) {
-    // NEW: compute how far we need to move the rail
-    // so its center lines up with the center of the game area
-    const gameEl = document.querySelector(".game");
-    if (gameEl) {
-      const gameRect = gameEl.getBoundingClientRect();
-      const railRect = railEl.getBoundingClientRect();
-  
-      const gameCenterY = gameRect.top + gameRect.height / 2;
-      const railCenterY = railRect.top + railRect.height / 2;
-      const offsetY = gameCenterY - railCenterY;
-  
-      railEl.style.setProperty("--resolve-translateY", `${offsetY}px`);
-    }
-  
-    // Slide the cards down as a group
-    railEl.classList.add("resolve");
-  
-    // Wait for slide animation
-    await delay(400);
-  
-    if (isWin) {
-      // WIN: cards bounce left-to-right, then go to result
-      railEl.classList.add("resolve-win");
-  
-      const cards = railEl.querySelectorAll(".card");
-      cards.forEach((card, index) => {
-        card.style.animationDelay = `${index * 80}ms`;
-      });
-  
-      await delay(800); // let bounce finish
-  
-      // Hide cards and show result cinematic
-      hideCards();
-      await runResultSequence(true);
-    } else {
-      // LOSS: group wiggle to show error
-      railEl.classList.add("resolve-error");
-  
-      await delay(2000); // 2s pause after wiggle
-  
-      // Show Try Again modal
-      showLossModal();
-    }
-  }  
+async function runCardsResolution(isWin) {
+  // NEW: compute how far we need to move the rail
+  // so its center lines up with the center of the game area
+  const gameEl = document.querySelector(".game");
+  if (gameEl) {
+    const gameRect = gameEl.getBoundingClientRect();
+    const railRect = railEl.getBoundingClientRect();
+
+    const gameCenterY = gameRect.top + gameRect.height / 2;
+    const railCenterY = railRect.top + railRect.height / 2;
+    const offsetY = gameCenterY - railCenterY;
+
+    railEl.style.setProperty("--resolve-translateY", `${offsetY}px`);
+  }
+
+  // Clean up any previous resolve states
+  railEl.classList.remove(
+    "resolve",
+    "resolve-win",
+    "resolve-error",
+    "resolve-fade-out"
+  );
+
+  // Slide the cards down as a group (slower: 0.5s in CSS)
+  railEl.classList.add("resolve");
+  await delay(500); // match eq-resolve-slide-down duration
+
+  if (isWin) {
+    // WIN: cards bounce left-to-right, then pause, then fade out → result
+    railEl.classList.add("resolve-win");
+
+    const cards = railEl.querySelectorAll(".card");
+    const perCardDelay = 100; // a bit slower than 80ms
+    cards.forEach((card, index) => {
+      card.style.animationDelay = `${index * perCardDelay}ms`;
+    });
+
+    // Bounce duration (0.45s) + max stagger (for up to 5 cards)
+    const bounceDuration = 450;
+    const maxIndex = Math.max(0, cards.length - 1);
+    const totalBounceTime = bounceDuration + maxIndex * perCardDelay;
+
+    // Wait for bounce to finish
+    await delay(totalBounceTime);
+
+    // EXTRA: 1s pause with cards in place
+    await delay(1000);
+
+    // Fade the whole rail out
+    railEl.classList.add("resolve-fade-out");
+    await delay(400); // match eq-resolve-fade-out duration
+
+    // Hide cards and show result cinematic
+    hideCards();
+    await runResultSequence(true);
+  } else {
+    // LOSS: group wiggle to show error
+    railEl.classList.add("resolve-error");
+
+    await delay(2000); // 2s pause after wiggle
+
+    // Show Try Again modal
+    showLossModal();
+  }
+} 
 
   function checkIfReadyToValidate() {
     const puzzle = puzzles[currentPuzzleIndex];

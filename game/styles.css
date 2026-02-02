@@ -152,49 +152,33 @@ body {
   opacity: 0;
   transform: scale(0.6);
 
-  /* NEW: ensure it's drawn above knight/dragon */
+  /* Make sure nothing implicitly scales this down */
+  max-width: none;
+  max-height: none;
+
+  /* On top of knight/dragon */
   z-index: 3;
   pointer-events: none;
 }
 
-/* Knight slides in from left */
+/* Knight + Dragon: match VS spring, slight stagger */
 .cinematic-sprite--knight.cinematic-in {
-  animation: knight-slide-in 0.6s ease-out forwards;
+  animation: cinematic-spring-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
-@keyframes knight-slide-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-60vw);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Dragon slides in from right */
 .cinematic-sprite--dragon.cinematic-in {
-  animation: dragon-slide-in 0.6s ease-out forwards;
+  animation: cinematic-spring-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+  animation-delay: 0.04s; /* tiny offset so they don't feel robotic */
 }
 
-@keyframes dragon-slide-in {
-  0% {
-    opacity: 0;
-    transform: translateX(60vw);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* VS spring into center */
+/* VS badge: same spring, just a hair later */
 .cinematic-vs.cinematic-show {
-  animation: vs-spring-in 0.5s cubic-bezier(0.2, 1.4, 0.3, 1) forwards;
+  animation: cinematic-spring-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+  animation-delay: 0.08s;
 }
 
-@keyframes vs-spring-in {
+/* Shared spring-in for VS + sprites */
+@keyframes cinematic-spring-in {
   0% {
     opacity: 0;
     transform: scale(0.4);
@@ -211,13 +195,13 @@ body {
 
 /* Knight attack spring over dragon */
 .cinematic-attack.cinematic-attack-in {
-  animation: knight-attack-in 0.5s cubic-bezier(0.2, 1.4, 0.3, 1) forwards;
+  animation: knight-attack-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
 @keyframes knight-attack-in {
   0% {
     opacity: 0;
-    transform: translate(30px, -30px) scale(0.4);
+    transform: translate(30px, -30px) scale(0.8);
   }
   60% {
     opacity: 1;
@@ -229,18 +213,36 @@ body {
   }
 }
 
-/* Dragon shake when hit */
+/* Dragon shake when hit (stays visible) */
 .cinematic-sprite--dragon.cinematic-hit {
-  animation: dragon-hit-shake 0.5s ease-out;
+  animation: dragon-hit-shake 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
 @keyframes dragon-hit-shake {
-  0%   { transform: translateX(0); }
-  20%  { transform: translateX(-6px); }
-  40%  { transform: translateX(6px); }
-  60%  { transform: translateX(-4px); }
-  80%  { transform: translateX(3px); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  20% {
+    transform: translateX(-6px);
+    opacity: 1;
+  }
+  40% {
+    transform: translateX(6px);
+    opacity: 1;
+  }
+  60% {
+    transform: translateX(-4px);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(3px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* --------------------------------------------------------------------- */
@@ -306,7 +308,7 @@ body {
 
 /* Cards resolve: slide down toward center */
 .equation-rail.resolve {
-  animation: eq-resolve-slide-down 0.4s ease-out forwards;
+  animation: eq-resolve-slide-down 0.5s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
 /* Uses JS-computed --resolve-translateY so the rail centers vertically */
@@ -334,7 +336,7 @@ body {
 
 /* Per-card bounce for correct answer */
 .equation-rail.resolve-win .card {
-  animation: eq-card-bounce 0.35s ease-out forwards;
+  animation: eq-card-bounce 0.5s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
 @keyframes eq-card-bounce {
@@ -348,6 +350,23 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Fade-out after win, before result cinematic */
+.equation-rail.resolve-fade-out {
+  animation: eq-resolve-fade-out 0.5s ease-out forwards;
+}
+
+@keyframes eq-resolve-fade-out {
+  0% {
+    opacity: 1;
+    transform: translateY(var(--resolve-translateY, 24px));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(calc(var(--resolve-translateY, 24px) + 16px));
+  }
+}
+
 
 /* --------------------------------------------------------------------- */
 /* Slots                                                                 */
