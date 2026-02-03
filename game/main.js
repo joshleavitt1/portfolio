@@ -1,3 +1,78 @@
+// ---------------------------------------------------------------------
+// Debug outcome from URL (?win or ?lose)
+// ---------------------------------------------------------------------
+const params = new URLSearchParams(window.location.search);
+
+const DEBUG_OUTCOME = params.has("win")
+  ? "win"
+  : params.has("lose")
+  ? "lose"
+  : null;
+
+// ---------------------------------------------------------------------
+// Stat panel helpers
+// ---------------------------------------------------------------------
+
+// Use window.BATTLE_STATS if available, otherwise fall back
+const BATTLE_STATS = window.BATTLE_STATS || DEFAULT_STATS;
+
+// IMPORTANT: use BATTLE_STATS, not window.BATTLE_STATS directly
+const HERO_BASE = BATTLE_STATS.hero;
+const MONSTER_BASE = BATTLE_STATS.monster;
+
+const heroNameEl = document.getElementById("hero-name");
+const monsterNameEl = document.getElementById("monster-name");
+const heroHealthFillEl = document.getElementById("hero-health-fill");
+const monsterHealthFillEl = document.getElementById("monster-health-fill");
+
+/**
+ * Compute current health values based on outcome.
+ * outcome: "intro" | "win" | "lose"
+ */
+function computeBattleState(outcome) {
+  const hero = {
+    ...HERO_BASE,
+    health: HERO_BASE.maxHealth,
+  };
+  const monster = {
+    ...MONSTER_BASE,
+    health: MONSTER_BASE.maxHealth,
+  };
+
+  if (outcome === "win") {
+    // Hero hits monster
+    monster.health = Math.max(
+      0,
+      MONSTER_BASE.maxHealth - HERO_BASE.damage
+    );
+  } else if (outcome === "lose") {
+    // Monster hits hero
+    hero.health = Math.max(
+      0,
+      HERO_BASE.maxHealth - MONSTER_BASE.damage
+    );
+  }
+
+  return { hero, monster };
+}
+
+function renderStatPanels(outcome) {
+  const { hero, monster } = computeBattleState(outcome);
+
+  if (heroNameEl) heroNameEl.textContent = hero.name;
+  if (monsterNameEl) monsterNameEl.textContent = monster.name;
+
+  if (heroHealthFillEl) {
+    const heroPct = (hero.health / hero.maxHealth) * 100;
+    heroHealthFillEl.style.width = `${heroPct}%`;
+  }
+
+  if (monsterHealthFillEl) {
+    const monsterPct = (monster.health / monster.maxHealth) * 100;
+    monsterHealthFillEl.style.width = `${monsterPct}%`;
+  }
+}
+
 (() => {
   // --- Puzzle data ---------------------------------------------------------
   // Simple, guaranteed-solvable puzzles using A op B = C or C = A op B
@@ -50,6 +125,19 @@
   const cinematicVs = document.getElementById("cinematic-vs");
   const cinematicAttack = document.getElementById("cinematic-attack");
   const cinematicStage = document.querySelector(".cinematic-stage");
+
+  // Sync sprite images from battle stats (HTML src becomes just a fallback)
+if (cinematicKnight && HERO_BASE.spriteImage) {
+  cinematicKnight.src = HERO_BASE.spriteImage;
+}
+
+if (cinematicDragon && MONSTER_BASE.spriteImage) {
+  cinematicDragon.src = MONSTER_BASE.spriteImage;
+}
+
+if (cinematicAttack && HERO_BASE.attackImage) {
+  cinematicAttack.src = HERO_BASE.attackImage;
+}
 
   // --- Drag state ----------------------------------------------------------
   let cardIdCounter = 0;
@@ -191,16 +279,39 @@ function animateHandFromSnapshot(snapshot) {
       return;
     }
   
+    // Reset the stage container (in case it was faded out)
+    if (cinematicStage) {
+      cinematicStage.classList.remove("cinematic-fade-out");
+      cinematicStage.style.opacity = "";
+      cinematicStage.style.transform = "";
+    }
+  
+    // Reset base opacity for sprites/overlays
     cinematicKnight.style.opacity = "0";
     cinematicDragon.style.opacity = "0";
     cinematicVs.style.opacity = "0";
     cinematicAttack.style.opacity = "0";
   
-    cinematicKnight.classList.remove("cinematic-in", "cinematic-fade-out");
-    cinematicDragon.classList.remove("cinematic-in", "cinematic-hit", "cinematic-fade-out");
+    // Clear all cinematic classes so we can restart clean
+    cinematicKnight.classList.remove(
+      "cinematic-in",
+      "cinematic-fade-out",
+      "cinematic-knight-attack"
+    );
+  
+    cinematicDragon.classList.remove(
+      "cinematic-in",
+      "cinematic-hit",
+      "cinematic-fade-out"
+    );
+  
     cinematicVs.classList.remove("cinematic-show", "cinematic-fade-out");
-    cinematicAttack.classList.remove("cinematic-attack-in");
-  }
+  
+    cinematicAttack.classList.remove(
+      "cinematic-attack-in",
+      "cinematic-attack-out"
+    );
+  }  
   
   // --- Modal helpers -------------------------------------------------------
   function hideModal() {
@@ -233,9 +344,10 @@ function animateHandFromSnapshot(snapshot) {
         // Reset same puzzle and stay in cards phase
         resetPuzzle();
         showCards();
+        setStage("game");
       }
     );
-  }
+  }  
 
   function showWinModal() {
     showModal(
@@ -253,37 +365,46 @@ function animateHandFromSnapshot(snapshot) {
 
   // --- Cinematic sequences -------------------------------------------------
   async function runIntroSequence() {
+    // Intro stage: battle background
+    setStage("intro");
+  
     showCinematic();
     hideCards();
     resetCinematicSprites();
+
+        // ⬇️ ADD THIS
+        renderStatPanels("intro");
   
-    // 1s pause before sprites slide in (was 2s)
+    // 0.5s pause before sprites spring in
     await delay(500);
   
-    // Knight + Dragon slide in simultaneously
+    // Knight + Dragon spring in together
     restartAnimation(cinematicKnight, "cinematic-in");
     restartAnimation(cinematicDragon, "cinematic-in");
   
-    // Wait for slide + 1s pause (was 2s)
+    // Let them fully animate in and settle
     await delay(1500);
   
     // VS springs into center
     restartAnimation(cinematicVs, "cinematic-show");
   
-    // 1s pause while VS is visible (was 2s)
+    // Let VS hang for a bit
     await delay(1500);
   
-    // NEW: all three sprites fade out together
-    restartAnimation(cinematicKnight, "cinematic-fade-out");
-    restartAnimation(cinematicDragon, "cinematic-fade-out");
-    restartAnimation(cinematicVs, "cinematic-fade-out");
+    // Fade out the entire stage (knight, dragon, VS, attack)
+    if (cinematicStage) {
+      restartAnimation(cinematicStage, "cinematic-fade-out");
+    }
   
     // Let fade-out play
     await delay(1000);
   
-    // End Intro → show cards puzzle with a fade-in
+    // Handoff: hide cinematic, show cards
     hideCinematic();
     showCards();
+  
+    // GAME stage: crossfade to card background
+    setStage("game");
   
     // Animate equation row + hand fading in
     if (equationAreaEl) {
@@ -292,38 +413,68 @@ function animateHandFromSnapshot(snapshot) {
     if (handAreaEl) {
       restartAnimation(handAreaEl, "cards-fade-in");
     }
-  }
+  }  
   
 
   async function runResultSequence(playerWon) {
+    // We should already be in stage-result, but this keeps it explicit
+    setStage("result");
+
+     // ⬇️ ADD THIS BLOCK
+     const outcome = DEBUG_OUTCOME || (playerWon ? "win" : "lose");
+     renderStatPanels(outcome);
+  
     showCinematic();
     hideCards();
     resetCinematicSprites();
-
-    // 2s pause
+  
+    // Short pause before result sprites appear
     await delay(500);
-
-    // Knight + Dragon slide in again
+  
+    // Knight + Dragon spring in together (same as intro)
     restartAnimation(cinematicKnight, "cinematic-in");
-    restartAnimation(cinematicDragon, "cinematic-in");
-
-    // 2s pause
+    restartAnimation(cinematicDragon, "cinematic-in");  
+  
+    // Let them fully animate in and settle
     await delay(1500);
-
-    if (playerWon) {
-      // Position attack sprite over the dragon, then animate attack + dragon shake
-      positionAttackOverDragon();
-      restartAnimation(cinematicAttack, "cinematic-attack-in");
-      restartAnimation(cinematicDragon, "cinematic-hit");
-    }    
-
-    // 2s pause
-    await delay(2500);
-
-    if (playerWon) {
-      showWinModal();
+  
+    if (!playerWon) {
+      // If you ever want a loss cinematic, you can wire it here.
+      // For now, just show the loss modal immediately.
+      showLossModal();
+      return;
     }
+  
+    // --- WIN PATH ---
+  
+    // 1) Knight sword-strike lunge (forward + pull back)
+    restartAnimation(cinematicKnight, "cinematic-knight-attack");
+    await delay(600); // match knight-sword-strike duration
+  
+    // 2) Attack overlay appears over dragon + dragon shakes
+    positionAttackOverDragon();
+    restartAnimation(cinematicAttack, "cinematic-attack-in");
+    restartAnimation(cinematicDragon, "cinematic-hit");
+  
+    // Attack overlay animates (0.6s) + extra 500ms hang time
+    await delay(600 + 1000);
+  
+    // 3) Attack sprite springs out (exit animation)
+    restartAnimation(cinematicAttack, "cinematic-attack-out");
+  
+    // 4) After another 500ms, push the modal
+    await delay(1000);
+    showWinModal();
   }
+  
+  const gameRoot = document.getElementById('game-root');
+
+function setStage(stage) {
+  // stage is "intro", "game", or "result"
+  gameRoot.classList.remove('stage-intro', 'stage-game', 'stage-result');
+  gameRoot.classList.add(`stage-${stage}`);
+}
+
 
   // --- Render functions ----------------------------------------------------
   function resetPuzzle() {
@@ -602,9 +753,15 @@ async function runCardsResolution(isWin) {
     railEl.classList.add("resolve-fade-out");
     await delay(400); // match eq-resolve-fade-out duration
 
+           // Move into RESULT stage (battle background again)
+    setStage("result");
+
     // Hide cards and show result cinematic
     hideCards();
-    await runResultSequence(true);
+
+    const outcome = DEBUG_OUTCOME || (isWin ? "win" : "lose");
+    await runResultSequence(outcome === "win");
+
   } else {
     // LOSS: group wiggle to show error
     railEl.classList.add("resolve-error");
@@ -721,11 +878,25 @@ async function runCardsResolution(isWin) {
   }
 
   // --- Init ----------------------------------------------------------------
+  // --- Init ----------------------------------------------------------------
   function init() {
     resetPuzzle();
     updateOrientationOverlay();
-    hideCards();          // start with Intro only
-    runIntroSequence();   // kick off Intro → Cards
+    hideCards(); // start without cards visible
+
+    if (DEBUG_OUTCOME) {
+      // 🔧 Debug mode: jump straight to RESULT cinematic
+      setStage("result");
+      showCinematic();
+      resetCinematicSprites();
+      renderStatPanels(DEBUG_OUTCOME);
+
+      // Fire the result sequence (win/lose) immediately
+      runResultSequence(DEBUG_OUTCOME === "win");
+    } else {
+      // Normal flow: Intro → Cards → Result
+      runIntroSequence();
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);

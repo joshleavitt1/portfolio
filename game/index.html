@@ -15,19 +15,33 @@
 </head>
 <body>
   <div class="app">
-    <main class="game">
+    <main class="game stage-intro" id="game-root">
 
       <!-- Cinematic Stage (Intro + Result) -->
       <section class="cinematic" id="cinematic">
         <div class="cinematic-stage">
-          <!-- Knight -->
-          <img
-            src="images/knight.png"
-            alt="Knight"
-            class="cinematic-sprite cinematic-sprite--knight"
-            id="cinematic-knight"
-          />
-
+          <!-- Knight + Hero Stats -->
+          <div class="cinematic-character cinematic-character--hero">
+            <img
+              src="images/knight.png"
+              alt="Knight"
+              class="cinematic-sprite cinematic-sprite--knight"
+              id="cinematic-knight"
+            />
+    
+            <div class="stat-panel stat-panel--hero">
+              <div class="stat-panel__name" id="hero-name"></div>
+              <div class="stat-panel__health-row">
+                <div class="stat-panel__health-track">
+                  <div
+                    class="stat-panel__health-fill"
+                    id="hero-health-fill"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+    
           <!-- VS badge -->
           <img
             src="images/vs.png"
@@ -35,15 +49,29 @@
             class="cinematic-vs"
             id="cinematic-vs"
           />
-
-          <!-- Dragon -->
-          <img
-            src="images/dragon.png"
-            alt="Dragon"
-            class="cinematic-sprite cinematic-sprite--dragon"
-            id="cinematic-dragon"
-          />
-
+    
+          <!-- Dragon + Monster Stats -->
+          <div class="cinematic-character cinematic-character--monster">
+            <img
+              src="images/dragon.png"
+              alt="Dragon"
+              class="cinematic-sprite cinematic-sprite--dragon"
+              id="cinematic-dragon"
+            />
+    
+            <div class="stat-panel stat-panel--monster">
+              <div class="stat-panel__name" id="monster-name"></div>
+              <div class="stat-panel__health-row">
+                <div class="stat-panel__health-track">
+                  <div
+                    class="stat-panel__health-fill"
+                    id="monster-health-fill"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+    
           <!-- Knight attack overlay (result only) -->
           <img
             src="images/knight_attack.png"
@@ -53,7 +81,7 @@
           />
         </div>
       </section>
-
+    
       <!-- Equation + Puzzle Row -->
       <section class="equation-area">
         <div class="combat-row">
@@ -62,14 +90,14 @@
           </div>
         </div>
       </section>
-
+    
       <!-- Card Hand -->
       <section class="hand-area">
         <div class="card-hand" id="card-hand">
           <!-- cards populated by JS -->
         </div>
       </section>
-    </main>
+    </main>    
   </div>
 
   <!-- Result Modal -->
@@ -100,7 +128,7 @@
       <p>This game is best played in landscape on mobile.</p>
     </div>
   </div>
-
+  <script src="battle-stats.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

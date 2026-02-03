@@ -45,11 +45,7 @@ body {
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  background-image: url("images/bg.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-color: #000000; /* neutral dark behind the board */
   color: var(--ink);
   overscroll-behavior: none;
   -webkit-overflow-scrolling: auto;
@@ -67,20 +63,152 @@ body {
 .app {
   min-height: 100vh;
   display: flex;
-  align-items: center;        /* vertical centering */
-  justify-content: center;    /* horizontal centering */
-  padding: 16px;
+  justify-content: center;    /* horizontal centering only */
 }
 
-/* Game board */
+
+/* --------------------------------------------------------------------- */
+/* Stage backgrounds: battle vs game                                     */
+/* --------------------------------------------------------------------- */
+
 .game {
+  position: relative;
+  min-height: 100vh;     /* ⬅️ THIS enables top/bottom bleed */
   width: 100%;
-  max-width: 960px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 24px;
+  overflow: hidden;
 }
+
+/* Center the puzzle stack during GAME stage */
+.game.stage-game {
+  justify-content: center;   /* vertical centering of equation + hand */
+}
+
+/* Two layers: ::before = battle, ::after = game */
+.game::before,
+.game::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -1;       /* behind all game content */
+  opacity: 0;
+  transition: opacity 600ms ease-in-out;
+}
+
+/* Battle background (intro + result) */
+.game::before {
+  background-image: url("images/bg_battle.png");
+  opacity: 1;        /* default: we're in stage-intro */
+}
+
+/* Game background (card puzzle) */
+.game::after {
+  background-image: url("images/bg_game.png");
+  opacity: 0;
+}
+
+/* When in GAME stage, fade to bg_game */
+.game.stage-game::before {
+  opacity: 0;
+}
+.game.stage-game::after {
+  opacity: 1;
+}
+
+/* When in RESULT stage, fade back to battle */
+.game.stage-result::before {
+  opacity: 1;
+}
+.game.stage-result::after {
+  opacity: 0;
+}
+
+/* Intro also uses battle background (default from .stage-intro) */
+.game.stage-intro::before {
+  opacity: 1;
+}
+.game.stage-intro::after {
+  opacity: 0;
+}
+
+/* --------------------------------------------------------------------- */
+/* Stat panels                                                           */
+/* --------------------------------------------------------------------- */
+
+.stat-panel {
+  position: absolute;
+  width: 130px;
+  height: 80px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px; /* space between name and health bar */
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
+  pointer-events: none; /* HUD only, no blocking drags/clicks */
+}
+
+/* Hide stat panels during the GAME (cards) stage */
+.game.stage-game .stat-panel {
+  display: none;
+}
+
+/* Hero panel: bottom-left of knight sprite */
+.stat-panel--hero {
+  left: 0;
+  bottom: -10px; /* slight overlap below sprite; tweak if needed */
+}
+
+/* Monster panel: bottom-right of dragon sprite */
+.stat-panel--monster {
+  right: 0;
+  bottom: -10px;
+}
+
+.stat-panel__name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-panel__health-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-panel__health-track {
+  width: 100%;
+  height: 12px; /* requested height */
+  border-radius: 999px;
+  border: 1px solid #ffffff;
+  background: rgba(255, 255, 255, 0.2); /* 20% white underneath */
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.stat-panel__health-fill {
+  height: 100%;
+  width: 100%; /* JS will adjust based on current health */
+  background: linear-gradient(to bottom, #36dc36, #00b600);
+  border-radius: inherit;
+  transition: width 300ms ease-out;
+}
+
 
 /* --------------------------------------------------------------------- */
 /* Header (not currently used, kept for future)                          */
@@ -107,8 +235,10 @@ body {
 
 .cinematic {
   width: 100%;
+  flex: 1;                       /* ⬅️ allows vertical centering */
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .cinematic-stage {
@@ -121,6 +251,15 @@ body {
   justify-content: center;
   gap: 140px;                 /* space between knight & dragon */
   pointer-events: none;
+}
+
+.cinematic-character {
+  position: relative;
+  width: 300px;
+  height: 235px; /* match sprite size */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Knight + Dragon sprites */
@@ -245,13 +384,60 @@ body {
   }
 }
 
+/* Knight sword-attack lunge (forward then pull back) */
+.cinematic-sprite--knight.cinematic-knight-attack {
+  animation: knight-sword-strike 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+@keyframes knight-sword-strike {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateX(0) translateY(0);
+  }
+  40% {
+    /* Lunge toward the dragon (to the right + slightly up) */
+    opacity: 1;
+    transform: scale(1.04) translateX(32px) translateY(-8px);
+  }
+  70% {
+    /* Slight overshoot back */
+    opacity: 1;
+    transform: scale(1.02) translateX(20px) translateY(-4px);
+  }
+  100% {
+    /* Return to idle position */
+    opacity: 1;
+    transform: scale(1) translateX(0) translateY(0);
+  }
+}
+
+/* Attack sprite exit (spring out after impact) */
+.cinematic-attack.cinematic-attack-out {
+  animation: knight-attack-out 0.4s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+@keyframes knight-attack-out {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    /* Kick off to the top-right a bit as it disappears */
+    transform: translate(40px, -40px) scale(0.85);
+  }
+}
+
+
 /* --------------------------------------------------------------------- */
-/* Cinematic fade-out for sprites                                        */
+/* Cinematic fade-out for the whole stage                                */
 /* --------------------------------------------------------------------- */
 
-.cinematic-fade-out {
-  animation: cinematic-fade-out 0.5s ease-out forwards;
-}
+/* Apply this class to .cinematic-stage in JS when you want to fade away
+   the entire intro/result scene (knight, dragon, VS, attack). */
+   .cinematic-stage.cinematic-fade-out {
+    animation: cinematic-fade-out 0.5s ease-out forwards;
+  }
 
 @keyframes cinematic-fade-out {
   0% {
@@ -287,6 +473,8 @@ body {
 .equation-area,
 .hand-area {
   width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 /* --------------------------------------------------------------------- */
