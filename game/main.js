@@ -1,3 +1,6 @@
+(function () {
+  "use strict";
+
 // ---------------------------------------------------------------------
 // Debug outcome from URL (?win or ?lose)
 // ---------------------------------------------------------------------
@@ -10,7 +13,7 @@ const DEBUG_OUTCOME = params.has("win")
   : null;
 
 // ---------------------------------------------------------------------
-// Stat panel helpers
+// Stat panel + GAME health helpers
 // ---------------------------------------------------------------------
 
 // Use window.BATTLE_STATS if available, otherwise fall back
@@ -25,68 +28,62 @@ const monsterNameEl = document.getElementById("monster-name");
 const heroHealthFillEl = document.getElementById("hero-health-fill");
 const monsterHealthFillEl = document.getElementById("monster-health-fill");
 
-/**
- * Compute current health values based on outcome.
- * outcome: "intro" | "win" | "lose"
- */
-function computeBattleState(outcome) {
-  const hero = {
-    ...HERO_BASE,
-    health: HERO_BASE.maxHealth,
-  };
-  const monster = {
-    ...MONSTER_BASE,
-    health: MONSTER_BASE.maxHealth,
-  };
+// Persistent health for the *current game* (not just one battle)
+let heroHealthCurrent = HERO_BASE.maxHealth;
+let monsterHealthCurrent = MONSTER_BASE.maxHealth;
 
-  if (outcome === "win") {
-    // Hero hits monster
-    monster.health = Math.max(
-      0,
-      MONSTER_BASE.maxHealth - HERO_BASE.damage
-    );
-  } else if (outcome === "lose") {
-    // Monster hits hero
-    hero.health = Math.max(
-      0,
-      HERO_BASE.maxHealth - MONSTER_BASE.damage
-    );
-  }
-
-  return { hero, monster };
+// Reset health to full for a brand-new GAME
+function resetGameHealth() {
+  heroHealthCurrent = HERO_BASE.maxHealth;
+  monsterHealthCurrent = MONSTER_BASE.maxHealth;
 }
 
-function renderStatPanels(outcome) {
-  const { hero, monster } = computeBattleState(outcome);
-
-  if (heroNameEl) heroNameEl.textContent = hero.name;
-  if (monsterNameEl) monsterNameEl.textContent = monster.name;
+// Render HUD from current game health
+function renderStatPanels() {
+  if (heroNameEl) heroNameEl.textContent = HERO_BASE.name;
+  if (monsterNameEl) monsterNameEl.textContent = MONSTER_BASE.name;
 
   if (heroHealthFillEl) {
-    const heroPct = (hero.health / hero.maxHealth) * 100;
-    heroHealthFillEl.style.width = `${heroPct}%`;
+    const heroPct = (heroHealthCurrent / HERO_BASE.maxHealth) * 100;
+    heroHealthFillEl.style.width = `${Math.max(0, heroPct)}%`;
   }
 
   if (monsterHealthFillEl) {
-    const monsterPct = (monster.health / monster.maxHealth) * 100;
-    monsterHealthFillEl.style.width = `${monsterPct}%`;
+    const monsterPct = (monsterHealthCurrent / MONSTER_BASE.maxHealth) * 100;
+    monsterHealthFillEl.style.width = `${Math.max(0, monsterPct)}%`;
   }
 }
 
-(() => {
-  // --- Puzzle data ---------------------------------------------------------
-  // Simple, guaranteed-solvable puzzles using A op B = C or C = A op B
-  const puzzles = [
-    { id: 1, cards: ["1", "1", "2", "+", "="], slots: 5 },
-    { id: 2, cards: ["2", "3", "5", "+", "="], slots: 5 },
-    { id: 3, cards: ["3", "1", "2", "+", "="], slots: 5 },
-    { id: 4, cards: ["4", "2", "2", "-", "="], slots: 5 },
-    { id: 5, cards: ["2", "2", "4", "+", "="], slots: 5 },
-  ];
+// ---------------------------------------------------------------------
+// Puzzle Data
+// ---------------------------------------------------------------------
 
-  let currentPuzzleIndex = 0;
-  let slotState = []; // { slotIndex, cardId, value }
-  let cardState = []; // { id, value, inSlot: number|null }
+
+  // --- Difficulty + current puzzle (from DifficultyEngine) --------------
+  let currentDifficulty =
+    window.DifficultyEngine?.getInitialDifficulty() ?? 1;
+
+  let currentPuzzle = null;
+
+  function loadNextPuzzle() {
+    if (window.DifficultyEngine) {
+      currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
+    } else {
+      // Fallback: simple 1+1=2 puzzle if the engine isn't loaded
+      currentPuzzle = {
+        id: "fallback",
+        difficulty: 1,
+        slots: 5,
+        fixedSlots: {},
+        cards: ["1", "1", "2", "+", "="],
+      };
+    }
+    resetPuzzle();
+  }
+
+  // ---------------------------------------------------------------------
+  // Zoom Guard
+  // ---------------------------------------------------------------------P
 
   // --- Double-tap zoom guard (iOS Safari) ----------------------------------
   let lastTouchEnd = 0;
@@ -135,10 +132,6 @@ if (cinematicDragon && MONSTER_BASE.spriteImage) {
   cinematicDragon.src = MONSTER_BASE.spriteImage;
 }
 
-if (cinematicAttack && HERO_BASE.attackImage) {
-  cinematicAttack.src = HERO_BASE.attackImage;
-}
-
   // --- Drag state ----------------------------------------------------------
   let cardIdCounter = 0;
   const createCardId = () => `card_${cardIdCounter++}`;
@@ -147,8 +140,12 @@ if (cinematicAttack && HERO_BASE.attackImage) {
   // activeDrag = { card, cardEl, offsetX, offsetY, pointerId }
   let highlightedSlot = null;
 
+  // Card / slot state for the current puzzle
+  let slotState = [];
+  let cardState = [];
+
   // --- Hand reflow animation (smooth slide) --------------------------------
-let lastHandSnapshot = null;
+  let lastHandSnapshot = null;
 
 function captureHandSnapshot() {
   if (!handEl) return null;
@@ -206,6 +203,24 @@ function animateHandFromSnapshot(snapshot) {
     cinematicAttack.style.left = `${centerX - attackWidth / 2}px`;
     cinematicAttack.style.top = `${centerY - attackHeight / 2}px`;
   }
+
+    // Mirror helper: position attack overlay over the KNIGHT
+    function positionAttackOverKnight() {
+      if (!cinematicStage || !cinematicKnight || !cinematicAttack) return;
+  
+      const stageRect = cinematicStage.getBoundingClientRect();
+      const knightRect = cinematicKnight.getBoundingClientRect();
+  
+      // Center of the knight relative to the stage
+      const centerX = knightRect.left + knightRect.width / 2 - stageRect.left;
+      const centerY = knightRect.top + knightRect.height / 2 - stageRect.top;
+  
+      const attackWidth = 200;   // match CSS width
+      const attackHeight = 200;  // match CSS height
+  
+      cinematicAttack.style.left = `${centerX - attackWidth / 2}px`;
+      cinematicAttack.style.top = `${centerY - attackHeight / 2}px`;
+    }  
   
 
   // --- Timing helpers ------------------------------------------------------
@@ -220,6 +235,21 @@ function animateHandFromSnapshot(snapshot) {
     void el.offsetWidth;
     el.classList.add(className);
   }
+
+    function resetStatPanels() {
+    document
+      .querySelectorAll(".stat-panel")
+      .forEach((el) => el.classList.remove("stat-in"));
+  }
+
+  function animateStatPanels() {
+    document.querySelectorAll(".stat-panel").forEach((el) => {
+      // Skip completely hidden panels (e.g., during stage-game)
+      if (el.offsetParent === null) return;
+      restartAnimation(el, "stat-in");
+    });
+  }
+
 
   // --- Orientation helpers -------------------------------------------------
   function updateOrientationOverlay() {
@@ -335,61 +365,95 @@ function animateHandFromSnapshot(snapshot) {
     modalEl.setAttribute("aria-hidden", "false");
   }
 
-  function showLossModal() {
-    showModal(
-      "Try Again!",
-      "Your attack just missed. Give it another try.",
-      "Redo",
-      () => {
-        // Reset same puzzle and stay in cards phase
-        resetPuzzle();
-        showCards();
-        setStage("game");
+    // Start a brand-new GAME (health reset + intro)
+    function startNewGame() {
+      resetGameHealth();
+    
+      if (window.DifficultyEngine) {
+        currentDifficulty = window.DifficultyEngine.getInitialDifficulty();
+        currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
       }
-    );
-  }  
-
-  function showWinModal() {
-    showModal(
-      "Nice Job!",
-      "You slayed the dragon! Prepare for the next battle.",
-      "Next",
-      () => {
-        // Next puzzle + re-run intro for the new battle
-        currentPuzzleIndex = (currentPuzzleIndex + 1) % puzzles.length;
-        resetPuzzle();
-        runIntroSequence();
+    
+      resetPuzzle();
+      hideCards();
+      runIntroSequence();
+    }        
+  
+    function showHeroGameWinModal() {
+      showModal(
+        "You Won the Game!",
+        "The dragon has been defeated. Start a new game?",
+        "New Game",
+        () => {
+          startNewGame();
+        }
+      );
+    }
+  
+    function showMonsterGameWinModal() {
+      showModal(
+        "Game Over",
+        "The dragon defeated you. Try again?",
+        "New Game",
+        () => {
+          startNewGame();
+        }
+      );
+    }
+  
+    // Returns true if the game is over (modal shown), false otherwise
+    function checkGameOver() {
+      if (monsterHealthCurrent <= 0 && heroHealthCurrent > 0) {
+        showHeroGameWinModal();
+        return true;
       }
-    );
-  }
+      if (heroHealthCurrent <= 0 && monsterHealthCurrent > 0) {
+        showMonsterGameWinModal();
+        return true;
+      }
+      if (heroHealthCurrent <= 0 && monsterHealthCurrent <= 0) {
+        // Rare tie: treat as hero victory for now
+        showHeroGameWinModal();
+        return true;
+      }
+      return false;
+    }  
 
   // --- Cinematic sequences -------------------------------------------------
   async function runIntroSequence() {
     // Intro stage: battle background
     setStage("intro");
-  
+
+    // New game always starts at full health
+    resetGameHealth();
+
     showCinematic();
     hideCards();
     resetCinematicSprites();
-
-        // ⬇️ ADD THIS
-        renderStatPanels("intro");
+    resetStatPanels();
+    renderStatPanels();
   
     // 0.5s pause before sprites spring in
-    await delay(500);
+    await delay(750);
   
     // Knight + Dragon spring in together
     restartAnimation(cinematicKnight, "cinematic-in");
     restartAnimation(cinematicDragon, "cinematic-in");
   
-    // Let them fully animate in and settle
+    // Let sprites mostly settle (slightly after their 0.6s spring)
     await delay(1500);
+  
+    // Stat panels spring in shortly AFTER sprites
+    animateStatPanels();
+  
+    // Shorter pause before VS (keep overall timing similar to original)
+    await delay(1000);
   
     // VS springs into center
     restartAnimation(cinematicVs, "cinematic-show");
   
     // Let VS hang for a bit
-    await delay(1500);
+    await delay(2500);
   
     // Fade out the entire stage (knight, dragon, VS, attack)
     if (cinematicStage) {
@@ -416,56 +480,154 @@ function animateHandFromSnapshot(snapshot) {
   }  
   
 
-  async function runResultSequence(playerWon) {
-    // We should already be in stage-result, but this keeps it explicit
+  async function runHeroBattleWin() {
     setStage("result");
 
-     // ⬇️ ADD THIS BLOCK
-     const outcome = DEBUG_OUTCOME || (playerWon ? "win" : "lose");
-     renderStatPanels(outcome);
-  
     showCinematic();
     hideCards();
     resetCinematicSprites();
-  
+    resetStatPanels();
+    renderStatPanels();
+
     // Short pause before result sprites appear
-    await delay(500);
-  
+    await delay(750);
+
     // Knight + Dragon spring in together (same as intro)
     restartAnimation(cinematicKnight, "cinematic-in");
-    restartAnimation(cinematicDragon, "cinematic-in");  
-  
-    // Let them fully animate in and settle
+    restartAnimation(cinematicDragon, "cinematic-in");
+
+    // Stats come in slightly after sprites
     await delay(1500);
-  
-    if (!playerWon) {
-      // If you ever want a loss cinematic, you can wire it here.
-      // For now, just show the loss modal immediately.
-      showLossModal();
-      return;
-    }
-  
-    // --- WIN PATH ---
-  
-    // 1) Knight sword-strike lunge (forward + pull back)
+    animateStatPanels();
+
+    // Let them fully animate in and settle
+    await delay(1000);
+
+    // Knight sword-strike lunge (forward + pull back)
     restartAnimation(cinematicKnight, "cinematic-knight-attack");
-    await delay(600); // match knight-sword-strike duration
-  
-    // 2) Attack overlay appears over dragon + dragon shakes
+    await delay(750); // match knight-sword-strike duration
+
+    // Use HERO attack sprite for this sequence
+    if (cinematicAttack && HERO_BASE.attackImage) {
+      cinematicAttack.src = HERO_BASE.attackImage;
+    }
+
+    // Attack overlay appears over dragon + dragon shakes
     positionAttackOverDragon();
     restartAnimation(cinematicAttack, "cinematic-attack-in");
     restartAnimation(cinematicDragon, "cinematic-hit");
-  
-    // Attack overlay animates (0.6s) + extra 500ms hang time
-    await delay(600 + 1000);
-  
-    // 3) Attack sprite springs out (exit animation)
+
+    // ⏱ small beat so the hit reads
+    await delay(200);
+
+    // ✅ NOW apply damage and animate HP bar downward
+    monsterHealthCurrent = Math.max(
+      0,
+      monsterHealthCurrent - HERO_BASE.damage
+    );
+    renderStatPanels(); // CSS transition animates the drain
+
+    // Let the player watch the health drop
+    await delay(800);
+
+    // Attack sprite springs out (exit animation)
     restartAnimation(cinematicAttack, "cinematic-attack-out");
-  
-    // 4) After another 500ms, push the modal
-    await delay(1000);
-    showWinModal();
+
+    // After another 1s, either end game or go back to cards
+    await delay(2000);
+
+    if (!checkGameOver()) {
+      // Continue game: next puzzle from difficulty engine
+      if (window.DifficultyEngine) {
+        currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
+      }
+      resetPuzzle();
+      hideCinematic();
+      showCards();
+      setStage("game");
+      if (equationAreaEl) {
+        restartAnimation(equationAreaEl, "cards-fade-in");
+      }
+      if (handAreaEl) {
+        restartAnimation(handAreaEl, "cards-fade-in");
+      }
+    }    
   }
+
+  async function runMonsterBattleWin() {
+    setStage("result");
+
+    showCinematic();
+    hideCards();
+    resetCinematicSprites();
+    resetStatPanels();
+    renderStatPanels();
+
+    // Short pause before result sprites appear
+    await delay(750);
+
+    // Knight + Dragon spring in together (same as intro)
+    restartAnimation(cinematicKnight, "cinematic-in");
+    restartAnimation(cinematicDragon, "cinematic-in");
+
+    // Stats come in slightly after sprites
+    await delay(1500);
+    animateStatPanels();
+
+    // Let them fully animate in and settle
+    await delay(1000);
+
+    // DRAGON attack lunge (mirror of knight's sword-strike)
+    restartAnimation(cinematicDragon, "cinematic-dragon-attack");
+    await delay(750); // match knight-sword-strike duration
+
+    // Use MONSTER attack sprite for this sequence
+    if (cinematicAttack && MONSTER_BASE.attackImage) {
+      cinematicAttack.src = MONSTER_BASE.attackImage;
+    }
+
+    // Attack overlay appears over KNIGHT + knight shakes
+    positionAttackOverKnight();
+    restartAnimation(cinematicAttack, "cinematic-attack-in");
+    restartAnimation(cinematicKnight, "cinematic-hit");
+
+
+    // ⏱ small beat so the hit reads
+    await delay(200);
+
+    // ✅ NOW apply damage and animate HP bar downward
+    heroHealthCurrent = Math.max(
+      0,
+      heroHealthCurrent - MONSTER_BASE.damage
+    );
+    renderStatPanels(); // CSS transition animates the drain
+
+    // Let the player watch the health drop
+    await delay(800);
+
+    // Attack sprite springs out (exit animation)
+    restartAnimation(cinematicAttack, "cinematic-attack-out");
+
+    // After another 1s, either end game or go back to cards
+    await delay(1000);
+
+    if (!checkGameOver()) {
+      // Continue game: next puzzle from difficulty engine
+      if (window.DifficultyEngine) {
+        currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
+      }
+      resetPuzzle();
+      hideCinematic();
+      showCards();
+      setStage("game");
+      if (equationAreaEl) {
+        restartAnimation(equationAreaEl, "cards-fade-in");
+      }
+      if (handAreaEl) {
+        restartAnimation(handAreaEl, "cards-fade-in");
+      }
+    }
+  }    
   
   const gameRoot = document.getElementById('game-root');
 
@@ -477,52 +639,79 @@ function setStage(stage) {
 
 
   // --- Render functions ----------------------------------------------------
-  function resetPuzzle() {
-    const puzzle = puzzles[currentPuzzleIndex];
-    slotState = [];
-    cardState = [];
-    highlightedSlot = null;
-
-    railEl.innerHTML = "";
-    handEl.innerHTML = "";
-    railEl.classList.remove(
-      "resolve",
-      "resolve-win",
-      "resolve-error",
-      "resolve-fade-out"
-    );
-    hideModal();    
-
-    // Create slots
-    for (let i = 0; i < puzzle.slots; i++) {
-      const slot = document.createElement("div");
-      slot.className = "slot";
-      slot.dataset.slotIndex = String(i);
-      railEl.appendChild(slot);
-    }
-
-    // Create cards in hand
-    puzzle.cards.forEach((value) => {
-      const id = createCardId();
-      cardState.push({ id, value, inSlot: null });
-
-      const cardEl = document.createElement("div");
-      cardEl.className = "card";
-      cardEl.dataset.cardId = id;
-      cardEl.textContent = value;
-
-      if (isNumber(value)) {
-        cardEl.classList.add("number");
-      } else if (value === "=") {
-        cardEl.classList.add("equal");
-      } else {
-        cardEl.classList.add("operator");
+    // --- Render functions ----------------------------------------------------
+    function resetPuzzle() {
+      const puzzle = currentPuzzle;
+      if (!puzzle) return;
+  
+      slotState = [];
+      cardState = [];
+      highlightedSlot = null;
+  
+      railEl.innerHTML = "";
+      handEl.innerHTML = "";
+      railEl.classList.remove(
+        "resolve",
+        "resolve-win",
+        "resolve-error",
+        "resolve-fade-out"
+      );
+      hideModal();
+  
+      const fixedSlots = puzzle.fixedSlots || {};
+  
+      // Create slots (5, 6, 7, or 8)
+      for (let i = 0; i < puzzle.slots; i++) {
+        const slot = document.createElement("div");
+        slot.className = "slot";
+        slot.dataset.slotIndex = String(i);
+  
+        // If this slot is pre-filled (scaffolding), drop a fixed card into it
+        if (Object.prototype.hasOwnProperty.call(fixedSlots, i)) {
+          const value = fixedSlots[i];
+  
+          const fixedCard = document.createElement("div");
+          fixedCard.className = "card card--fixed";
+          fixedCard.dataset.fixed = "true";
+          fixedCard.textContent = value;
+  
+          if (isNumber(value)) {
+            fixedCard.classList.add("number");
+          } else if (value === "=") {
+            fixedCard.classList.add("equal");
+          } else {
+            fixedCard.classList.add("operator");
+          }
+  
+          slot.classList.add("filled");
+          slot.appendChild(fixedCard);
+        }
+  
+        railEl.appendChild(slot);
       }
-
-      attachCardDragListeners(cardEl);
-      handEl.appendChild(cardEl);
-    });
-  }
+  
+      // Create movable cards in the hand
+      puzzle.cards.forEach((value) => {
+        const id = createCardId();
+        cardState.push({ id, value, inSlot: null });
+  
+        const cardEl = document.createElement("div");
+        cardEl.className = "card";
+        cardEl.dataset.cardId = id;
+        cardEl.textContent = value;
+  
+        if (isNumber(value)) {
+          cardEl.classList.add("number");
+        } else if (value === "=") {
+          cardEl.classList.add("equal");
+        } else {
+          cardEl.classList.add("operator");
+        }
+  
+        attachCardDragListeners(cardEl);
+        handEl.appendChild(cardEl);
+      });
+    }  
 
   // --- Drag & drop behavior (pointer events) -------------------------------
   function attachCardDragListeners(cardEl) {
@@ -700,91 +889,99 @@ function setStage(stage) {
     slotEl.appendChild(cardEl);
   }
 
-  // --- Validation ----------------------------------------------------------
-async function runCardsResolution(isWin) {
-  // NEW: compute how far we need to move the rail
-  // so its center lines up with the center of the game area
-  const gameEl = document.querySelector(".game");
-  if (gameEl) {
-    const gameRect = gameEl.getBoundingClientRect();
-    const railRect = railEl.getBoundingClientRect();
+   // --- Validation ----------------------------------------------------------
+   async function runCardsResolution(isWin) {
+    // NEW: compute how far we need to move the rail
+    // so its center lines up with the center of the game area
+    const gameEl = document.querySelector(".game");
+    if (gameEl) {
+      const gameRect = gameEl.getBoundingClientRect();
+      const railRect = railEl.getBoundingClientRect();
 
-    const gameCenterY = gameRect.top + gameRect.height / 2;
-    const railCenterY = railRect.top + railRect.height / 2;
-    const offsetY = gameCenterY - railCenterY;
+      const gameCenterY = gameRect.top + gameRect.height / 2;
+      const railCenterY = railRect.top + railRect.height / 2;
+      const offsetY = gameCenterY - railCenterY;
 
-    railEl.style.setProperty("--resolve-translateY", `${offsetY}px`);
+      railEl.style.setProperty("--resolve-translateY", `${offsetY}px`);
+    }
+
+    // Clean up any previous resolve states
+    railEl.classList.remove(
+      "resolve",
+      "resolve-win",
+      "resolve-error",
+      "resolve-fade-out"
+    );
+
+    // Slide the cards down as a group (slower: 0.5s in CSS)
+    railEl.classList.add("resolve");
+    await delay(500); // match eq-resolve-slide-down duration
+
+    if (isWin) {
+      // WIN: cards bounce left-to-right, then pause, then fade out → result
+      railEl.classList.add("resolve-win");
+
+      const cards = railEl.querySelectorAll(".card");
+      const perCardDelay = 100;
+      cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * perCardDelay}ms`;
+      });
+
+      const bounceDuration = 450;
+      const maxIndex = Math.max(0, cards.length - 1);
+      const totalBounceTime = bounceDuration + maxIndex * perCardDelay;
+
+      await delay(totalBounceTime);
+      await delay(1000); // extra pause
+
+      railEl.classList.add("resolve-fade-out");
+      await delay(400);
+
+      await runHeroBattleWin();
+    } else {
+      // LOSS: use same timing spine as WIN
+      railEl.querySelectorAll(".card").forEach((card) => {
+        card.style.animation = "none";
+        card.offsetHeight; // reflow
+        card.style.animation = "";
+      });
+
+      railEl.classList.add("resolve-error");
+      await delay(500);
+      await delay(1000);
+      railEl.classList.add("resolve-fade-out");
+      await delay(400);
+
+      await runMonsterBattleWin();
+    }
   }
-
-  // Clean up any previous resolve states
-  railEl.classList.remove(
-    "resolve",
-    "resolve-win",
-    "resolve-error",
-    "resolve-fade-out"
-  );
-
-  // Slide the cards down as a group (slower: 0.5s in CSS)
-  railEl.classList.add("resolve");
-  await delay(500); // match eq-resolve-slide-down duration
-
-  if (isWin) {
-    // WIN: cards bounce left-to-right, then pause, then fade out → result
-    railEl.classList.add("resolve-win");
-
-    const cards = railEl.querySelectorAll(".card");
-    const perCardDelay = 100; // a bit slower than 80ms
-    cards.forEach((card, index) => {
-      card.style.animationDelay = `${index * perCardDelay}ms`;
-    });
-
-    // Bounce duration (0.45s) + max stagger (for up to 5 cards)
-    const bounceDuration = 450;
-    const maxIndex = Math.max(0, cards.length - 1);
-    const totalBounceTime = bounceDuration + maxIndex * perCardDelay;
-
-    // Wait for bounce to finish
-    await delay(totalBounceTime);
-
-    // EXTRA: 1s pause with cards in place
-    await delay(1000);
-
-    // Fade the whole rail out
-    railEl.classList.add("resolve-fade-out");
-    await delay(400); // match eq-resolve-fade-out duration
-
-           // Move into RESULT stage (battle background again)
-    setStage("result");
-
-    // Hide cards and show result cinematic
-    hideCards();
-
-    const outcome = DEBUG_OUTCOME || (isWin ? "win" : "lose");
-    await runResultSequence(outcome === "win");
-
-  } else {
-    // LOSS: group wiggle to show error
-    railEl.classList.add("resolve-error");
-
-    await delay(2000); // 2s pause after wiggle
-
-    // Show Try Again modal
-    showLossModal();
-  }
-} 
 
   function checkIfReadyToValidate() {
-    const puzzle = puzzles[currentPuzzleIndex];
-    const slots = railEl.querySelectorAll(".slot");
+    const puzzle = currentPuzzle;
+    if (!puzzle) return;
 
-    // Are all slots filled?
-    if (slotState.length !== puzzle.slots) {
+    const slots = railEl.querySelectorAll(".slot");
+    const fixedSlots = puzzle.fixedSlots || {};
+
+    const totalSlots = puzzle.slots;
+    const fixedCount = Object.keys(fixedSlots).length;
+    const movableSlots = totalSlots - fixedCount;
+
+    // We only need the movable slots filled via slotState
+    if (slotState.length !== movableSlots) {
       return;
     }
 
-    // Build token list in slot order
+    // Build token list in slot order, mixing fixed + placed cards
     const tokens = Array.from(slots).map((slot) => {
       const slotIndex = Number(slot.dataset.slotIndex);
+
+      // Fixed scaffolding?
+      if (Object.prototype.hasOwnProperty.call(fixedSlots, slotIndex)) {
+        return fixedSlots[slotIndex];
+      }
+
+      // Movable card from slotState
       const item = slotState.find((s) => s.slotIndex === slotIndex);
       return item ? item.value : null;
     });
@@ -803,8 +1000,7 @@ async function runCardsResolution(isWin) {
   }
 
   function validateEquation(tokens) {
-    // tokens = your full attack sentence
-    // e.g. ["1", "+", "1", "=", "2"]
+    // tokens = full equation, e.g. ["2","1","+","1","6","=","3","7"]
 
     // 1) Ensure exactly one "=" token
     const eqIndices = tokens
@@ -817,32 +1013,31 @@ async function runCardsResolution(isWin) {
 
     const eqIndex = eqIndices[0];
 
-    // 2) Split into attack side (left) and result side (right)
-    const attackTokens = tokens.slice(0, eqIndex);
-    const resultTokens = tokens.slice(eqIndex + 1);
+    // 2) Split into left and right sides
+    const leftTokens = tokens.slice(0, eqIndex);
+    const rightTokens = tokens.slice(eqIndex + 1);
 
-    if (attackTokens.length === 0 || resultTokens.length === 0) {
+    if (leftTokens.length === 0 || rightTokens.length === 0) {
       return { valid: false, message: "Both sides need numbers." };
     }
 
-    // 3) Evaluate numeric meaning of each side
-    const attackPower = evalSimpleSide(attackTokens);   // total attack
-    const finalDamage = evalSimpleSide(resultTokens);   // declared damage
+    // 3) Evaluate both sides
+    const leftValue = evalSimpleSide(leftTokens);
+    const rightValue = evalSimpleSide(rightTokens);
 
-    if (attackPower === null || finalDamage === null) {
+    if (leftValue === null || rightValue === null) {
       return {
         valid: false,
         message: "That doesn’t look like an attack sentence yet.",
       };
     }
 
-    // 4) Core rule: attack must match declared damage
-    if (attackPower === finalDamage) {
+    if (leftValue === rightValue) {
       return {
         valid: true,
         combat: {
-          attackPower,
-          finalDamage,
+          leftValue,
+          rightValue,
         },
       };
     }
@@ -850,25 +1045,48 @@ async function runCardsResolution(isWin) {
     return {
       valid: false,
       message: "That attack doesn’t balance yet.",
-      combat: { attackPower, finalDamage },
+      combat: { leftValue, rightValue },
     };
   }
 
-  // Only supports forms: A op B, e.g. 1 + 1 or 4 - 2
+  // Supports:
+  // - Only digits: ["3","7"] -> 37
+  // - One operator: ["2","1","+","1","6"] -> 21 + 16
+  // - Still limited to "+" and "-" for now.
   function evalSimpleSide(sideTokens) {
-    if (sideTokens.length === 1 && isNumber(sideTokens[0])) {
-      return Number(sideTokens[0]);
+    // Count operators
+    const ops = sideTokens.filter((t) => t === "+" || t === "-");
+    if (ops.length === 0) {
+      // Just a number: join all digits
+      if (!sideTokens.every((t) => isNumber(t))) return null;
+      return Number(sideTokens.join(""));
     }
 
-    if (sideTokens.length !== 3) return null;
-    const [a, op, b] = sideTokens;
+    if (ops.length > 1) {
+      // For now, we only support one operation per side
+      return null;
+    }
 
-    if (!isNumber(a) || !isNumber(b)) return null;
-    const n1 = Number(a);
-    const n2 = Number(b);
+    const opIndex = sideTokens.findIndex((t) => t === "+" || t === "-");
+    const op = sideTokens[opIndex];
 
-    if (op === "+") return n1 + n2;
-    if (op === "-") return n1 - n2;
+    const leftDigits = sideTokens.slice(0, opIndex);
+    const rightDigits = sideTokens.slice(opIndex + 1);
+
+    if (
+      leftDigits.length === 0 ||
+      rightDigits.length === 0 ||
+      !leftDigits.every((t) => isNumber(t)) ||
+      !rightDigits.every((t) => isNumber(t))
+    ) {
+      return null;
+    }
+
+    const leftVal = Number(leftDigits.join(""));
+    const rightVal = Number(rightDigits.join(""));
+
+    if (op === "+") return leftVal + rightVal;
+    if (op === "-") return leftVal - rightVal;
 
     return null;
   }
@@ -878,29 +1096,41 @@ async function runCardsResolution(isWin) {
   }
 
   // --- Init ----------------------------------------------------------------
-  // --- Init ----------------------------------------------------------------
   function init() {
-    resetPuzzle();
+    loadNextPuzzle();
     updateOrientationOverlay();
     hideCards(); // start without cards visible
 
     if (DEBUG_OUTCOME) {
-      // 🔧 Debug mode: jump straight to RESULT cinematic
-      setStage("result");
-      showCinematic();
-      resetCinematicSprites();
-      renderStatPanels(DEBUG_OUTCOME);
+      // 🔧 Debug mode: jump straight to a single battle result cinematic
+      resetGameHealth();
 
-      // Fire the result sequence (win/lose) immediately
-      runResultSequence(DEBUG_OUTCOME === "win");
+      if (DEBUG_OUTCOME === "win") {
+        // Hero hits monster once
+        monsterHealthCurrent = Math.max(
+          0,
+          monsterHealthCurrent - HERO_BASE.damage
+        );
+        renderStatPanels();
+        runHeroBattleWin();
+      } else {
+        // Monster hits hero once
+        heroHealthCurrent = Math.max(
+          0,
+          heroHealthCurrent - MONSTER_BASE.damage
+        );
+        renderStatPanels();
+        runMonsterBattleWin();
+      }
     } else {
-      // Normal flow: Intro → Cards → Result
+      // Normal flow: Intro → Cards → Battles (loop until game over)
       runIntroSequence();
     }
   }
 
   document.addEventListener("DOMContentLoaded", init);
 })();
+
 
 window.addEventListener("load", () => {
   setTimeout(() => {

@@ -156,11 +156,36 @@ body {
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
   pointer-events: none; /* HUD only, no blocking drags/clicks */
+  opacity: 0;
+  transform: translateY(10px) scale(0.88);
+}
+
+.stat-panel.stat-in {
+  animation: stat-panel-in 0.55s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+@keyframes stat-panel-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.88);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.08);
+  }
+  75% {
+    transform: translateY(2px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Hide stat panels during the GAME (cards) stage */
 .game.stage-game .stat-panel {
-  display: none;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Hero panel: bottom-left of knight sprite */
@@ -290,6 +315,7 @@ body {
   object-fit: contain;
   opacity: 0;
   transform: scale(0.6);
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.85));
 
   /* Make sure nothing implicitly scales this down */
   max-width: none;
@@ -384,30 +410,73 @@ body {
   }
 }
 
-/* Knight sword-attack lunge (forward then pull back) */
+/* Knight shake when hit (reuse same keyframes) */
+.cinematic-sprite--knight.cinematic-hit {
+  animation: dragon-hit-shake 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+/* Knight + Dragon sword attacks — smooth and always visible */
+.cinematic-sprite--knight,
+.cinematic-sprite--dragon {
+  will-change: transform, opacity;
+}
+
 .cinematic-sprite--knight.cinematic-knight-attack {
-  animation: knight-sword-strike 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+  animation: knight-sword-strike 0.75s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
 }
 
 @keyframes knight-sword-strike {
   0% {
     opacity: 1;
-    transform: scale(1) translateX(0) translateY(0);
+    transform: translateX(0) translateY(0) scale(1);
   }
-  40% {
-    /* Lunge toward the dragon (to the right + slightly up) */
+
+  /* Main strike forward */
+  45% {
     opacity: 1;
-    transform: scale(1.04) translateX(32px) translateY(-8px);
+    transform: translateX(80px) translateY(0px) scale(1);
   }
-  70% {
-    /* Slight overshoot back */
+
+  /* Slight follow-through */
+  65% {
     opacity: 1;
-    transform: scale(1.02) translateX(20px) translateY(-4px);
+    transform: translateX(120px) translateY(0px) scale(1.4);
   }
+
+  /* Return to idle */
   100% {
-    /* Return to idle position */
     opacity: 1;
-    transform: scale(1) translateX(0) translateY(0);
+    transform: translateX(0) translateY(0) scale(1);
+  }
+}
+
+/* Dragon attack lunge — mirror of knight sword strike */
+.cinematic-sprite--dragon.cinematic-dragon-attack {
+  animation: dragon-sword-strike 0.75s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
+}
+
+@keyframes dragon-sword-strike {
+  0% {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
+  }
+
+  /* Main strike forward (to the LEFT, since dragon is on the right) */
+  45% {
+    opacity: 1;
+    transform: translateX(-80px) translateY(0px) scale(1);
+  }
+
+  /* Slight follow-through */
+  65% {
+    opacity: 1;
+    transform: translateX(-120px) translateY(0px) scale(1.4);
+  }
+
+  /* Return to idle */
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
   }
 }
 
@@ -451,21 +520,25 @@ body {
 }
 
 /* --------------------------------------------------------------------- */
-/* Cards fade-in when intro ends                                         */
+/* Cards spring-in when intro ends (match sprites)                       */
 /* --------------------------------------------------------------------- */
 
 .cards-fade-in {
-  animation: cards-fade-in 0.5s ease-out forwards;
+  animation: cards-fade-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
 @keyframes cards-fade-in {
   0% {
     opacity: 0;
-    transform: translateY(16px);
+    transform: scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05);
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
 
@@ -509,11 +582,6 @@ body {
   }
 }
 
-/* Group wiggle for incorrect answer */
-.equation-rail.resolve-error {
-  animation: eq-resolve-wiggle 0.25s ease-in-out 2;
-}
-
 @keyframes eq-resolve-wiggle {
   0%   { transform: translateY(24px) translateX(0); }
   25%  { transform: translateY(24px) translateX(-4px); }
@@ -538,6 +606,20 @@ body {
     transform: translateY(0);
   }
 }
+
+/* LOSS: shake cards instead of rail (prevents transform conflict) */
+.equation-rail.resolve-error .card {
+  animation: eq-card-shake 0.35s ease-in-out 2;
+}
+
+@keyframes eq-card-shake {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(-6px); }
+  50%  { transform: translateX(6px); }
+  75%  { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+
 
 /* Fade-out after win, before result cinematic */
 .equation-rail.resolve-fade-out {
@@ -642,6 +724,11 @@ body {
   cursor: grab;
   user-select: none;
   touch-action: none;
+}
+
+.card.card--fixed {
+  cursor: default;
+  pointer-events: none;
 }
 
 /* Subtle tint by type (still white cards) */

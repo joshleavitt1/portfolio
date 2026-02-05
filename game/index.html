@@ -1,18 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Equation Cards</title>
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Equation Cards" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="manifest" href="manifest.json" />
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Card Quest</title> 
+    <!-- Standard responsive viewport (no PWA/web-app flags) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  
 <body>
   <div class="app">
     <main class="game stage-intro" id="game-root">
@@ -23,7 +18,6 @@
           <!-- Knight + Hero Stats -->
           <div class="cinematic-character cinematic-character--hero">
             <img
-              src="images/knight.png"
               alt="Knight"
               class="cinematic-sprite cinematic-sprite--knight"
               id="cinematic-knight"
@@ -53,7 +47,6 @@
           <!-- Dragon + Monster Stats -->
           <div class="cinematic-character cinematic-character--monster">
             <img
-              src="images/dragon.png"
               alt="Dragon"
               class="cinematic-sprite cinematic-sprite--dragon"
               id="cinematic-dragon"
@@ -74,7 +67,6 @@
     
           <!-- Knight attack overlay (result only) -->
           <img
-            src="images/knight_attack.png"
             alt="Knight Attack"
             class="cinematic-attack"
             id="cinematic-attack"
@@ -129,6 +121,8 @@
     </div>
   </div>
   <script src="battle-stats.js"></script>
+  <script src="difficulty-engine.js"></script>
   <script src="main.js"></script>
 </body>
 </html>
+
