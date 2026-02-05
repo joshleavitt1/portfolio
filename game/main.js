@@ -16,6 +16,16 @@ const DEBUG_OUTCOME = params.has("win")
 // Stat panel + GAME health helpers
 // ---------------------------------------------------------------------
 
+function applyBattleOffset() {
+  cinematicHeroCharacter?.classList.add("battle-offset");
+  cinematicMonsterCharacter?.classList.add("battle-offset");
+}
+
+function clearBattleOffset() {
+  cinematicHeroCharacter?.classList.remove("battle-offset");
+  cinematicMonsterCharacter?.classList.remove("battle-offset");
+}
+
 // Use window.BATTLE_STATS if available, otherwise fall back
 const BATTLE_STATS = window.BATTLE_STATS || DEFAULT_STATS;
 
@@ -122,6 +132,9 @@ function renderStatPanels() {
   const cinematicVs = document.getElementById("cinematic-vs");
   const cinematicAttack = document.getElementById("cinematic-attack");
   const cinematicStage = document.querySelector(".cinematic-stage");
+  const cinematicHeroCharacter = document.querySelector(".cinematic-character--hero");
+const cinematicMonsterCharacter = document.querySelector(".cinematic-character--monster");
+
   
   // Sync sprite images from battle stats (HTML src becomes just a fallback)
   if (cinematicHero && HERO_BASE.spriteImage) {
@@ -311,6 +324,7 @@ function animateHandFromSnapshot(snapshot) {
   }
 
   function resetCinematicSprites() {
+    clearBattleOffset();
     if (!cinematicHero || !cinematicMonster || !cinematicVs || !cinematicAttack) {
       return;
     }
@@ -448,6 +462,8 @@ function animateHandFromSnapshot(snapshot) {
     restartAnimation(cinematicHero, "cinematic-in");
     restartAnimation(cinematicMonster, "cinematic-in");
 
+    // ✅ push hero down, monster up
+    applyBattleOffset();
   
     // Let sprites mostly settle (slightly after their 0.6s spring)
     await delay(1500);
@@ -475,6 +491,7 @@ function animateHandFromSnapshot(snapshot) {
     // Handoff: hide cinematic, show cards
     hideCinematic();
     showCards();
+    clearBattleOffset();
   
     // GAME stage: crossfade to card background
     setStage("game");
@@ -501,9 +518,11 @@ function animateHandFromSnapshot(snapshot) {
     // Short pause before result sprites appear
     await delay(750);
 
-    // HERO + MONSTER spring in together (same as intro)
     restartAnimation(cinematicHero, "cinematic-in");
     restartAnimation(cinematicMonster, "cinematic-in");
+    
+    // ✅ battle spacing
+    applyBattleOffset();
 
     // Stats come in slightly after sprites
     await delay(1500);
@@ -553,6 +572,7 @@ function animateHandFromSnapshot(snapshot) {
       resetPuzzle();
       hideCinematic();
       showCards();
+      clearBattleOffset();
       setStage("game");
       if (equationAreaEl) {
         restartAnimation(equationAreaEl, "cards-fade-in");
@@ -575,9 +595,11 @@ function animateHandFromSnapshot(snapshot) {
     // Short pause before result sprites appear
     await delay(750);
 
-    // HERO + MONSTER spring in together (same as intro)
     restartAnimation(cinematicHero, "cinematic-in");
     restartAnimation(cinematicMonster, "cinematic-in");
+
+    // ✅ battle spacing
+    applyBattleOffset();
 
     // Stats come in slightly after sprites
     await delay(1500);
@@ -628,6 +650,7 @@ function animateHandFromSnapshot(snapshot) {
       resetPuzzle();
       hideCinematic();
       showCards();
+      clearBattleOffset();
       setStage("game");
       if (equationAreaEl) {
         restartAnimation(equationAreaEl, "cards-fade-in");
@@ -659,6 +682,7 @@ function setStage(stage) {
   
       railEl.innerHTML = "";
       handEl.innerHTML = "";
+      railEl.style.setProperty("--slots", puzzle.slots);
       railEl.classList.remove(
         "resolve",
         "resolve-win",
@@ -666,6 +690,8 @@ function setStage(stage) {
         "resolve-fade-out"
       );
       hideModal();
+
+      railEl.style.setProperty("--slots", puzzle.slots);
   
       const fixedSlots = puzzle.fixedSlots || {};
   

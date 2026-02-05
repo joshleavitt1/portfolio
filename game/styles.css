@@ -21,9 +21,9 @@ body {
 
 :root {
   /* Card sizing — mobile first */
-  --card-width: 80px;
-  --card-height: 108px;
-  --card-gap: 20px;
+  --card-width: 80px;              /* base / fallback width */
+  --card-aspect: 1.352;            /* 794 / 587 ≈ 1.352 */
+  --card-gap: 8px;
 
   /* Colors */
   --bg-page: #f4f6fa;
@@ -78,7 +78,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 40px;
   overflow: hidden;
 }
 
@@ -188,16 +188,16 @@ body {
   pointer-events: none;
 }
 
-/* Hero panel: bottom-left of HERO sprite */
+/* Hero stat panel — centered under hero sprite */
 .stat-panel--hero {
-  left: 0;
-  bottom: -10px; /* slight overlap below sprite; tweak if needed */
+  position: absolute;
+  margin-left: 320px; /* -1/2 of width to center */
 }
 
-/* Monster panel: bottom-right of MONSTER sprite */
+/* Monster stat panel — centered under monster sprite */
 .stat-panel--monster {
-  right: 0;
-  bottom: -10px;
+  position: absolute;
+  margin-left: -320px; /* same centering logic */
 }
 
 .stat-panel__name {
@@ -274,26 +274,37 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 140px;                 /* space between HERO & MONSTER */
   pointer-events: none;
 }
 
 .cinematic-character {
   position: relative;
-  width: 300px;
-  height: 235px; /* match sprite size */
+  width: 360px;
+  height: 282px; /* match sprite size */
   display: flex;
   align-items: center;
   justify-content: center;
+
+  /* battle vertical offset lives on the wrapper */
+  transform: translateY(0);
+  transition: transform 0.35s cubic-bezier(0.2, 1, 0.3, 1);
 }
 
 /* Hero + Monster sprites */
 .cinematic-sprite {
-  width: 300px;
-  height: 235px;
+  width: 360px;
+  height: 282px;
   object-fit: contain;
   opacity: 0;
-  transform: translateX(0);
+}
+
+/* Battle spacing: hero down, monster up */
+.cinematic-character--hero.battle-offset {
+  transform: translate(40px, 160px);   /* right + down */
+}
+
+.cinematic-character--monster.battle-offset {
+  transform: translate(-40px, -160px); /* left + up */
 }
 
 /* VS badge */
@@ -322,23 +333,25 @@ body {
   pointer-events: none;
 }
 
-/* Hero + Monster: match VS spring, slight stagger */
+/* Hero + Monster: directional spring-in from sides */
 .cinematic-sprite--hero.cinematic-in {
-  animation: cinematic-spring-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+  /* hero slides in from the LEFT */
+  animation: hero-spring-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
 .cinematic-sprite--monster.cinematic-in {
-  animation: cinematic-spring-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+  /* monster slides in from the RIGHT */
+  animation: monster-spring-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
   animation-delay: 0.04s; /* tiny offset so they don't feel robotic */
 }
 
-/* VS badge: same spring, just a hair later */
+/* VS badge: still springs in from center */
 .cinematic-vs.cinematic-show {
   animation: cinematic-spring-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
   animation-delay: 0.08s;
 }
 
-/* Shared spring-in for VS + sprites */
+/* Center spring for VS badge */
 @keyframes cinematic-spring-in {
   0% {
     opacity: 0;
@@ -351,6 +364,38 @@ body {
   100% {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+/* Hero from LEFT → center */
+@keyframes hero-spring-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-80px) scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(6px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Monster from RIGHT → center */
+@keyframes monster-spring-in {
+  0% {
+    opacity: 0;
+    transform: translateX(80px) scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-6px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
   }
 }
 
@@ -542,13 +587,33 @@ body {
   width: 100%;
   display: flex;
   justify-content: center;
+  padding: 0 16px;           /* ✅ 16px padding left/right */
+  box-sizing: border-box;
 }
 
 .equation-rail {
+  width: 100%;
+  max-width: 480px;                 /* optional desktop cap */
   display: flex;
   justify-content: center;
   gap: var(--card-gap);
   transition: transform 0.2s ease-out;
+
+  /* how many slots this puzzle has; JS will override */
+  --slots: 5;
+
+  /* available width for cards once we remove gaps */
+  --available-width: calc(
+    100% - (var(--slots) - 1) * var(--card-gap)
+  );
+
+  /* final card width:
+     - divide remaining width by slot count
+     - but don't let it get *bigger* than the art’s comfy size (96px) */
+  --card-width: min(
+    96px,
+    calc(var(--available-width) / var(--slots))
+  );
 }
 
 /* Cards resolve: slide down toward center */
@@ -628,7 +693,7 @@ body {
 
 .slot {
   width: var(--card-width);
-  height: var(--card-height);
+  aspect-ratio: 587 / 794;          /* ✅ preserve art shape */
   border-radius: 14px;
   border: 2px dashed var(--slot-border);
   display: flex;
@@ -655,6 +720,7 @@ body {
   width: 100%;
   height: 100%;
   border-radius: inherit;
+  aspect-ratio: auto;               /* let slot control ratio */
 }
 
 /* --------------------------------------------------------------------- */
@@ -677,7 +743,7 @@ body {
   justify-content: center;
   flex-wrap: wrap;
   gap: var(--card-gap);
-  min-height: var(--card-height);
+  min-height: calc(var(--card-width) * var(--card-aspect));
 }
 
 /* --------------------------------------------------------------------- */
@@ -686,7 +752,7 @@ body {
 
 .card {
   width: var(--card-width);
-  height: var(--card-height);
+  aspect-ratio: 587 / 794;          /* ✅ 587×794-ish shape */
   background-image: url("images/card.png");
   background-size: cover;
   background-position: center;
