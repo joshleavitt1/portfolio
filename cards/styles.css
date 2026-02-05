@@ -21,9 +21,21 @@ body {
 
 :root {
   /* Card sizing — mobile first */
-  --card-width: 80px;              /* base / fallback width */
-  --card-aspect: 1.352;            /* 794 / 587 ≈ 1.352 */
+  --slots: 5;                          /* JS will override per-puzzle */
   --card-gap: 8px;
+  --card-aspect: 1.352;                /* 794 / 587 ≈ 1.352 */
+  --viewport-horizontal-padding: 32px; /* 16px left + 16px right */
+
+  /* total width available for cards, matching your 16px combat-row padding */
+  --available-width: calc(
+    100vw
+    - var(--viewport-horizontal-padding)
+    - (var(--slots) - 1) * var(--card-gap)
+  );
+
+  /* final card size, shared by rail + hand */
+  --card-width: min(96px, calc(var(--available-width) / var(--slots)));
+  --card-height: calc(var(--card-width) * var(--card-aspect));
 
   /* Colors */
   --bg-page: #f4f6fa;
@@ -143,9 +155,9 @@ body {
 
 .stat-panel {
   position: absolute;
-  width: 130px;
-  height: 80px;
-  padding: 16px;
+  width: 164px;
+  height: 96px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -191,17 +203,17 @@ body {
 /* Hero stat panel — centered under hero sprite */
 .stat-panel--hero {
   position: absolute;
-  margin-left: 320px; /* -1/2 of width to center */
+  margin-left: 360px; /* -1/2 of width to center */
 }
 
 /* Monster stat panel — centered under monster sprite */
 .stat-panel--monster {
   position: absolute;
-  margin-left: -320px; /* same centering logic */
+  margin-left: -360px; /* same centering logic */
 }
 
 .stat-panel__name {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
   color: #ffffff;
   text-align: center;
@@ -218,7 +230,7 @@ body {
 
 .stat-panel__health-track {
   width: 100%;
-  height: 12px; /* requested height */
+  height: 16px; /* requested height */
   border-radius: 999px;
   border: 1px solid #ffffff;
   background: rgba(255, 255, 255, 0.2); /* 20% white underneath */
@@ -300,11 +312,11 @@ body {
 
 /* Battle spacing: hero down, monster up */
 .cinematic-character--hero.battle-offset {
-  transform: translate(40px, 160px);   /* right + down */
+  transform: translate(40px, 180px);   /* right + down */
 }
 
 .cinematic-character--monster.battle-offset {
-  transform: translate(-40px, -160px); /* left + up */
+  transform: translate(-40px, -180px); /* left + up */
 }
 
 /* VS badge */
@@ -593,28 +605,13 @@ body {
 
 .equation-rail {
   width: 100%;
-  max-width: 480px;                 /* optional desktop cap */
+  max-width: 480px;
   display: flex;
   justify-content: center;
   gap: var(--card-gap);
   transition: transform 0.2s ease-out;
-
-  /* how many slots this puzzle has; JS will override */
-  --slots: 5;
-
-  /* available width for cards once we remove gaps */
-  --available-width: calc(
-    100% - (var(--slots) - 1) * var(--card-gap)
-  );
-
-  /* final card width:
-     - divide remaining width by slot count
-     - but don't let it get *bigger* than the art’s comfy size (96px) */
-  --card-width: min(
-    96px,
-    calc(var(--available-width) / var(--slots))
-  );
 }
+
 
 /* Cards resolve: slide down toward center */
 .equation-rail.resolve {
@@ -739,11 +736,24 @@ body {
 }
 
 .card-hand {
+  width: 100%;
+  max-width: 480px;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
   gap: var(--card-gap);
-  min-height: calc(var(--card-width) * var(--card-aspect));
+  min-height: var(--card-height);
+
+  /* reuse the same sizing model as the row */
+  --slots: 5; /* default, JS will override to puzzle.slots */
+  --available-width: calc(
+    100% - (var(--slots) - 1) * var(--card-gap)
+  );
+  --card-width: min(
+    96px,
+    calc(var(--available-width) / var(--slots))
+  );
+  --card-height: calc(var(--card-width) * 1.35);
 }
 
 /* --------------------------------------------------------------------- */
@@ -781,21 +791,17 @@ body {
   pointer-events: none;
 }
 
-/* Subtle tint by type (still white cards) */
 .card.number {
   color: #7D2D00;
 }
 
-.card.operator {
-  color: #7D2D00;
-  font-size: 2.4rem;
-  font-weight: 500;
-}
-
+/* symbol cards: +, -, = */
+.card.operator,
 .card.equal {
   color: #7D2D00;
   font-size: 2.4rem;
   font-weight: 500;
+  padding-bottom: 4px;   /* ✅ nudge down a bit */
 }
 
 /* Dragging */

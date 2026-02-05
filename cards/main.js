@@ -541,12 +541,12 @@ function animateHandFromSnapshot(snapshot) {
     }
 
     // Attack overlay appears over MONSTER + MONSTER shakes
-    positionAttackOverMonster()
+    positionAttackOverMonster();
     restartAnimation(cinematicAttack, "cinematic-attack-in");
     restartAnimation(cinematicMonster, "cinematic-hit");
 
-    // ⏱ small beat so the hit reads
-    await delay(200);
+    // ⏱ let the shake play clearly before HP drops
+    await delay(500);
 
     // ✅ NOW apply damage and animate HP bar downward
     monsterHealthCurrent = Math.max(
@@ -622,9 +622,8 @@ function animateHandFromSnapshot(snapshot) {
     restartAnimation(cinematicAttack, "cinematic-attack-in");
     restartAnimation(cinematicHero, "cinematic-hit");
 
-
-    // ⏱ small beat so the hit reads
-    await delay(200);
+    // ⏱ let the shake play clearly before HP drops
+    await delay(500);
 
     // ✅ NOW apply damage and animate HP bar downward
     heroHealthCurrent = Math.max(
@@ -682,7 +681,6 @@ function setStage(stage) {
   
       railEl.innerHTML = "";
       handEl.innerHTML = "";
-      railEl.style.setProperty("--slots", puzzle.slots);
       railEl.classList.remove(
         "resolve",
         "resolve-win",
@@ -690,10 +688,12 @@ function setStage(stage) {
         "resolve-fade-out"
       );
       hideModal();
-
-      railEl.style.setProperty("--slots", puzzle.slots);
-  
+    
+      // tell CSS (globally) how many slots this puzzle uses
+      document.documentElement.style.setProperty("--slots", puzzle.slots);
+    
       const fixedSlots = puzzle.fixedSlots || {};
+       
   
       // Create slots (5, 6, 7, or 8)
       for (let i = 0; i < puzzle.slots; i++) {
@@ -760,13 +760,22 @@ function setStage(stage) {
     const card = cardState.find((c) => c.id === cardId);
     if (!card) return;
   
+    // 1️⃣ capture position BEFORE we change the DOM
+    const rect = cardEl.getBoundingClientRect();
+  
     e.preventDefault();
     cardEl.setPointerCapture(e.pointerId);
   
-    // Snapshot hand layout BEFORE this card leaves
+    // 🔒 NEW: lock the hand height so the equation row doesn't re-center
+    if (handEl) {
+      const handRect = handEl.getBoundingClientRect();
+      handEl.style.minHeight = `${handRect.height}px`;
+    }
+  
+    // 2️⃣ snapshot hand layout BEFORE this card leaves
     lastHandSnapshot = captureHandSnapshot();
   
-    // If card was already in a slot, free that slot immediately
+    // 3️⃣ if card was already in a slot, free that slot
     if (card.inSlot !== null && card.inSlot !== undefined) {
       const index = card.inSlot;
       slotState = slotState.filter((item) => item.cardId !== card.id);
@@ -777,9 +786,8 @@ function setStage(stage) {
         slotEl.innerHTML = "";
       }
     }
-
-    const rect = cardEl.getBoundingClientRect();
-
+  
+    // 4️⃣ now convert to a floating card at the same screen position
     activeDrag = {
       card,
       cardEl,
@@ -787,22 +795,22 @@ function setStage(stage) {
       offsetX: e.clientX - rect.left,
       offsetY: e.clientY - rect.top,
     };
-
+  
     cardEl.classList.add("dragging");
     cardEl.style.position = "fixed";
     cardEl.style.left = `${rect.left}px`;
     cardEl.style.top = `${rect.top}px`;
     cardEl.style.zIndex = "1000";
-
+  
     // Move into body so it can float above everything
     document.body.appendChild(cardEl);
-
+  
     // Animate the remaining hand cards sliding together
     animateHandFromSnapshot(lastHandSnapshot);
-
+  
     document.addEventListener("pointermove", onPointerMove);
     document.addEventListener("pointerup", onPointerUp, { once: true });
-  }
+  }    
 
   function onPointerMove(e) {
     if (!activeDrag) return;
@@ -836,50 +844,56 @@ function setStage(stage) {
 
   function onPointerUp(e) {
     if (!activeDrag) return;
-
+  
     const { card, cardEl, pointerId } = activeDrag;
-
+  
     try {
       cardEl.releasePointerCapture(pointerId);
     } catch (_) {
       // ignore if already released
     }
-
+  
     // Clean drag styling
     cardEl.classList.remove("dragging");
     cardEl.style.position = "";
     cardEl.style.left = "";
     cardEl.style.top = "";
     cardEl.style.zIndex = "";
-
+  
     // Hit-test again on drop, ignoring the card itself
     const prevPointerEvents = cardEl.style.pointerEvents;
     cardEl.style.pointerEvents = "none";
     const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
     cardEl.style.pointerEvents = prevPointerEvents || "";
-
+  
     const slotEl = findClosestSlot(dropTarget);
-
+  
     if (highlightedSlot) {
       highlightedSlot.classList.remove("slot-hover");
       highlightedSlot = null;
     }
-
+  
     if (slotEl) {
       placeCardInSlot(card, cardEl, slotEl);
     } else {
       // Drop back into hand
       card.inSlot = null;
-    
+  
       const snapshot = captureHandSnapshot();
       handEl.appendChild(cardEl);
       animateHandFromSnapshot(snapshot);
     }
-    
+  
+    // 🔓 NEW: unlock the hand height now that the drag is done
+    if (handEl) {
+      handEl.style.minHeight = "";
+    }
+  
     activeDrag = null;
     document.removeEventListener("pointermove", onPointerMove);
     checkIfReadyToValidate();
   }
+  
 
   function findClosestSlot(el) {
     if (!el) return null;
