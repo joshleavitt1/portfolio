@@ -188,13 +188,13 @@ body {
   pointer-events: none;
 }
 
-/* Hero panel: bottom-left of knight sprite */
+/* Hero panel: bottom-left of HERO sprite */
 .stat-panel--hero {
   left: 0;
   bottom: -10px; /* slight overlap below sprite; tweak if needed */
 }
 
-/* Monster panel: bottom-right of dragon sprite */
+/* Monster panel: bottom-right of MONSTER sprite */
 .stat-panel--monster {
   right: 0;
   bottom: -10px;
@@ -274,7 +274,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 140px;                 /* space between knight & dragon */
+  gap: 140px;                 /* space between HERO & MONSTER */
   pointer-events: none;
 }
 
@@ -287,7 +287,7 @@ body {
   justify-content: center;
 }
 
-/* Knight + Dragon sprites */
+/* Hero + Monster sprites */
 .cinematic-sprite {
   width: 300px;
   height: 235px;
@@ -307,7 +307,7 @@ body {
   z-index: 3000;
 }
 
-/* Knight attack overlay (result only) */
+/* Attack overlay (result only) */
 .cinematic-attack {
   position: absolute;
   width: 200px;
@@ -316,22 +316,18 @@ body {
   opacity: 0;
   transform: scale(0.6);
   filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.85));
-
-  /* Make sure nothing implicitly scales this down */
   max-width: none;
   max-height: none;
-
-  /* On top of knight/dragon */
   z-index: 3;
   pointer-events: none;
 }
 
-/* Knight + Dragon: match VS spring, slight stagger */
-.cinematic-sprite--knight.cinematic-in {
+/* Hero + Monster: match VS spring, slight stagger */
+.cinematic-sprite--hero.cinematic-in {
   animation: cinematic-spring-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
-.cinematic-sprite--dragon.cinematic-in {
+.cinematic-sprite--monster.cinematic-in {
   animation: cinematic-spring-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
   animation-delay: 0.04s; /* tiny offset so they don't feel robotic */
 }
@@ -358,12 +354,12 @@ body {
   }
 }
 
-/* Knight attack spring over dragon */
+/* Attack sprite enter */
 .cinematic-attack.cinematic-attack-in {
-  animation: knight-attack-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+  animation: attack-in 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
-@keyframes knight-attack-in {
+@keyframes attack-in {
   0% {
     opacity: 0;
     transform: translate(30px, -30px) scale(0.8);
@@ -378,12 +374,17 @@ body {
   }
 }
 
-/* Dragon shake when hit (stays visible) */
-.cinematic-sprite--dragon.cinematic-hit {
-  animation: dragon-hit-shake 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+/* Monster shake when hit (stays visible) */
+.cinematic-sprite--monster.cinematic-hit {
+  animation: monster-hit-shake 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
-@keyframes dragon-hit-shake {
+/* Hero shake when hit (reuse same keyframes) */
+.cinematic-sprite--hero.cinematic-hit {
+  animation: monster-hit-shake 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+@keyframes monster-hit-shake {
   0% {
     transform: translateX(0);
     opacity: 1;
@@ -410,70 +411,54 @@ body {
   }
 }
 
-/* Knight shake when hit (reuse same keyframes) */
-.cinematic-sprite--knight.cinematic-hit {
-  animation: dragon-hit-shake 0.6s cubic-bezier(0.2, 1, 0.3, 1) forwards;
-}
-
-/* Knight + Dragon sword attacks — smooth and always visible */
-.cinematic-sprite--knight,
-.cinematic-sprite--dragon {
+/* Hero + Monster sword attacks — smooth and always visible */
+.cinematic-sprite--hero,
+.cinematic-sprite--monster {
   will-change: transform, opacity;
 }
 
-.cinematic-sprite--knight.cinematic-knight-attack {
-  animation: knight-sword-strike 0.75s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
+/* Hero attack lunge (to the right) */
+.cinematic-sprite--hero.cinematic-hero-attack {
+  animation: hero-attack-lunge 0.75s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
 }
 
-@keyframes knight-sword-strike {
+@keyframes hero-attack-lunge {
   0% {
     opacity: 1;
     transform: translateX(0) translateY(0) scale(1);
   }
-
-  /* Main strike forward */
   45% {
     opacity: 1;
     transform: translateX(80px) translateY(0px) scale(1);
   }
-
-  /* Slight follow-through */
   65% {
     opacity: 1;
     transform: translateX(120px) translateY(0px) scale(1.4);
   }
-
-  /* Return to idle */
   100% {
     opacity: 1;
     transform: translateX(0) translateY(0) scale(1);
   }
 }
 
-/* Dragon attack lunge — mirror of knight sword strike */
-.cinematic-sprite--dragon.cinematic-dragon-attack {
-  animation: dragon-sword-strike 0.75s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
+/* Monster attack lunge (mirror to the LEFT) */
+.cinematic-sprite--monster.cinematic-monster-attack {
+  animation: monster-attack-lunge 0.75s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
 }
 
-@keyframes dragon-sword-strike {
+@keyframes monster-attack-lunge {
   0% {
     opacity: 1;
     transform: translateX(0) translateY(0) scale(1);
   }
-
-  /* Main strike forward (to the LEFT, since dragon is on the right) */
   45% {
     opacity: 1;
     transform: translateX(-80px) translateY(0px) scale(1);
   }
-
-  /* Slight follow-through */
   65% {
     opacity: 1;
     transform: translateX(-120px) translateY(0px) scale(1.4);
   }
-
-  /* Return to idle */
   100% {
     opacity: 1;
     transform: translateX(0) translateY(0) scale(1);
@@ -482,17 +467,16 @@ body {
 
 /* Attack sprite exit (spring out after impact) */
 .cinematic-attack.cinematic-attack-out {
-  animation: knight-attack-out 0.4s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+  animation: hero-attack-out 0.4s cubic-bezier(0.2, 1, 0.3, 1) forwards;
 }
 
-@keyframes knight-attack-out {
+@keyframes hero-attack-out {
   0% {
     opacity: 1;
     transform: translate(0, 0) scale(1);
   }
   100% {
     opacity: 0;
-    /* Kick off to the top-right a bit as it disappears */
     transform: translate(40px, -40px) scale(0.85);
   }
 }
@@ -503,7 +487,7 @@ body {
 /* --------------------------------------------------------------------- */
 
 /* Apply this class to .cinematic-stage in JS when you want to fade away
-   the entire intro/result scene (knight, dragon, VS, attack). */
+   the entire intro/result scene (HERO, MONSTER, VS, attack). */
    .cinematic-stage.cinematic-fade-out {
     animation: cinematic-fade-out 0.5s ease-out forwards;
   }

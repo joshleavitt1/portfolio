@@ -15,62 +15,63 @@
       <!-- Cinematic Stage (Intro + Result) -->
       <section class="cinematic" id="cinematic">
         <div class="cinematic-stage">
-          <!-- Knight + Hero Stats -->
-          <div class="cinematic-character cinematic-character--hero">
-            <img
-              alt="Knight"
-              class="cinematic-sprite cinematic-sprite--knight"
-              id="cinematic-knight"
-            />
-    
-            <div class="stat-panel stat-panel--hero">
-              <div class="stat-panel__name" id="hero-name"></div>
-              <div class="stat-panel__health-row">
-                <div class="stat-panel__health-track">
-                  <div
-                    class="stat-panel__health-fill"
-                    id="hero-health-fill"
-                  ></div>
-                </div>
+        <!-- Hero + Hero Stats -->
+        <div class="cinematic-character cinematic-character--hero">
+          <img
+            alt="Hero"
+            class="cinematic-sprite cinematic-sprite--hero"
+            id="cinematic-hero"
+          />
+
+          <div class="stat-panel stat-panel--hero">
+            <div class="stat-panel__name" id="hero-name"></div>
+            <div class="stat-panel__health-row">
+              <div class="stat-panel__health-track">
+                <div
+                  class="stat-panel__health-fill"
+                  id="hero-health-fill"
+                ></div>
               </div>
             </div>
           </div>
-    
-          <!-- VS badge -->
+        </div>
+
+        <!-- VS badge -->
+        <img
+          src="images/vs.png"
+          alt="Versus"
+          class="cinematic-vs"
+          id="cinematic-vs"
+        />
+
+        <!-- Monster + Monster Stats -->
+        <div class="cinematic-character cinematic-character--monster">
           <img
-            src="images/vs.png"
-            alt="Versus"
-            class="cinematic-vs"
-            id="cinematic-vs"
+            alt="Monster"
+            class="cinematic-sprite cinematic-sprite--monster"
+            id="cinematic-monster"
           />
-    
-          <!-- Dragon + Monster Stats -->
-          <div class="cinematic-character cinematic-character--monster">
-            <img
-              alt="Dragon"
-              class="cinematic-sprite cinematic-sprite--dragon"
-              id="cinematic-dragon"
-            />
-    
-            <div class="stat-panel stat-panel--monster">
-              <div class="stat-panel__name" id="monster-name"></div>
-              <div class="stat-panel__health-row">
-                <div class="stat-panel__health-track">
-                  <div
-                    class="stat-panel__health-fill"
-                    id="monster-health-fill"
-                  ></div>
-                </div>
+
+          <div class="stat-panel stat-panel--monster">
+            <div class="stat-panel__name" id="monster-name"></div>
+            <div class="stat-panel__health-row">
+              <div class="stat-panel__health-track">
+                <div
+                  class="stat-panel__health-fill"
+                  id="monster-health-fill"
+                ></div>
               </div>
             </div>
           </div>
-    
-          <!-- Knight attack overlay (result only) -->
-          <img
-            alt="Knight Attack"
-            class="cinematic-attack"
-            id="cinematic-attack"
-          />
+        </div>
+
+        <!-- Attack overlay (result only) -->
+        <img
+          alt="Attack"
+          class="cinematic-attack"
+          id="cinematic-attack"
+        />
+
         </div>
       </section>
     
@@ -116,8 +117,11 @@
     aria-hidden="true"
   >
     <div class="orientation-modal">
-      <h2>Turn your device horizontal</h2>
-      <p>This game is best played in landscape on mobile.</p>
+      <h2>Mobile Portrait Only</h2>
+      <p>
+        This preview is designed for phones held vertically.
+        Please open this on a mobile device in portrait orientation.
+      </p>      
     </div>
   </div>
   <script src="battle-stats.js"></script>

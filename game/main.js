@@ -117,20 +117,20 @@ function renderStatPanels() {
   const equationAreaEl = document.querySelector(".equation-area");
   const handAreaEl = document.querySelector(".hand-area");
 
-  const cinematicKnight = document.getElementById("cinematic-knight");
-  const cinematicDragon = document.getElementById("cinematic-dragon");
+  const cinematicHero = document.getElementById("cinematic-hero");
+  const cinematicMonster = document.getElementById("cinematic-monster");
   const cinematicVs = document.getElementById("cinematic-vs");
   const cinematicAttack = document.getElementById("cinematic-attack");
   const cinematicStage = document.querySelector(".cinematic-stage");
-
+  
   // Sync sprite images from battle stats (HTML src becomes just a fallback)
-if (cinematicKnight && HERO_BASE.spriteImage) {
-  cinematicKnight.src = HERO_BASE.spriteImage;
-}
-
-if (cinematicDragon && MONSTER_BASE.spriteImage) {
-  cinematicDragon.src = MONSTER_BASE.spriteImage;
-}
+  if (cinematicHero && HERO_BASE.spriteImage) {
+    cinematicHero.src = HERO_BASE.spriteImage;
+  }
+  
+  if (cinematicMonster && MONSTER_BASE.spriteImage) {
+    cinematicMonster.src = MONSTER_BASE.spriteImage;
+  }  
 
   // --- Drag state ----------------------------------------------------------
   let cardIdCounter = 0;
@@ -186,41 +186,39 @@ function animateHandFromSnapshot(snapshot) {
 }
 
 
-  // --- Dragon Attack Helper
-  function positionAttackOverDragon() {
-    if (!cinematicStage || !cinematicDragon || !cinematicAttack) return;
+  // --- MONSTER Attack Helper
+  function positionAttackOverMonster() {
+    if (!cinematicStage || !cinematicMonster || !cinematicAttack) return;
   
     const stageRect = cinematicStage.getBoundingClientRect();
-    const dragonRect = cinematicDragon.getBoundingClientRect();
+    const monsterRect = cinematicMonster.getBoundingClientRect();
   
-    // Center of the dragon relative to the stage
-    const centerX = dragonRect.left + dragonRect.width / 2 - stageRect.left;
-    const centerY = dragonRect.top + dragonRect.height / 2 - stageRect.top;
+    const centerX = monsterRect.left + monsterRect.width / 2 - stageRect.left;
+    const centerY = monsterRect.top + monsterRect.height / 2 - stageRect.top;
   
-    const attackWidth = 200;   // match CSS width
-    const attackHeight = 200;  // match CSS height
+    const attackWidth = 200;
+    const attackHeight = 200;
   
     cinematicAttack.style.left = `${centerX - attackWidth / 2}px`;
     cinematicAttack.style.top = `${centerY - attackHeight / 2}px`;
   }
-
-    // Mirror helper: position attack overlay over the KNIGHT
-    function positionAttackOverKnight() {
-      if (!cinematicStage || !cinematicKnight || !cinematicAttack) return;
   
-      const stageRect = cinematicStage.getBoundingClientRect();
-      const knightRect = cinematicKnight.getBoundingClientRect();
+  // Mirror helper: position attack overlay over the HERO
+  function positionAttackOverHero() {
+    if (!cinematicStage || !cinematicHero || !cinematicAttack) return;
   
-      // Center of the knight relative to the stage
-      const centerX = knightRect.left + knightRect.width / 2 - stageRect.left;
-      const centerY = knightRect.top + knightRect.height / 2 - stageRect.top;
+    const stageRect = cinematicStage.getBoundingClientRect();
+    const heroRect = cinematicHero.getBoundingClientRect();
   
-      const attackWidth = 200;   // match CSS width
-      const attackHeight = 200;  // match CSS height
+    const centerX = heroRect.left + heroRect.width / 2 - stageRect.left;
+    const centerY = heroRect.top + heroRect.height / 2 - stageRect.top;
   
-      cinematicAttack.style.left = `${centerX - attackWidth / 2}px`;
-      cinematicAttack.style.top = `${centerY - attackHeight / 2}px`;
-    }  
+    const attackWidth = 200;
+    const attackHeight = 200;
+  
+    cinematicAttack.style.left = `${centerX - attackWidth / 2}px`;
+    cinematicAttack.style.top = `${centerY - attackHeight / 2}px`;
+  }    
   
 
   // --- Timing helpers ------------------------------------------------------
@@ -253,22 +251,30 @@ function animateHandFromSnapshot(snapshot) {
 
   // --- Orientation helpers -------------------------------------------------
   function updateOrientationOverlay() {
-    const isMobile = window.innerWidth <= 900;
-
+    const isMobileWidth = window.innerWidth <= 900;
     const isPortrait =
       window.matchMedia("(orientation: portrait)").matches ||
       window.innerHeight > window.innerWidth;
-
-    if (isMobile && isPortrait) {
+  
+    // Basic touch detection (good enough for "mobile")
+    const isTouch =
+      "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  
+    // ✅ Only allow: mobile-width + touch + portrait
+    const isAllowed = isMobileWidth && isTouch && isPortrait;
+  
+    if (!isAllowed) {
+      // Show blocker for everything else
       orientationOverlayEl.classList.add("show");
       orientationOverlayEl.setAttribute("aria-hidden", "false");
       lockScreen();
     } else {
+      // Hide blocker on mobile portrait
       orientationOverlayEl.classList.remove("show");
       orientationOverlayEl.setAttribute("aria-hidden", "true");
       unlockScreen();
     }
-  }
+  }  
 
   function lockScreen() {
     document.body.style.overflow = "hidden";
@@ -305,7 +311,7 @@ function animateHandFromSnapshot(snapshot) {
   }
 
   function resetCinematicSprites() {
-    if (!cinematicKnight || !cinematicDragon || !cinematicVs || !cinematicAttack) {
+    if (!cinematicHero || !cinematicMonster || !cinematicVs || !cinematicAttack) {
       return;
     }
   
@@ -317,22 +323,24 @@ function animateHandFromSnapshot(snapshot) {
     }
   
     // Reset base opacity for sprites/overlays
-    cinematicKnight.style.opacity = "0";
-    cinematicDragon.style.opacity = "0";
+    cinematicHero.style.opacity = "0";
+    cinematicMonster.style.opacity = "0";
     cinematicVs.style.opacity = "0";
     cinematicAttack.style.opacity = "0";
   
     // Clear all cinematic classes so we can restart clean
-    cinematicKnight.classList.remove(
+    cinematicHero.classList.remove(
       "cinematic-in",
       "cinematic-fade-out",
-      "cinematic-knight-attack"
+      "cinematic-hero-attack",
+      "cinematic-hit"
     );
   
-    cinematicDragon.classList.remove(
+    cinematicMonster.classList.remove(
       "cinematic-in",
       "cinematic-hit",
-      "cinematic-fade-out"
+      "cinematic-fade-out",
+      "cinematic-monster-attack"
     );
   
     cinematicVs.classList.remove("cinematic-show", "cinematic-fade-out");
@@ -341,7 +349,7 @@ function animateHandFromSnapshot(snapshot) {
       "cinematic-attack-in",
       "cinematic-attack-out"
     );
-  }  
+  }    
   
   // --- Modal helpers -------------------------------------------------------
   function hideModal() {
@@ -382,7 +390,7 @@ function animateHandFromSnapshot(snapshot) {
     function showHeroGameWinModal() {
       showModal(
         "You Won the Game!",
-        "The dragon has been defeated. Start a new game?",
+        "The monster has been defeated. Start a new game?",
         "New Game",
         () => {
           startNewGame();
@@ -393,7 +401,7 @@ function animateHandFromSnapshot(snapshot) {
     function showMonsterGameWinModal() {
       showModal(
         "Game Over",
-        "The dragon defeated you. Try again?",
+        "The monster defeated you. Try again?",
         "New Game",
         () => {
           startNewGame();
@@ -436,9 +444,10 @@ function animateHandFromSnapshot(snapshot) {
     // 0.5s pause before sprites spring in
     await delay(750);
   
-    // Knight + Dragon spring in together
-    restartAnimation(cinematicKnight, "cinematic-in");
-    restartAnimation(cinematicDragon, "cinematic-in");
+    // Hero + Monster spring in together
+    restartAnimation(cinematicHero, "cinematic-in");
+    restartAnimation(cinematicMonster, "cinematic-in");
+
   
     // Let sprites mostly settle (slightly after their 0.6s spring)
     await delay(1500);
@@ -455,7 +464,7 @@ function animateHandFromSnapshot(snapshot) {
     // Let VS hang for a bit
     await delay(2500);
   
-    // Fade out the entire stage (knight, dragon, VS, attack)
+    // Fade out the entire stage (HERO, MONSTER, VS, attack)
     if (cinematicStage) {
       restartAnimation(cinematicStage, "cinematic-fade-out");
     }
@@ -492,9 +501,9 @@ function animateHandFromSnapshot(snapshot) {
     // Short pause before result sprites appear
     await delay(750);
 
-    // Knight + Dragon spring in together (same as intro)
-    restartAnimation(cinematicKnight, "cinematic-in");
-    restartAnimation(cinematicDragon, "cinematic-in");
+    // HERO + MONSTER spring in together (same as intro)
+    restartAnimation(cinematicHero, "cinematic-in");
+    restartAnimation(cinematicMonster, "cinematic-in");
 
     // Stats come in slightly after sprites
     await delay(1500);
@@ -503,19 +512,19 @@ function animateHandFromSnapshot(snapshot) {
     // Let them fully animate in and settle
     await delay(1000);
 
-    // Knight sword-strike lunge (forward + pull back)
-    restartAnimation(cinematicKnight, "cinematic-knight-attack");
-    await delay(750); // match knight-sword-strike duration
+    // HERO sword-strike lunge (forward + pull back)
+    restartAnimation(cinematicHero, "cinematic-hero-attack");
+    await delay(750); // match HERO-sword-strike duration
 
     // Use HERO attack sprite for this sequence
     if (cinematicAttack && HERO_BASE.attackImage) {
       cinematicAttack.src = HERO_BASE.attackImage;
     }
 
-    // Attack overlay appears over dragon + dragon shakes
-    positionAttackOverDragon();
+    // Attack overlay appears over MONSTER + MONSTER shakes
+    positionAttackOverMonster()
     restartAnimation(cinematicAttack, "cinematic-attack-in");
-    restartAnimation(cinematicDragon, "cinematic-hit");
+    restartAnimation(cinematicMonster, "cinematic-hit");
 
     // ⏱ small beat so the hit reads
     await delay(200);
@@ -566,9 +575,9 @@ function animateHandFromSnapshot(snapshot) {
     // Short pause before result sprites appear
     await delay(750);
 
-    // Knight + Dragon spring in together (same as intro)
-    restartAnimation(cinematicKnight, "cinematic-in");
-    restartAnimation(cinematicDragon, "cinematic-in");
+    // HERO + MONSTER spring in together (same as intro)
+    restartAnimation(cinematicHero, "cinematic-in");
+    restartAnimation(cinematicMonster, "cinematic-in");
 
     // Stats come in slightly after sprites
     await delay(1500);
@@ -577,19 +586,19 @@ function animateHandFromSnapshot(snapshot) {
     // Let them fully animate in and settle
     await delay(1000);
 
-    // DRAGON attack lunge (mirror of knight's sword-strike)
-    restartAnimation(cinematicDragon, "cinematic-dragon-attack");
-    await delay(750); // match knight-sword-strike duration
+    // MONSTER attack lunge (mirror of HERO's sword-strike)
+    restartAnimation(cinematicMonster, "cinematic-monster-attack");
+    await delay(750); // match HERO-sword-strike duration
 
     // Use MONSTER attack sprite for this sequence
     if (cinematicAttack && MONSTER_BASE.attackImage) {
       cinematicAttack.src = MONSTER_BASE.attackImage;
     }
 
-    // Attack overlay appears over KNIGHT + knight shakes
-    positionAttackOverKnight();
+    // Attack overlay appears over HERO + HERO shakes
+    positionAttackOverHero();
     restartAnimation(cinematicAttack, "cinematic-attack-in");
-    restartAnimation(cinematicKnight, "cinematic-hit");
+    restartAnimation(cinematicHero, "cinematic-hit");
 
 
     // ⏱ small beat so the hit reads

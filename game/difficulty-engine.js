@@ -336,18 +336,89 @@
 
   const state = {
     currentDifficulty: getInitialDifficulty(),
-    nextIndexByDifficulty: {}, // { difficulty: nextIndex }
-  };
+    nextIndexByDifficulty: {},  // { difficulty: nextIndex in shuffled order array }
+    orderByDifficulty: {},      // { difficulty: [shuffled indices into PUZZLE_BANK[d]] }
+    lastPuzzleId: null,         // remember last-served puzzle to avoid repeats
+  };  
+
+  function shuffleArray(array) {
+    // Fisher–Yates
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  function ensureOrderForDifficulty(d) {
+    const bank = PUZZLE_BANK[d];
+    if (!bank || bank.length === 0) return null;
+
+    const existingOrder = state.orderByDifficulty[d];
+
+    // If no order yet, or bank size changed, build a new shuffled order
+    if (
+      !existingOrder ||
+      !Array.isArray(existingOrder) ||
+      existingOrder.length !== bank.length
+    ) {
+      const indices = bank.map((_, idx) => idx);
+      state.orderByDifficulty[d] = shuffleArray(indices);
+      state.nextIndexByDifficulty[d] = 0;
+    }
+
+    return state.orderByDifficulty[d];
+  }
 
   function pickNextPuzzleForDifficulty(difficulty) {
     const d = clampDifficulty(difficulty);
     const bank = PUZZLE_BANK[d];
     if (!bank || bank.length === 0) return null;
 
-    const idx = state.nextIndexByDifficulty[d] ?? 0;
-    const puzzle = bank[idx];
-    state.nextIndexByDifficulty[d] = (idx + 1) % bank.length;
-    return puzzle;
+    const order = ensureOrderForDifficulty(d);
+    if (!order || order.length === 0) return null;
+
+    let idx = state.nextIndexByDifficulty[d] ?? 0;
+    let chosenPuzzle = null;
+
+    // Try up to bank.length times to find a puzzle
+    // whose id != lastPuzzleId (so we don't repeat)
+    for (let attempts = 0; attempts < bank.length; attempts++) {
+      const puzzleIndex = order[idx];
+      const candidate = bank[puzzleIndex];
+
+      if (!candidate) {
+        idx = (idx + 1) % order.length;
+        continue;
+      }
+
+      if (candidate.id !== state.lastPuzzleId) {
+        chosenPuzzle = candidate;
+        // Advance pointer for next time
+        state.nextIndexByDifficulty[d] = (idx + 1) % order.length;
+        break;
+      }
+
+      idx = (idx + 1) % order.length;
+    }
+
+    // Edge case: only one puzzle in this difficulty,
+    // or for some reason we couldn't find a different one.
+    if (!chosenPuzzle) {
+      const fallbackIndex = order[state.nextIndexByDifficulty[d] ?? 0] ?? order[0];
+      chosenPuzzle = bank[fallbackIndex];
+      state.nextIndexByDifficulty[d] =
+        ((state.nextIndexByDifficulty[d] ?? 0) + 1) % order.length;
+    }
+
+    // If we just wrapped around the shuffled list, reshuffle for variety
+    if (state.nextIndexByDifficulty[d] === 0 && bank.length > 1) {
+      const newOrder = shuffleArray(bank.map((_, i) => i));
+      state.orderByDifficulty[d] = newOrder;
+    }
+
+    state.lastPuzzleId = chosenPuzzle.id;
+    return chosenPuzzle;
   }
 
   function setCurrentDifficulty(newDifficulty) {
