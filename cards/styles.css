@@ -118,8 +118,8 @@ body {
 /* Base node style: 100x100 grey circle */
 .map-node {
   position: absolute;
-  width: 120px;
-  height: 120px;
+  width: 110px;
+  height: 110px;
 
   background-color: transparent;
   appearance: none;
@@ -128,7 +128,6 @@ body {
   padding: 0;
   border-radius: 50%;
 
-  background-image: url("images/node_battle.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -146,73 +145,103 @@ body {
     transform 0.18s;
 }
 
-/* Active vs locked states */
-.map-node--active {
-  animation: node-shimmer 2.2s ease-in-out infinite;
+/* Shimmer sweep overlay — constrained to the PNG shape */
+.map-node::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0; /* off by default */
 }
 
-.map-node--active:hover {
-  transform: translate(-50%, -50%) scale(1.06);
-  filter:
-    brightness(1.15)
-    drop-shadow(0 10px 22px rgba(255, 215, 120, 0.65));
+.map-node--active.map-node--shimmer::before {
+  animation-play-state: running;
 }
+
+/* Only the active node gets the sunlight sweep */
+/* Only the active node gets the sunlight sweep, but it starts PAUSED */
+.map-node--active::before {
+  opacity: 1;
+
+  /* Bright diagonal "sunlight" line */
+  background-image: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 250% 250%;
+  background-position: -180% 0;
+  background-repeat: no-repeat; /* prevent double sweep */
+
+  /* Load the animation, but keep it frozen by default */
+  animation: node-light-sweep 2.5s linear infinite;
+  animation-play-state: paused;
+
+  /* ✅ Clip shimmer to the PNG so it never shows as a square box */
+  -webkit-mask-image: url("images/node_battle.png");
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-image: url("images/node_battle.png");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+
+  mix-blend-mode: screen;
+}
+
+/* This class actually turns the shimmer ON */
+.map-node--active.map-node--shimmer::before {
+  animation-play-state: running;
+}
+
+/* Future treasure / boss nodes */
+.map-node--bw {
+  filter: grayscale(1) brightness(0.9);
+  pointer-events: none;
+}
+
+@keyframes node-light-sweep {
+  /* Start offscreen (hidden) */
+  0% {
+    background-position: -180% 0;
+    opacity: 0;
+  }
+
+  /* Turn on just before entering */
+  10% {
+    background-position: -180% 0;
+    opacity: 1;
+  }
+
+  /* Full, strong sweep */
+  40% {
+    background-position: 180% 0;
+    opacity: 1;
+  }
+
+  /* Instantly turn off */
+  41% {
+    background-position: 180% 0;
+    opacity: 0;
+  }
+
+  /* Stay off until next loop */
+  100% {
+    background-position: 180% 0;
+    opacity: 0;
+  }
+}
+
 
 .map-node--locked {
   filter: grayscale(1.0);
   pointer-events: none;
 }
 
-/* Approximate positions from your mock (bottom → top) */
-#map-node-0 { /* bottom-right near river bend */
-  left: 78%;
-  top: 86%;
-}
-
-#map-node-1 { /* above bridge, left of river */
-  left: 32%;
-  top: 72%;
-}
-
-#map-node-2 { /* mid valley */
-  left: 55%;
-  top: 56%;
-}
-
-#map-node-3 { /* lower hillside */
-  left: 28%;
-  top: 42%;
-}
-
-#map-node-4 { /* mid-slope below castle */
-  left: 50%;
-  top: 27%;
-}
-
-#map-node-5 { /* near dragon/castle top */
-  left: 70%;
-  top: 11%;
-}
-
-@keyframes node-shimmer {
-  0% {
-    filter:
-      brightness(1)
-      drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
-  }
-
-  40% {
-    filter:
-      brightness(1.12)
-      drop-shadow(0 8px 18px rgba(255, 210, 90, 0.55));
-  }
-
-  100% {
-    filter:
-      brightness(1)
-      drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
-  }
-}
 
 /* Spring-in animation when the map appears */
 .map-node--spawn {
@@ -271,17 +300,21 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background-size: cover;
+
+  /* ✅ SHOW FULL IMAGE — no zoom */
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-  z-index: -1;       /* behind all game content */
+
+  z-index: -1;
   opacity: 0;
   transition: opacity 600ms ease-in-out;
 }
 
 /* Battle background (intro + result) */
 .game::before {
-  background-image: url("images/bg_battle.png");
+  /* Use a CSS variable so JS can swap battle backgrounds */
+  background-image: var(--battle-bg-image, url("images/bg_battle_1.png"));
   opacity: 1;        /* default: we're in stage-intro */
 }
 
@@ -478,11 +511,11 @@ body {
 
 /* Battle spacing: hero down, monster up */
 .cinematic-character--hero.battle-offset {
-  transform: translate(40px, 180px);   /* right + down */
+  transform: translate(88px, 150px);   /* right + down */
 }
 
 .cinematic-character--monster.battle-offset {
-  transform: translate(-40px, -180px); /* left + up */
+  transform: translate(-88px, -150px); /* left + up */
 }
 
 /* VS badge */
@@ -702,6 +735,36 @@ body {
     opacity: 0;
     transform: translate(40px, -40px) scale(0.85);
   }
+}
+
+/* --------------------------------------------------------------------- */
+/* Pokémon-style ground shadow for battle sprites                         */
+/* --------------------------------------------------------------------- */
+
+.cinematic-character::after {
+  content: "";
+  position: absolute;
+
+  /* Shadow sits under the sprite */
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 160px;
+  height: 40px;
+
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.65) 0%,
+    rgba(0, 0, 0, 0.45) 60%,
+    rgba(0, 0, 0, 0.0) 90%
+  );
+
+  filter: blur(4px);
+  opacity: 0.95;
+
+  pointer-events: none;
+  z-index: 0; /* behind sprite */
 }
 
 

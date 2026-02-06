@@ -31,7 +31,105 @@ const BATTLE_STATS = window.BATTLE_STATS || DEFAULT_STATS;
 
 // IMPORTANT: use BATTLE_STATS, not window.BATTLE_STATS directly
 const HERO_BASE = BATTLE_STATS.hero;
-const MONSTER_BASE = BATTLE_STATS.monster;
+// Monster base is mutable so we can swap different monsters per game
+let MONSTER_BASE = BATTLE_STATS.monster;
+
+// Hero level — from stats or global override (fallback to 1)
+const HERO_LEVEL =
+  HERO_BASE.level ??
+  window.HERO_LEVEL ??
+  1;
+
+// Optional monster pools loaded from battle-stats.js
+const MONSTER_POOLS = window.MONSTER_POOLS || {};
+
+// Track which monsters we've already used at each hero level
+// so we don't repeat until we've shown them all.
+const usedMonsterIdsByLevel = new Map();
+
+/**
+ * Get a monster config for a given hero level, without repeating until
+ * the entire pool has been exhausted once.
+ */
+function getNextMonsterForLevel(level) {
+  const pool = MONSTER_POOLS[level];
+
+  // No pool defined → fallback to the default single monster
+  if (!pool || pool.length === 0) {
+    return BATTLE_STATS.monster;
+  }
+
+  // Get or create the "used" set for this level
+  let usedSet = usedMonsterIdsByLevel.get(level);
+  if (!usedSet) {
+    usedSet = new Set();
+    usedMonsterIdsByLevel.set(level, usedSet);
+  }
+
+  // If we've used all monsters in the pool, reset for a fresh cycle
+  if (usedSet.size >= pool.length) {
+    usedSet.clear();
+  }
+
+  // Filter the pool to monsters we haven't used yet
+  const available = pool.filter((monster) => !usedSet.has(monster.id));
+
+  // Safety fallback: if something goes weird, pick from full pool
+  const pickFrom = available.length > 0 ? available : pool;
+
+  const choice =
+    pickFrom[Math.floor(Math.random() * pickFrom.length)];
+
+  if (choice.id != null) {
+    usedSet.add(choice.id);
+  }
+
+  return choice;
+}
+
+// ---------------------------------------------------------------------
+// Battle background rotation
+// ---------------------------------------------------------------------
+
+const BATTLE_BACKGROUNDS = [
+  "images/bg_battle_1.png",
+  "images/bg_battle_2.png",
+  "images/bg_battle_3.png",
+];
+
+// Index persists while the page is loaded
+let battleBackgroundIndex = 0;
+
+/**
+ * Returns the next battle background in sequence:
+ * 1 → 2 → 3 → 1 → ...
+ */
+function getNextBattleBackground() {
+  const bg = BATTLE_BACKGROUNDS[battleBackgroundIndex];
+
+  battleBackgroundIndex =
+    (battleBackgroundIndex + 1) % BATTLE_BACKGROUNDS.length;
+
+  return bg;
+}
+
+/**
+ * Swap MONSTER_BASE for the current hero level and sync the UI.
+ */
+function selectMonsterForCurrentHeroLevel() {
+  const nextMonster = getNextMonsterForLevel(HERO_LEVEL);
+
+  // Swap the base config used for health, damage, etc.
+  MONSTER_BASE = nextMonster;
+
+  // Update cinematic sprite + name if they already exist
+  if (typeof cinematicMonster !== "undefined" && cinematicMonster && MONSTER_BASE.spriteImage) {
+    cinematicMonster.src = MONSTER_BASE.spriteImage;
+  }
+  if (typeof monsterNameEl !== "undefined" && monsterNameEl) {
+    monsterNameEl.textContent = MONSTER_BASE.name;
+  }
+}
 
 const heroNameEl = document.getElementById("hero-name");
 const monsterNameEl = document.getElementById("monster-name");
@@ -387,19 +485,31 @@ function animateHandFromSnapshot(snapshot) {
     modalEl.setAttribute("aria-hidden", "false");
   }
 
-    // Start a brand-new GAME (health reset + intro)
-    function startNewGame() {
-      resetGameHealth();
-    
-      if (window.DifficultyEngine) {
-        currentDifficulty = window.DifficultyEngine.getInitialDifficulty();
-        currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
-      }
-    
-      resetPuzzle();
-      hideCards();
-      runIntroSequence();
-    }        
+  function startNewGame() {
+    // 1) Rotate monster (no repeats per level)
+    selectMonsterForCurrentHeroLevel();
+  
+    // 2) Rotate battle background (loops in order) on the GAME layer
+    const nextBg = getNextBattleBackground();
+    if (gameRoot) {
+      // This drives .game::before via the CSS var
+      gameRoot.style.setProperty("--battle-bg-image", `url("${nextBg}")`);
+    }
+  
+    // 3) Reset health
+    resetGameHealth();
+  
+    // 4) Reset difficulty & puzzle
+    if (window.DifficultyEngine) {
+      currentDifficulty = window.DifficultyEngine.getInitialDifficulty();
+      currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
+    }
+  
+    // 5) Reset UI + intro
+    resetPuzzle();
+    hideCards();
+    runIntroSequence();
+  }       
   
     function showHeroGameWinModal() {
       showModal(
@@ -663,7 +773,9 @@ function animateHandFromSnapshot(snapshot) {
     }
   }    
   
-  // --- Map + Game root elements -------------------------------------------
+// ---------------------------------------------------------------------
+// Map grid layout (tight, deterministic)
+// ---------------------------------------------------------------------
 const gameRoot = document.getElementById("game-root");
 const mapScreenEl = document.getElementById("map-screen");
 const mapNodes = document.querySelectorAll(".map-node");
@@ -679,7 +791,23 @@ function setStage(stage) {
   gameRoot.classList.add(`stage-${stage}`);
 }
 
-// Show MAP, hide GAME (via opacity classes)
+function layoutMapNodes() {
+  mapNodes.forEach((node) => {
+    const idx = Number(node.dataset.nodeIndex);
+    const layout = NODE_LAYOUT[idx];
+    if (!layout) return;
+
+    const x = GRID.colX[layout.col];
+    const y = GRID.rowY[layout.row];
+
+    const offsetX = layout.offsetX ?? 0;
+    const offsetY = layout.offsetY ?? 0;
+
+    node.style.left = `calc(${x}% + ${offsetX}px)`;
+    node.style.top  = `calc(${y}% + ${offsetY}px)`;
+  });
+}
+
 function showMap() {
   if (mapScreenEl) {
     mapScreenEl.classList.remove("map-screen--hidden");
@@ -688,6 +816,7 @@ function showMap() {
     gameRoot.classList.remove("game--visible");
   }
 
+  layoutMapNodes();   // ✅ grid snap
   updateMapNodes();
   animateMapNodesIn();
 }
@@ -702,21 +831,89 @@ function showGame() {
   }
 }
 
-// Node state: only the active node is tappable
+const GRID = {
+  columns: 3,
+  rows: 6,
+
+  // Percent-based so it scales with screen size
+  colX: [25, 50, 75],       // left / center / right
+  rowY: [88, 74, 60, 46, 32, 16], // bottom → top
+};
+
+// Node → grid placement
+// index: { col, row, offsetX?, offsetY? }
+const NODE_LAYOUT = {
+  0: { col: 2, row: 0 }, // bottom center on path
+  1: { col: 1, row: 1 }, // just left of path
+  2: { col: 0, row: 2 }, // back to center (by river)
+  3: { col: 1, row: 3 }, // left hillside
+  4: { col: 2, row: 4 }, // center valley below castle
+  5: { col: 1, row: 5 }, // right under castle
+};
+// Node → type (bottom → top)
+const NODE_TYPES = [
+  "battle", // 0 (bottom)
+  "battle", // 1
+  "chest",  // 2
+  "battle", // 3
+  "battle", // 4
+  "boss"    // 5 (top / castle)
+];
+
+const NODE_SPRITES = {
+  battle: "images/node_battle.png",
+  chest:  "images/node_chest.png",
+  boss:   "images/node_boss.png",
+  lock:   "images/node_lock.png",
+  check:  "images/node_check.png"
+};
+
+
 function updateMapNodes() {
   mapNodes.forEach((node) => {
     const idx = Number(node.dataset.nodeIndex);
+    const type = NODE_TYPES[idx] ?? "battle";
+
+    node.classList.remove(
+      "map-node--active",
+      "map-node--locked",
+      "map-node--completed",
+      "map-node--bw",
+      "map-node--shimmer"
+    );
+
+    // ✅ COMPLETED (anything below active index)
+    if (idx < activeNodeIndex) {
+      node.classList.add("map-node--completed");
+      node.disabled = true;
+      node.style.backgroundImage = `url("${NODE_SPRITES.check}")`;
+      return;
+    }
+
+    // ⭐ ACTIVE
     if (idx === activeNodeIndex) {
       node.classList.add("map-node--active");
-      node.classList.remove("map-node--locked");
       node.disabled = false;
-    } else {
-      node.classList.remove("map-node--active");
-      node.classList.add("map-node--locked");
-      node.disabled = true;
+      node.style.backgroundImage = `url("${NODE_SPRITES[type]}")`;
+      return;
     }
+
+    // 🔮 FUTURE NODES
+    node.disabled = true;
+
+    // Treasure + Boss → show icon, but B/W
+    if (type === "chest" || type === "boss") {
+      node.classList.add("map-node--bw");
+      node.style.backgroundImage = `url("${NODE_SPRITES[type]}")`;
+      return;
+    }
+
+    // Regular battle → locked
+    node.classList.add("map-node--locked");
+    node.style.backgroundImage = `url("${NODE_SPRITES.lock}")`;
   });
 }
+
 
 // Spring nodes in from bottom to top
 function animateMapNodesIn() {
@@ -724,10 +921,12 @@ function animateMapNodesIn() {
 
   const INITIAL_PAUSE_MS = 500;
   const STAGGER_MS = 200;
+  const NODE_SPRING_MS = 600;
+  const SHIMMER_DELAY_MS = 20;
 
   // Reset previous animations
   mapNodes.forEach((node) => {
-    node.classList.remove("map-node--spawn");
+    node.classList.remove("map-node--spawn", "map-node--shimmer");
     node.style.animationDelay = "";
   });
 
@@ -740,6 +939,21 @@ function animateMapNodesIn() {
     node.style.animationDelay = `${delayMs}ms`;
     node.classList.add("map-node--spawn");
   });
+
+  // ⏱ Calculate when the LAST node is fully settled
+  const lastNodeFinishMs =
+    INITIAL_PAUSE_MS +
+    (mapNodes.length - 1) * STAGGER_MS +
+    NODE_SPRING_MS +
+    SHIMMER_DELAY_MS;
+
+  // 🌟 Enable shimmer only after everything is done
+  setTimeout(() => {
+    const activeNode = document.querySelector(".map-node--active");
+    if (activeNode) {
+      activeNode.classList.add("map-node--shimmer");
+    }
+  }, lastNodeFinishMs);
 }
 
 // When user taps a node
