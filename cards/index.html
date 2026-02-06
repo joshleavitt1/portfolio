@@ -10,8 +10,21 @@
   
 <body>
   <div class="app">
-    <main class="game stage-intro" id="game-root">
 
+    <!-- World Map Screen -->
+    <section class="map-screen" id="map-screen">
+      <div class="map-nodes">
+        <!-- Bottom → Top (0 is bottom, 5 is top) -->
+        <button class="map-node" data-node-index="0" id="map-node-0"></button>
+        <button class="map-node" data-node-index="1" id="map-node-1"></button>
+        <button class="map-node" data-node-index="2" id="map-node-2"></button>
+        <button class="map-node" data-node-index="3" id="map-node-3"></button>
+        <button class="map-node" data-node-index="4" id="map-node-4"></button>
+        <button class="map-node" data-node-index="5" id="map-node-5"></button>
+      </div>
+    </section>
+
+    <main class="game stage-intro" id="game-root">
       <!-- Cinematic Stage (Intro + Result) -->
       <section class="cinematic" id="cinematic">
         <div class="cinematic-stage">

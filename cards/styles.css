@@ -78,6 +78,132 @@ body {
   justify-content: center;    /* horizontal centering only */
 }
 
+/* --------------------------------------------------------------------- */
+/* World Map screen                                                      */
+/* --------------------------------------------------------------------- */
+
+.map-screen {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: url("images/bg_map.png"); /* <- map background */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Hideable with .is-hidden utility */
+.map-screen.is-hidden {
+  display: none !important;
+}
+
+.map-nodes {
+  position: relative;
+  width: 100%;
+  max-width: 480px;     /* same cap as battle/cards */
+  height: 100vh;        /* match viewport so % positions feel like your mock */
+}
+
+/* Base node style: 100x100 grey circle */
+.map-node {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+
+  background-color: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  padding: 0;
+  border-radius: 50%;
+
+  background-image: url("images/node_battle.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+
+  /* ✅ PNG-aware shadow */
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+
+  opacity: 0.95;
+  transition:
+    transform 0.18s
+}
+
+/* Active vs locked states */
+.map-node--active {
+  animation: node-shimmer 2.2s ease-in-out infinite;
+}
+
+.map-node--active:hover {
+  transform: translate(-50%, -50%) scale(1.06);
+  filter:
+    brightness(1.15)
+    drop-shadow(0 10px 22px rgba(255, 215, 120, 0.65));
+}
+
+.map-node--locked {
+  filter: grayscale(1.0);
+  pointer-events: none;
+}
+
+/* Approximate positions from your mock (bottom → top) */
+#map-node-0 { /* bottom-right near river bend */
+  left: 78%;
+  top: 86%;
+}
+
+#map-node-1 { /* above bridge, left of river */
+  left: 32%;
+  top: 72%;
+}
+
+#map-node-2 { /* mid valley */
+  left: 55%;
+  top: 56%;
+}
+
+#map-node-3 { /* lower hillside */
+  left: 28%;
+  top: 42%;
+}
+
+#map-node-4 { /* mid-slope below castle */
+  left: 50%;
+  top: 27%;
+}
+
+#map-node-5 { /* near dragon/castle top */
+  left: 70%;
+  top: 11%;
+}
+
+@keyframes node-shimmer {
+  0% {
+    filter:
+      brightness(1)
+      drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+  }
+
+  40% {
+    filter:
+      brightness(1.12)
+      drop-shadow(0 8px 18px rgba(255, 210, 90, 0.55));
+  }
+
+  100% {
+    filter:
+      brightness(1)
+      drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+  }
+}
+
 
 /* --------------------------------------------------------------------- */
 /* Stage backgrounds: battle vs game                                     */

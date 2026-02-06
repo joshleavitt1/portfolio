@@ -370,6 +370,15 @@
     return state.orderByDifficulty[d];
   }
 
+    // Count how many of the hand cards are single-digit integers (0–9).
+  // This lets us enforce "bare minimum = 2 integer cards missing".
+  function countIntegerCards(cards) {
+    if (!Array.isArray(cards)) return 0;
+    return cards.reduce((count, token) => {
+      return count + (/^\d$/.test(token) ? 1 : 0);
+    }, 0);
+  }
+
   function pickNextPuzzleForDifficulty(difficulty) {
     const d = clampDifficulty(difficulty);
     const bank = PUZZLE_BANK[d];
@@ -378,11 +387,16 @@
     const order = ensureOrderForDifficulty(d);
     if (!order || order.length === 0) return null;
 
+    // If you only want this rule for easier modes, you could do:
+    // const MIN_INTEGER_CARDS = (d <= 3) ? 2 : 1;
+    const MIN_INTEGER_CARDS = 2;
+
     let idx = state.nextIndexByDifficulty[d] ?? 0;
     let chosenPuzzle = null;
 
-    // Try up to bank.length times to find a puzzle
-    // whose id != lastPuzzleId (so we don't repeat)
+    // First pass: try to find a puzzle that:
+    //  - is not the last puzzle we served
+    //  - has at least MIN_INTEGER_CARDS integer cards in the hand
     for (let attempts = 0; attempts < bank.length; attempts++) {
       const puzzleIndex = order[idx];
       const candidate = bank[puzzleIndex];
@@ -392,7 +406,12 @@
         continue;
       }
 
-      if (candidate.id !== state.lastPuzzleId) {
+      const integerCount = countIntegerCards(candidate.cards);
+
+      if (
+        candidate.id !== state.lastPuzzleId &&
+        integerCount >= MIN_INTEGER_CARDS
+      ) {
         chosenPuzzle = candidate;
         // Advance pointer for next time
         state.nextIndexByDifficulty[d] = (idx + 1) % order.length;
@@ -402,13 +421,33 @@
       idx = (idx + 1) % order.length;
     }
 
-    // Edge case: only one puzzle in this difficulty,
-    // or for some reason we couldn't find a different one.
+    // Second pass: if we *still* didn't find one (e.g., this difficulty
+    // has no puzzles with 2+ integer cards yet), pick *any* puzzle
+    // that meets the integer requirement, ignoring lastPuzzleId.
     if (!chosenPuzzle) {
-      const fallbackIndex = order[state.nextIndexByDifficulty[d] ?? 0] ?? order[0];
+      for (let i = 0; i < order.length; i++) {
+        const puzzleIndex = order[i];
+        const candidate = bank[puzzleIndex];
+        if (!candidate) continue;
+
+        const integerCount = countIntegerCards(candidate.cards);
+        if (integerCount >= MIN_INTEGER_CARDS) {
+          chosenPuzzle = candidate;
+          state.nextIndexByDifficulty[d] = (i + 1) % order.length;
+          break;
+        }
+      }
+    }
+
+    // Absolute fallback: if this difficulty literally has no puzzle
+    // with >= MIN_INTEGER_CARDS integer cards yet, fall back to the
+    // original behavior so the game still works.
+    if (!chosenPuzzle) {
+      let fallbackIdx = state.nextIndexByDifficulty[d] ?? 0;
+      const fallbackIndex = order[fallbackIdx] ?? order[0];
       chosenPuzzle = bank[fallbackIndex];
       state.nextIndexByDifficulty[d] =
-        ((state.nextIndexByDifficulty[d] ?? 0) + 1) % order.length;
+        ((fallbackIdx + 1) % order.length);
     }
 
     // If we just wrapped around the shuffled list, reshuffle for variety

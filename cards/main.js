@@ -404,21 +404,24 @@ function animateHandFromSnapshot(snapshot) {
     function showHeroGameWinModal() {
       showModal(
         "You Won the Game!",
-        "The monster has been defeated. Start a new game?",
-        "New Game",
+        "The monster has been defeated. Continue your journey on the map.",
+        "Back to Map",
         () => {
-          startNewGame();
+          // Clear this battle, advance to the next node, then show the map
+          advanceToNextNodeIfAvailable();
+          showMap();
         }
       );
     }
-  
+
     function showMonsterGameWinModal() {
       showModal(
         "Game Over",
-        "The monster defeated you. Try again?",
-        "New Game",
+        "The monster defeated you. Return to the map and try again.",
+        "Back to Map",
         () => {
-          startNewGame();
+          // No node advance – retry same node from the map
+          showMap();
         }
       );
     }
@@ -660,14 +663,78 @@ function animateHandFromSnapshot(snapshot) {
     }
   }    
   
-  const gameRoot = document.getElementById('game-root');
+  const gameRoot = document.getElementById("game-root");
 
-function setStage(stage) {
-  // stage is "intro", "game", or "result"
-  gameRoot.classList.remove('stage-intro', 'stage-game', 'stage-result');
-  gameRoot.classList.add(`stage-${stage}`);
-}
+  // --- Map elements + node progression ------------------------------------
+  const mapScreenEl = document.getElementById("map-screen");
+  const mapNodes = document.querySelectorAll(".map-node");
 
+  const TOTAL_NODES = 6;
+  let activeNodeIndex = 0; // 0 = bottom node
+
+  function setStage(stage) {
+    // stage: "intro", "game", or "result" (used only for the battle/puzzle view)
+    gameRoot.classList.remove("stage-intro", "stage-game", "stage-result");
+    gameRoot.classList.add(`stage-${stage}`);
+  }
+
+  // Show map, hide battle/puzzle view
+  function showMap() {
+    if (mapScreenEl) {
+      mapScreenEl.classList.remove("is-hidden");
+    }
+    if (gameRoot) {
+      gameRoot.classList.add("is-hidden");
+    }
+    updateMapNodes();
+  }
+
+  // Hide map, show battle/puzzle view
+  function showGame() {
+    if (mapScreenEl) {
+      mapScreenEl.classList.add("is-hidden");
+    }
+    if (gameRoot) {
+      gameRoot.classList.remove("is-hidden");
+    }
+  }
+
+  function updateMapNodes() {
+    mapNodes.forEach((node) => {
+      const idx = Number(node.dataset.nodeIndex);
+      if (idx === activeNodeIndex) {
+        node.classList.add("map-node--active");
+        node.classList.remove("map-node--locked");
+        node.disabled = false;
+      } else {
+        node.classList.remove("map-node--active");
+        node.classList.add("map-node--locked");
+        node.disabled = true;
+      }
+    });
+  }
+
+  function handleMapNodeClick(idx) {
+    // Only allow the active node to start a battle
+    if (idx !== activeNodeIndex) return;
+
+    showGame();
+    // Full intro → cards → battles flow
+    startNewGame();
+  }
+
+  // Attach click listeners once DOM is ready (nodes already exist in HTML)
+  mapNodes.forEach((node) => {
+    const idx = Number(node.dataset.nodeIndex);
+    node.addEventListener("click", () => handleMapNodeClick(idx));
+  });
+
+  // Advance to the next node after a full GAME win
+  function advanceToNextNodeIfAvailable() {
+    if (activeNodeIndex < TOTAL_NODES - 1) {
+      activeNodeIndex += 1;
+    }
+  }
 
   // --- Render functions ----------------------------------------------------
     // --- Render functions ----------------------------------------------------
@@ -1148,14 +1215,18 @@ function setStage(stage) {
   function init() {
     loadNextPuzzle();
     updateOrientationOverlay();
-    hideCards(); // start without cards visible
+    hideCards(); // cards hidden until a node launches a battle
+
+    // Start on the world map by default
+    showMap();
+    setStage("intro"); // prepare battle stage but keep it hidden
 
     if (DEBUG_OUTCOME) {
-      // 🔧 Debug mode: jump straight to a single battle result cinematic
+      // 🔧 Debug mode bypasses map and jumps straight to a single battle result
+      showGame();
       resetGameHealth();
 
       if (DEBUG_OUTCOME === "win") {
-        // Hero hits monster once
         monsterHealthCurrent = Math.max(
           0,
           monsterHealthCurrent - HERO_BASE.damage
@@ -1163,7 +1234,6 @@ function setStage(stage) {
         renderStatPanels();
         runHeroBattleWin();
       } else {
-        // Monster hits hero once
         heroHealthCurrent = Math.max(
           0,
           heroHealthCurrent - MONSTER_BASE.damage
@@ -1171,9 +1241,6 @@ function setStage(stage) {
         renderStatPanels();
         runMonsterBattleWin();
       }
-    } else {
-      // Normal flow: Intro → Cards → Battles (loop until game over)
-      runIntroSequence();
     }
   }
 
