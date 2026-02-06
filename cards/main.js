@@ -663,78 +663,110 @@ function animateHandFromSnapshot(snapshot) {
     }
   }    
   
-  const gameRoot = document.getElementById("game-root");
+  // --- Map + Game root elements -------------------------------------------
+const gameRoot = document.getElementById("game-root");
+const mapScreenEl = document.getElementById("map-screen");
+const mapNodes = document.querySelectorAll(".map-node");
 
-  // --- Map elements + node progression ------------------------------------
-  const mapScreenEl = document.getElementById("map-screen");
-  const mapNodes = document.querySelectorAll(".map-node");
+const TOTAL_NODES = 6;
+let activeNodeIndex = 0; // 0 = bottom node
 
-  const TOTAL_NODES = 6;
-  let activeNodeIndex = 0; // 0 = bottom node
+// You can keep your existing setStage if it's already defined above;
+// this version matches what you've been using.
+function setStage(stage) {
+  // stage: "intro", "game", or "result"
+  gameRoot.classList.remove("stage-intro", "stage-game", "stage-result");
+  gameRoot.classList.add(`stage-${stage}`);
+}
 
-  function setStage(stage) {
-    // stage: "intro", "game", or "result" (used only for the battle/puzzle view)
-    gameRoot.classList.remove("stage-intro", "stage-game", "stage-result");
-    gameRoot.classList.add(`stage-${stage}`);
+// Show MAP, hide GAME (via opacity classes)
+function showMap() {
+  if (mapScreenEl) {
+    mapScreenEl.classList.remove("map-screen--hidden");
+  }
+  if (gameRoot) {
+    gameRoot.classList.remove("game--visible");
   }
 
-  // Show map, hide battle/puzzle view
-  function showMap() {
-    if (mapScreenEl) {
-      mapScreenEl.classList.remove("is-hidden");
-    }
-    if (gameRoot) {
-      gameRoot.classList.add("is-hidden");
-    }
-    updateMapNodes();
+  updateMapNodes();
+  animateMapNodesIn();
+}
+
+// Show GAME, hide MAP (simple CSS-driven crossfade)
+function showGame() {
+  if (mapScreenEl) {
+    mapScreenEl.classList.add("map-screen--hidden");
   }
-
-  // Hide map, show battle/puzzle view
-  function showGame() {
-    if (mapScreenEl) {
-      mapScreenEl.classList.add("is-hidden");
-    }
-    if (gameRoot) {
-      gameRoot.classList.remove("is-hidden");
-    }
+  if (gameRoot) {
+    gameRoot.classList.add("game--visible");
   }
+}
 
-  function updateMapNodes() {
-    mapNodes.forEach((node) => {
-      const idx = Number(node.dataset.nodeIndex);
-      if (idx === activeNodeIndex) {
-        node.classList.add("map-node--active");
-        node.classList.remove("map-node--locked");
-        node.disabled = false;
-      } else {
-        node.classList.remove("map-node--active");
-        node.classList.add("map-node--locked");
-        node.disabled = true;
-      }
-    });
-  }
-
-  function handleMapNodeClick(idx) {
-    // Only allow the active node to start a battle
-    if (idx !== activeNodeIndex) return;
-
-    showGame();
-    // Full intro → cards → battles flow
-    startNewGame();
-  }
-
-  // Attach click listeners once DOM is ready (nodes already exist in HTML)
+// Node state: only the active node is tappable
+function updateMapNodes() {
   mapNodes.forEach((node) => {
     const idx = Number(node.dataset.nodeIndex);
-    node.addEventListener("click", () => handleMapNodeClick(idx));
+    if (idx === activeNodeIndex) {
+      node.classList.add("map-node--active");
+      node.classList.remove("map-node--locked");
+      node.disabled = false;
+    } else {
+      node.classList.remove("map-node--active");
+      node.classList.add("map-node--locked");
+      node.disabled = true;
+    }
+  });
+}
+
+// Spring nodes in from bottom to top
+function animateMapNodesIn() {
+  if (!mapScreenEl) return;
+
+  const INITIAL_PAUSE_MS = 500;
+  const STAGGER_MS = 200;
+
+  // Reset previous animations
+  mapNodes.forEach((node) => {
+    node.classList.remove("map-node--spawn");
+    node.style.animationDelay = "";
   });
 
-  // Advance to the next node after a full GAME win
-  function advanceToNextNodeIfAvailable() {
-    if (activeNodeIndex < TOTAL_NODES - 1) {
-      activeNodeIndex += 1;
-    }
+  // Force reflow to restart animations
+  void mapScreenEl.offsetWidth;
+
+  // Bottom → top cascade
+  mapNodes.forEach((node, index) => {
+    const delayMs = INITIAL_PAUSE_MS + index * STAGGER_MS;
+    node.style.animationDelay = `${delayMs}ms`;
+    node.classList.add("map-node--spawn");
+  });
+}
+
+// When user taps a node
+function handleMapNodeClick(idx) {
+  // Only allow the active node
+  if (idx !== activeNodeIndex) return;
+
+  // Simple crossfade between map + game
+  showGame();
+
+  // Kick off your full intro → cards → battle flow
+  startNewGame();
+}
+
+// Attach listeners once DOM is ready
+mapNodes.forEach((node) => {
+  const idx = Number(node.dataset.nodeIndex);
+  node.addEventListener("click", () => handleMapNodeClick(idx));
+});
+
+// After a full win, move to the next node (if any)
+function advanceToNextNodeIfAvailable() {
+  if (activeNodeIndex < TOTAL_NODES - 1) {
+    activeNodeIndex += 1;
   }
+}
+
 
   // --- Render functions ----------------------------------------------------
     // --- Render functions ----------------------------------------------------
