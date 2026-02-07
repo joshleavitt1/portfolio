@@ -13,6 +13,16 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
+  height: 100%;
+  overflow: hidden;        /* 🔒 no scrolling */
+  overscroll-behavior: none;
+  touch-action: none;      /* prevent pull-to-refresh */
+}
+
+.map-screen,
+.game,
+.app {
+  height: calc(var(--vh, 1vh) * 100);
 }
 
 /* --------------------------------------------------------------------- */
@@ -59,7 +69,6 @@ body {
     sans-serif;
   background-color: #000000; /* neutral dark behind the board */
   color: var(--ink);
-  overscroll-behavior: none;
   -webkit-overflow-scrolling: auto;
 }
 
@@ -74,7 +83,7 @@ body {
 
 .app {
   position: relative;
-  min-height: 100vh;
+  height: 100%;
   width: 100%;
   overflow: hidden; /* make sure we don't scroll from stacked layers */
 }
@@ -88,11 +97,11 @@ body {
   position: absolute;
   inset: 0;                  /* top:0; right:0; bottom:0; left:0 */
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-image: url("images/bg_map.png");
+  background-image: url("images/bg/map.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -181,11 +190,11 @@ body {
   animation-play-state: paused;
 
   /* ✅ Clip shimmer to the PNG so it never shows as a square box */
-  -webkit-mask-image: url("images/node_battle.png");
+  -webkit-mask-image: url("images/node/battle.png");
   -webkit-mask-size: contain;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
-  mask-image: url("images/node_battle.png");
+  mask-image: url("images/node/battle.png");
   mask-size: contain;
   mask-repeat: no-repeat;
   mask-position: center;
@@ -271,7 +280,7 @@ body {
 .game {
   position: absolute;
   inset: 0;                     /* fill the same space as the map */
-  min-height: 100vh;
+  height: 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -302,7 +311,7 @@ body {
   inset: 0;
 
   /* ✅ SHOW FULL IMAGE — no zoom */
-  background-size: contain;
+  background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 
@@ -314,13 +323,13 @@ body {
 /* Battle background (intro + result) */
 .game::before {
   /* Use a CSS variable so JS can swap battle backgrounds */
-  background-image: var(--battle-bg-image, url("images/bg_battle_1.png"));
+  background-image: var(--battle-bg-image, url("images/bg/battle_1.png"));
   opacity: 1;        /* default: we're in stage-intro */
 }
 
 /* Game background (card puzzle) */
 .game::after {
-  background-image: url("images/bg_game.png");
+  background-image: url("images/bg/game.png");
   opacity: 0;
 }
 
@@ -369,6 +378,7 @@ body {
   pointer-events: none; /* HUD only, no blocking drags/clicks */
   opacity: 0;
   transform: translateY(10px) scale(0.88);
+  z-index: 5; /* above sprite (2), below VS (3000) */
 }
 
 .stat-panel.stat-in {
@@ -507,6 +517,8 @@ body {
   height: 282px;
   object-fit: contain;
   opacity: 0;
+  position: relative;
+  z-index: 2;   /* ⬅️ sprite always above shadow */
 }
 
 /* Battle spacing: hero down, monster up */
@@ -738,6 +750,64 @@ body {
 }
 
 /* --------------------------------------------------------------------- */
+/* Attack sprite health / impact shadow                                  */
+/* --------------------------------------------------------------------- */
+
+.cinematic-attack::after {
+  content: "";
+  position: absolute;
+
+  /* Centered under the attack */
+  left: 50%;
+  bottom: -18px;
+  transform: translateX(-50%);
+
+  width: 120px;
+  height: 32px;
+
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.35) 55%,
+    rgba(0, 0, 0, 0.0) 80%
+  );
+
+  filter: blur(6px);
+
+  opacity: 0;
+  transition: opacity 160ms ease-out;
+
+  pointer-events: none;
+  z-index: -1; /* behind attack sprite */
+}
+
+/* Shadow visible only while attack is in play */
+.cinematic-attack.cinematic-attack-in::after,
+.cinematic-attack.cinematic-attack-out::after {
+  opacity: 0.9;
+}
+
+.cinematic-attack.cinematic-attack-in::after {
+  animation: attack-shadow-pulse 0.6s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+@keyframes attack-shadow-pulse {
+  0% {
+    transform: translateX(-50%) scale(0.85);
+    opacity: 0.6;
+  }
+  60% {
+    transform: translateX(-50%) scale(1.05);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.9;
+  }
+}
+
+
+/* --------------------------------------------------------------------- */
 /* Pokémon-style ground shadow for battle sprites                         */
 /* --------------------------------------------------------------------- */
 
@@ -746,7 +816,7 @@ body {
   position: absolute;
 
   /* Shadow sits under the sprite */
-  bottom: 18px;
+  bottom: 0px;
   left: 50%;
   transform: translateX(-50%);
 
@@ -761,11 +831,20 @@ body {
   );
 
   filter: blur(4px);
-  opacity: 0.95;
+
+  /* 🚫 Start hidden; JS will fade these in later */
+  opacity: 0;
+  transition: opacity 200ms ease-out;
 
   pointer-events: none;
-  z-index: 0; /* behind sprite */
+  z-index: 1; /* behind sprite */
 }
+
+/* ✅ When this class is present, shadow becomes visible */
+.cinematic-character--shadow-visible::after {
+  opacity: 0.95;
+}
+
 
 
 /* --------------------------------------------------------------------- */

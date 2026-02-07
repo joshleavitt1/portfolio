@@ -1,6 +1,22 @@
 (function () {
   "use strict";
 
+  // ---------------------------------------------------------------------
+  // Set Viewport
+  // ---------------------------------------------------------------------
+
+    function setViewportHeight() {
+      document.documentElement.style.setProperty(
+        "--vh",
+        `${window.innerHeight * 0.01}px`
+      );
+    }
+    
+    window.addEventListener("resize", setViewportHeight);
+    window.addEventListener("orientationchange", setViewportHeight);
+    setViewportHeight();
+  
+
 // ---------------------------------------------------------------------
 // Debug outcome from URL (?win or ?lose)
 // ---------------------------------------------------------------------
@@ -92,9 +108,9 @@ function getNextMonsterForLevel(level) {
 // ---------------------------------------------------------------------
 
 const BATTLE_BACKGROUNDS = [
-  "images/bg_battle_1.png",
-  "images/bg_battle_2.png",
-  "images/bg_battle_3.png",
+  "images/bg/battle_1.png",
+  "images/bg/battle_2.png",
+  "images/bg/battle_3.png",
 ];
 
 // Index persists while the page is loaded
@@ -175,6 +191,8 @@ function renderStatPanels() {
 
   function loadNextPuzzle() {
     if (window.DifficultyEngine) {
+      // Always grab the latest difficulty from the engine
+      currentDifficulty = window.DifficultyEngine.getCurrentDifficulty();
       currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
     } else {
       // Fallback: simple 1+1=2 puzzle if the engine isn't loaded
@@ -187,11 +205,11 @@ function renderStatPanels() {
       };
     }
     resetPuzzle();
-  }
+  }  
 
   // ---------------------------------------------------------------------
   // Zoom Guard
-  // ---------------------------------------------------------------------P
+  // ---------------------------------------------------------------------
 
   // --- Double-tap zoom guard (iOS Safari) ----------------------------------
   let lastTouchEnd = 0;
@@ -232,6 +250,39 @@ function renderStatPanels() {
   const cinematicStage = document.querySelector(".cinematic-stage");
   const cinematicHeroCharacter = document.querySelector(".cinematic-character--hero");
 const cinematicMonsterCharacter = document.querySelector(".cinematic-character--monster");
+function showCinematicShadows() {
+  cinematicHeroCharacter?.classList.add("cinematic-character--shadow-visible");
+  cinematicMonsterCharacter?.classList.add("cinematic-character--shadow-visible");
+}
+
+function hideCinematicShadows() {
+  cinematicHeroCharacter?.classList.remove("cinematic-character--shadow-visible");
+  cinematicMonsterCharacter?.classList.remove("cinematic-character--shadow-visible");
+}
+
+function primeShadowsForSpriteIntro() {
+  hideCinematicShadows();
+
+  if (cinematicHero) {
+    const onHeroAnimEnd = (e) => {
+      if (e.animationName === "hero-spring-in") {
+        cinematicHeroCharacter?.classList.add("cinematic-character--shadow-visible");
+        cinematicHero.removeEventListener("animationend", onHeroAnimEnd);
+      }
+    };
+    cinematicHero.addEventListener("animationend", onHeroAnimEnd);
+  }
+
+  if (cinematicMonster) {
+    const onMonsterAnimEnd = (e) => {
+      if (e.animationName === "monster-spring-in") {
+        cinematicMonsterCharacter?.classList.add("cinematic-character--shadow-visible");
+        cinematicMonster.removeEventListener("animationend", onMonsterAnimEnd);
+      }
+    };
+    cinematicMonster.addEventListener("animationend", onMonsterAnimEnd);
+  }
+}
 
   
   // Sync sprite images from battle stats (HTML src becomes just a fallback)
@@ -423,9 +474,11 @@ function animateHandFromSnapshot(snapshot) {
 
   function resetCinematicSprites() {
     clearBattleOffset();
+    hideCinematicShadows(); // 🔒 start with no shadows
+  
     if (!cinematicHero || !cinematicMonster || !cinematicVs || !cinematicAttack) {
       return;
-    }
+    }  
   
     // Reset the stage container (in case it was faded out)
     if (cinematicStage) {
@@ -492,16 +545,15 @@ function animateHandFromSnapshot(snapshot) {
     // 2) Rotate battle background (loops in order) on the GAME layer
     const nextBg = getNextBattleBackground();
     if (gameRoot) {
-      // This drives .game::before via the CSS var
       gameRoot.style.setProperty("--battle-bg-image", `url("${nextBg}")`);
     }
   
     // 3) Reset health
     resetGameHealth();
   
-    // 4) Reset difficulty & puzzle
+    // 4) Grab difficulty & next puzzle from the engine
     if (window.DifficultyEngine) {
-      currentDifficulty = window.DifficultyEngine.getInitialDifficulty();
+      currentDifficulty = window.DifficultyEngine.getCurrentDifficulty();
       currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
     }
   
@@ -509,7 +561,7 @@ function animateHandFromSnapshot(snapshot) {
     resetPuzzle();
     hideCards();
     runIntroSequence();
-  }       
+  }      
   
     function showHeroGameWinModal() {
       showModal(
@@ -571,18 +623,23 @@ function animateHandFromSnapshot(snapshot) {
     // 0.5s pause before sprites spring in
     await delay(750);
   
-    // Hero + Monster spring in together
-    restartAnimation(cinematicHero, "cinematic-in");
-    restartAnimation(cinematicMonster, "cinematic-in");
+    primeShadowsForSpriteIntro();
 
-    // ✅ push hero down, monster up
-    applyBattleOffset();
+  // Hero + Monster spring in together
+  restartAnimation(cinematicHero, "cinematic-in");
+  restartAnimation(cinematicMonster, "cinematic-in");
+
+  // ✅ push hero down, monster up
+  applyBattleOffset();
   
-    // Let sprites mostly settle (slightly after their 0.6s spring)
-    await delay(1500);
+  // Let sprites mostly settle (slightly after their 0.6s spring)
+  await delay(1500);
+
+  // 🌟 Now that they're at rest, show the ground shadows
+  showCinematicShadows();
   
-    // Stat panels spring in shortly AFTER sprites
-    animateStatPanels();
+  // Stat panels spring in shortly AFTER sprites
+  animateStatPanels();
   
     // Shorter pause before VS (keep overall timing similar to original)
     await delay(1000);
@@ -630,16 +687,22 @@ function animateHandFromSnapshot(snapshot) {
 
     // Short pause before result sprites appear
     await delay(750);
-
+    primeShadowsForSpriteIntro();
     restartAnimation(cinematicHero, "cinematic-in");
     restartAnimation(cinematicMonster, "cinematic-in");
     
     // ✅ battle spacing
     applyBattleOffset();
 
-    // Stats come in slightly after sprites
+    // Let them settle
     await delay(1500);
+
+    // 🌟 Show shadows only after they’ve landed
+    showCinematicShadows();
+
+    // Stats come in slightly after sprites
     animateStatPanels();
+
 
     // Let them fully animate in and settle
     await delay(1000);
@@ -708,14 +771,21 @@ function animateHandFromSnapshot(snapshot) {
     // Short pause before result sprites appear
     await delay(750);
 
+    primeShadowsForSpriteIntro();
+
     restartAnimation(cinematicHero, "cinematic-in");
     restartAnimation(cinematicMonster, "cinematic-in");
 
     // ✅ battle spacing
     applyBattleOffset();
 
-    // Stats come in slightly after sprites
+    // Let them settle
     await delay(1500);
+
+    // 🌟 Now fade in shadows
+    showCinematicShadows();
+
+    // Stats come in slightly after sprites
     animateStatPanels();
 
     // Let them fully animate in and settle
@@ -861,11 +931,11 @@ const NODE_TYPES = [
 ];
 
 const NODE_SPRITES = {
-  battle: "images/node_battle.png",
-  chest:  "images/node_chest.png",
-  boss:   "images/node_boss.png",
-  lock:   "images/node_lock.png",
-  check:  "images/node_check.png"
+  battle: "images/node/battle.png",
+  chest:  "images/node/chest.png",
+  boss:   "images/node/boss.png",
+  lock:   "images/node/lock.png",
+  check:  "images/node/check.png"
 };
 
 
@@ -1253,6 +1323,11 @@ function advanceToNextNodeIfAvailable() {
 
    // --- Validation ----------------------------------------------------------
    async function runCardsResolution(isWin) {
+    // Tell the difficulty engine about the outcome
+    if (window.DifficultyEngine) {
+      window.DifficultyEngine.reportResult(isWin ? "win" : "lose");
+      currentDifficulty = window.DifficultyEngine.getCurrentDifficulty();
+    }
     // NEW: compute how far we need to move the rail
     // so its center lines up with the center of the game area
     const gameEl = document.querySelector(".game");
