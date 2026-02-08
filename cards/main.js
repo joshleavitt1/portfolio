@@ -249,8 +249,8 @@ function renderStatPanels() {
   const cinematicAttack = document.getElementById("cinematic-attack");
   const cinematicStage = document.querySelector(".cinematic-stage");
   const cinematicHeroCharacter = document.querySelector(".cinematic-character--hero");
-const cinematicMonsterCharacter = document.querySelector(".cinematic-character--monster");
-function showCinematicShadows() {
+  const cinematicMonsterCharacter = document.querySelector(".cinematic-character--monster");
+  function showCinematicShadows() {
   cinematicHeroCharacter?.classList.add("cinematic-character--shadow-visible");
   cinematicMonsterCharacter?.classList.add("cinematic-character--shadow-visible");
 }
@@ -1257,15 +1257,22 @@ function advanceToNextNodeIfAvailable() {
     }
   
     if (slotEl) {
-      placeCardInSlot(card, cardEl, slotEl);
+      const placed = placeCardInSlot(card, cardEl, slotEl);
+    
+      if (!placed) {
+        // 🚫 Slot rejected (fixed starting slot or already used)
+        card.inSlot = null;
+        const snapshot = captureHandSnapshot();
+        handEl.appendChild(cardEl);
+        animateHandFromSnapshot(snapshot);
+      }
     } else {
-      // Drop back into hand
+      // No slot under drop → back to hand
       card.inSlot = null;
-  
       const snapshot = captureHandSnapshot();
       handEl.appendChild(cardEl);
       animateHandFromSnapshot(snapshot);
-    }
+    }    
   
     // 🔓 NEW: unlock the hand height now that the drag is done
     if (handEl) {
@@ -1294,32 +1301,34 @@ function advanceToNextNodeIfAvailable() {
 
   function placeCardInSlot(card, cardEl, slotEl) {
     const slotIndex = Number(slotEl.dataset.slotIndex);
-
-    // If slot already has a card, bump that card back to hand
+  
+    // 🚫 1) Block drops onto starting (fixed) slots
+    const puzzle = currentPuzzle;
+    const fixedSlots = (puzzle && puzzle.fixedSlots) || {};
+    const isFixedSlot = Object.prototype.hasOwnProperty.call(fixedSlots, slotIndex);
+  
+    if (isFixedSlot) {
+      // This slot belongs to the original equation scaffolding.
+      // Don't overwrite it; tell caller placement failed.
+      return false;
+    }
+  
+    // 🚫 2) If a movable card is already in this slot, don't stack another
     const existing = slotState.find((item) => item.slotIndex === slotIndex);
     if (existing) {
-      const existingCard = cardState.find((c) => c.id === existing.cardId);
-      if (existingCard) {
-        existingCard.inSlot = null;
-        const existingCardEl = document.querySelector(
-          `.card[data-card-id="${existingCard.id}"]`
-        );
-        if (existingCardEl) {
-          const snapshot = captureHandSnapshot();
-          handEl.appendChild(existingCardEl);
-          animateHandFromSnapshot(snapshot);
-        }
-      }
-      slotState = slotState.filter((item) => item.slotIndex !== slotIndex);
-    }    
-
+      return false;
+    }
+  
+    // ✅ 3) Normal placement for user cards
     card.inSlot = slotIndex;
     slotState.push({ slotIndex, cardId: card.id, value: card.value });
-
+  
     slotEl.classList.add("filled");
     slotEl.innerHTML = "";
     slotEl.appendChild(cardEl);
-  }
+  
+    return true;
+  }  
 
    // --- Validation ----------------------------------------------------------
    async function runCardsResolution(isWin) {
@@ -1328,9 +1337,15 @@ function advanceToNextNodeIfAvailable() {
       window.DifficultyEngine.reportResult(isWin ? "win" : "lose");
       currentDifficulty = window.DifficultyEngine.getCurrentDifficulty();
     }
+  
+    // 💡 If the player was correct, hide any leftover option cards in the hand
+    if (isWin && handEl) {
+      handEl.innerHTML = "";
+    }
+  
     // NEW: compute how far we need to move the rail
     // so its center lines up with the center of the game area
-    const gameEl = document.querySelector(".game");
+    const gameEl = document.querySelector(".game");  
     if (gameEl) {
       const gameRect = gameEl.getBoundingClientRect();
       const railRect = railEl.getBoundingClientRect();

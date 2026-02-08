@@ -318,20 +318,23 @@ function setCurrentDifficulty(newDifficulty) {
     ],
 
     6: [
-      // _ - 3 = 1 2   (cards: 1,5,-)
-      // pattern: multi-digit minuend assembled from cards
+      // _ _ - 3 = 1 2   (slots: 7, cards: 1,5,4 → 4 is a decoy)
+      // pattern: multi-digit minuend assembled from cards (15 - 3 = 12)
       {
         id: "d6_blank_minus_3_eq_12",
         difficulty: 6,
-        slots: 6,
+        slots: 7,
         fixedSlots: {
-          2: "3",
-          3: "=",
-          4: "1",
-          5: "2",
+          2: "-",
+          3: "3",
+          4: "=",
+          5: "1",
+          6: "2",
         },
-        cards: ["1", "5", "-"], // 1 5 - 3 = 12
+        cards: ["1", "5", "4"], // 1 and 5 build 15; 4 is a decoy
       },
+    
+      // (keep the rest of the difficulty 6 puzzles as-is)    
 
       // 1 8 - _ = 9   (slots: 6, cards: 9,4,- → 4 is decoy)
       {
