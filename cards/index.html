@@ -6,104 +6,157 @@
     <!-- Standard responsive viewport (no PWA/web-app flags) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="games/monster-battle/styles.css">
+    <link rel="stylesheet" href="games/equation-cards/styles.css" />
   </head>
   
-<body>
-  <div class="app">
-
-    <!-- World Map Screen -->
-    <section class="map-screen" id="map-screen">
-      <div class="map-nodes">
-        <!-- Bottom → Top (0 is bottom, 5 is top) -->
-        <button class="map-node" data-node-index="0" id="map-node-0"></button>
-        <button class="map-node" data-node-index="1" id="map-node-1"></button>
-        <button class="map-node" data-node-index="2" id="map-node-2"></button>
-        <button class="map-node" data-node-index="3" id="map-node-3"></button>
-        <button class="map-node" data-node-index="4" id="map-node-4"></button>
-        <button class="map-node" data-node-index="5" id="map-node-5"></button>
+    <body>
+      <div class="app">
+      <!-- Quest Screen (Choose Quest) -->
+    <section class="quest-screen" id="quest-screen">
+      <div class="quest-content">
+        <!-- JS will inject one <button.quest-card> per quest here -->
+        <div id="quest-list" class="quest-list"></div>
       </div>
     </section>
+
+    <!-- Map HUD: Hero Card -->
+    <div class="map-hud">
+      <div class="map-hud-card">
+        <div class="map-hud-left">
+          <img
+            id="map-hero-image"
+            class="map-hud-hero"
+            alt="Hero"
+          />
+        </div>
+
+        <div class="map-hud-right">
+          <div class="map-hud-name" id="map-hero-name"></div>
+          <div class="map-hud-level" id="map-hero-level"></div>
+        </div>
+      </div>
+    </div>
+
+<!-- World Map Screen -->
+<section class="map-screen map-screen--hidden" id="map-screen">
+  <!-- 🔹 HERO HUD (top-right) -->
+  <div class="map-hud">
+    <div class="map-hud-card">
+      <div class="map-hud-left">
+        <img
+          id="map-hero-image"
+          class="map-hud-hero"
+          alt="Hero"
+          src="images/quests/quest_1/hero/hero_1.png"
+        />
+      </div>
+
+      <div class="map-hud-right">
+        <div class="map-hud-name" id="map-hero-name">Knight</div>
+        <div class="map-hud-level" id="map-hero-level">Level 1</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="map-nodes" id="map-nodes">
+    <!-- 6 nodes, indexed bottom (0) to top (5) -->
+    <button class="map-node" data-node-index="0"></button>
+    <button class="map-node" data-node-index="1"></button>
+    <button class="map-node" data-node-index="2"></button>
+    <button class="map-node" data-node-index="3"></button>
+    <button class="map-node" data-node-index="4"></button>
+    <button class="map-node" data-node-index="5"></button>
+  </div>
+</section>
 
     <main class="game stage-intro" id="game-root">
       <!-- Cinematic Stage (Intro + Result) -->
       <section class="cinematic" id="cinematic">
         <div class="cinematic-stage">
-        <!-- Hero + Hero Stats -->
-        <div class="cinematic-character cinematic-character--hero">
-          <img
-            alt="Hero"
-            class="cinematic-sprite cinematic-sprite--hero"
-            id="cinematic-hero"
-          />
+          <!-- Hero + Hero Stats -->
+          <div class="cinematic-character cinematic-character--hero">
+            <img
+              alt="Hero"
+              class="cinematic-sprite cinematic-sprite--hero"
+              id="cinematic-hero"
+            />
 
-          <div class="stat-panel stat-panel--hero">
-            <div class="stat-panel__name" id="hero-name"></div>
-            <div class="stat-panel__health-row">
-              <div class="stat-panel__health-track">
-                <div
-                  class="stat-panel__health-fill"
-                  id="hero-health-fill"
-                ></div>
+            <div class="stat-panel stat-panel--hero">
+              <div class="stat-panel__name" id="hero-name"></div>
+              <div class="stat-panel__health-row">
+                <div class="stat-panel__health-track">
+                  <div
+                    class="stat-panel__health-fill"
+                    id="hero-health-fill"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- VS badge -->
-        <img
-          src="images/vs.png"
-          alt="Versus"
-          class="cinematic-vs"
-          id="cinematic-vs"
-        />
-
-        <!-- Monster + Monster Stats -->
-        <div class="cinematic-character cinematic-character--monster">
+          <!-- VS badge -->
           <img
-            alt="Monster"
-            class="cinematic-sprite cinematic-sprite--monster"
-            id="cinematic-monster"
+            src="images/global/battle_vs.png"
+            alt="Versus"
+            class="cinematic-vs"
+            id="cinematic-vs"
           />
 
-          <div class="stat-panel stat-panel--monster">
-            <div class="stat-panel__name" id="monster-name"></div>
-            <div class="stat-panel__health-row">
-              <div class="stat-panel__health-track">
-                <div
-                  class="stat-panel__health-fill"
-                  id="monster-health-fill"
-                ></div>
+          <!-- Monster + Monster Stats -->
+          <div class="cinematic-character cinematic-character--monster">
+            <img
+              alt="Monster"
+              class="cinematic-sprite cinematic-sprite--monster"
+              id="cinematic-monster"
+            />
+
+            <div class="stat-panel stat-panel--monster">
+              <div class="stat-panel__name" id="monster-name"></div>
+              <div class="stat-panel__health-row">
+                <div class="stat-panel__health-track">
+                  <div
+                    class="stat-panel__health-fill"
+                    id="monster-health-fill"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Attack overlay (result only) -->
-        <img
-          alt="Attack"
-          class="cinematic-attack"
-          id="cinematic-attack"
-        />
-
+          <!-- Attack overlay (result only) -->
+          <img
+            alt="Attack"
+            class="cinematic-attack"
+            id="cinematic-attack"
+          />
         </div>
       </section>
-    
-      <!-- Equation + Puzzle Row -->
+
+      <!-- Equation / Game Area -->
       <section class="equation-area">
-        <div class="combat-row">
+        <!-- Old rail-based combat row (battle mode) -->
+        <div class="combat-row" id="combat-row">
           <div class="equation-rail" id="equation-rail">
             <!-- slots populated by JS -->
           </div>
         </div>
+
+        <!-- NEW 4x4 grid mini-game (used in ?game mode) -->
+        <div class="grid-area is-hidden" id="grid-area">
+          <div class="grid-equation-row" id="grid-equation-row"></div>
+          <div class="grid-choice" id="grid-choice"></div>
+        </div>        
       </section>
-    
+
       <!-- Card Hand -->
       <section class="hand-area">
         <div class="card-hand" id="card-hand">
           <!-- cards populated by JS -->
         </div>
       </section>
-    </main>    
+
+    </main>
   </div>
 
   <!-- Result Modal -->
@@ -136,9 +189,20 @@
       </p>      
     </div>
   </div>
-  <script src="battle-stats.js"></script>
-  <script src="difficulty-engine.js"></script>
-  <script src="main.js"></script>
+
+  <!-- ✅ Script order: stats → difficulty → mini-game engine → main -->
+  <script src="main.js"></script>  
+  <script src="registry.js"></script>
+  <script src="game-runner.js"></script>
+  <script src="quest-overview.js"></script>
+
+  <script src="difficulty-service.js"></script>
+  <script src="games/monster-battle/battle-stats.js"></script>
+  
+  <script src="games/equation-cards/index.js"></script>
+  <script src="games/monster-battle/index.js"></script>
+  
 </body>
 </html>
+
 

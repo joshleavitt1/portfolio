@@ -5,1584 +5,439 @@
   // Set Viewport
   // ---------------------------------------------------------------------
 
-    function setViewportHeight() {
-      document.documentElement.style.setProperty(
-        "--vh",
-        `${window.innerHeight * 0.01}px`
-      );
-    }
-    
-    window.addEventListener("resize", setViewportHeight);
-    window.addEventListener("orientationchange", setViewportHeight);
-    setViewportHeight();
-  
-
-// ---------------------------------------------------------------------
-// Debug outcome from URL (?win or ?lose)
-// ---------------------------------------------------------------------
-const params = new URLSearchParams(window.location.search);
-
-const DEBUG_OUTCOME = params.has("win")
-  ? "win"
-  : params.has("lose")
-  ? "lose"
-  : null;
-
-// ---------------------------------------------------------------------
-// Stat panel + GAME health helpers
-// ---------------------------------------------------------------------
-
-function applyBattleOffset() {
-  cinematicHeroCharacter?.classList.add("battle-offset");
-  cinematicMonsterCharacter?.classList.add("battle-offset");
-}
-
-function clearBattleOffset() {
-  cinematicHeroCharacter?.classList.remove("battle-offset");
-  cinematicMonsterCharacter?.classList.remove("battle-offset");
-}
-
-// Use window.BATTLE_STATS if available, otherwise fall back
-const BATTLE_STATS = window.BATTLE_STATS || DEFAULT_STATS;
-
-// IMPORTANT: use BATTLE_STATS, not window.BATTLE_STATS directly
-const HERO_BASE = BATTLE_STATS.hero;
-// Monster base is mutable so we can swap different monsters per game
-let MONSTER_BASE = BATTLE_STATS.monster;
-
-// Hero level — from stats or global override (fallback to 1)
-const HERO_LEVEL =
-  HERO_BASE.level ??
-  window.HERO_LEVEL ??
-  1;
-
-// Optional monster pools loaded from battle-stats.js
-const MONSTER_POOLS = window.MONSTER_POOLS || {};
-
-// Track which monsters we've already used at each hero level
-// so we don't repeat until we've shown them all.
-const usedMonsterIdsByLevel = new Map();
-
-/**
- * Get a monster config for a given hero level, without repeating until
- * the entire pool has been exhausted once.
- */
-function getNextMonsterForLevel(level) {
-  const pool = MONSTER_POOLS[level];
-
-  // No pool defined → fallback to the default single monster
-  if (!pool || pool.length === 0) {
-    return BATTLE_STATS.monster;
+  function setViewportHeight() {
+    document.documentElement.style.setProperty(
+      "--vh",
+      `${window.innerHeight * 0.01}px`
+    );
   }
 
-  // Get or create the "used" set for this level
-  let usedSet = usedMonsterIdsByLevel.get(level);
-  if (!usedSet) {
-    usedSet = new Set();
-    usedMonsterIdsByLevel.set(level, usedSet);
-  }
-
-  // If we've used all monsters in the pool, reset for a fresh cycle
-  if (usedSet.size >= pool.length) {
-    usedSet.clear();
-  }
-
-  // Filter the pool to monsters we haven't used yet
-  const available = pool.filter((monster) => !usedSet.has(monster.id));
-
-  // Safety fallback: if something goes weird, pick from full pool
-  const pickFrom = available.length > 0 ? available : pool;
-
-  const choice =
-    pickFrom[Math.floor(Math.random() * pickFrom.length)];
-
-  if (choice.id != null) {
-    usedSet.add(choice.id);
-  }
-
-  return choice;
-}
-
-// ---------------------------------------------------------------------
-// Battle background rotation
-// ---------------------------------------------------------------------
-
-const BATTLE_BACKGROUNDS = [
-  "images/bg/battle_1.png",
-  "images/bg/battle_2.png",
-  "images/bg/battle_3.png",
-];
-
-// Index persists while the page is loaded
-let battleBackgroundIndex = 0;
-
-/**
- * Returns the next battle background in sequence:
- * 1 → 2 → 3 → 1 → ...
- */
-function getNextBattleBackground() {
-  const bg = BATTLE_BACKGROUNDS[battleBackgroundIndex];
-
-  battleBackgroundIndex =
-    (battleBackgroundIndex + 1) % BATTLE_BACKGROUNDS.length;
-
-  return bg;
-}
-
-/**
- * Swap MONSTER_BASE for the current hero level and sync the UI.
- */
-function selectMonsterForCurrentHeroLevel() {
-  const nextMonster = getNextMonsterForLevel(HERO_LEVEL);
-
-  // Swap the base config used for health, damage, etc.
-  MONSTER_BASE = nextMonster;
-
-  // Update cinematic sprite + name if they already exist
-  if (typeof cinematicMonster !== "undefined" && cinematicMonster && MONSTER_BASE.spriteImage) {
-    cinematicMonster.src = MONSTER_BASE.spriteImage;
-  }
-  if (typeof monsterNameEl !== "undefined" && monsterNameEl) {
-    monsterNameEl.textContent = MONSTER_BASE.name;
-  }
-}
-
-const heroNameEl = document.getElementById("hero-name");
-const monsterNameEl = document.getElementById("monster-name");
-const heroHealthFillEl = document.getElementById("hero-health-fill");
-const monsterHealthFillEl = document.getElementById("monster-health-fill");
-
-// Persistent health for the *current game* (not just one battle)
-let heroHealthCurrent = HERO_BASE.maxHealth;
-let monsterHealthCurrent = MONSTER_BASE.maxHealth;
-
-// Reset health to full for a brand-new GAME
-function resetGameHealth() {
-  heroHealthCurrent = HERO_BASE.maxHealth;
-  monsterHealthCurrent = MONSTER_BASE.maxHealth;
-}
-
-// Render HUD from current game health
-function renderStatPanels() {
-  if (heroNameEl) heroNameEl.textContent = HERO_BASE.name;
-  if (monsterNameEl) monsterNameEl.textContent = MONSTER_BASE.name;
-
-  if (heroHealthFillEl) {
-    const heroPct = (heroHealthCurrent / HERO_BASE.maxHealth) * 100;
-    heroHealthFillEl.style.width = `${Math.max(0, heroPct)}%`;
-  }
-
-  if (monsterHealthFillEl) {
-    const monsterPct = (monsterHealthCurrent / MONSTER_BASE.maxHealth) * 100;
-    monsterHealthFillEl.style.width = `${Math.max(0, monsterPct)}%`;
-  }
-}
-
-// ---------------------------------------------------------------------
-// Puzzle Data
-// ---------------------------------------------------------------------
-
-
-  // --- Difficulty + current puzzle (from DifficultyEngine) --------------
-  let currentDifficulty =
-    window.DifficultyEngine?.getInitialDifficulty() ?? 1;
-
-  let currentPuzzle = null;
-
-  function loadNextPuzzle() {
-    if (window.DifficultyEngine) {
-      // Always grab the latest difficulty from the engine
-      currentDifficulty = window.DifficultyEngine.getCurrentDifficulty();
-      currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
-    } else {
-      // Fallback: simple 1+1=2 puzzle if the engine isn't loaded
-      currentPuzzle = {
-        id: "fallback",
-        difficulty: 1,
-        slots: 5,
-        fixedSlots: {},
-        cards: ["1", "1", "2", "+", "="],
-      };
-    }
-    resetPuzzle();
-  }  
+  window.addEventListener("resize", setViewportHeight);
+  window.addEventListener("orientationchange", setViewportHeight);
+  setViewportHeight();
 
   // ---------------------------------------------------------------------
-  // Zoom Guard
+  // Simple timing helper (used by map → game handoff)
   // ---------------------------------------------------------------------
-
-  // --- Double-tap zoom guard (iOS Safari) ----------------------------------
-  let lastTouchEnd = 0;
-  document.addEventListener(
-    "touchend",
-    (event) => {
-      const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
-        // Prevent the second tap from triggering zoom
-        event.preventDefault();
-      }
-      lastTouchEnd = now;
-    },
-    false
-  );
-
-  const railEl = document.getElementById("equation-rail");
-  const handEl = document.getElementById("card-hand");
-
-  // Modal elements
-  const modalEl = document.getElementById("result-modal");
-  const modalTitleEl = document.getElementById("modal-title");
-  const modalMessageEl = document.getElementById("modal-message");
-  const modalPrimaryBtn = document.getElementById("modal-primary-btn");
-
-  // Orientation overlay
-  const orientationOverlayEl = document.getElementById("orientation-overlay");
-
-  // Cinematic elements
-  const cinematicEl = document.getElementById("cinematic");
-  const equationAreaEl = document.querySelector(".equation-area");
-  const handAreaEl = document.querySelector(".hand-area");
-
-  const cinematicHero = document.getElementById("cinematic-hero");
-  const cinematicMonster = document.getElementById("cinematic-monster");
-  const cinematicVs = document.getElementById("cinematic-vs");
-  const cinematicAttack = document.getElementById("cinematic-attack");
-  const cinematicStage = document.querySelector(".cinematic-stage");
-  const cinematicHeroCharacter = document.querySelector(".cinematic-character--hero");
-  const cinematicMonsterCharacter = document.querySelector(".cinematic-character--monster");
-  function showCinematicShadows() {
-  cinematicHeroCharacter?.classList.add("cinematic-character--shadow-visible");
-  cinematicMonsterCharacter?.classList.add("cinematic-character--shadow-visible");
-}
-
-function hideCinematicShadows() {
-  cinematicHeroCharacter?.classList.remove("cinematic-character--shadow-visible");
-  cinematicMonsterCharacter?.classList.remove("cinematic-character--shadow-visible");
-}
-
-function primeShadowsForSpriteIntro() {
-  hideCinematicShadows();
-
-  if (cinematicHero) {
-    const onHeroAnimEnd = (e) => {
-      if (e.animationName === "hero-spring-in") {
-        cinematicHeroCharacter?.classList.add("cinematic-character--shadow-visible");
-        cinematicHero.removeEventListener("animationend", onHeroAnimEnd);
-      }
-    };
-    cinematicHero.addEventListener("animationend", onHeroAnimEnd);
-  }
-
-  if (cinematicMonster) {
-    const onMonsterAnimEnd = (e) => {
-      if (e.animationName === "monster-spring-in") {
-        cinematicMonsterCharacter?.classList.add("cinematic-character--shadow-visible");
-        cinematicMonster.removeEventListener("animationend", onMonsterAnimEnd);
-      }
-    };
-    cinematicMonster.addEventListener("animationend", onMonsterAnimEnd);
-  }
-}
-
-  
-  // Sync sprite images from battle stats (HTML src becomes just a fallback)
-  if (cinematicHero && HERO_BASE.spriteImage) {
-    cinematicHero.src = HERO_BASE.spriteImage;
-  }
-  
-  if (cinematicMonster && MONSTER_BASE.spriteImage) {
-    cinematicMonster.src = MONSTER_BASE.spriteImage;
-  }  
-
-  // --- Drag state ----------------------------------------------------------
-  let cardIdCounter = 0;
-  const createCardId = () => `card_${cardIdCounter++}`;
-
-  let activeDrag = null;
-  // activeDrag = { card, cardEl, offsetX, offsetY, pointerId }
-  let highlightedSlot = null;
-
-  // Card / slot state for the current puzzle
-  let slotState = [];
-  let cardState = [];
-
-  // --- Hand reflow animation (smooth slide) --------------------------------
-  let lastHandSnapshot = null;
-
-function captureHandSnapshot() {
-  if (!handEl) return null;
-  const cards = Array.from(handEl.children);
-  const snapshot = new Map();
-  cards.forEach((card) => {
-    snapshot.set(card, card.getBoundingClientRect());
-  });
-  return snapshot;
-}
-
-function animateHandFromSnapshot(snapshot) {
-  if (!snapshot || !handEl) return;
-
-  const cards = Array.from(handEl.children);
-  cards.forEach((card) => {
-    const first = snapshot.get(card);
-    if (!first) return;
-
-    const last = card.getBoundingClientRect();
-    const dx = first.left - last.left;
-    const dy = first.top - last.top;
-
-    // Ignore tiny moves
-    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
-
-    // Start from old position
-    card.style.transition = "none";
-    card.style.transform = `translate(${dx}px, ${dy}px)`;
-
-    // Next frame: animate back to natural layout
-    requestAnimationFrame(() => {
-      card.style.transition =
-        "transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1)";
-      card.style.transform = "translate(0, 0)";
-    });
-  });
-}
-
-
-  // --- MONSTER Attack Helper
-  function positionAttackOverMonster() {
-    if (!cinematicStage || !cinematicMonster || !cinematicAttack) return;
-  
-    const stageRect = cinematicStage.getBoundingClientRect();
-    const monsterRect = cinematicMonster.getBoundingClientRect();
-  
-    const centerX = monsterRect.left + monsterRect.width / 2 - stageRect.left;
-    const centerY = monsterRect.top + monsterRect.height / 2 - stageRect.top;
-  
-    const attackWidth = 200;
-    const attackHeight = 200;
-  
-    cinematicAttack.style.left = `${centerX - attackWidth / 2}px`;
-    cinematicAttack.style.top = `${centerY - attackHeight / 2}px`;
-  }
-  
-  // Mirror helper: position attack overlay over the HERO
-  function positionAttackOverHero() {
-    if (!cinematicStage || !cinematicHero || !cinematicAttack) return;
-  
-    const stageRect = cinematicStage.getBoundingClientRect();
-    const heroRect = cinematicHero.getBoundingClientRect();
-  
-    const centerX = heroRect.left + heroRect.width / 2 - stageRect.left;
-    const centerY = heroRect.top + heroRect.height / 2 - stageRect.top;
-  
-    const attackWidth = 200;
-    const attackHeight = 200;
-  
-    cinematicAttack.style.left = `${centerX - attackWidth / 2}px`;
-    cinematicAttack.style.top = `${centerY - attackHeight / 2}px`;
-  }    
-  
-
-  // --- Timing helpers ------------------------------------------------------
   function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  function restartAnimation(el, className) {
-    if (!el) return;
-    el.classList.remove(className);
-    // force reflow
-    void el.offsetWidth;
-    el.classList.add(className);
+  // ---------------------------------------------------------------------
+  // Set Areas
+  // ---------------------------------------------------------------------
+
+  function setEquationAreaMode(mode) {
+    const gridArea = document.getElementById("grid-area");
+    const combatRow = document.getElementById("combat-row");
+    const handArea = document.querySelector(".hand-area");
+  
+    if (!gridArea || !combatRow || !handArea) return;
+  
+    if (mode === "equation-cards") {
+      gridArea.classList.remove("is-hidden");
+      combatRow.classList.add("is-hidden");
+      handArea.classList.add("is-hidden");
+      return;
+    }
+  
+    // mode === "monster-battle" (default)
+    gridArea.classList.add("is-hidden");
+    combatRow.classList.remove("is-hidden");
+    handArea.classList.remove("is-hidden");
+  }
+  
+
+  // ---------------------------------------------------------------------
+  // Quest state (shared across quest screen / map / battle)
+  // ---------------------------------------------------------------------
+  let CURRENT_QUEST_ID = window.CURRENT_QUEST_ID || "quest_1";
+  window.CURRENT_QUEST_ID = CURRENT_QUEST_ID;
+
+  // ---------------------------------------------------------------------
+  // Map grid layout (tight, deterministic)
+  // ---------------------------------------------------------------------
+  const gameRoot = document.getElementById("game-root");
+  const mapScreenEl = document.getElementById("map-screen");
+  const mapNodes = document.querySelectorAll(".map-node");
+
+  /* NEW: cache HUD elements inside the map screen */
+  const mapHudEl = mapScreenEl
+    ? mapScreenEl.querySelector(".map-hud")
+    : null;
+  const mapHudCardEl = mapHudEl
+    ? mapHudEl.querySelector(".map-hud-card")
+    : null;
+
+  const TOTAL_NODES = 6;
+  let activeNodeIndex = 0; // 0 = bottom node
+
+  // You can keep your existing setStage if it's already defined above;
+  // this version matches what you've been using.
+  function setStage(stage) {
+    // stage: "intro", "game", or "result"
+    gameRoot.classList.remove("stage-intro", "stage-game", "stage-result");
+    gameRoot.classList.add(`stage-${stage}`);
   }
 
-    function resetStatPanels() {
-    document
-      .querySelectorAll(".stat-panel")
-      .forEach((el) => el.classList.remove("stat-in"));
-  }
+  function layoutMapNodes() {
+    mapNodes.forEach((node) => {
+      const idx = Number(node.dataset.nodeIndex);
+      const layout = NODE_LAYOUT[idx];
+      if (!layout) return;
 
-  function animateStatPanels() {
-    document.querySelectorAll(".stat-panel").forEach((el) => {
-      // Skip completely hidden panels (e.g., during stage-game)
-      if (el.offsetParent === null) return;
-      restartAnimation(el, "stat-in");
+      const x = GRID.colX[layout.col];
+      const y = GRID.rowY[layout.row];
+
+      const offsetX = layout.offsetX ?? 0;
+      const offsetY = layout.offsetY ?? 0;
+
+      node.style.left = `calc(${x}% + ${offsetX}px)`;
+      node.style.top = `calc(${y}% + ${offsetY}px)`;
     });
   }
 
+  function showMap() {
+    if (mapScreenEl) {
+      const quests = window.QUESTS || {};
+      const quest =
+        quests[CURRENT_QUEST_ID] ||
+        quests["quest_1"];
 
-  // --- Orientation helpers -------------------------------------------------
-  function updateOrientationOverlay() {
-    const isMobileWidth = window.innerWidth <= 900;
-    const isPortrait =
-      window.matchMedia("(orientation: portrait)").matches ||
-      window.innerHeight > window.innerWidth;
-  
-    // Basic touch detection (good enough for "mobile")
-    const isTouch =
-      "ontouchstart" in window || navigator.maxTouchPoints > 0;
-  
-    // ✅ Only allow: mobile-width + touch + portrait
-    const isAllowed = isMobileWidth && isTouch && isPortrait;
-  
-    if (!isAllowed) {
-      // Show blocker for everything else
-      orientationOverlayEl.classList.add("show");
-      orientationOverlayEl.setAttribute("aria-hidden", "false");
-      lockScreen();
-    } else {
-      // Hide blocker on mobile portrait
-      orientationOverlayEl.classList.remove("show");
-      orientationOverlayEl.setAttribute("aria-hidden", "true");
-      unlockScreen();
-    }
-  }  
-
-  function lockScreen() {
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.width = "100%";
-  }
-
-  function unlockScreen() {
-    document.body.style.overflow = "";
-    document.body.style.position = "";
-    document.body.style.width = "";
-  }
-
-  window.addEventListener("resize", updateOrientationOverlay);
-  window.addEventListener("orientationchange", updateOrientationOverlay);
-
-  // --- Section visibility helpers -----------------------------------------
-  function showCinematic() {
-    if (cinematicEl) cinematicEl.classList.remove("is-hidden");
-  }
-
-  function hideCinematic() {
-    if (cinematicEl) cinematicEl.classList.add("is-hidden");
-  }
-
-  function showCards() {
-    if (equationAreaEl) equationAreaEl.classList.remove("is-hidden");
-    if (handAreaEl) handAreaEl.classList.remove("is-hidden");
-  }
-
-  function hideCards() {
-    if (equationAreaEl) equationAreaEl.classList.add("is-hidden");
-    if (handAreaEl) handAreaEl.classList.add("is-hidden");
-  }
-
-  function resetCinematicSprites() {
-    clearBattleOffset();
-    hideCinematicShadows(); // 🔒 start with no shadows
-  
-    if (!cinematicHero || !cinematicMonster || !cinematicVs || !cinematicAttack) {
-      return;
-    }  
-  
-    // Reset the stage container (in case it was faded out)
-    if (cinematicStage) {
-      cinematicStage.classList.remove("cinematic-fade-out");
-      cinematicStage.style.opacity = "";
-      cinematicStage.style.transform = "";
-    }
-  
-    // Reset base opacity for sprites/overlays
-    cinematicHero.style.opacity = "0";
-    cinematicMonster.style.opacity = "0";
-    cinematicVs.style.opacity = "0";
-    cinematicAttack.style.opacity = "0";
-  
-    // Clear all cinematic classes so we can restart clean
-    cinematicHero.classList.remove(
-      "cinematic-in",
-      "cinematic-fade-out",
-      "cinematic-hero-attack",
-      "cinematic-hit"
-    );
-  
-    cinematicMonster.classList.remove(
-      "cinematic-in",
-      "cinematic-hit",
-      "cinematic-fade-out",
-      "cinematic-monster-attack"
-    );
-  
-    cinematicVs.classList.remove("cinematic-show", "cinematic-fade-out");
-  
-    cinematicAttack.classList.remove(
-      "cinematic-attack-in",
-      "cinematic-attack-out"
-    );
-  }    
-  
-  // --- Modal helpers -------------------------------------------------------
-  function hideModal() {
-    modalEl.classList.remove("show");
-    modalEl.setAttribute("aria-hidden", "true");
-  }
-
-  function showModal(title, message, buttonLabel, onPrimaryClick) {
-    modalTitleEl.textContent = title;
-    modalMessageEl.textContent = message;
-    modalPrimaryBtn.textContent = buttonLabel;
-
-    modalPrimaryBtn.onclick = () => {
-      hideModal();
-      if (typeof onPrimaryClick === "function") {
-        onPrimaryClick();
+      if (quest?.mapBackground) {
+        mapScreenEl.style.backgroundImage = `url("${quest.mapBackground}")`;
       }
-    };
 
-    modalEl.classList.add("show");
-    modalEl.setAttribute("aria-hidden", "false");
-  }
-
-  function startNewGame() {
-    // 1) Rotate monster (no repeats per level)
-    selectMonsterForCurrentHeroLevel();
-  
-    // 2) Rotate battle background (loops in order) on the GAME layer
-    const nextBg = getNextBattleBackground();
+      mapScreenEl.classList.remove("map-screen--hidden");
+    }
     if (gameRoot) {
-      gameRoot.style.setProperty("--battle-bg-image", `url("${nextBg}")`);
-    }
-  
-    // 3) Reset health
-    resetGameHealth();
-  
-    // 4) Grab difficulty & next puzzle from the engine
-    if (window.DifficultyEngine) {
-      currentDifficulty = window.DifficultyEngine.getCurrentDifficulty();
-      currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
-    }
-  
-    // 5) Reset UI + intro
-    resetPuzzle();
-    hideCards();
-    runIntroSequence();
-  }      
-  
-    function showHeroGameWinModal() {
-      showModal(
-        "You Won the Game!",
-        "The monster has been defeated. Continue your journey on the map.",
-        "Back to Map",
-        () => {
-          // Clear this battle, advance to the next node, then show the map
-          advanceToNextNodeIfAvailable();
-          showMap();
-        }
-      );
+      gameRoot.classList.remove("game--visible");
     }
 
-    function showMonsterGameWinModal() {
-      showModal(
-        "Game Over",
-        "The monster defeated you. Return to the map and try again.",
-        "Back to Map",
-        () => {
-          // No node advance – retry same node from the map
-          showMap();
-        }
-      );
+    updateMapHud();
+
+    layoutMapNodes();
+    updateMapNodes();
+    animateMapNodesIn();
+  }
+
+  function showGame() {
+    // Hide map
+    if (mapScreenEl) {
+      mapScreenEl.classList.add("map-screen--hidden");
     }
   
-    // Returns true if the game is over (modal shown), false otherwise
-    function checkGameOver() {
-      if (monsterHealthCurrent <= 0 && heroHealthCurrent > 0) {
-        showHeroGameWinModal();
-        return true;
-      }
-      if (heroHealthCurrent <= 0 && monsterHealthCurrent > 0) {
-        showMonsterGameWinModal();
-        return true;
-      }
-      if (heroHealthCurrent <= 0 && monsterHealthCurrent <= 0) {
-        // Rare tie: treat as hero victory for now
-        showHeroGameWinModal();
-        return true;
-      }
-      return false;
-    }  
-
-  // --- Cinematic sequences -------------------------------------------------
-  async function runIntroSequence() {
-    // Intro stage: battle background
-    setStage("intro");
-
-    // New game always starts at full health
-    resetGameHealth();
-
-    showCinematic();
-    hideCards();
-    resetCinematicSprites();
-    resetStatPanels();
-    renderStatPanels();
-  
-    // 0.5s pause before sprites spring in
-    await delay(750);
-  
-    primeShadowsForSpriteIntro();
-
-  // Hero + Monster spring in together
-  restartAnimation(cinematicHero, "cinematic-in");
-  restartAnimation(cinematicMonster, "cinematic-in");
-
-  // ✅ push hero down, monster up
-  applyBattleOffset();
-  
-  // Let sprites mostly settle (slightly after their 0.6s spring)
-  await delay(1500);
-
-  // 🌟 Now that they're at rest, show the ground shadows
-  showCinematicShadows();
-  
-  // Stat panels spring in shortly AFTER sprites
-  animateStatPanels();
-  
-    // Shorter pause before VS (keep overall timing similar to original)
-    await delay(1000);
-  
-    // VS springs into center
-    restartAnimation(cinematicVs, "cinematic-show");
-  
-    // Let VS hang for a bit
-    await delay(2500);
-  
-    // Fade out the entire stage (HERO, MONSTER, VS, attack)
-    if (cinematicStage) {
-      restartAnimation(cinematicStage, "cinematic-fade-out");
-    }
-  
-    // Let fade-out play
-    await delay(1000);
-  
-    // Handoff: hide cinematic, show cards
-    hideCinematic();
-    showCards();
-    clearBattleOffset();
-  
-    // GAME stage: crossfade to card background
-    setStage("game");
-  
-    // Animate equation row + hand fading in
-    if (equationAreaEl) {
-      restartAnimation(equationAreaEl, "cards-fade-in");
-    }
-    if (handAreaEl) {
-      restartAnimation(handAreaEl, "cards-fade-in");
+    // Show game root
+    if (gameRoot) {
+      gameRoot.classList.add("game--visible");
     }
   }  
+
+  function updateMapHud() {
+    const heroImg = document.getElementById("map-hero-image");
+    const heroName = document.getElementById("map-hero-name");
+    const heroLevel = document.getElementById("map-hero-level");
+  
+    if (!heroImg || !heroName || !heroLevel) return;
+  
+    // If globals aren't ready, bail out quietly
+    if (!window.QUESTS || !window.CURRENT_QUEST_ID || !window.HEROES) {
+      return;
+    }
+  
+    const quest =
+      window.QUESTS[window.CURRENT_QUEST_ID] || window.QUESTS["quest_1"];
+    if (!quest || !quest.heroId) return;
+  
+    const hero = window.HEROES[quest.heroId];
+    if (!hero) return;
+  
+    heroImg.src = hero.portrait;
+    heroName.textContent = hero.displayName;
+  
+    const level =
+      (window.PLAYER_PROFILE && window.PLAYER_PROFILE.heroLevel) ||
+      hero.baseLevel;
+    heroLevel.textContent = `Level ${level}`;
+  }
   
 
-  async function runHeroBattleWin() {
-    setStage("result");
+  const GRID = {
+    columns: 3,
+    rows: 6,
 
-    showCinematic();
-    hideCards();
-    resetCinematicSprites();
-    resetStatPanels();
-    renderStatPanels();
+    // Percent-based so it scales with screen size
+    colX: [25, 50, 75], // left / center / right
+    // tighter spacing, same bottom start
+    rowY: [88, 76, 64, 51, 39, 26],
+  };
 
-    // Short pause before result sprites appear
-    await delay(750);
-    primeShadowsForSpriteIntro();
-    restartAnimation(cinematicHero, "cinematic-in");
-    restartAnimation(cinematicMonster, "cinematic-in");
-    
-    // ✅ battle spacing
-    applyBattleOffset();
+  // Node → grid placement
+  // index: { col, row, offsetX?, offsetY? }
+  const NODE_LAYOUT = {
+    0: { col: 2, row: 0 }, // bottom center on path
+    1: { col: 1, row: 1 }, // just left of path
+    2: { col: 0, row: 2 }, // back to center (by river)
+    3: { col: 1, row: 3 }, // left hillside
+    4: { col: 2, row: 4 }, // center valley below castle
+    5: { col: 1, row: 5 }, // right under castle
+  };
 
-    // Let them settle
-    await delay(1500);
+  // Node → type (bottom → top)
+  const NODE_TYPES = [
+    "battle", // 0 (bottom)
+    "battle", // 1
+    "chest", // 2
+    "battle", // 3
+    "battle", // 4
+    "boss", // 5 (top / castle)
+  ];
 
-    // 🌟 Show shadows only after they’ve landed
-    showCinematicShadows();
+  const NODE_SPRITES_FALLBACK = {
+    battle: "images/quests/quest_1/node/battle.png",
+    chest: "images/quests/quest_1/node/chest.png",
+    boss: "images/quests/quest_1/node/boss.png",
+    lock: "images/quests/quest_1/node/lock.png",
+    check: "images/quests/quest_1/node/check.png",
+  };
 
-    // Stats come in slightly after sprites
-    animateStatPanels();
-
-
-    // Let them fully animate in and settle
-    await delay(1000);
-
-    // HERO sword-strike lunge (forward + pull back)
-    restartAnimation(cinematicHero, "cinematic-hero-attack");
-    await delay(750); // match HERO-sword-strike duration
-
-    // Use HERO attack sprite for this sequence
-    if (cinematicAttack && HERO_BASE.attackImage) {
-      cinematicAttack.src = HERO_BASE.attackImage;
-    }
-
-    // Attack overlay appears over MONSTER + MONSTER shakes
-    positionAttackOverMonster();
-    restartAnimation(cinematicAttack, "cinematic-attack-in");
-    restartAnimation(cinematicMonster, "cinematic-hit");
-
-    // ⏱ let the shake play clearly before HP drops
-    await delay(500);
-
-    // ✅ NOW apply damage and animate HP bar downward
-    monsterHealthCurrent = Math.max(
-      0,
-      monsterHealthCurrent - HERO_BASE.damage
-    );
-    renderStatPanels(); // CSS transition animates the drain
-
-    // Let the player watch the health drop
-    await delay(800);
-
-    // Attack sprite springs out (exit animation)
-    restartAnimation(cinematicAttack, "cinematic-attack-out");
-
-    // After another 1s, either end game or go back to cards
-    await delay(2000);
-
-    if (!checkGameOver()) {
-      // Continue game: next puzzle from difficulty engine
-      if (window.DifficultyEngine) {
-        currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
-      }
-      resetPuzzle();
-      hideCinematic();
-      showCards();
-      clearBattleOffset();
-      setStage("game");
-      if (equationAreaEl) {
-        restartAnimation(equationAreaEl, "cards-fade-in");
-      }
-      if (handAreaEl) {
-        restartAnimation(handAreaEl, "cards-fade-in");
-      }
-    }    
-  }
-
-  async function runMonsterBattleWin() {
-    setStage("result");
-
-    showCinematic();
-    hideCards();
-    resetCinematicSprites();
-    resetStatPanels();
-    renderStatPanels();
-
-    // Short pause before result sprites appear
-    await delay(750);
-
-    primeShadowsForSpriteIntro();
-
-    restartAnimation(cinematicHero, "cinematic-in");
-    restartAnimation(cinematicMonster, "cinematic-in");
-
-    // ✅ battle spacing
-    applyBattleOffset();
-
-    // Let them settle
-    await delay(1500);
-
-    // 🌟 Now fade in shadows
-    showCinematicShadows();
-
-    // Stats come in slightly after sprites
-    animateStatPanels();
-
-    // Let them fully animate in and settle
-    await delay(1000);
-
-    // MONSTER attack lunge (mirror of HERO's sword-strike)
-    restartAnimation(cinematicMonster, "cinematic-monster-attack");
-    await delay(750); // match HERO-sword-strike duration
-
-    // Use MONSTER attack sprite for this sequence
-    if (cinematicAttack && MONSTER_BASE.attackImage) {
-      cinematicAttack.src = MONSTER_BASE.attackImage;
-    }
-
-    // Attack overlay appears over HERO + HERO shakes
-    positionAttackOverHero();
-    restartAnimation(cinematicAttack, "cinematic-attack-in");
-    restartAnimation(cinematicHero, "cinematic-hit");
-
-    // ⏱ let the shake play clearly before HP drops
-    await delay(500);
-
-    // ✅ NOW apply damage and animate HP bar downward
-    heroHealthCurrent = Math.max(
-      0,
-      heroHealthCurrent - MONSTER_BASE.damage
-    );
-    renderStatPanels(); // CSS transition animates the drain
-
-    // Let the player watch the health drop
-    await delay(800);
-
-    // Attack sprite springs out (exit animation)
-    restartAnimation(cinematicAttack, "cinematic-attack-out");
-
-    // After another 1s, either end game or go back to cards
-    await delay(1000);
-
-    if (!checkGameOver()) {
-      // Continue game: next puzzle from difficulty engine
-      if (window.DifficultyEngine) {
-        currentPuzzle = window.DifficultyEngine.getNextPuzzle(currentDifficulty);
-      }
-      resetPuzzle();
-      hideCinematic();
-      showCards();
-      clearBattleOffset();
-      setStage("game");
-      if (equationAreaEl) {
-        restartAnimation(equationAreaEl, "cards-fade-in");
-      }
-      if (handAreaEl) {
-        restartAnimation(handAreaEl, "cards-fade-in");
-      }
-    }
-  }    
+  function getNodeSpritesForCurrentQuest() {
+    const quests = window.QUESTS || {};
+    const quest =
+      quests[CURRENT_QUEST_ID] ||
+      quests["quest_1"];
   
-// ---------------------------------------------------------------------
-// Map grid layout (tight, deterministic)
-// ---------------------------------------------------------------------
-const gameRoot = document.getElementById("game-root");
-const mapScreenEl = document.getElementById("map-screen");
-const mapNodes = document.querySelectorAll(".map-node");
+    return (quest && quest.nodeSprites) || NODE_SPRITES_FALLBACK;
+  }  
 
-const TOTAL_NODES = 6;
-let activeNodeIndex = 0; // 0 = bottom node
+  function updateMapNodes() {
+    const sprites = getNodeSpritesForCurrentQuest();
 
-// You can keep your existing setStage if it's already defined above;
-// this version matches what you've been using.
-function setStage(stage) {
-  // stage: "intro", "game", or "result"
-  gameRoot.classList.remove("stage-intro", "stage-game", "stage-result");
-  gameRoot.classList.add(`stage-${stage}`);
-}
+    mapNodes.forEach((node) => {
+      const idx = Number(node.dataset.nodeIndex);
+      const type = NODE_TYPES[idx] ?? "battle";
 
-function layoutMapNodes() {
-  mapNodes.forEach((node) => {
-    const idx = Number(node.dataset.nodeIndex);
-    const layout = NODE_LAYOUT[idx];
-    if (!layout) return;
+      node.classList.remove(
+        "map-node--active",
+        "map-node--locked",
+        "map-node--completed",
+        "map-node--bw",
+        "map-node--shimmer"
+      );
 
-    const x = GRID.colX[layout.col];
-    const y = GRID.rowY[layout.row];
+      if (idx < activeNodeIndex) {
+        node.classList.add("map-node--completed");
+        node.disabled = true;
+        node.style.backgroundImage = `url("${sprites.check}")`;
+        return;
+      }
 
-    const offsetX = layout.offsetX ?? 0;
-    const offsetY = layout.offsetY ?? 0;
+      if (idx === activeNodeIndex) {
+        node.classList.add("map-node--active");
+        node.disabled = false;
+        node.style.backgroundImage = `url("${sprites[type]}")`;
+        return;
+      }
 
-    node.style.left = `calc(${x}% + ${offsetX}px)`;
-    node.style.top  = `calc(${y}% + ${offsetY}px)`;
-  });
-}
-
-function showMap() {
-  if (mapScreenEl) {
-    mapScreenEl.classList.remove("map-screen--hidden");
-  }
-  if (gameRoot) {
-    gameRoot.classList.remove("game--visible");
-  }
-
-  layoutMapNodes();   // ✅ grid snap
-  updateMapNodes();
-  animateMapNodesIn();
-}
-
-// Show GAME, hide MAP (simple CSS-driven crossfade)
-function showGame() {
-  if (mapScreenEl) {
-    mapScreenEl.classList.add("map-screen--hidden");
-  }
-  if (gameRoot) {
-    gameRoot.classList.add("game--visible");
-  }
-}
-
-const GRID = {
-  columns: 3,
-  rows: 6,
-
-  // Percent-based so it scales with screen size
-  colX: [25, 50, 75],       // left / center / right
-  rowY: [88, 74, 60, 46, 32, 16], // bottom → top
-};
-
-// Node → grid placement
-// index: { col, row, offsetX?, offsetY? }
-const NODE_LAYOUT = {
-  0: { col: 2, row: 0 }, // bottom center on path
-  1: { col: 1, row: 1 }, // just left of path
-  2: { col: 0, row: 2 }, // back to center (by river)
-  3: { col: 1, row: 3 }, // left hillside
-  4: { col: 2, row: 4 }, // center valley below castle
-  5: { col: 1, row: 5 }, // right under castle
-};
-// Node → type (bottom → top)
-const NODE_TYPES = [
-  "battle", // 0 (bottom)
-  "battle", // 1
-  "chest",  // 2
-  "battle", // 3
-  "battle", // 4
-  "boss"    // 5 (top / castle)
-];
-
-const NODE_SPRITES = {
-  battle: "images/node/battle.png",
-  chest:  "images/node/chest.png",
-  boss:   "images/node/boss.png",
-  lock:   "images/node/lock.png",
-  check:  "images/node/check.png"
-};
-
-
-function updateMapNodes() {
-  mapNodes.forEach((node) => {
-    const idx = Number(node.dataset.nodeIndex);
-    const type = NODE_TYPES[idx] ?? "battle";
-
-    node.classList.remove(
-      "map-node--active",
-      "map-node--locked",
-      "map-node--completed",
-      "map-node--bw",
-      "map-node--shimmer"
-    );
-
-    // ✅ COMPLETED (anything below active index)
-    if (idx < activeNodeIndex) {
-      node.classList.add("map-node--completed");
       node.disabled = true;
-      node.style.backgroundImage = `url("${NODE_SPRITES.check}")`;
-      return;
-    }
 
-    // ⭐ ACTIVE
-    if (idx === activeNodeIndex) {
-      node.classList.add("map-node--active");
-      node.disabled = false;
-      node.style.backgroundImage = `url("${NODE_SPRITES[type]}")`;
-      return;
-    }
-
-    // 🔮 FUTURE NODES
-    node.disabled = true;
-
-    // Treasure + Boss → show icon, but B/W
-    if (type === "chest" || type === "boss") {
-      node.classList.add("map-node--bw");
-      node.style.backgroundImage = `url("${NODE_SPRITES[type]}")`;
-      return;
-    }
-
-    // Regular battle → locked
-    node.classList.add("map-node--locked");
-    node.style.backgroundImage = `url("${NODE_SPRITES.lock}")`;
-  });
-}
-
-
-// Spring nodes in from bottom to top
-function animateMapNodesIn() {
-  if (!mapScreenEl) return;
-
-  const INITIAL_PAUSE_MS = 500;
-  const STAGGER_MS = 200;
-  const NODE_SPRING_MS = 600;
-  const SHIMMER_DELAY_MS = 20;
-
-  // Reset previous animations
-  mapNodes.forEach((node) => {
-    node.classList.remove("map-node--spawn", "map-node--shimmer");
-    node.style.animationDelay = "";
-  });
-
-  // Force reflow to restart animations
-  void mapScreenEl.offsetWidth;
-
-  // Bottom → top cascade
-  mapNodes.forEach((node, index) => {
-    const delayMs = INITIAL_PAUSE_MS + index * STAGGER_MS;
-    node.style.animationDelay = `${delayMs}ms`;
-    node.classList.add("map-node--spawn");
-  });
-
-  // ⏱ Calculate when the LAST node is fully settled
-  const lastNodeFinishMs =
-    INITIAL_PAUSE_MS +
-    (mapNodes.length - 1) * STAGGER_MS +
-    NODE_SPRING_MS +
-    SHIMMER_DELAY_MS;
-
-  // 🌟 Enable shimmer only after everything is done
-  setTimeout(() => {
-    const activeNode = document.querySelector(".map-node--active");
-    if (activeNode) {
-      activeNode.classList.add("map-node--shimmer");
-    }
-  }, lastNodeFinishMs);
-}
-
-// When user taps a node
-function handleMapNodeClick(idx) {
-  // Only allow the active node
-  if (idx !== activeNodeIndex) return;
-
-  // Simple crossfade between map + game
-  showGame();
-
-  // Kick off your full intro → cards → battle flow
-  startNewGame();
-}
-
-// Attach listeners once DOM is ready
-mapNodes.forEach((node) => {
-  const idx = Number(node.dataset.nodeIndex);
-  node.addEventListener("click", () => handleMapNodeClick(idx));
-});
-
-// After a full win, move to the next node (if any)
-function advanceToNextNodeIfAvailable() {
-  if (activeNodeIndex < TOTAL_NODES - 1) {
-    activeNodeIndex += 1;
-  }
-}
-
-
-  // --- Render functions ----------------------------------------------------
-    // --- Render functions ----------------------------------------------------
-    function resetPuzzle() {
-      const puzzle = currentPuzzle;
-      if (!puzzle) return;
-  
-      slotState = [];
-      cardState = [];
-      highlightedSlot = null;
-  
-      railEl.innerHTML = "";
-      handEl.innerHTML = "";
-      railEl.classList.remove(
-        "resolve",
-        "resolve-win",
-        "resolve-error",
-        "resolve-fade-out"
-      );
-      hideModal();
-    
-      // tell CSS (globally) how many slots this puzzle uses
-      document.documentElement.style.setProperty("--slots", puzzle.slots);
-    
-      const fixedSlots = puzzle.fixedSlots || {};
-       
-  
-      // Create slots (5, 6, 7, or 8)
-      for (let i = 0; i < puzzle.slots; i++) {
-        const slot = document.createElement("div");
-        slot.className = "slot";
-        slot.dataset.slotIndex = String(i);
-  
-        // If this slot is pre-filled (scaffolding), drop a fixed card into it
-        if (Object.prototype.hasOwnProperty.call(fixedSlots, i)) {
-          const value = fixedSlots[i];
-  
-          const fixedCard = document.createElement("div");
-          fixedCard.className = "card card--fixed";
-          fixedCard.dataset.fixed = "true";
-          fixedCard.textContent = value;
-  
-          if (isNumber(value)) {
-            fixedCard.classList.add("number");
-          } else if (value === "=") {
-            fixedCard.classList.add("equal");
-          } else {
-            fixedCard.classList.add("operator");
-          }
-  
-          slot.classList.add("filled");
-          slot.appendChild(fixedCard);
-        }
-  
-        railEl.appendChild(slot);
+      if (type === "chest" || type === "boss") {
+        node.classList.add("map-node--bw");
+        node.style.backgroundImage = `url("${sprites[type]}")`;
+        return;
       }
-  
-      // Create movable cards in the hand
-      puzzle.cards.forEach((value) => {
-        const id = createCardId();
-        cardState.push({ id, value, inSlot: null });
-  
-        const cardEl = document.createElement("div");
-        cardEl.className = "card";
-        cardEl.dataset.cardId = id;
-        cardEl.textContent = value;
-  
-        if (isNumber(value)) {
-          cardEl.classList.add("number");
-        } else if (value === "=") {
-          cardEl.classList.add("equal");
-        } else {
-          cardEl.classList.add("operator");
-        }
-  
-        attachCardDragListeners(cardEl);
-        handEl.appendChild(cardEl);
-      });
-    }  
 
-  // --- Drag & drop behavior (pointer events) -------------------------------
-  function attachCardDragListeners(cardEl) {
-    cardEl.addEventListener("pointerdown", (e) => {
-      startDrag(e, cardEl);
+      node.classList.add("map-node--locked");
+      node.style.backgroundImage = `url("${sprites.lock}")`;
     });
   }
 
-  function startDrag(e, cardEl) {
-    const cardId = cardEl.dataset.cardId;
-    const card = cardState.find((c) => c.id === cardId);
-    if (!card) return;
-  
-    // 1️⃣ capture position BEFORE we change the DOM
-    const rect = cardEl.getBoundingClientRect();
-  
-    e.preventDefault();
-    cardEl.setPointerCapture(e.pointerId);
-  
-    // 🔒 NEW: lock the hand height so the equation row doesn't re-center
-    if (handEl) {
-      const handRect = handEl.getBoundingClientRect();
-      handEl.style.minHeight = `${handRect.height}px`;
+  // Spring nodes in from bottom to top
+  function animateMapNodesIn() {
+    if (!mapScreenEl) return;
+
+    const INITIAL_PAUSE_MS = 500;
+    const STAGGER_MS = 200;
+    const NODE_SPRING_MS = 600;
+    const SHIMMER_DELAY_MS = 20;
+
+    // Reset previous node animations
+    mapNodes.forEach((node) => {
+      node.classList.remove("map-node--spawn", "map-node--shimmer");
+      node.style.animationDelay = "";
+    });
+
+    // Reset HUD state so it can re-animate each time we show the map
+    if (mapHudEl) {
+      mapHudEl.classList.remove("map-hud--visible");
     }
-  
-    // 2️⃣ snapshot hand layout BEFORE this card leaves
-    lastHandSnapshot = captureHandSnapshot();
-  
-    // 3️⃣ if card was already in a slot, free that slot
-    if (card.inSlot !== null && card.inSlot !== undefined) {
-      const index = card.inSlot;
-      slotState = slotState.filter((item) => item.cardId !== card.id);
-      card.inSlot = null;
-      const slotEl = railEl.querySelector(`.slot[data-slot-index="${index}"]`);
-      if (slotEl) {
-        slotEl.classList.remove("filled");
-        slotEl.innerHTML = "";
-      }
+    if (mapHudCardEl) {
+      mapHudCardEl.classList.remove("map-hud--animate");
+      // force reflow so the quest-card-post animation can restart
+      void mapHudCardEl.offsetWidth;
     }
-  
-    // 4️⃣ now convert to a floating card at the same screen position
-    activeDrag = {
-      card,
-      cardEl,
-      pointerId: e.pointerId,
-      offsetX: e.clientX - rect.left,
-      offsetY: e.clientY - rect.top,
-    };
-  
-    cardEl.classList.add("dragging");
-    cardEl.style.position = "fixed";
-    cardEl.style.left = `${rect.left}px`;
-    cardEl.style.top = `${rect.top}px`;
-    cardEl.style.zIndex = "1000";
-  
-    // Move into body so it can float above everything
-    document.body.appendChild(cardEl);
-  
-    // Animate the remaining hand cards sliding together
-    animateHandFromSnapshot(lastHandSnapshot);
-  
-    document.addEventListener("pointermove", onPointerMove);
-    document.addEventListener("pointerup", onPointerUp, { once: true });
-  }    
 
-  function onPointerMove(e) {
-    if (!activeDrag) return;
+    // Force reflow to restart node animations
+    void mapScreenEl.offsetWidth;
 
-    const { cardEl, offsetX, offsetY } = activeDrag;
+    // Bottom → top cascade
+    mapNodes.forEach((node, index) => {
+      const delayMs = INITIAL_PAUSE_MS + index * STAGGER_MS;
+      node.style.animationDelay = `${delayMs}ms`;
+      node.classList.add("map-node--spawn");
+    });
 
-    const x = e.clientX - offsetX;
-    const y = e.clientY - offsetY;
+    // When the LAST node is fully settled...
+    const lastNodeFinishMs =
+      INITIAL_PAUSE_MS +
+      (mapNodes.length - 1) * STAGGER_MS +
+      NODE_SPRING_MS +
+      SHIMMER_DELAY_MS;
 
-    cardEl.style.left = `${x}px`;
-    cardEl.style.top = `${y}px`;
-
-    // SNAP HINT: detect slot under cursor, ignoring the dragged card
-    const prevPointerEvents = cardEl.style.pointerEvents;
-    cardEl.style.pointerEvents = "none";
-    const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
-    cardEl.style.pointerEvents = prevPointerEvents || "";
-
-    const slotEl = findClosestSlot(dropTarget);
-
-    if (slotEl !== highlightedSlot) {
-      if (highlightedSlot) {
-        highlightedSlot.classList.remove("slot-hover");
+    // Enable shimmer only after everything is done
+    setTimeout(() => {
+      const activeNode = document.querySelector(".map-node--active");
+      if (activeNode) {
+        activeNode.classList.add("map-node--shimmer");
       }
-      if (slotEl) {
-        slotEl.classList.add("slot-hover");
-      }
-      highlightedSlot = slotEl;
-    }
+    }, lastNodeFinishMs);
+
+    // HUD: show + animate right after the last node finishes
+    const HUD_DELAY_AFTER_NODES_MS = 150; // small beat after nodes
+    setTimeout(() => {
+      if (!mapHudEl || !mapHudCardEl) return;
+
+      // Make HUD visible on the map
+      mapHudEl.classList.add("map-hud--visible");
+
+      // Kick off quest-card-style animation on the card
+      mapHudCardEl.classList.add("map-hud--animate");
+    }, lastNodeFinishMs + HUD_DELAY_AFTER_NODES_MS);
   }
 
-  function onPointerUp(e) {
-    if (!activeDrag) return;
+  async function handleMapNodeClick(idx) {
+    if (idx !== activeNodeIndex) return;
   
-    const { card, cardEl, pointerId } = activeDrag;
+    await delay(150);
   
-    try {
-      cardEl.releasePointerCapture(pointerId);
-    } catch (_) {
-      // ignore if already released
+    showGame();
+    setStage("intro");
+  
+    await delay(250);
+  
+    const nodeType = NODE_TYPES[idx] || "battle";
+  
+    if (typeof window.runGameMode !== "function") {
+      console.error("runGameMode is not defined or not loaded");
+      return;
     }
-  
-    // Clean drag styling
-    cardEl.classList.remove("dragging");
-    cardEl.style.position = "";
-    cardEl.style.left = "";
-    cardEl.style.top = "";
-    cardEl.style.zIndex = "";
-  
-    // Hit-test again on drop, ignoring the card itself
-    const prevPointerEvents = cardEl.style.pointerEvents;
-    cardEl.style.pointerEvents = "none";
-    const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
-    cardEl.style.pointerEvents = prevPointerEvents || "";
-  
-    const slotEl = findClosestSlot(dropTarget);
-  
-    if (highlightedSlot) {
-      highlightedSlot.classList.remove("slot-hover");
-      highlightedSlot = null;
-    }
-  
-    if (slotEl) {
-      const placed = placeCardInSlot(card, cardEl, slotEl);
-    
-      if (!placed) {
-        // 🚫 Slot rejected (fixed starting slot or already used)
-        card.inSlot = null;
-        const snapshot = captureHandSnapshot();
-        handEl.appendChild(cardEl);
-        animateHandFromSnapshot(snapshot);
-      }
-    } else {
-      // No slot under drop → back to hand
-      card.inSlot = null;
-      const snapshot = captureHandSnapshot();
-      handEl.appendChild(cardEl);
-      animateHandFromSnapshot(snapshot);
-    }    
-  
-    // 🔓 NEW: unlock the hand height now that the drag is done
-    if (handEl) {
-      handEl.style.minHeight = "";
-    }
-  
-    activeDrag = null;
-    document.removeEventListener("pointermove", onPointerMove);
-    checkIfReadyToValidate();
-  }
-  
 
-  function findClosestSlot(el) {
-    if (!el) return null;
-    if (el.classList && el.classList.contains("slot")) return el;
+    // ✅ Always start the battle wrapper
+    setEquationAreaMode("monster-battle");
 
-    let cur = el;
-    while (cur && cur !== document.body) {
-      if (cur.classList && cur.classList.contains("slot")) {
-        return cur;
-      }
-      cur = cur.parentElement;
-    }
-    return null;
-  }
+    window.runGameMode("monster-battle", {
+      config: {
+        questId: window.CURRENT_QUEST_ID,
+        nodeIndex: idx,
+        nodeType, // battle | chest | boss
+      },
+      onComplete(result) {
+        if (result === "win") {
+          advanceToNextNodeIfAvailable();
+        }
+        showMap();
+        setStage("intro");
+      },
+    });
 
-  function placeCardInSlot(card, cardEl, slotEl) {
-    const slotIndex = Number(slotEl.dataset.slotIndex);
-  
-    // 🚫 1) Block drops onto starting (fixed) slots
-    const puzzle = currentPuzzle;
-    const fixedSlots = (puzzle && puzzle.fixedSlots) || {};
-    const isFixedSlot = Object.prototype.hasOwnProperty.call(fixedSlots, slotIndex);
-  
-    if (isFixedSlot) {
-      // This slot belongs to the original equation scaffolding.
-      // Don't overwrite it; tell caller placement failed.
-      return false;
-    }
-  
-    // 🚫 2) If a movable card is already in this slot, don't stack another
-    const existing = slotState.find((item) => item.slotIndex === slotIndex);
-    if (existing) {
-      return false;
-    }
-  
-    // ✅ 3) Normal placement for user cards
-    card.inSlot = slotIndex;
-    slotState.push({ slotIndex, cardId: card.id, value: card.value });
-  
-    slotEl.classList.add("filled");
-    slotEl.innerHTML = "";
-    slotEl.appendChild(cardEl);
-  
-    return true;
   }  
 
-   // --- Validation ----------------------------------------------------------
-   async function runCardsResolution(isWin) {
-    // Tell the difficulty engine about the outcome
-    if (window.DifficultyEngine) {
-      window.DifficultyEngine.reportResult(isWin ? "win" : "lose");
-      currentDifficulty = window.DifficultyEngine.getCurrentDifficulty();
+  // Attach listeners once DOM is ready
+  mapNodes.forEach((node) => {
+    const idx = Number(node.dataset.nodeIndex);
+    node.addEventListener("click", () => handleMapNodeClick(idx));
+  });
+
+  // After a full win, move to the next node (if any)
+  function advanceToNextNodeIfAvailable() {
+    if (activeNodeIndex < TOTAL_NODES - 1) {
+      activeNodeIndex += 1;
     }
-  
-    // 💡 If the player was correct, hide any leftover option cards in the hand
-    if (isWin && handEl) {
-      handEl.innerHTML = "";
-    }
-  
-    // NEW: compute how far we need to move the rail
-    // so its center lines up with the center of the game area
-    const gameEl = document.querySelector(".game");  
-    if (gameEl) {
-      const gameRect = gameEl.getBoundingClientRect();
-      const railRect = railEl.getBoundingClientRect();
-
-      const gameCenterY = gameRect.top + gameRect.height / 2;
-      const railCenterY = railRect.top + railRect.height / 2;
-      const offsetY = gameCenterY - railCenterY;
-
-      railEl.style.setProperty("--resolve-translateY", `${offsetY}px`);
-    }
-
-    // Clean up any previous resolve states
-    railEl.classList.remove(
-      "resolve",
-      "resolve-win",
-      "resolve-error",
-      "resolve-fade-out"
-    );
-
-    // Slide the cards down as a group (slower: 0.5s in CSS)
-    railEl.classList.add("resolve");
-    await delay(500); // match eq-resolve-slide-down duration
-
-    if (isWin) {
-      // WIN: cards bounce left-to-right, then pause, then fade out → result
-      railEl.classList.add("resolve-win");
-
-      const cards = railEl.querySelectorAll(".card");
-      const perCardDelay = 100;
-      cards.forEach((card, index) => {
-        card.style.animationDelay = `${index * perCardDelay}ms`;
-      });
-
-      const bounceDuration = 450;
-      const maxIndex = Math.max(0, cards.length - 1);
-      const totalBounceTime = bounceDuration + maxIndex * perCardDelay;
-
-      await delay(totalBounceTime);
-      await delay(1000); // extra pause
-
-      railEl.classList.add("resolve-fade-out");
-      await delay(400);
-
-      await runHeroBattleWin();
-    } else {
-      // LOSS: use same timing spine as WIN
-      railEl.querySelectorAll(".card").forEach((card) => {
-        card.style.animation = "none";
-        card.offsetHeight; // reflow
-        card.style.animation = "";
-      });
-
-      railEl.classList.add("resolve-error");
-      await delay(500);
-      await delay(1000);
-      railEl.classList.add("resolve-fade-out");
-      await delay(400);
-
-      await runMonsterBattleWin();
-    }
-  }
-
-  function checkIfReadyToValidate() {
-    const puzzle = currentPuzzle;
-    if (!puzzle) return;
-
-    const slots = railEl.querySelectorAll(".slot");
-    const fixedSlots = puzzle.fixedSlots || {};
-
-    const totalSlots = puzzle.slots;
-    const fixedCount = Object.keys(fixedSlots).length;
-    const movableSlots = totalSlots - fixedCount;
-
-    // We only need the movable slots filled via slotState
-    if (slotState.length !== movableSlots) {
-      return;
-    }
-
-    // Build token list in slot order, mixing fixed + placed cards
-    const tokens = Array.from(slots).map((slot) => {
-      const slotIndex = Number(slot.dataset.slotIndex);
-
-      // Fixed scaffolding?
-      if (Object.prototype.hasOwnProperty.call(fixedSlots, slotIndex)) {
-        return fixedSlots[slotIndex];
-      }
-
-      // Movable card from slotState
-      const item = slotState.find((s) => s.slotIndex === slotIndex);
-      return item ? item.value : null;
-    });
-
-    if (tokens.includes(null)) {
-      return;
-    }
-
-    const result = validateEquation(tokens);
-
-    if (result.valid) {
-      runCardsResolution(true);
-    } else {
-      runCardsResolution(false);
-    }
-  }
-
-  function validateEquation(tokens) {
-    // tokens = full equation, e.g. ["2","1","+","1","6","=","3","7"]
-
-    // 1) Ensure exactly one "=" token
-    const eqIndices = tokens
-      .map((t, idx) => (t === "=" ? idx : -1))
-      .filter((idx) => idx >= 0);
-
-    if (eqIndices.length !== 1) {
-      return { valid: false, message: "Try using only one equals sign." };
-    }
-
-    const eqIndex = eqIndices[0];
-
-    // 2) Split into left and right sides
-    const leftTokens = tokens.slice(0, eqIndex);
-    const rightTokens = tokens.slice(eqIndex + 1);
-
-    if (leftTokens.length === 0 || rightTokens.length === 0) {
-      return { valid: false, message: "Both sides need numbers." };
-    }
-
-    // 3) Evaluate both sides
-    const leftValue = evalSimpleSide(leftTokens);
-    const rightValue = evalSimpleSide(rightTokens);
-
-    if (leftValue === null || rightValue === null) {
-      return {
-        valid: false,
-        message: "That doesn’t look like an attack sentence yet.",
-      };
-    }
-
-    if (leftValue === rightValue) {
-      return {
-        valid: true,
-        combat: {
-          leftValue,
-          rightValue,
-        },
-      };
-    }
-
-    return {
-      valid: false,
-      message: "That attack doesn’t balance yet.",
-      combat: { leftValue, rightValue },
-    };
-  }
-
-  // Supports:
-  // - Only digits: ["3","7"] -> 37
-  // - One operator: ["2","1","+","1","6"] -> 21 + 16
-  // - Still limited to "+" and "-" for now.
-  function evalSimpleSide(sideTokens) {
-    // Count operators
-    const ops = sideTokens.filter((t) => t === "+" || t === "-");
-    if (ops.length === 0) {
-      // Just a number: join all digits
-      if (!sideTokens.every((t) => isNumber(t))) return null;
-      return Number(sideTokens.join(""));
-    }
-
-    if (ops.length > 1) {
-      // For now, we only support one operation per side
-      return null;
-    }
-
-    const opIndex = sideTokens.findIndex((t) => t === "+" || t === "-");
-    const op = sideTokens[opIndex];
-
-    const leftDigits = sideTokens.slice(0, opIndex);
-    const rightDigits = sideTokens.slice(opIndex + 1);
-
-    if (
-      leftDigits.length === 0 ||
-      rightDigits.length === 0 ||
-      !leftDigits.every((t) => isNumber(t)) ||
-      !rightDigits.every((t) => isNumber(t))
-    ) {
-      return null;
-    }
-
-    const leftVal = Number(leftDigits.join(""));
-    const rightVal = Number(rightDigits.join(""));
-
-    if (op === "+") return leftVal + rightVal;
-    if (op === "-") return leftVal - rightVal;
-
-    return null;
-  }
-
-  function isNumber(str) {
-    return /^[0-9]+$/.test(str);
   }
 
   // --- Init ----------------------------------------------------------------
   function init() {
-    loadNextPuzzle();
-    updateOrientationOverlay();
-    hideCards(); // cards hidden until a node launches a battle
+    // No battle init here anymore; battle module will handle its own bootstrap.
 
-    // Start on the world map by default
-    showMap();
-    setStage("intro"); // prepare battle stage but keep it hidden
+    const questScreenEl = document.getElementById("quest-screen");
 
-    if (DEBUG_OUTCOME) {
-      // 🔧 Debug mode bypasses map and jumps straight to a single battle result
-      showGame();
-      resetGameHealth();
-
-      if (DEBUG_OUTCOME === "win") {
-        monsterHealthCurrent = Math.max(
-          0,
-          monsterHealthCurrent - HERO_BASE.damage
-        );
-        renderStatPanels();
-        runHeroBattleWin();
-      } else {
-        heroHealthCurrent = Math.max(
-          0,
-          heroHealthCurrent - MONSTER_BASE.damage
-        );
-        renderStatPanels();
-        runMonsterBattleWin();
+    function showQuest() {
+      if (questScreenEl) {
+        questScreenEl.classList.remove("quest-screen--hidden");
       }
     }
+
+    function hideQuest() {
+      if (questScreenEl) {
+        questScreenEl.classList.add("quest-screen--hidden");
+      }
+    }
+
+    const questListEl = document.getElementById("quest-list");
+
+    if (questListEl) {
+      questListEl.innerHTML = "";
+
+      const quests = window.QUESTS || {};
+      Object.values(quests).forEach((quest) => {
+        const btn = document.createElement("button");
+        btn.className = "quest-card";
+        btn.dataset.questId = quest.id;
+
+        btn.innerHTML = `
+          <div class="quest-card-inner">
+            <div class="quest-card-left">
+              <h2 class="quest-card-title">${quest.title}</h2>
+              <div class="quest-card-pill">${quest.mathTypeLabel}</div>
+            </div>
+            <div class="quest-card-right">
+              <img
+                class="quest-card-hero"
+                src="${quest.heroCardImage}"
+                alt="${quest.title}"
+              />
+            </div>
+          </div>
+        `;
+
+        questListEl.appendChild(btn);
+      });
+    }
+
+    // --------- Startup flow ---------
+    document.querySelectorAll(".quest-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        const questId = card.dataset.questId || "quest_1";
+
+        // Set current quest (local + global)
+        CURRENT_QUEST_ID = questId;
+        window.CURRENT_QUEST_ID = questId;
+
+        // Hide quest screen
+        hideQuest();
+
+        // Enter quest normally
+        showMap();
+        setStage("intro");
+      });
+    });
+
+    // If you ever want to auto-show quest:
+    showQuest();
   }
 
   document.addEventListener("DOMContentLoaded", init);
 })();
-
 
 window.addEventListener("load", () => {
   setTimeout(() => {
@@ -1597,4 +452,3 @@ window.addEventListener("load", () => {
     window.scrollTo(0, 1);
   }, 50);
 });
-
