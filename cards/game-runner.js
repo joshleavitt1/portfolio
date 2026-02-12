@@ -2,6 +2,46 @@
 (function () {
   "use strict";
 
+  function loadPlayerProfile() {
+    try {
+      const raw = localStorage.getItem("MM_PLAYER_PROFILE");
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return {};
+  }
+  
+  function savePlayerProfile(profile) {
+    try {
+      localStorage.setItem("MM_PLAYER_PROFILE", JSON.stringify(profile || {}));
+    } catch (e) {}
+  }
+  
+  function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
+  }
+  
+  function applyEquationCardsLevelProgress(result) {
+    // result: { outcome: "win"|"lose", mistakes: number, ... }
+    const prof = loadPlayerProfile();
+    const current = Number(prof.heroLevel || window.PLAYER_PROFILE?.heroLevel || 1) || 1;
+  
+    let next = current;
+  
+    if (result && result.outcome === "win") {
+      next = current + 1;
+    } else if (result && result.outcome === "lose") {
+      // your lose condition IS "2 mistakes" from equation-cards
+      next = current - 1;
+    }
+  
+    next = clamp(next, 1, 10);
+  
+    prof.heroLevel = next;
+    window.PLAYER_PROFILE = Object.assign({}, window.PLAYER_PROFILE || {}, prof);
+  
+    savePlayerProfile(prof);
+  }
+
   function normalizeRunConfig(questContext, config) {
     // Merge: caller config wins, but questContext fills gaps
     const cfg = Object.assign({}, questContext || {}, config || {});
@@ -54,6 +94,11 @@
       });
 
       const result = await gameInstance.start();
+
+      // ✅ Persist hero level based on equation-cards result
+if (gameId === "equation-cards" && result && (result.outcome === "win" || result.outcome === "lose")) {
+  applyEquationCardsLevelProgress(result);
+}
 
       if (window.DifficultyService?.reportMiniGameResult) {
         window.DifficultyService.reportMiniGameResult(gameId, result);

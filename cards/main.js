@@ -1,6 +1,27 @@
 (function () {
   "use strict";
 
+  try {
+    const raw = localStorage.getItem("MM_PLAYER_PROFILE");
+    if (raw) window.PLAYER_PROFILE = JSON.parse(raw);
+  } catch (e) {}
+  window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
+
+  function savePlayerProfile() {
+    try {
+      localStorage.setItem("MM_PLAYER_PROFILE", JSON.stringify(window.PLAYER_PROFILE || {}));
+    } catch (e) {}
+  }
+  
+  function awardWinProgress() {
+    window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
+    const cur = Number(window.PLAYER_PROFILE.heroLevel || 1);
+    window.PLAYER_PROFILE.heroLevel = cur + 1;
+    savePlayerProfile();
+  }
+
+  window.HERO_LEVEL = Number(window.PLAYER_PROFILE?.heroLevel || 1);
+
   // ---------------------------------------------------------------------
   // Set Viewport
   // ---------------------------------------------------------------------
@@ -58,6 +79,14 @@
   // Map grid layout (tight, deterministic)
   // ---------------------------------------------------------------------
   const gameRoot = document.getElementById("game-root");
+  // ✅ Ensure a bg overlay exists (used for stage-game dimming)
+(function ensureGameOverlay() {
+  if (!gameRoot) return;
+  if (gameRoot.querySelector(".game-bg-overlay")) return;
+  const ov = document.createElement("div");
+  ov.className = "game-bg-overlay";
+  gameRoot.appendChild(ov);
+})();
   const mapScreenEl = document.getElementById("map-screen");
   const mapNodes = document.querySelectorAll(".map-node");
 
@@ -343,6 +372,7 @@
       },
       onComplete(result) {
         if (result === "win") {
+          awardWinProgress();           // ✅ level up + save
           advanceToNextNodeIfAvailable();
         }
         showMap();

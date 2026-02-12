@@ -14,7 +14,7 @@
         spriteImage: "images/games/monster-battle/quest_1/hero/hero_1.png",
         attackImage: "images/games/monster-battle/quest_1/hero/attack_1.png",
         damage: 1,
-        health: 6,
+        health: 1,
       },
 
       heroUpgraded: {
@@ -24,7 +24,7 @@
         spriteImage: "images/games/monster-battle/quest_1/hero/hero_2.png",
         attackImage: "images/games/monster-battle/quest_1/hero/attack_2.png",
         damage: 2,
-        health: 6,
+        health: 1,
       },
 
       monsters: [
@@ -35,7 +35,7 @@
           spriteImage: "images/games/monster-battle/quest_1/monster/monster_1.png",
           attackImage: "images/games/monster-battle/quest_1/monster/attack_1.png",
           damage: 1,
-          health: 6,
+          health: 1,
         },
         {
           id: "monster_2",
@@ -44,7 +44,7 @@
           spriteImage: "images/games/monster-battle/quest_1/monster/monster_2.png",
           attackImage: "images/games/monster-battle/quest_1/monster/attack_2.png",
           damage: 1,
-          health: 6,
+          health: 1,
         },
         {
           id: "monster_3",
@@ -53,7 +53,7 @@
           spriteImage: "images/games/monster-battle/quest_1/monster/monster_3.png",
           attackImage: "images/games/monster-battle/quest_1/monster/attack_3.png",
           damage: 1,
-          health: 6,
+          health: 1,
         },
         {
           id: "monster_4",
@@ -62,7 +62,7 @@
           spriteImage: "images/games/monster-battle/quest_1/monster/monster_4.png",
           attackImage: "images/games/monster-battle/quest_1/monster/attack_4.png",
           damage: 1,
-          health: 6,
+          health: 1,
         },
       ],
 
@@ -72,8 +72,8 @@
         name: "Black Dragon",
         spriteImage: "images/games/monster-battle/quest_1/monster/monster_boss.png",
         attackImage: "images/games/monster-battle/quest_1/monster/attack_boss.png",
-        damage: 2,
-        health: 6,
+        damage: 1,
+        health: 1,
       },
 
       art: {
