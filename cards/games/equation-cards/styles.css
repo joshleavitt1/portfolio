@@ -102,13 +102,18 @@
    FILLED GRID SLOT
    ============================================================ */
 
-.eq-cell.has-token {
-  background: linear-gradient(to bottom, #36DC36 0%, #00B600 100%);
-  border: 4px solid #00B600;
-  color: #ffffff;
-
-  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-}
+   .eq-cell.has-token {
+    background-image: url("../../images/games/equation-cards/game_card.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  
+    border: 4px solid #FFBA62;
+    color: #7D2D00;
+    
+  
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  }
 
 .eq-cell.is-fixed {
   cursor: default;
@@ -133,15 +138,19 @@
   height: var(--eq-square);
 
   border-radius: 12px;
-  border: 4px solid #00B600;
-  background: linear-gradient(to bottom, #36DC36 0%, #00B600 100%);
+  border: 4px solid #FFBA62;
+
+  background-image: url("../../images/games/equation-cards/game_card.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 
   display: grid;
   place-items: center;
 
   font-weight: 800;
   font-size: 24px;
-  color: #ffffff;
+  color: #7D2D00;
 
   box-shadow: 0 4px 8px rgba(0,0,0,0.5);
   transition: transform 120ms ease;

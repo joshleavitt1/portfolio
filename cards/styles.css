@@ -268,107 +268,6 @@ body {
 }
 
 /* --------------------------------------------------------------------- */
-/* Map HUD (Hero card)                                                    */
-/* --------------------------------------------------------------------- */
-
-.map-hud {
-  position: absolute;
-  top: 24px;
-  left: 24px;
-  z-index: 20; /* above map nodes */
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 300ms ease;
-  transform: translateY(-6px);
-}
-
-/* Show HUD only on MAP *and* when JS adds .map-hud--visible */
-.map-screen:not(.map-screen--hidden) .map-hud.map-hud--visible {
-  opacity: 1;
-  pointer-events: none; /* still HUD-only */
-  transform: translateY(0);
-}
-
-.map-hud-card {
-  background-image: url("images/global/map_card.png");
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-
-  width: 200px;
-  height: 110px;
-  padding: 24px;
-
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Map HUD card: animate in exactly like quest card when JS triggers it */
-.map-hud-card.map-hud--animate {
-  transform-origin: top center;
-  animation: quest-card-post 520ms cubic-bezier(0.23, 0.9, 0.25, 1.2) 0ms both;
-}
-
-/* LEFT: hero image */
-.map-hud-left {
-  flex-shrink: 0;
-
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-
-  overflow: hidden;        /* 🔒 crop the sprite to this box */
-  position: relative;
-}
-
-/* Show the sprite at its real size, cropped by the container */
-.map-hud-hero {
-  display: block;
-
-  width: auto;             /* don't scale down */
-  height: auto;
-  max-width: none;
-  max-height: none;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-49%, -37%) scale(0.50);
-}
-
-
-/* RIGHT: name + level (stacked) */
-.map-hud-right {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-}
-
-/* Match quest selector tone */
-.map-hud-name {
-  font-size: 22px;
-  font-weight: 700;
-  color: #7D2D00;
-  line-height: 1;
-}
-
-.map-hud-level {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 4px 8px;
-  border-radius: 4px;
-
-  background-color: #7D2D00;
-
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-}
-
-
-/* --------------------------------------------------------------------- */
 /* World Map screen                                                      */
 /* --------------------------------------------------------------------- */
 
@@ -396,31 +295,37 @@ body {
 }
 
 .map-nodes {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
   width: 100%;
-  max-width: 480px;     /* same cap as battle/cards */
-  height: 100vh;        /* match viewport so % positions feel like your mock */
+  max-width: 480px;
+
+  height: 78vh;   /* 🔥 was 70vh — give it more room */
+  max-height: 760px;
 }
 
 /* Base node style: 100x100 grey circle */
 .map-node {
   position: absolute;
-  width: 96px;
-  height: 96px;
+  width: 88px;
+  height: 88px;
 
   background-color: transparent;
   appearance: none;
   -webkit-appearance: none;
+  border-radius: 50%;
   border: none;
   padding: 0;
-  border-radius: 50%;
 
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
 
   /* ✅ PNG-aware shadow */
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.80));
 
   transform: translate(-50%, -50%);
   cursor: pointer;

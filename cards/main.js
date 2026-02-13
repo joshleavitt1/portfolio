@@ -90,14 +90,6 @@
   const mapScreenEl = document.getElementById("map-screen");
   const mapNodes = document.querySelectorAll(".map-node");
 
-  /* NEW: cache HUD elements inside the map screen */
-  const mapHudEl = mapScreenEl
-    ? mapScreenEl.querySelector(".map-hud")
-    : null;
-  const mapHudCardEl = mapHudEl
-    ? mapHudEl.querySelector(".map-hud-card")
-    : null;
-
   const TOTAL_NODES = 6;
   let activeNodeIndex = 0; // 0 = bottom node
 
@@ -162,7 +154,6 @@
       gameRoot.classList.remove("game--visible");
     }
   
-    updateMapHud();
     layoutMapNodes();
     updateMapNodes();
     animateMapNodesIn();
@@ -180,54 +171,30 @@
     }
   }  
 
-  function updateMapHud() {
-    const heroImg = document.getElementById("map-hero-image");
-    const heroName = document.getElementById("map-hero-name");
-    const heroLevel = document.getElementById("map-hero-level");
-  
-    if (!heroImg || !heroName || !heroLevel) return;
-  
-    // If globals aren't ready, bail out quietly
-    if (!window.QUESTS || !window.CURRENT_QUEST_ID || !window.HEROES) {
-      return;
-    }
-  
-    const quest =
-      window.QUESTS[window.CURRENT_QUEST_ID] || window.QUESTS["quest_1"];
-    if (!quest || !quest.heroId) return;
-  
-    const hero = window.HEROES[quest.heroId];
-    if (!hero) return;
-  
-    heroImg.src = hero.portrait;
-    heroName.textContent = hero.displayName;
-  
-    const level =
-      (window.PLAYER_PROFILE && window.PLAYER_PROFILE.heroLevel) ||
-      hero.baseLevel;
-    heroLevel.textContent = `Level ${level}`;
-  }
-  
-
   const GRID = {
     columns: 3,
-    rows: 6,
-
-    // Percent-based so it scales with screen size
-    colX: [25, 50, 75], // left / center / right
-    // tighter spacing, same bottom start
-    rowY: [88, 76, 64, 51, 39, 26],
+    rows: TOTAL_NODES,
+    colX: [25, 50, 75],
+  
+    // Auto-centered vertical spacing
+    get rowY() {
+      const spread = 88;        // 🔥 controls how tall the whole group is (smaller = closer)
+      const start = (100 - spread) / 2;
+      const step = spread / (TOTAL_NODES - 1);
+  
+      return Array.from({ length: TOTAL_NODES }, (_, i) => start + i * step);
+    },
   };
 
   // Node → grid placement
   // index: { col, row, offsetX?, offsetY? }
   const NODE_LAYOUT = {
-    0: { col: 2, row: 0 }, // bottom center on path
-    1: { col: 1, row: 1 }, // just left of path
-    2: { col: 0, row: 2 }, // back to center (by river)
-    3: { col: 1, row: 3 }, // left hillside
-    4: { col: 2, row: 4 }, // center valley below castle
-    5: { col: 1, row: 5 }, // right under castle
+    0: { col: 2, row: 5 }, // was bottom; now top
+    1: { col: 1, row: 4 },
+    2: { col: 0, row: 3 },
+    3: { col: 1, row: 2 },
+    4: { col: 2, row: 1 },
+    5: { col: 1, row: 0 }, // was top; now bottom
   };
 
   // Node → type (bottom → top)
@@ -314,16 +281,6 @@
       node.style.animationDelay = "";
     });
 
-    // Reset HUD state so it can re-animate each time we show the map
-    if (mapHudEl) {
-      mapHudEl.classList.remove("map-hud--visible");
-    }
-    if (mapHudCardEl) {
-      mapHudCardEl.classList.remove("map-hud--animate");
-      // force reflow so the quest-card-post animation can restart
-      void mapHudCardEl.offsetWidth;
-    }
-
     // Force reflow to restart node animations
     void mapScreenEl.offsetWidth;
 
@@ -348,18 +305,6 @@
         activeNode.classList.add("map-node--shimmer");
       }
     }, lastNodeFinishMs);
-
-    // HUD: show + animate right after the last node finishes
-    const HUD_DELAY_AFTER_NODES_MS = 150; // small beat after nodes
-    setTimeout(() => {
-      if (!mapHudEl || !mapHudCardEl) return;
-
-      // Make HUD visible on the map
-      mapHudEl.classList.add("map-hud--visible");
-
-      // Kick off quest-card-style animation on the card
-      mapHudCardEl.classList.add("map-hud--animate");
-    }, lastNodeFinishMs + HUD_DELAY_AFTER_NODES_MS);
   }
 
   async function handleMapNodeClick(idx) {
