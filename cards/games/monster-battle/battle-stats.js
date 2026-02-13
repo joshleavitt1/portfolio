@@ -14,7 +14,7 @@
         spriteImage: "images/games/monster-battle/quest_1/hero/hero_1.png",
         attackImage: "images/games/monster-battle/quest_1/hero/attack_1.png",
         damage: 1,
-        health: 1,
+        health: 2,
       },
 
       heroUpgraded: {
@@ -24,7 +24,7 @@
         spriteImage: "images/games/monster-battle/quest_1/hero/hero_2.png",
         attackImage: "images/games/monster-battle/quest_1/hero/attack_2.png",
         damage: 2,
-        health: 1,
+        health: 2,
       },
 
       monsters: [
@@ -35,7 +35,7 @@
           spriteImage: "images/games/monster-battle/quest_1/monster/monster_1.png",
           attackImage: "images/games/monster-battle/quest_1/monster/attack_1.png",
           damage: 1,
-          health: 1,
+          health: 2,
         },
         {
           id: "monster_2",
@@ -44,7 +44,7 @@
           spriteImage: "images/games/monster-battle/quest_1/monster/monster_2.png",
           attackImage: "images/games/monster-battle/quest_1/monster/attack_2.png",
           damage: 1,
-          health: 1,
+          health: 2,
         },
         {
           id: "monster_3",
@@ -53,7 +53,7 @@
           spriteImage: "images/games/monster-battle/quest_1/monster/monster_3.png",
           attackImage: "images/games/monster-battle/quest_1/monster/attack_3.png",
           damage: 1,
-          health: 1,
+          health: 2,
         },
         {
           id: "monster_4",
@@ -62,7 +62,7 @@
           spriteImage: "images/games/monster-battle/quest_1/monster/monster_4.png",
           attackImage: "images/games/monster-battle/quest_1/monster/attack_4.png",
           damage: 1,
-          health: 1,
+          health: 2,
         },
       ],
 
@@ -73,7 +73,7 @@
         spriteImage: "images/games/monster-battle/quest_1/monster/monster_boss.png",
         attackImage: "images/games/monster-battle/quest_1/monster/attack_boss.png",
         damage: 1,
-        health: 1,
+        health: 2,
       },
 
       art: {
@@ -82,7 +82,6 @@
           battleCycle: [
             "images/games/monster-battle/quest_1/bg/bg_1.png",
             "images/games/monster-battle/quest_1/bg/bg_2.png",
-            "images/games/monster-battle/quest_1/bg/bg_3.png",
           ],
           boss: "images/games/monster-battle/quest_1/bg/bg_boss.png",
         },
@@ -97,7 +96,7 @@
 
   function chooseHero(cfg, playerLevel) {
     // simple rule: upgraded hero if playerLevel >= 2 (tweak later)
-    if (cfg && cfg.heroUpgraded && Number(playerLevel || 1) >= 2) return cfg.heroUpgraded;
+    // if (cfg && cfg.heroUpgraded && Number(playerLevel || 1) >= 2) return cfg.heroUpgraded;
     return cfg ? cfg.hero : null;
   }
 

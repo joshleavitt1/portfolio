@@ -1,12 +1,18 @@
 :root {
   --eq-gap: 12px;
-  --eq-square: 60px; /* ✅ fixed size per spec */
+  --eq-square: 60px;
 }
 
-/* Game background overlay (between bg image and UI) */
+
+/* ============================================================
+   GAME BACKGROUND OVERLAY (40%)
+   ============================================================ */
+
+/* Fade EVERYTHING (cards + overlay + bg) together on exit */
 #game-root {
-  position: relative;
+  opacity: 1;
 }
+
 
 #game-root .game-bg-overlay {
   position: absolute;
@@ -15,22 +21,20 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 250ms ease;
-  z-index: 0; /* above bg pseudo layers, below content */
+  z-index: 0;
 }
 
-/* Ensure game UI sits above overlay */
 #game-root > * {
   position: relative;
   z-index: 1;
 }
 
-/* Turn overlay on during the GAME stage */
 #game-root.stage-game .game-bg-overlay {
   opacity: 1;
 }
 
 /* ============================================================
-   Equation Cards (updated visual spec)
+   LAYOUT
    ============================================================ */
 
 #grid-area {
@@ -45,9 +49,9 @@
   gap: 40px;
 }
 
-/* -----------------------------
+/* ============================================================
    GRID (5×5)
------------------------------- */
+   ============================================================ */
 
 .eq-grid {
   display: grid;
@@ -57,23 +61,22 @@
 
   grid-template-columns: repeat(5, var(--eq-square));
   grid-template-rows: repeat(5, var(--eq-square));
-
   gap: var(--eq-gap);
 
   justify-content: center;
   align-items: center;
 }
 
-/* -----------------------------
+/* ============================================================
    EMPTY SLOT
------------------------------- */
+   ============================================================ */
 
 .eq-cell {
   width: var(--eq-square);
   height: var(--eq-square);
 
   border-radius: 12px;
-  border: 4px solid #FF8F00;
+  border: 4px solid #FFBA62;
   background: #FFE4C1;
 
   display: grid;
@@ -86,33 +89,34 @@
   appearance: none;
   -webkit-appearance: none;
 
-  box-shadow: 0 6px 0 rgba(0,0,0,0.18);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
 }
 
-/* -----------------------------
-   FILLED SLOT (grid)
------------------------------- */
+/* Hover (non-fixed only) */
+.eq-cell:not(.is-fixed):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+/* ============================================================
+   FILLED GRID SLOT
+   ============================================================ */
 
 .eq-cell.has-token {
   background: linear-gradient(to bottom, #36DC36 0%, #00B600 100%);
-  border: 4px solid #36DC36;
+  border: 4px solid #00B600;
   color: #ffffff;
+
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
 }
 
-/* Fixed cells */
 .eq-cell.is-fixed {
   cursor: default;
 }
 
-/* Hover */
-.eq-cell:not(.is-fixed):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 16px rgba(0, 0, 0, 0.25);
-}
-
-/* -----------------------------
-   HAND (choice cards)
------------------------------- */
+/* ============================================================
+   HAND (PLAYER CARDS)
+   ============================================================ */
 
 .eq-hand {
   display: grid;
@@ -129,7 +133,7 @@
   height: var(--eq-square);
 
   border-radius: 12px;
-  border: 4px solid #36DC36;
+  border: 4px solid #00B600;
   background: linear-gradient(to bottom, #36DC36 0%, #00B600 100%);
 
   display: grid;
@@ -139,18 +143,20 @@
   font-size: 24px;
   color: #ffffff;
 
-  box-shadow: 0 6px 0 rgba(0,0,0,0.18);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  transition: transform 120ms ease;
 }
 
 .eq-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 18px rgba(0, 0, 0, 0.30);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
 }
 
 .eq-card.is-selected {
   transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.55),
-              0 12px 18px rgba(0, 0, 0, 0.30);
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,0.55),
+    0 4px 8px rgba(0,0,0,0.5);
 }
 
 .eq-card.is-used {
@@ -159,25 +165,34 @@
 }
 
 .eq-card.is-dragging {
-  opacity: 0.35;
+  opacity: 0.35;          /* original stays visible but inactive */
   transform: scale(0.98);
+  pointer-events: none;   /* prevents accidental re-click during drag */
 }
+
+/* ============================================================
+   DRAG GHOST
+   ============================================================ */
 
 .drag-ghost {
   opacity: 1;
   transform: translate(-9999px, -9999px) scale(1.06);
-  filter: drop-shadow(0 14px 18px rgba(0,0,0,0.35));
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
 }
 
-/* Drop hover highlight */
+/* ============================================================
+   DROP HOVER
+   ============================================================ */
+
 .eq-cell.drop-hover {
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.55),
-              0 6px 0 rgba(0,0,0,0.18);
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,0.55),
+    0 4px 8px rgba(0,0,0,0.5);
 }
 
-/* -----------------------------
-   Wrong answer wiggle
------------------------------- */
+/* ============================================================
+   WRONG ANSWER WIGGLE
+   ============================================================ */
 
 #grid-area.eq-bad {
   animation: eq-wiggle 800ms ease-in-out;
@@ -192,12 +207,15 @@
   100% { transform: translateX(0); }
 }
 
-/* Win highlight for solved rows */
+/* ============================================================
+   WIN ROW HIGHLIGHT
+   ============================================================ */
+
 .eq-cell.eq-row-win {
   animation: eq-row-win 800ms ease-in-out;
   box-shadow:
     0 0 0 4px rgba(255,255,255,0.65),
-    0 10px 0 rgba(0,0,0,0.18);
+    0 4px 8px rgba(0,0,0,0.5);
 }
 
 @keyframes eq-row-win {

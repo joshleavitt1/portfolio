@@ -380,7 +380,6 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-image: url("images/quests/quest_1/bg/map.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -406,8 +405,8 @@ body {
 /* Base node style: 100x100 grey circle */
 .map-node {
   position: absolute;
-  width: 110px;
-  height: 110px;
+  width: 96px;
+  height: 96px;
 
   background-color: transparent;
   appearance: none;

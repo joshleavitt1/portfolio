@@ -150,6 +150,7 @@
   let cinematicMonster;
   let cinematicVs;
   let cinematicAttack;
+  let cinematicAttackFx;
   let cinematicStage;
   let cinematicHeroCharacter;
   let cinematicMonsterCharacter;
@@ -423,6 +424,13 @@ function hideCards() {
     cinematicAttack.classList.remove("cinematic-attack-in", "cinematic-attack-out");
   }
 
+  if (cinematicAttackFx) {
+    cinematicAttackFx.style.opacity = "0";
+    cinematicAttackFx.style.left = "";
+    cinematicAttackFx.style.top = "";
+    cinematicAttackFx.classList.remove("fx-in", "fx-out");
+  }
+
   // ---------------------------------------------------------------------------
   // Modal helpers
   // ---------------------------------------------------------------------------
@@ -589,6 +597,12 @@ function hideCards() {
 
     cinematicAttack.style.left = `${centerX - attackWidth / 2}px`;
     cinematicAttack.style.top = `${centerY - attackHeight / 2}px`;
+
+    if (cinematicAttackFx) {
+      const fxSize = 260;
+      cinematicAttackFx.style.left = `${centerX - fxSize / 2}px`;
+      cinematicAttackFx.style.top = `${centerY - fxSize / 2}px`;
+    }
   }
 
   function positionAttackOverHero() {
@@ -687,6 +701,7 @@ function hideCards() {
     positionAttackOverMonster();
     restartAnimation(cinematicAttack, "cinematic-attack-in");
     restartAnimation(cinematicMonster, "cinematic-hit");
+    restartAnimation(cinematicAttackFx, "fx-in");
 
     await delay(500);
 
@@ -696,6 +711,7 @@ function hideCards() {
     await delay(800);
 
     restartAnimation(cinematicAttack, "cinematic-attack-out");
+    restartAnimation(cinematicAttackFx, "fx-out");
 
     await delay(2000);
 
@@ -848,6 +864,12 @@ function hideCards() {
     cinematicVs = document.getElementById("cinematic-vs");
     cinematicAttack = document.getElementById("cinematic-attack");
     cinematicStage = document.querySelector(".cinematic-stage");
+    // Premium impact FX layer (behind the attack sprite)
+if (cinematicStage && !cinematicAttackFx) {
+  cinematicAttackFx = document.createElement("div");
+  cinematicAttackFx.className = "cinematic-attack-fx";
+  cinematicStage.appendChild(cinematicAttackFx);
+}
     cinematicHeroCharacter = document.querySelector(".cinematic-character--hero");
     cinematicMonsterCharacter = document.querySelector(".cinematic-character--monster");
 

@@ -150,6 +150,21 @@
     return rows;
   }
 
+  function getSolvedRowsAndCols(puz) {
+    const rows = new Set();
+    const cols = new Set();
+  
+    for (const eq of puz.equations) {
+      const res = validateEquation(eq, puz.cells);
+      if (!(res.complete && res.ok)) continue;
+  
+      if (eq.type === "horizontal") rows.add(eq.row);
+      if (eq.type === "vertical") cols.add(eq.col);
+    }
+  
+    return { rows, cols };
+  }
+
   // ============================================================
   // Levels 1–10 (now all return solution[])
   // ============================================================
@@ -371,7 +386,7 @@
 
     return {
       A00: 10, X: 10, Y: 10, Z: 10, W: 20,
-      C04: 20, C40: 20, B42: 10, C44: 30
+      C04: 20, C40: 20, B42: 10, C44: 30,
     };
   }
 
@@ -570,14 +585,32 @@
       document.body;
 
     let cleanupFns = [];
+    let activeDrag = null; // { ghost, onMove, onUp, card, pointerId }
 
     function addCleanup(fn) {
       cleanupFns.push(fn);
     }
 
+    function stopActiveDrag() {
+      if (!activeDrag) return;
+      const { ghost, onMove, onUp, card, pointerId } = activeDrag;
+
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+
+      try { card && card.classList.remove("is-dragging"); } catch (e) {}
+      try { ghost && ghost.remove(); } catch (e) {}
+      try { card && card.releasePointerCapture(pointerId); } catch (e) {}
+
+      activeDrag = null;
+    }
+
     function destroy() {
+      stopActiveDrag();
+
       try { cleanupFns.forEach((fn) => fn()); } catch (e) {}
       cleanupFns = [];
+
       if (mount) {
         const grid = mount.querySelector(".eq-grid");
         const hand = mount.querySelector(".eq-hand");
@@ -600,18 +633,35 @@
         function finish(outcome, extra = {}) {
           if (finished) return;
           finished = true;
-          destroy();
-          resolve({
-            outcome,
-            mistakes,
-            ...extra,
-          });
+        
+          const root = mount.closest("#game-root") || document.getElementById("game-root");
+        
+          // 1) Start a single unified fade (cards + overlay + bg)
+          if (root) root.classList.add("eq-exiting");
+        
+          // 2) After fade completes, resolve (so parent can continue), then teardown
+          setTimeout(() => {
+            resolve({
+              outcome,
+              mistakes,
+              ...extra,
+            });
+        
+            // Tear down after paint so we don't stutter the transition
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                destroy();
+                if (root) root.classList.remove("eq-exiting"); // clean for next run
+              });
+            });
+          }, 260);
         }
 
         let gridEl = mount.querySelector(".eq-grid");
         let handEl = mount.querySelector(".eq-hand");
 
         mount.classList.remove("is-hidden");
+        mount.style.pointerEvents = "";
 
         if (!gridEl || !handEl) {
           clearMount(mount);
@@ -641,7 +691,9 @@
         function bumpMistakeAndMaybeEnd() {
           mistakes += 1;
           if (mistakes >= 2) {
-            finish("lose", { reason: "two-mistakes" });
+            setTimeout(() => {
+              finish("lose", { reason: "two-mistakes" });
+            }, 2000);
           }
         }
 
@@ -660,28 +712,55 @@
           return cell;
         }
 
-        function celebrateSolvedRows(rows) {
-          const rowSet = new Set(rows);
-          const cells = mount.querySelectorAll(".eq-cell");
-          cells.forEach((btn) => {
-            const i = parseInt(btn.dataset.cellIndex, 10);
-            const r = Math.floor(i / SIZE);
-            if (rowSet.has(r)) btn.classList.add("eq-row-win");
-          });
-
+        function celebrateSolvedRowsThenCols({ rows, cols }) {
+          const cells = Array.from(mount.querySelectorAll(".eq-cell"));
+          const CLS = "eq-row-win";
+          const PHASE_MS = 800; // match your CSS eq-row-win animation length
+          const GAP_MS = 120;
+        
+          const clearAll = () => cells.forEach((btn) => btn.classList.remove(CLS));
+        
+          // Force animation to restart reliably
+          const restartFor = (predicate) => {
+            // 1) remove class from all
+            clearAll();
+        
+            // 2) force a reflow so the browser "commits" the removal
+            // (mount is fine; 25 cells only, this is cheap)
+            void mount.offsetWidth;
+        
+            // 3) add class back only to the cells we want
+            cells.forEach((btn) => {
+              const i = parseInt(btn.dataset.cellIndex, 10);
+              if (predicate(i)) btn.classList.add(CLS);
+            });
+          };
+        
+          // Phase 1: ALL solved horizontal rows at once
+          if (rows.size) {
+            restartFor((i) => {
+              const r = Math.floor(i / SIZE);
+              return rows.has(r);
+            });
+          }
+        
+          // Phase 2: ALL solved vertical columns at once (only if any)
+          if (cols.size) {
+            setTimeout(() => {
+              restartFor((i) => {
+                const c = i % SIZE;
+                return cols.has(c);
+              });
+            }, PHASE_MS + GAP_MS);
+          }
+        
+          // Cleanup at end
           setTimeout(() => {
-            const cells2 = mount.querySelectorAll(".eq-cell.eq-row-win");
-            cells2.forEach((btn) => btn.classList.remove("eq-row-win"));
-          }, 900);
+            clearAll();
+          }, (PHASE_MS + GAP_MS) + (cols.size ? PHASE_MS : 0));
         }
 
-        function revertPlacement(cellIndex, handIndex, token) {
-          puz.cells[cellIndex] = null;
-          puz.hand[handIndex] = token;
-          render();
-        }
-
-        // ✅ Primary rule: WRONG CELL -> shake + revert + mistake
+        // ✅ Primary rule: WRONG CELL -> shake + snap back + mistake
         function placeToken(cellIndex, handIndex) {
           const token = puz.hand[handIndex];
           if (token == null) return false;
@@ -704,11 +783,16 @@
           // If puzzle fully solved correctly => win
           const res = validatePuzzle(puz);
           if (res.complete && res.ok) {
-            const solvedRows = getSolvedHorizontalRows(puz);
-            celebrateSolvedRows(solvedRows);
+            const solved = getSolvedRowsAndCols(puz);
+            celebrateSolvedRowsThenCols(solved);
+          
             setTimeout(() => {
-              finish("win", { solvedRows });
-            }, 350);
+              finish("win", {
+                solvedRows: Array.from(solved.rows),
+                solvedCols: Array.from(solved.cols),
+              });
+            }, 2000);
+          
             return true;
           }
 
@@ -765,6 +849,7 @@
               card.textContent = token;
               card.disabled = false;
             }
+
             card.style.touchAction = "none";
 
             const onDown = (ev) => {
@@ -772,26 +857,44 @@
               if (puz.hand[hi] == null) return;
 
               ev.preventDefault();
+
+              // If somehow a drag is still active, kill it
+              stopActiveDrag();
+
+              // Dim the original immediately (CSS controls opacity)
               card.classList.add("is-dragging");
 
+              // Capture rect + where inside the card the pointer went down
+              const rect = card.getBoundingClientRect();
+              const grabOffsetX = ev.clientX - rect.left;
+              const grabOffsetY = ev.clientY - rect.top;
+
+              // Full opacity copy that starts at the card location
               const ghost = card.cloneNode(true);
               ghost.classList.add("drag-ghost");
+              ghost.classList.remove("is-dragging"); // don't inherit dim styling
+
+              ghost.style.position = "fixed";
               ghost.style.left = "0px";
               ghost.style.top = "0px";
-              ghost.style.transform = "translate(-9999px, -9999px) scale(1.06)";
-              ghost.style.position = "fixed";
+              ghost.style.width = rect.width + "px";
+              ghost.style.height = rect.height + "px";
               ghost.style.pointerEvents = "none";
               ghost.style.zIndex = "9999";
-              ghost.style.width = card.offsetWidth + "px";
-              ghost.style.height = card.offsetHeight + "px";
+              ghost.style.willChange = "transform";
+
+              // ✅ Spawn EXACTLY on top of the original card
+              ghost.style.transform = `translate(${rect.left}px, ${rect.top}px) scale(1.06)`;
+
               document.body.appendChild(ghost);
 
               const moveGhost = (x, y) => {
                 ghost.style.transform =
-                  `translate(${x - ghost.offsetWidth / 2}px, ${y - ghost.offsetHeight / 2}px) scale(1.06)`;
+                  `translate(${x - grabOffsetX}px, ${y - grabOffsetY}px) scale(1.06)`;
               };
 
-              moveGhost(ev.clientX, ev.clientY);
+              // Stability on some browsers
+              try { card.setPointerCapture(ev.pointerId); } catch (e) {}
 
               const onMove = (e) => {
                 moveGhost(e.clientX, e.clientY);
@@ -814,7 +917,13 @@
 
                 card.classList.remove("is-dragging");
                 ghost.remove();
+
+                try { card.releasePointerCapture(ev.pointerId); } catch (err) {}
+
+                activeDrag = null;
               };
+
+              activeDrag = { ghost, onMove, onUp, card, pointerId: ev.pointerId };
 
               window.addEventListener("pointermove", onMove);
               window.addEventListener("pointerup", onUp);

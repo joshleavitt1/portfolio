@@ -129,22 +129,40 @@
   function showMap() {
     if (mapScreenEl) {
       const quests = window.QUESTS || {};
-      const quest =
-        quests[CURRENT_QUEST_ID] ||
-        quests["quest_1"];
-
-      if (quest?.mapBackground) {
-        mapScreenEl.style.backgroundImage = `url("${quest.mapBackground}")`;
+      const quest = quests[CURRENT_QUEST_ID] || quests["quest_1"];
+  
+      // Force map layer above game layer
+      mapScreenEl.style.zIndex = "30";
+  
+      const url = quest?.mapBackground;
+  
+      if (url) {
+        // Verify the image actually loads (prevents battle bg showing through on 404)
+        const img = new Image();
+        img.onload = () => {
+          mapScreenEl.style.backgroundImage = `url("${url}")`;
+        };
+        img.onerror = () => {
+          console.warn("[Map] mapBackground failed to load:", url);
+          // Visible fallback so you don't see battle bg underneath
+          mapScreenEl.style.backgroundImage = "none";
+          mapScreenEl.style.backgroundColor = "#000";
+        };
+        img.src = url;
+      } else {
+        console.warn("[Map] Missing quest.mapBackground for:", CURRENT_QUEST_ID);
+        mapScreenEl.style.backgroundImage = "none";
+        mapScreenEl.style.backgroundColor = "#000";
       }
-
+  
       mapScreenEl.classList.remove("map-screen--hidden");
     }
+  
     if (gameRoot) {
       gameRoot.classList.remove("game--visible");
     }
-
+  
     updateMapHud();
-
     layoutMapNodes();
     updateMapNodes();
     animateMapNodesIn();
