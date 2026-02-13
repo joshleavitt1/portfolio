@@ -634,27 +634,49 @@
           if (finished) return;
           finished = true;
         
-          const root = mount.closest("#game-root") || document.getElementById("game-root");
+          const root =
+            mount.closest("#game-root") || document.getElementById("game-root");
         
-          // 1) Start a single unified fade (cards + overlay + bg)
-          if (root) root.classList.add("eq-exiting");
+          // 1) Lock background + start unified fade
+          if (root) {
+            root.classList.add("eq-exiting");
         
-          // 2) After fade completes, resolve (so parent can continue), then teardown
-          setTimeout(() => {
+            // Force the browser to APPLY the eq-exiting styles immediately
+            // (prevents 1-frame bg flash when parent swaps stage in the same tick)
+            void root.offsetHeight;
+          }
+        
+          // 2) Resolve on next microtask (after styles have applied)
+          queueMicrotask(() => {
             resolve({
               outcome,
               mistakes,
               ...extra,
             });
+          });
         
-            // Tear down after paint so we don't stutter the transition
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                destroy();
-                if (root) root.classList.remove("eq-exiting"); // clean for next run
-              });
-            });
-          }, 260);
+          // 3) Tear down exactly when the opacity transition finishes
+          let cleaned = false;
+          const cleanup = () => {
+            if (cleaned) return;
+            cleaned = true;
+            destroy();
+            if (root) root.classList.remove("eq-exiting");
+            if (root) root.removeEventListener("transitionend", onEnd);
+          };
+        
+          const onEnd = (e) => {
+            // Only react to the root opacity fade
+            if (!root) return;
+            if (e.target !== root) return;
+            if (e.propertyName !== "opacity") return;
+            cleanup();
+          };
+        
+          if (root) root.addEventListener("transitionend", onEnd);
+        
+          // Safety fallback in case transitionend doesn't fire (rare, but happens)
+          setTimeout(cleanup, 350);
         }
 
         let gridEl = mount.querySelector(".eq-grid");

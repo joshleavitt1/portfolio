@@ -478,46 +478,6 @@ body {
 }
 
 /* --------------------------------------------------------------------- */
-/* Modal                                                                 */
-/* --------------------------------------------------------------------- */
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.65);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 16px;
-}
-
-.modal-backdrop.show {
-  display: flex;
-}
-
-.modal {
-  width: 100%;
-  max-width: 360px;
-  background: var(--surface);
-  border-radius: 18px;
-  padding: 24px;
-  text-align: center;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.3);
-}
-
-.modal-title {
-  font-size: 1.4rem;
-  margin-bottom: 10px;
-}
-
-.modal-message {
-  font-size: 0.95rem;
-  color: var(--ink-muted);
-  margin-bottom: 20px;
-}
-
-/* --------------------------------------------------------------------- */
 /* Orientation overlay                                                   */
 /* --------------------------------------------------------------------- */
 

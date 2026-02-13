@@ -6,7 +6,7 @@
     <!-- Standard responsive viewport (no PWA/web-app flags) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="games/monster-battle/styles.css">
+    <link rel="stylesheet" href="games/monster-battle/styles.css" />
     <link rel="stylesheet" href="games/equation-cards/styles.css" />
   </head>
   
@@ -120,24 +120,22 @@
         </div>
       </section>
 
-    </main>
-  </div>
+      <!-- Battle Result Screen -->
+      <section id="battle-result" class="battle-result is-hidden" aria-hidden="true">
+        <div class="battle-result__panel">
+          <div class="battle-result__pill quest-card-pill">Quest Update</div>
+        
+          <h2 class="battle-result__title quest-card-title">Victory!</h2>
+        
+          <p class="battle-result__sub">
+            You defeated the monster. Return home to continue your journey.
+          </p>
+        
+          <button class="battle-result__btn primary-btn">Back to Map</button>
+        </div>
+      </section>
 
-  <!-- Result Modal -->
-  <div
-    class="modal-backdrop"
-    id="result-modal"
-    aria-hidden="true"
-    role="dialog"
-    aria-modal="true"
-  >
-    <div class="modal">
-      <h2 class="modal-title" id="modal-title"></h2>
-      <p class="modal-message" id="modal-message"></p>
-      <button class="primary-btn" id="modal-primary-btn">
-        Play Another
-      </button>
-    </div>
+    </main>
   </div>
 
   <!-- Orientation Overlay (shown in portrait on mobile) -->

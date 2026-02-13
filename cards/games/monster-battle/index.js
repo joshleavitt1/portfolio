@@ -2,6 +2,56 @@
 (function () {
   "use strict";
 
+  // ---------------------------------------------------------------------
+// New Result Screen (replaces old modal)
+// Uses #battle-result markup from index.html
+// ---------------------------------------------------------------------
+function showBattleResult({ win, monsterName } = {}) {
+  const root = document.getElementById("battle-result");
+  if (!root) return;
+
+  const titleEl = root.querySelector(".battle-result__title");
+  const subEl = root.querySelector(".battle-result__sub");
+  const pillEl = root.querySelector(".battle-result__pill");
+  const btnEl = root.querySelector(".battle-result__btn");
+
+  // ✅ Never crash if markup changes
+  if (pillEl) pillEl.textContent = "Quest Update";
+
+  if (titleEl) titleEl.textContent = win ? "Victory!" : "Defeat…";
+
+  if (subEl) {
+    subEl.textContent = win
+      ? `You defeated ${monsterName || "the monster"}. Return home to continue your journey.`
+      : `The ${monsterName || "monster"} got the better of you. Head back and try again!`;
+  }
+
+  if (btnEl) btnEl.textContent = "Back to Map";
+
+  root.classList.remove("is-hidden");
+  root.setAttribute("aria-hidden", "false");
+}
+
+function hideBattleResult() {
+  const el = document.getElementById("battle-result");
+  if (!el) return;
+
+  // If you have a fade-out class, add it here; otherwise just hide.
+  // el.classList.add("is-fading"); // optional
+
+  setTimeout(() => {
+    el.classList.add("is-hidden");
+    el.setAttribute("aria-hidden", "true");
+    // el.classList.remove("is-fading"); // optional
+  }, 0);
+}
+
+function setText(sel, value, scope = document) {
+  const el = scope.querySelector(sel);
+  if (!el) return; // don't crash if DOM differs between modes
+  el.textContent = value;
+}
+
   // ---------------------------------------------------------------------------
   // Battle stats & quest art (from battle-stats.js / QUESTS globals)
   // ---------------------------------------------------------------------------
@@ -165,10 +215,11 @@
   let gridAreaEl;
 
   // Modal
-  let modalEl;
-  let modalTitleEl;
-  let modalMessageEl;
-  let modalPrimaryBtn;
+  let resultEl;
+  let resultKickerEl;
+  let resultTitleEl;
+  let resultSubEl;
+  let resultHomeBtn;
 
   // Orientation overlay
   let orientationOverlayEl;
@@ -424,36 +475,15 @@ function hideCards() {
     cinematicAttack.classList.remove("cinematic-attack-in", "cinematic-attack-out");
   }
 
-  if (cinematicAttackFx) {
-    cinematicAttackFx.style.opacity = "0";
-    cinematicAttackFx.style.left = "";
-    cinematicAttackFx.style.top = "";
-    cinematicAttackFx.classList.remove("fx-in", "fx-out");
-  }
-
   // ---------------------------------------------------------------------------
   // Modal helpers
   // ---------------------------------------------------------------------------
   function hideModal() {
-    if (!modalEl) return;
-    modalEl.classList.remove("show");
-    modalEl.setAttribute("aria-hidden", "true");
+    // Old modal removed; keep as safe no-op to prevent crashes.
   }
 
-  function showModal(title, message, buttonLabel, onPrimaryClick) {
-    if (!modalEl) return;
-
-    modalTitleEl.textContent = title;
-    modalMessageEl.textContent = message;
-    modalPrimaryBtn.textContent = buttonLabel;
-
-    modalPrimaryBtn.onclick = () => {
-      hideModal();
-      if (typeof onPrimaryClick === "function") onPrimaryClick();
-    };
-
-    modalEl.classList.add("show");
-    modalEl.setAttribute("aria-hidden", "false");
+  function showModal() {
+    // Old modal removed; keep as safe no-op to prevent crashes.
   }
 
   // ---------------------------------------------------------------------------
@@ -564,19 +594,92 @@ function hideCards() {
     );
   }
 
+    // ---------------------------------------------------------------------------
+  // Battle end (NEW result screen + resolve)
+  // ---------------------------------------------------------------------------
+  let battleEnded = false;
+
+  // Wait for the result button click, resolve, then hide screen
+  function showBattleResultScreen({ outcome }) {
+    // outcome is "win" or "lose"
+    const win = outcome === "win";
+  
+    showBattleResult({
+      win,
+      monsterName: MONSTER_BASE?.name,
+    });
+  
+    return new Promise((resolve) => {
+      const root = document.getElementById("battle-result");
+      if (!root) {
+        resolve();
+        return;
+      }
+  
+      const btn = root.querySelector(".battle-result__btn");
+      if (!btn) {
+        console.warn("[MonsterBattle] Missing .battle-result__btn");
+        resolve();
+        return;
+      }
+  
+      const onClick = () => {
+        btn.removeEventListener("click", onClick);
+        hideBattleResult();
+        // If you add a fade transition later, bump this to match it.
+        setTimeout(() => resolve(), 0);
+      };
+  
+      btn.addEventListener("click", onClick, { once: true });
+    });
+  }
+
+  function hideBattleResultScreenNow() {
+    const root = document.getElementById("battle-result");
+    if (!root) return;
+    root.classList.add("is-hidden");
+    root.setAttribute("aria-hidden", "true");
+  }
+
+  async function endBattle(outcome) {
+    if (battleEnded) return;
+    battleEnded = true;
+
+    // Ensure UI state is sane
+    setStage("result");
+    showCinematic();
+    hideCards();
+    hideMiniGameMount();
+
+    // Show your new screen and WAIT for click
+    await showBattleResultScreen({ outcome });
+
+    // Resolve back to runner (this is what actually returns you to map)
+    if (pendingResolve) {
+      pendingResolve(outcome);
+      pendingResolve = null;
+    }
+  }
+
   function checkGameOver() {
+    // Hero wins
     if (monsterHealthCurrent <= 0 && heroHealthCurrent > 0) {
-      showHeroGameWinModal();
+      void endBattle("win");
       return true;
     }
+
+    // Monster wins
     if (heroHealthCurrent <= 0 && monsterHealthCurrent > 0) {
-      showMonsterGameWinModal();
+      void endBattle("lose");
       return true;
     }
+
+    // Tie -> treat as win (your existing behavior)
     if (heroHealthCurrent <= 0 && monsterHealthCurrent <= 0) {
-      showHeroGameWinModal();
+      void endBattle("win");
       return true;
     }
+
     return false;
   }
 
@@ -597,12 +700,6 @@ function hideCards() {
 
     cinematicAttack.style.left = `${centerX - attackWidth / 2}px`;
     cinematicAttack.style.top = `${centerY - attackHeight / 2}px`;
-
-    if (cinematicAttackFx) {
-      const fxSize = 260;
-      cinematicAttackFx.style.left = `${centerX - fxSize / 2}px`;
-      cinematicAttackFx.style.top = `${centerY - fxSize / 2}px`;
-    }
   }
 
   function positionAttackOverHero() {
@@ -701,7 +798,6 @@ function hideCards() {
     positionAttackOverMonster();
     restartAnimation(cinematicAttack, "cinematic-attack-in");
     restartAnimation(cinematicMonster, "cinematic-hit");
-    restartAnimation(cinematicAttackFx, "fx-in");
 
     await delay(500);
 
@@ -711,7 +807,6 @@ function hideCards() {
     await delay(800);
 
     restartAnimation(cinematicAttack, "cinematic-attack-out");
-    restartAnimation(cinematicAttackFx, "fx-out");
 
     await delay(2000);
 
@@ -782,6 +877,8 @@ function hideCards() {
   // Start a new battle run
   // ---------------------------------------------------------------------------
   function startNewBattleRun(config) {
+    battleEnded = false;
+    hideBattleResultScreenNow();
     currentBattleConfig = config || {};
     const isBossBattle = currentBattleConfig.nodeType === "boss";
 
@@ -864,12 +961,7 @@ function hideCards() {
     cinematicVs = document.getElementById("cinematic-vs");
     cinematicAttack = document.getElementById("cinematic-attack");
     cinematicStage = document.querySelector(".cinematic-stage");
-    // Premium impact FX layer (behind the attack sprite)
-if (cinematicStage && !cinematicAttackFx) {
-  cinematicAttackFx = document.createElement("div");
-  cinematicAttackFx.className = "cinematic-attack-fx";
-  cinematicStage.appendChild(cinematicAttackFx);
-}
+
     cinematicHeroCharacter = document.querySelector(".cinematic-character--hero");
     cinematicMonsterCharacter = document.querySelector(".cinematic-character--monster");
 
@@ -877,11 +969,6 @@ if (cinematicStage && !cinematicAttackFx) {
     monsterNameEl = document.getElementById("monster-name");
     heroHealthFillEl = document.getElementById("hero-health-fill");
     monsterHealthFillEl = document.getElementById("monster-health-fill");
-
-    modalEl = document.getElementById("result-modal");
-    modalTitleEl = document.getElementById("modal-title");
-    modalMessageEl = document.getElementById("modal-message");
-    modalPrimaryBtn = document.getElementById("modal-primary-btn");
 
     orientationOverlayEl = document.getElementById("orientation-overlay");
 

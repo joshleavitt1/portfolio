@@ -11,8 +11,25 @@
 /* Fade EVERYTHING (cards + overlay + bg) together on exit */
 #game-root {
   opacity: 1;
+  transition: opacity 260ms ease;
 }
 
+#game-root.eq-exiting {
+  opacity: 0;
+}
+
+/* During exit, FORCE battle background visible and game background hidden
+   (works with your #game-root::before / ::after background layering) */
+#game-root.eq-exiting::before { opacity: 1 !important; }
+#game-root.eq-exiting::after  { opacity: 0 !important; }
+
+/* Also keep the dark overlay ON as a safety mask during the handoff */
+#game-root.eq-exiting .game-bg-overlay { opacity: 1 !important; }
+
+/* Keep the dark overlay ON while exiting, even if stage-game gets removed */
+#game-root.eq-exiting .game-bg-overlay {
+  opacity: 1 !important;
+}
 
 #game-root .game-bg-overlay {
   position: absolute;
@@ -25,7 +42,6 @@
 }
 
 #game-root > * {
-  position: relative;
   z-index: 1;
 }
 
