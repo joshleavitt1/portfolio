@@ -16,7 +16,7 @@
   function awardWinProgress() {
     window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
     const cur = Number(window.PLAYER_PROFILE.heroLevel || 1);
-    window.PLAYER_PROFILE.heroLevel = cur + 1;
+    window.PLAYER_PROFILE.heroLevel = Math.min(cur + 1, 10);
     savePlayerProfile();
   }
 
@@ -44,7 +44,54 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  
   // ---------------------------------------------------------------------
+  // Orientation / device blocker (site-wide)
+  // Shows the "Mobile Portrait Only" overlay everywhere, not just battle.
+  // ---------------------------------------------------------------------
+  const orientationOverlayEl = document.getElementById("orientation-overlay");
+
+  function lockScreen() {
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+  }
+
+  function unlockScreen() {
+    document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.width = "";
+  }
+
+  function updateOrientationOverlay() {
+    if (!orientationOverlayEl) return;
+
+    const isMobileWidth = window.innerWidth <= 900;
+    const isPortrait =
+      window.matchMedia("(orientation: portrait)").matches ||
+      window.innerHeight > window.innerWidth;
+    const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+    // Allowed: touch phone-ish, portrait
+    const isAllowed = isMobileWidth && isTouch && isPortrait;
+
+    if (!isAllowed) {
+      orientationOverlayEl.classList.add("show");
+      orientationOverlayEl.setAttribute("aria-hidden", "false");
+      lockScreen();
+    } else {
+      orientationOverlayEl.classList.remove("show");
+      orientationOverlayEl.setAttribute("aria-hidden", "true");
+      unlockScreen();
+    }
+  }
+
+  window.addEventListener("resize", updateOrientationOverlay);
+  window.addEventListener("orientationchange", updateOrientationOverlay);
+  updateOrientationOverlay();
+
+
+// ---------------------------------------------------------------------
   // Set Areas
   // ---------------------------------------------------------------------
 
@@ -91,7 +138,9 @@
   const mapNodes = document.querySelectorAll(".map-node");
 
   const TOTAL_NODES = 6;
-  let activeNodeIndex = 0; // 0 = bottom node
+// DEBUG: allow forcing the active node from URL
+const urlNode = Number(new URLSearchParams(window.location.search).get("node"));
+let activeNodeIndex = Number.isFinite(urlNode) ? urlNode : 0; // 0 = bottom node
 
   // You can keep your existing setStage if it's already defined above;
   // this version matches what you've been using.
@@ -101,24 +150,7 @@
     gameRoot.classList.add(`stage-${stage}`);
   }
 
-  function layoutMapNodes() {
-    mapNodes.forEach((node) => {
-      const idx = Number(node.dataset.nodeIndex);
-      const layout = NODE_LAYOUT[idx];
-      if (!layout) return;
-
-      const x = GRID.colX[layout.col];
-      const y = GRID.rowY[layout.row];
-
-      const offsetX = layout.offsetX ?? 0;
-      const offsetY = layout.offsetY ?? 0;
-
-      node.style.left = `calc(${x}% + ${offsetX}px)`;
-      node.style.top = `calc(${y}% + ${offsetY}px)`;
-    });
-  }
-
-  function showMap() {
+    function showMap() {
     if (mapScreenEl) {
       const quests = window.QUESTS || {};
       const quest = quests[CURRENT_QUEST_ID] || quests["quest_1"];
@@ -171,48 +203,62 @@
     }
   }  
 
-  const GRID = {
-    columns: 3,
-    rows: TOTAL_NODES,
-    colX: [25, 50, 75],
   
-    // Auto-centered vertical spacing
-    get rowY() {
-      const spread = 88;        // 🔥 controls how tall the whole group is (smaller = closer)
-      const start = (100 - spread) / 2;
-      const step = spread / (TOTAL_NODES - 1);
-  
-      return Array.from({ length: TOTAL_NODES }, (_, i) => start + i * step);
-    },
-  };
+  // ---------------------------------------------------------------------
+  // Map node layout (mobile-first, always centered)
+  // ---------------------------------------------------------------------
+  // Nodes are indexed bottom (0) → top (TOTAL_NODES-1)
+  // We compute positions in PX from the actual container rect so it looks good
+  // across all phone sizes/aspect ratios.
+  function layoutMapNodes() {
+    const container = document.getElementById("map-nodes");
+    if (!container) return;
 
-  // Node → grid placement
-  // index: { col, row, offsetX?, offsetY? }
-  const NODE_LAYOUT = {
-    0: { col: 2, row: 5 }, // was bottom; now top
-    1: { col: 1, row: 4 },
-    2: { col: 0, row: 3 },
-    3: { col: 1, row: 2 },
-    4: { col: 2, row: 1 },
-    5: { col: 1, row: 0 }, // was top; now bottom
-  };
+    const rect = container.getBoundingClientRect();
+
+    // Match CSS: clamp(72px, 18vw, 96px) but compute here so spacing is correct.
+    const nodeSize = Math.max(100, Math.min(140, rect.width * 0.18));
+    const half = nodeSize / 2;
+
+    // Even vertical spacing, and center the whole stack within the container.
+    const usableH = Math.max(0, rect.height - nodeSize);
+    const step = TOTAL_NODES > 1 ? usableH / (TOTAL_NODES - 1) : 0;
+
+    // Zig-zag around the center, but keep the whole group centered horizontally.
+    // Boss (top) stays centered.
+    const xOffsets = [0.22, 0.0, -0.22, 0.0, 0.22, 0.0];
+    const centerX = rect.width / 2;
+
+    mapNodes.forEach((node) => {
+      const idx = Number(node.dataset.nodeIndex);
+
+      // y=0 is top. We want idx=0 near bottom, idx increases upward.
+      const yFromTop = rect.height - (half + idx * step);
+      const xFromLeft = centerX + (xOffsets[idx] || 0) * rect.width;
+
+      node.style.width = `${nodeSize}px`;
+      node.style.height = `${nodeSize}px`;
+      node.style.left = `${xFromLeft}px`;
+      node.style.top = `${yFromTop}px`;
+    });
+  }
 
   // Node → type (bottom → top)
+  // 1 battle, 2 battle, 3 treasure, 4 battle, 5 battle, 6 boss
   const NODE_TYPES = [
-    "battle", // 0 (bottom)
-    "battle", // 1
-    "chest", // 2
-    "battle", // 3
-    "battle", // 4
-    "boss", // 5 (top / castle)
+    "battle",   // 0 (node 1)
+    "battle",   // 1 (node 2)
+    "chest", // 2 (node 3)
+    "battle",   // 3 (node 4)
+    "battle",   // 4 (node 5)
+    "boss",     // 5 (node 6)
   ];
+
 
   const NODE_SPRITES_FALLBACK = {
     battle: "images/quests/quest_1/node/battle.png",
-    chest: "images/quests/quest_1/node/chest.png",
     boss: "images/quests/quest_1/node/boss.png",
     lock: "images/quests/quest_1/node/lock.png",
-    check: "images/quests/quest_1/node/check.png",
   };
 
   function getNodeSpritesForCurrentQuest() {
@@ -224,45 +270,24 @@
     return (quest && quest.nodeSprites) || NODE_SPRITES_FALLBACK;
   }  
 
-  function updateMapNodes() {
+    function updateMapNodes() {
     const sprites = getNodeSpritesForCurrentQuest();
 
     mapNodes.forEach((node) => {
       const idx = Number(node.dataset.nodeIndex);
       const type = NODE_TYPES[idx] ?? "battle";
 
-      node.classList.remove(
-        "map-node--active",
-        "map-node--locked",
-        "map-node--completed",
-        "map-node--bw",
-        "map-node--shimmer"
-      );
+      node.classList.remove("map-node--active", "map-node--shimmer");
 
-      if (idx < activeNodeIndex) {
-        node.classList.add("map-node--completed");
-        node.disabled = true;
-        node.style.backgroundImage = `url("${sprites.check}")`;
-        return;
-      }
-
+      // ✅ Only the active node is clickable. Everything else is a FULL-COLOR lock.
       if (idx === activeNodeIndex) {
-        node.classList.add("map-node--active");
         node.disabled = false;
+        node.classList.add("map-node--active");
         node.style.backgroundImage = `url("${sprites[type]}")`;
-        return;
+      } else {
+        node.disabled = true;
+        node.style.backgroundImage = `url("${sprites.lock}")`;
       }
-
-      node.disabled = true;
-
-      if (type === "chest" || type === "boss") {
-        node.classList.add("map-node--bw");
-        node.style.backgroundImage = `url("${sprites[type]}")`;
-        return;
-      }
-
-      node.classList.add("map-node--locked");
-      node.style.backgroundImage = `url("${sprites.lock}")`;
     });
   }
 
@@ -319,31 +344,71 @@
   
     const nodeType = NODE_TYPES[idx] || "battle";
   
+    // Battle ordinal = which battle is this among battle nodes only (0..)
+    const battleOrdinal =
+      NODE_TYPES.slice(0, idx + 1).filter((t) => t === "battle").length - 1;
+  
     if (typeof window.runGameMode !== "function") {
       console.error("runGameMode is not defined or not loaded");
       return;
     }
+  
+// ✅ Chest = hero evolution mini-game
+if (nodeType === "chest") {
+  window.runGameMode("hero-evolution", {
+    config: {
+      questId: window.CURRENT_QUEST_ID,
+      nodeIndex: idx,
+      nodeType,
+    },
+    onComplete(result) {
+      // mark evolved (so battles swap to upgraded hero)
+      window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
+      window.PLAYER_PROFILE.heroEvolved = true;
 
-    // ✅ Always start the battle wrapper
+      try {
+        localStorage.setItem("MM_PLAYER_PROFILE", JSON.stringify(window.PLAYER_PROFILE || {}));
+      } catch (e) {}
+      
+      // ✅ update current battle globals immediately
+      try {
+        const cfg = window.getBattleConfigForRun
+          ? window.getBattleConfigForRun({ questId: window.CURRENT_QUEST_ID })
+          : null;
+        if (cfg && cfg.hero) {
+          window.BATTLE_STATS = window.BATTLE_STATS || {};
+          window.BATTLE_STATS.hero = cfg.hero;
+        }
+      } catch (e) {}
+
+      advanceToNextNodeIfAvailable();
+      showMap();
+      setStage("intro");
+    },
+  });
+  return;
+}
+  
+    // ✅ Otherwise: normal monster battle
     setEquationAreaMode("monster-battle");
-
+  
     window.runGameMode("monster-battle", {
       config: {
         questId: window.CURRENT_QUEST_ID,
         nodeIndex: idx,
-        nodeType, // battle | chest | boss
+        nodeType,      // "battle" | "boss"
+        battleOrdinal,
       },
       onComplete(result) {
         if (result === "win") {
-          awardWinProgress();           // ✅ level up + save
+          awardWinProgress();
           advanceToNextNodeIfAvailable();
         }
         showMap();
         setStage("intro");
       },
     });
-
-  }  
+  }
 
   // Attach listeners once DOM is ready
   mapNodes.forEach((node) => {

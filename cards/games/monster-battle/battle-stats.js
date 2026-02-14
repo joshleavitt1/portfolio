@@ -94,10 +94,13 @@
     return entries.find((q) => q && q.questId === questId) || null;
   }
 
-  function chooseHero(cfg, playerLevel) {
-    // simple rule: upgraded hero if playerLevel >= 2 (tweak later)
-    // if (cfg && cfg.heroUpgraded && Number(playerLevel || 1) >= 2) return cfg.heroUpgraded;
-    return cfg ? cfg.hero : null;
+  function chooseHero(cfg) {
+    if (!cfg) return null;
+  
+    const prof = window.PLAYER_PROFILE || {};
+    const evolved = !!prof.heroEvolved; // ✅ ONLY evolution triggers sprite 2
+  
+    return evolved && cfg.heroUpgraded ? cfg.heroUpgraded : cfg.hero;
   }
 
   function randomFrom(arr) {
@@ -108,16 +111,21 @@
   // ✅ Foundation API: the battle mode can call this using the runner config
   window.getBattleConfigForRun = function (runConfig) {
     const questId = runConfig && runConfig.questId;
-    const playerLevel = runConfig && runConfig.playerLevel;
-
-    const questCfg = getQuestConfigByQuestId(questId) || window.QUEST_BATTLE_STATS[1] || null;
+  
+    const questCfg =
+      getQuestConfigByQuestId(questId) || window.QUEST_BATTLE_STATS[1] || null;
     if (!questCfg) return null;
-
-    const hero = chooseHero(questCfg, playerLevel);
+  
+    const hero = chooseHero(questCfg);
+  
+    // ✅ keep old code synced
+    window.BATTLE_STATS = window.BATTLE_STATS || {};
+    window.BATTLE_STATS.hero = hero;
+  
     const monsterPool = questCfg.monsters || [];
     const boss = questCfg.boss || null;
     const art = questCfg.art || null;
-
+  
     return { questCfg, hero, monsterPool, boss, art };
   };
 
@@ -125,10 +133,13 @@
   // Back-compat globals (so existing monster-battle code keeps working)
   // ------------------------------------------------------------------
   // Default to quest_1 until monster-battle passes a runConfig and overwrites.
-  const defaultQuest = getQuestConfigByQuestId("quest_1") || window.QUEST_BATTLE_STATS[1] || null;
-
+  const prof = window.PLAYER_PROFILE || {};
+  const evolved = !!prof.heroEvolved;
+  
   window.BATTLE_STATS = {
-    hero: defaultQuest ? defaultQuest.hero : null,
+    hero: defaultQuest
+      ? (evolved && defaultQuest.heroUpgraded ? defaultQuest.heroUpgraded : defaultQuest.hero)
+      : null,
     monster: defaultQuest && defaultQuest.monsters && defaultQuest.monsters.length
       ? defaultQuest.monsters[0]
       : null,

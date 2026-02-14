@@ -229,6 +229,8 @@ function setText(sel, value, scope = document) {
   let MONSTER_BASE;
   let MONSTER_POOLS;
   let HERO_LEVEL;
+  let QUEST_CFG = null;
+  let BOSS_BASE = null;
   let battleBackgroundIndex = 0;
 
   let heroHealthCurrent = 0;
@@ -298,6 +300,7 @@ function setText(sel, value, scope = document) {
     if (cinematicMonster && MONSTER_BASE.spriteImage) {
       cinematicMonster.src = MONSTER_BASE.spriteImage;
     }
+    renderStatPanels();
 
     monsterHealthCurrent = MONSTER_BASE.health;
     renderStatPanels();
@@ -882,24 +885,52 @@ function hideCards() {
     currentBattleConfig = config || {};
     const isBossBattle = currentBattleConfig.nodeType === "boss";
 
-    // Monster selection
-    if (
-      isBossBattle &&
-      typeof window.getBossStatsForCurrentQuest === "function"
-    ) {
-      const bossStats = window.getBossStatsForCurrentQuest();
+    
+    // Monster selection (deterministic per node)
+    if (isBossBattle) {
+      const bossStats =
+        BOSS_BASE ||
+        (typeof window.getBossStatsForCurrentQuest === "function"
+          ? window.getBossStatsForCurrentQuest()
+          : null);
+
       if (bossStats) {
         MONSTER_BASE = bossStats;
-        monsterHealthCurrent = MONSTER_BASE.health;
-        if (cinematicMonster && MONSTER_BASE.spriteImage) {
-          cinematicMonster.src = MONSTER_BASE.spriteImage;
-        }
-      } else {
-        selectMonsterForCurrentHeroLevel();
       }
     } else {
-      selectMonsterForCurrentHeroLevel();
+      // ✅ battleOrdinal comes from main.js (skips treasure node)
+      // battle nodes: 0,1,3,4 => ordinal 0,1,2,3
+      let battleOrdinal = Number(currentBattleConfig.battleOrdinal);
+    
+      // Fallback if you haven't wired battleOrdinal yet:
+      if (!Number.isFinite(battleOrdinal)) {
+        const nodeIdx = Number(currentBattleConfig.nodeIndex);
+        const map = { 0: 0, 1: 1, 3: 2, 4: 3 }; // <-- skips treasure at idx 2
+        battleOrdinal = map[nodeIdx];
+      }
+    
+      const mapped =
+        Number.isFinite(battleOrdinal) &&
+        QUEST_CFG &&
+        Array.isArray(QUEST_CFG.monsters) &&
+        QUEST_CFG.monsters[battleOrdinal]
+          ? QUEST_CFG.monsters[battleOrdinal]
+          : null;
+    
+      if (mapped) {
+        MONSTER_BASE = mapped;
+      } else {
+        // Fallback: keep old rotation behavior
+        selectMonsterForCurrentHeroLevel();
+      }
     }
+
+    // Sync monster sprite + health after selection
+    monsterHealthCurrent = MONSTER_BASE.health;
+    if (cinematicMonster && MONSTER_BASE.spriteImage) {
+      cinematicMonster.src = MONSTER_BASE.spriteImage;
+    }
+
 
     // Background selection
     const battleBg = isBossBattle
@@ -935,6 +966,8 @@ function hideCards() {
     HERO_BASE = statsConfig.HERO_BASE || SAFE_DEFAULT_STATS.hero;
     MONSTER_BASE = statsConfig.DEFAULT_MONSTER || SAFE_DEFAULT_STATS.monster;
     MONSTER_POOLS = statsConfig.MONSTER_POOLS || { 1: [MONSTER_BASE] };
+    QUEST_CFG = statsConfig.QUEST || null;
+    BOSS_BASE = statsConfig.BOSS || null;
   
     // Prefer run context level, then hero.level, then global, then 1
     HERO_LEVEL =

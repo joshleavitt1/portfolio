@@ -310,8 +310,6 @@ body {
 /* Base node style: 100x100 grey circle */
 .map-node {
   position: absolute;
-  width: 88px;
-  height: 88px;
 
   background-color: transparent;
   appearance: none;
@@ -475,6 +473,21 @@ body {
 .primary-btn:active {
   transform: translateY(1px) scale(0.98);
   box-shadow: 0 4px 12px rgba(0, 85, 252, 0.45);
+}
+
+/* --------------------------------------------------------------------- */
+/* Cinematic                                               */
+/* --------------------------------------------------------------------- */
+
+/* --- Hero evolution layout (treasure node) --- */
+.cinematic.cinematic--evolution .cinematic-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cinematic.cinematic--evolution .cinematic-character--hero {
+  transform: none !important;
 }
 
 /* --------------------------------------------------------------------- */
