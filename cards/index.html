@@ -96,41 +96,22 @@
         </div>
       </section>
 
-      <!-- Equation / Game Area -->
-      <section class="equation-area">
-        <!-- Old rail-based combat row (battle mode) -->
-        <div class="combat-row" id="combat-row">
-          <div class="equation-rail" id="equation-rail">
-            <!-- slots populated by JS -->
+      <!-- Universal Game Mount -->
+      <section id="game-mount" class="game-mount is-hidden"></section>
+
+      <!-- Reusable Post Message Screen -->
+      <section id="postmsg" class="postmsg is-hidden" aria-hidden="true">
+        <div class="postmsg__bg" aria-hidden="true"></div>
+
+        <div class="postmsg__wrap" role="dialog" aria-modal="true" aria-labelledby="postmsg-title">
+          <img class="postmsg__seal" src="images/global/seal.png" alt="" />
+
+          <div class="postmsg__text">
+            <h2 id="postmsg-title" class="postmsg__title">Title</h2>
+            <p id="postmsg-sub" class="postmsg__sub">Sub</p>
           </div>
-        </div>
 
-        <!-- NEW 4x4 grid mini-game (used in ?game mode) -->
-        <div class="grid-area is-hidden" id="grid-area">
-          <div class="grid-equation-row" id="grid-equation-row"></div>
-          <div class="grid-choice" id="grid-choice"></div>
-        </div>        
-      </section>
-
-      <!-- Card Hand -->
-      <section class="hand-area">
-        <div class="card-hand" id="card-hand">
-          <!-- cards populated by JS -->
-        </div>
-      </section>
-
-      <!-- Battle Result Screen -->
-      <section id="battle-result" class="battle-result is-hidden" aria-hidden="true">
-        <div class="battle-result__panel">
-          <div class="battle-result__pill quest-card-pill">Quest Update</div>
-        
-          <h2 class="battle-result__title quest-card-title">Victory!</h2>
-        
-          <p class="battle-result__sub">
-            You defeated the monster. Return home to continue your journey.
-          </p>
-        
-          <button class="battle-result__btn primary-btn">Back to Map</button>
+          <button id="postmsg-btn" class="postmsg__btn" type="button">Continue</button>
         </div>
       </section>
 
@@ -162,6 +143,7 @@
   <script src="games/monster-battle/index.js"></script>
 
   <script src="games/hero-evolution/index.js"></script>
+  <script src="postmsg.js"></script>
   
   <script src="main.js"></script>
   

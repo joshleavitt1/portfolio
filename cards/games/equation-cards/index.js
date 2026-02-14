@@ -581,7 +581,7 @@
     const mount =
       config.mount ||
       config.host ||
-      document.getElementById("grid-area") ||
+      document.getElementById("game-mount") ||
       document.body;
 
     let cleanupFns = [];
@@ -606,18 +606,35 @@
     }
 
     function destroy() {
-      stopActiveDrag();
-
-      try { cleanupFns.forEach((fn) => fn()); } catch (e) {}
+      // 1️⃣ Stop any active interactions
+      stopActiveDrag?.();
+    
+      // 2️⃣ Run registered cleanup functions (event listeners, intervals, observers)
+      try {
+        cleanupFns.forEach((fn) => {
+          try { fn(); } catch (e) {}
+        });
+      } catch (e) {}
+    
       cleanupFns = [];
-
+    
+      // 3️⃣ Clear timers / RAF if you use them
+      if (rafId) cancelAnimationFrame(rafId);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    
+      rafId = null;
+      timeoutId = null;
+      intervalId = null;
+    
+      // 4️⃣ Clear mount completely (🔥 this is the scalable part)
       if (mount) {
-        const grid = mount.querySelector(".eq-grid");
-        const hand = mount.querySelector(".eq-hand");
-        if (grid) grid.remove();
-        if (hand) hand.remove();
+        mount.innerHTML = "";
         mount.classList.remove("eq-bad", "eq-shake");
       }
+    
+      // 5️⃣ Null references (helps GC on mobile)
+      mount = null;
     }
 
     async function start() {

@@ -53,7 +53,7 @@
    LAYOUT
    ============================================================ */
 
-#grid-area {
+#game-mount {
   width: calc(100vw - 32px);
   height: calc(100vh - 32px);
   margin: 16px;
@@ -219,7 +219,7 @@
    WRONG ANSWER WIGGLE
    ============================================================ */
 
-#grid-area.eq-bad {
+#game-mount.eq-bad {
   animation: eq-wiggle 800ms ease-in-out;
 }
 

@@ -532,6 +532,103 @@ body {
 }
 
 /* --------------------------------------------------------------------- */
+/* Post Message Screen                                                    */
+/* --------------------------------------------------------------------- */
+
+#postmsg {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+#postmsg.is-hidden {
+  display: none;
+}
+
+/* BG: images/global/scroll_bg.png */
+#postmsg .postmsg__bg {
+  position: absolute;
+  height: 100%;
+  inset: 0;
+  background-image: url("images/global/scroll_bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+/* Centered stack, 40px gap */
+#postmsg .postmsg__wrap {
+  position: relative;
+  z-index: 1;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  gap: 40px;
+  width: 100%;
+  padding-bottom: 40px;
+}
+
+/* Seal */
+#postmsg .postmsg__seal {
+  width: 120px;
+  height: auto;
+  display: block;
+}
+
+/* Title */
+#postmsg .postmsg__title {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  color: #770101;
+  line-height: 1.15;
+}
+
+/* Sub */
+#postmsg .postmsg__sub {
+  margin: 14px 0 0;
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: #770101;
+  line-height: 1.5;
+  white-space: pre-line; /* allows \n line breaks */
+}
+
+/* Button spec */
+#postmsg .postmsg__btn {
+  width: 200px;
+  height:64px;
+
+  border-radius: 14px;
+  border: 4px solid #770101;
+
+  background: linear-gradient(to bottom, #D62C2F, #770101);
+
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+
+  cursor: pointer;
+  user-select: none;
+
+  box-shadow: 0 10px 18px rgba(0,0,0,0.20);
+}
+
+#postmsg .postmsg__btn:active {
+  transform: scale(0.98);
+}
+
+/* --------------------------------------------------------------------- */
 /* Desktop cap                                                           */
 /* --------------------------------------------------------------------- */
 

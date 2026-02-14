@@ -2,21 +2,23 @@
   "use strict";
 
   try {
-    const raw = localStorage.getItem("MM_PLAYER_PROFILE");
+    const raw = localStorage.getItem("PLAYER_PROFILE");
     if (raw) window.PLAYER_PROFILE = JSON.parse(raw);
   } catch (e) {}
   window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
 
   function savePlayerProfile() {
     try {
-      localStorage.setItem("MM_PLAYER_PROFILE", JSON.stringify(window.PLAYER_PROFILE || {}));
+      localStorage.setItem("PLAYER_PROFILE", JSON.stringify(window.PLAYER_PROFILE || {}));
     } catch (e) {}
   }
   
   function awardWinProgress() {
     window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
     const cur = Number(window.PLAYER_PROFILE.heroLevel || 1);
-    window.PLAYER_PROFILE.heroLevel = Math.min(cur + 1, 10);
+    const next = Math.min(cur + 1, 10);
+    window.PLAYER_PROFILE.heroLevel = next;
+    window.HERO_LEVEL = next; // ✅ keep global in sync
     savePlayerProfile();
   }
 
@@ -366,9 +368,7 @@ if (nodeType === "chest") {
       window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
       window.PLAYER_PROFILE.heroEvolved = true;
 
-      try {
-        localStorage.setItem("MM_PLAYER_PROFILE", JSON.stringify(window.PLAYER_PROFILE || {}));
-      } catch (e) {}
+      savePlayerProfile();
       
       // ✅ update current battle globals immediately
       try {
@@ -474,17 +474,30 @@ if (nodeType === "chest") {
 
     // --------- Startup flow ---------
     document.querySelectorAll(".quest-card").forEach((card) => {
-      card.addEventListener("click", () => {
+      card.addEventListener("click", async () => {
         const questId = card.dataset.questId || "quest_1";
-
-        // Set current quest (local + global)
+    
+        window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
+        window.PLAYER_PROFILE.acceptedQuests = window.PLAYER_PROFILE.acceptedQuests || {};
+    
+        const firstTime = !window.PLAYER_PROFILE.acceptedQuests[questId];
+    
+        // set quest id globally
         CURRENT_QUEST_ID = questId;
         window.CURRENT_QUEST_ID = questId;
-
-        // Hide quest screen
+    
+        // hide quest screen first (so overlay feels like the next step)
         hideQuest();
-
-        // Enter quest normally
+    
+        // first-time accept message
+        if (firstTime && window.POSTMSG && typeof window.POSTMSG.show === "function") {
+          await window.POSTMSG.show({ questId, key: "accept" });
+    
+          window.PLAYER_PROFILE.acceptedQuests[questId] = true;
+          savePlayerProfile(); // ✅ use your existing helper
+        }
+    
+        // proceed
         showMap();
         setStage("intro");
       });

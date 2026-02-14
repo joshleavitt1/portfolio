@@ -2,56 +2,6 @@
 (function () {
   "use strict";
 
-  // ---------------------------------------------------------------------
-// New Result Screen (replaces old modal)
-// Uses #battle-result markup from index.html
-// ---------------------------------------------------------------------
-function showBattleResult({ win, monsterName } = {}) {
-  const root = document.getElementById("battle-result");
-  if (!root) return;
-
-  const titleEl = root.querySelector(".battle-result__title");
-  const subEl = root.querySelector(".battle-result__sub");
-  const pillEl = root.querySelector(".battle-result__pill");
-  const btnEl = root.querySelector(".battle-result__btn");
-
-  // ✅ Never crash if markup changes
-  if (pillEl) pillEl.textContent = "Quest Update";
-
-  if (titleEl) titleEl.textContent = win ? "Victory!" : "Defeat…";
-
-  if (subEl) {
-    subEl.textContent = win
-      ? `You defeated ${monsterName || "the monster"}. Return home to continue your journey.`
-      : `The ${monsterName || "monster"} got the better of you. Head back and try again!`;
-  }
-
-  if (btnEl) btnEl.textContent = "Back to Map";
-
-  root.classList.remove("is-hidden");
-  root.setAttribute("aria-hidden", "false");
-}
-
-function hideBattleResult() {
-  const el = document.getElementById("battle-result");
-  if (!el) return;
-
-  // If you have a fade-out class, add it here; otherwise just hide.
-  // el.classList.add("is-fading"); // optional
-
-  setTimeout(() => {
-    el.classList.add("is-hidden");
-    el.setAttribute("aria-hidden", "true");
-    // el.classList.remove("is-fading"); // optional
-  }, 0);
-}
-
-function setText(sel, value, scope = document) {
-  const el = scope.querySelector(sel);
-  if (!el) return; // don't crash if DOM differs between modes
-  el.textContent = value;
-}
-
   // ---------------------------------------------------------------------------
   // Battle stats & quest art (from battle-stats.js / QUESTS globals)
   // ---------------------------------------------------------------------------
@@ -188,19 +138,13 @@ function setText(sel, value, scope = document) {
 
   // Core DOM
   let gameRoot;
-  let railEl;
-  let handEl;
-  let combatRowEl;
 
   // Cinematics
   let cinematicEl;
-  let equationAreaEl;
-  let handAreaEl;
   let cinematicHero;
   let cinematicMonster;
   let cinematicVs;
   let cinematicAttack;
-  let cinematicAttackFx;
   let cinematicStage;
   let cinematicHeroCharacter;
   let cinematicMonsterCharacter;
@@ -213,13 +157,6 @@ function setText(sel, value, scope = document) {
 
   // Mini-game mount
   let gridAreaEl;
-
-  // Modal
-  let resultEl;
-  let resultKickerEl;
-  let resultTitleEl;
-  let resultSubEl;
-  let resultHomeBtn;
 
   // Orientation overlay
   let orientationOverlayEl;
@@ -400,24 +337,15 @@ function setText(sel, value, scope = document) {
     if (cinematicEl) cinematicEl.classList.add("is-hidden");
   }
 
-// OLD rail/hand mini-game (kept, but now hidden when using grid mode)
-function showCards() {
-  if (combatRowEl) combatRowEl.classList.remove("is-hidden");
-  if (handAreaEl) handAreaEl.classList.remove("is-hidden");
-}
-function hideCards() {
-  if (combatRowEl) combatRowEl.classList.add("is-hidden");
-  if (handAreaEl) handAreaEl.classList.add("is-hidden");
-}
-
-  // NEW mini-game mount (grid)
   function showMiniGameMount() {
-    // always hide old rail/hand UI
-    hideCards();
     if (gridAreaEl) gridAreaEl.classList.remove("is-hidden");
   }
+  
   function hideMiniGameMount() {
-    if (gridAreaEl) gridAreaEl.classList.add("is-hidden");
+    if (gridAreaEl) {
+      gridAreaEl.innerHTML = ""; // 🔥 important cleanup
+      gridAreaEl.classList.add("is-hidden");
+    }
   }
 
   function setStage(stage) {
@@ -479,17 +407,6 @@ function hideCards() {
   }
 
   // ---------------------------------------------------------------------------
-  // Modal helpers
-  // ---------------------------------------------------------------------------
-  function hideModal() {
-    // Old modal removed; keep as safe no-op to prevent crashes.
-  }
-
-  function showModal() {
-    // Old modal removed; keep as safe no-op to prevent crashes.
-  }
-
-  // ---------------------------------------------------------------------------
   // Mini-game runner + outcome reporting
   // ---------------------------------------------------------------------------
   function reportMiniGameOutcome(outcome) {
@@ -514,7 +431,7 @@ function hideCards() {
   }
 
   async function runMiniGameRound() {
-    const miniGameId = "equation-cards";
+    const miniGameId = currentBattleConfig.miniGameId || "equation-cards";
   
     // If the game isn’t registered, don’t hang forever waiting for onComplete.
     const gameFactory = window.GameRegistry?.get?.(miniGameId);
@@ -566,124 +483,32 @@ function hideCards() {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Game over
-  // ---------------------------------------------------------------------------
-  function showHeroGameWinModal() {
-    showModal(
-      "You Won the Game!",
-      "The monster has been defeated. Continue your journey on the map.",
-      "Back to Map",
-      () => {
-        if (pendingResolve) {
-          pendingResolve("win");
-          pendingResolve = null;
-        }
-      }
-    );
-  }
-
-  function showMonsterGameWinModal() {
-    showModal(
-      "Game Over",
-      "The monster defeated you. Return to the map and try again.",
-      "Back to Map",
-      () => {
-        if (pendingResolve) {
-          pendingResolve("lose");
-          pendingResolve = null;
-        }
-      }
-    );
-  }
 
     // ---------------------------------------------------------------------------
   // Battle end (NEW result screen + resolve)
   // ---------------------------------------------------------------------------
-  let battleEnded = false;
-
-  // Wait for the result button click, resolve, then hide screen
-  function showBattleResultScreen({ outcome }) {
-    // outcome is "win" or "lose"
-    const win = outcome === "win";
-  
-    showBattleResult({
-      win,
-      monsterName: MONSTER_BASE?.name,
-    });
-  
-    return new Promise((resolve) => {
-      const root = document.getElementById("battle-result");
-      if (!root) {
-        resolve();
-        return;
-      }
-  
-      const btn = root.querySelector(".battle-result__btn");
-      if (!btn) {
-        console.warn("[MonsterBattle] Missing .battle-result__btn");
-        resolve();
-        return;
-      }
-  
-      const onClick = () => {
-        btn.removeEventListener("click", onClick);
-        hideBattleResult();
-        // If you add a fade transition later, bump this to match it.
-        setTimeout(() => resolve(), 0);
-      };
-  
-      btn.addEventListener("click", onClick, { once: true });
-    });
-  }
-
-  function hideBattleResultScreenNow() {
-    const root = document.getElementById("battle-result");
+  function hidePostMsgNow() {
+    const root = document.getElementById("postmsg");
     if (!root) return;
     root.classList.add("is-hidden");
     root.setAttribute("aria-hidden", "true");
   }
-
-  async function endBattle(outcome) {
-    if (battleEnded) return;
-    battleEnded = true;
-
-    // Ensure UI state is sane
-    setStage("result");
-    showCinematic();
-    hideCards();
-    hideMiniGameMount();
-
-    // Show your new screen and WAIT for click
-    await showBattleResultScreen({ outcome });
-
-    // Resolve back to runner (this is what actually returns you to map)
-    if (pendingResolve) {
-      pendingResolve(outcome);
-      pendingResolve = null;
+  
+  async function showPostMsgScreen({ outcome }) {
+    const questId = window.CURRENT_QUEST_ID || "quest_1";
+    const isBossBattle = currentBattleConfig && currentBattleConfig.nodeType === "boss";
+  
+    const key =
+      outcome === "win"
+        ? (isBossBattle ? "boss_win" : "win")
+        : "loss";
+  
+    if (window.POSTMSG && typeof window.POSTMSG.show === "function") {
+      await window.POSTMSG.show({ questId, key });
+      return;
     }
-  }
-
-  function checkGameOver() {
-    // Hero wins
-    if (monsterHealthCurrent <= 0 && heroHealthCurrent > 0) {
-      void endBattle("win");
-      return true;
-    }
-
-    // Monster wins
-    if (heroHealthCurrent <= 0 && monsterHealthCurrent > 0) {
-      void endBattle("lose");
-      return true;
-    }
-
-    // Tie -> treat as win (your existing behavior)
-    if (heroHealthCurrent <= 0 && monsterHealthCurrent <= 0) {
-      void endBattle("win");
-      return true;
-    }
-
-    return false;
+  
+    console.warn("[MonsterBattle] POSTMSG not found (postmsg.js not loaded).");
   }
 
   // ---------------------------------------------------------------------------
@@ -730,7 +555,6 @@ function hideCards() {
     resetGameHealth();
 
     showCinematic();
-    hideCards();
     hideMiniGameMount();
     resetCinematicSprites();
     resetStatPanels();
@@ -770,7 +594,6 @@ function hideCards() {
     setStage("result");
 
     showCinematic();
-    hideCards();
     hideMiniGameMount();
     resetCinematicSprites();
     resetStatPanels();
@@ -825,7 +648,6 @@ function hideCards() {
     setStage("result");
 
     showCinematic();
-    hideCards();
     hideMiniGameMount();
     resetCinematicSprites();
     resetStatPanels();
@@ -881,7 +703,7 @@ function hideCards() {
   // ---------------------------------------------------------------------------
   function startNewBattleRun(config) {
     battleEnded = false;
-    hideBattleResultScreenNow();
+    hidePostMsgNow();            // ✅ hide reusable template if it was open
     currentBattleConfig = config || {};
     const isBossBattle = currentBattleConfig.nodeType === "boss";
 
@@ -945,7 +767,6 @@ function hideCards() {
 
     // Reset health + intro
     resetGameHealth();
-    hideCards();
     hideMiniGameMount();
 
     runIntroSequence().catch((err) => {
@@ -979,15 +800,11 @@ function hideCards() {
 
     // DOM
     gameRoot = document.getElementById("game-root");
-    railEl = document.getElementById("equation-rail");
-    handEl = document.getElementById("card-hand");
-    combatRowEl = document.getElementById("combat-row");
 
     cinematicEl = document.getElementById("cinematic");
-    handAreaEl = document.querySelector(".hand-area");
 
     // ✅ mini-game mount
-    gridAreaEl = document.getElementById("grid-area");
+    gridAreaEl = document.getElementById("game-mount");
 
     cinematicHero = document.getElementById("cinematic-hero");
     cinematicMonster = document.getElementById("cinematic-monster");
