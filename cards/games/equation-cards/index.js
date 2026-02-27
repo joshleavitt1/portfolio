@@ -578,7 +578,7 @@
 
     let currentLevel = Math.max(1, Math.min(10, Number(startLevelRaw) || 1));
 
-    const mount =
+    let mount =
       config.mount ||
       config.host ||
       document.getElementById("game-mount") ||
@@ -586,6 +586,11 @@
 
     let cleanupFns = [];
     let activeDrag = null; // { ghost, onMove, onUp, card, pointerId }
+
+    // Animation + timer handles (must exist even if unused)
+    let rafId = null;
+    let timeoutId = null;
+    let intervalId = null;
 
     function addCleanup(fn) {
       cleanupFns.push(fn);
@@ -619,22 +624,26 @@
       cleanupFns = [];
     
       // 3️⃣ Clear timers / RAF if you use them
-      if (rafId) cancelAnimationFrame(rafId);
-      if (timeoutId) clearTimeout(timeoutId);
-      if (intervalId) clearInterval(intervalId);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
     
-      rafId = null;
-      timeoutId = null;
-      intervalId = null;
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
     
-      // 4️⃣ Clear mount completely (🔥 this is the scalable part)
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    
+      // 4️⃣ Clear mount contents + classes, but DO NOT reassign const mount
       if (mount) {
         mount.innerHTML = "";
         mount.classList.remove("eq-bad", "eq-shake");
       }
-    
-      // 5️⃣ Null references (helps GC on mobile)
-      mount = null;
     }
 
     async function start() {

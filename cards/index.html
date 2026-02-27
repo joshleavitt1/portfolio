@@ -102,16 +102,24 @@
       <!-- Reusable Post Message Screen -->
       <section id="postmsg" class="postmsg is-hidden" aria-hidden="true">
         <div class="postmsg__bg" aria-hidden="true"></div>
-
+      
         <div class="postmsg__wrap" role="dialog" aria-modal="true" aria-labelledby="postmsg-title">
           <img class="postmsg__seal" src="images/global/seal.png" alt="" />
-
+      
           <div class="postmsg__text">
             <h2 id="postmsg-title" class="postmsg__title">Title</h2>
             <p id="postmsg-sub" class="postmsg__sub">Sub</p>
           </div>
+      
+          <div class="postmsg__actions">
+            <button id="postmsg-btn" class="postmsg__btn" type="button">
+              Continue
+            </button>
+            <div id="postmsg-back" class="postmsg__back is-hidden">
+              Back
+            </div>
+          </div>
 
-          <button id="postmsg-btn" class="postmsg__btn" type="button">Continue</button>
         </div>
       </section>
 

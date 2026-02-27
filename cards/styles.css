@@ -25,6 +25,17 @@ body {
   height: calc(var(--vh, 1vh) * 100);
 }
 
+#game-root.game-root--hard-hide {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: none !important; /* 🚨 critical */
+}
+
+#game-root.game-root--hard-hide::before,
+#game-root.game-root--hard-hide::after {
+  content: none !important;
+}
+
 /* --------------------------------------------------------------------- */
 /* Design tokens                                                         */
 /* --------------------------------------------------------------------- */
@@ -220,7 +231,7 @@ body {
 .quest-card-title {
   margin: 0;
   font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 700;
   color: #7D2D00;
   line-height: 1.1;
@@ -234,10 +245,13 @@ body {
   align-items: center;
   justify-content: center;
 
-  padding: 8px 16px;   /* 8-ish padding around text, no fixed width */
-  border-radius: 4px;
+  padding: 10px 20px;   /* 8-ish padding around text, no fixed width */
 
-  background-color: #7D2D00;
+  border-radius: 8px;
+  border: 2px solid #770101;
+
+  background: linear-gradient(to bottom, #D62C2F, #770101);
+
   color: #ffffff;
   font-size: 16px;
   font-weight: 600;
@@ -258,10 +272,10 @@ body {
 }
 
 .quest-card-hero {
-  width: 100%;        /* 🔥 fill right column width */
+  width: 85%;        /* 🔥 fill right column width */
   height: auto;       /* preserve aspect ratio */
   max-width: none;    /* remove old caps */
-  max-height: 100%;   /* don’t overflow vertically */
+  max-height: 80%;   /* don’t overflow vertically */
 
   object-fit: contain;
   pointer-events: none;
@@ -542,10 +556,21 @@ body {
   display: grid;
   place-items: center;
   padding: 24px;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease-out;
 }
 
+/* Visible state */
+#postmsg.postmsg--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Keep hard removal */
 #postmsg.is-hidden {
-  display: none;
+  display: none !important;
 }
 
 /* BG: images/global/scroll_bg.png */
@@ -577,7 +602,7 @@ body {
 
 /* Seal */
 #postmsg .postmsg__seal {
-  width: 120px;
+  width: 160px;
   height: auto;
   display: block;
 }
@@ -626,6 +651,56 @@ body {
 
 #postmsg .postmsg__btn:active {
   transform: scale(0.98);
+}
+
+.postmsg__back {
+  margin-top: 16px;
+  font-size: 24px;          /* ⬅️ larger */
+  font-weight: 700;
+  color: #770101;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 200ms ease;
+}
+
+.postmsg__back:hover {
+  opacity: 0.75;
+}
+
+.postmsg__back.is-hidden {
+  display: none;
+}
+
+.postmsg__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px; /* 👈 now THIS controls button/back spacing */
+}
+
+/* Fade in background */
+#postmsg .postmsg__bg {
+  opacity: 0;
+  transition: opacity 280ms ease-out;
+}
+
+#postmsg.postmsg--visible .postmsg__bg {
+  opacity: 1;
+}
+
+/* Float-in scroll content */
+#postmsg .postmsg__wrap {
+  opacity: 0;
+  transform: translateY(24px) scale(0.97);
+  transition:
+    opacity 280ms ease-out,
+    transform 280ms cubic-bezier(0.23, 0.9, 0.25, 1.2);
+}
+
+#postmsg.postmsg--visible .postmsg__wrap {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 /* --------------------------------------------------------------------- */

@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "MM_PLAYER_PROFILE";
+  const STORAGE_KEY = "PLAYER_PROFILE";
 
   function clamp(n, min, max) {
     return Math.max(min, Math.min(max, n));

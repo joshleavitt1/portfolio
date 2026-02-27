@@ -511,6 +511,44 @@
     console.warn("[MonsterBattle] POSTMSG not found (postmsg.js not loaded).");
   }
 
+    // ---------------------------------------------------------------------------
+  // Game over handling (resolve + POSTMSG)
+  // ---------------------------------------------------------------------------
+  async function finishBattle(outcome) {
+    // Prevent double-resolve
+    const resolve = pendingResolve;
+    pendingResolve = null;
+
+    try {
+      // Show the quest-level post message scroll (win / loss / boss)
+      await showPostMsgScreen({ outcome });
+    } catch (err) {
+      console.error("[MonsterBattle] showPostMsgScreen error:", err);
+    }
+
+    if (typeof resolve === "function") {
+      // Keep the API consistent with other mini-games
+      resolve({ outcome });
+    }
+  }
+
+  async function checkGameOver() {
+    // Monster dead → player wins
+    if (monsterHealthCurrent <= 0) {
+      await finishBattle("win");
+      return true;
+    }
+
+    // Hero dead → player loses
+    if (heroHealthCurrent <= 0) {
+      await finishBattle("lose");
+      return true;
+    }
+
+    // Still fighting
+    return false;
+  }
+
   // ---------------------------------------------------------------------------
   // Cinematic attack positioning
   // ---------------------------------------------------------------------------
@@ -636,7 +674,8 @@
 
     await delay(2000);
 
-    if (!checkGameOver()) {
+    const isOver = await checkGameOver();
+    if (!isOver) {
       hideCinematic();
       clearBattleOffset();
       setStage("game");
@@ -690,7 +729,8 @@
 
     await delay(1000);
 
-    if (!checkGameOver()) {
+    const isOver = await checkGameOver();
+    if (!isOver) {
       hideCinematic();
       clearBattleOffset();
       setStage("game");
@@ -702,7 +742,6 @@
   // Start a new battle run
   // ---------------------------------------------------------------------------
   function startNewBattleRun(config) {
-    battleEnded = false;
     hidePostMsgNow();            // ✅ hide reusable template if it was open
     currentBattleConfig = config || {};
     const isBossBattle = currentBattleConfig.nodeType === "boss";

@@ -132,24 +132,42 @@
   // ------------------------------------------------------------------
   // Back-compat globals (so existing monster-battle code keeps working)
   // ------------------------------------------------------------------
-  // Default to quest_1 until monster-battle passes a runConfig and overwrites.
+  // Pick a default quest config:
+  // - Prefer CURRENT_QUEST_ID if something already set it
+  // - Otherwise fall back to QUEST_BATTLE_STATS[1] (quest_1)
+  const defaultQuest =
+    getQuestConfigByQuestId(window.CURRENT_QUEST_ID || "quest_1") ||
+    window.QUEST_BATTLE_STATS[1] ||
+    null;
+
+  // Read evolution state from profile
   const prof = window.PLAYER_PROFILE || {};
   const evolved = !!prof.heroEvolved;
-  
+
+  // Choose hero using the same logic as chooseHero()
+  const defaultHero =
+    defaultQuest && (evolved && defaultQuest.heroUpgraded
+      ? defaultQuest.heroUpgraded
+      : defaultQuest.hero);
+
+  // Legacy BATTLE_STATS object for older code paths
   window.BATTLE_STATS = {
-    hero: defaultQuest
-      ? (evolved && defaultQuest.heroUpgraded ? defaultQuest.heroUpgraded : defaultQuest.hero)
-      : null,
-    monster: defaultQuest && defaultQuest.monsters && defaultQuest.monsters.length
-      ? defaultQuest.monsters[0]
-      : null,
+    hero: defaultHero || null,
+    monster:
+      defaultQuest &&
+      defaultQuest.monsters &&
+      defaultQuest.monsters.length
+        ? defaultQuest.monsters[0]
+        : null,
   };
 
+  // Legacy MONSTER_POOLS (keyed by questId)
   window.MONSTER_POOLS = window.MONSTER_POOLS || {};
   if (defaultQuest) {
     window.MONSTER_POOLS[defaultQuest.questId] = defaultQuest.monsters || [];
   }
 
+  // Legacy helpers that older code calls directly
   window.getBossStatsForCurrentQuest = function () {
     return defaultQuest ? defaultQuest.boss : null;
   };

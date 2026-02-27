@@ -12,6 +12,29 @@
       localStorage.setItem("PLAYER_PROFILE", JSON.stringify(window.PLAYER_PROFILE || {}));
     } catch (e) {}
   }
+
+  function getQuestProgress(questId) {
+    window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
+    window.PLAYER_PROFILE.questProgress = window.PLAYER_PROFILE.questProgress || {};
+    return window.PLAYER_PROFILE.questProgress[questId] || {};
+  }
+  
+  function getActiveNodeIndexForQuest(questId) {
+    const qp = getQuestProgress(questId);
+    const n = Number(qp.activeNodeIndex);
+    return Number.isFinite(n) ? n : 0;
+  }
+  
+  function setActiveNodeIndexForQuest(questId, idx) {
+    window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
+    window.PLAYER_PROFILE.questProgress = window.PLAYER_PROFILE.questProgress || {};
+    window.PLAYER_PROFILE.questProgress[questId] = Object.assign(
+      {},
+      window.PLAYER_PROFILE.questProgress[questId] || {},
+      { activeNodeIndex: idx }
+    );
+    savePlayerProfile();
+  }
   
   function awardWinProgress() {
     window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
@@ -142,7 +165,23 @@
   const TOTAL_NODES = 6;
 // DEBUG: allow forcing the active node from URL
 const urlNode = Number(new URLSearchParams(window.location.search).get("node"));
-let activeNodeIndex = Number.isFinite(urlNode) ? urlNode : 0; // 0 = bottom node
+
+// Default from saved progress (per quest)
+let activeNodeIndex = getActiveNodeIndexForQuest(CURRENT_QUEST_ID);
+
+// DEBUG URL override still wins if present
+if (Number.isFinite(urlNode)) activeNodeIndex = urlNode;
+
+  // --- DEV HELPER: inspect / override active node from console ---
+  window.__debugNodes = {
+    get active() {
+      return activeNodeIndex;
+    },
+    set active(v) {
+      activeNodeIndex = Number(v) || 0;
+      updateMapNodes();   // refresh icons + disabled state
+    },
+  };
 
   // You can keep your existing setStage if it's already defined above;
   // this version matches what you've been using.
@@ -201,9 +240,11 @@ let activeNodeIndex = Number.isFinite(urlNode) ? urlNode : 0; // 0 = bottom node
   
     // Show game root
     if (gameRoot) {
+      // ✅ remove the hard-hide class before showing battle/game again
+      gameRoot.classList.remove("game-root--hard-hide");
       gameRoot.classList.add("game--visible");
     }
-  }  
+  }
 
   
   // ---------------------------------------------------------------------
@@ -272,24 +313,33 @@ let activeNodeIndex = Number.isFinite(urlNode) ? urlNode : 0; // 0 = bottom node
     return (quest && quest.nodeSprites) || NODE_SPRITES_FALLBACK;
   }  
 
-    function updateMapNodes() {
+  function updateMapNodes() {
     const sprites = getNodeSpritesForCurrentQuest();
-
+  
     mapNodes.forEach((node) => {
       const idx = Number(node.dataset.nodeIndex);
       const type = NODE_TYPES[idx] ?? "battle";
-
+  
       node.classList.remove("map-node--active", "map-node--shimmer");
-
-      // ✅ Only the active node is clickable. Everything else is a FULL-COLOR lock.
+  
+      // ✅ COMPLETED NODES (show check)
+      if (idx < activeNodeIndex) {
+        node.disabled = true;
+        node.style.backgroundImage = `url("${sprites.check}")`;
+        return;
+      }
+  
+      // ✅ CURRENT ACTIVE NODE
       if (idx === activeNodeIndex) {
         node.disabled = false;
         node.classList.add("map-node--active");
         node.style.backgroundImage = `url("${sprites[type]}")`;
-      } else {
-        node.disabled = true;
-        node.style.backgroundImage = `url("${sprites.lock}")`;
+        return;
       }
+  
+      // 🔒 FUTURE LOCKED NODES
+      node.disabled = true;
+      node.style.backgroundImage = `url("${sprites.lock}")`;
     });
   }
 
@@ -335,16 +385,105 @@ let activeNodeIndex = Number.isFinite(urlNode) ? urlNode : 0; // 0 = bottom node
   }
 
   async function handleMapNodeClick(idx) {
+    console.log(
+      "[Map] click idx=%d, active=%d, type=%s",
+      idx,
+      activeNodeIndex,
+      NODE_TYPES[idx]
+    );
+  
     if (idx !== activeNodeIndex) return;
   
+    const nodeType = NODE_TYPES[idx] || "battle";
+  
+  // ---------- CHEST / TREASURE FLOW ----------
+  if (nodeType === "chest") {
+    console.log("[Map] chest flow start");
+
+    const runEvolution = async () => {
+      await delay(150);
+
+      console.log("[Map] switching to game root for hero-evolution");
+      showGame();
+      setStage("intro");
+
+      await delay(250);
+
+      if (typeof window.runGameMode !== "function") {
+        console.error("[Map] runGameMode is not defined or not loaded");
+        return;
+      }
+
+      console.log("[Map] launching hero-evolution game mode…");
+      window.runGameMode("hero-evolution", {
+        config: {
+          questId: window.CURRENT_QUEST_ID,
+          nodeIndex: idx,
+          nodeType, // "chest"
+        },
+        onComplete(result) {
+          console.log("[Map] hero-evolution complete:", result);
+
+          window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
+          window.PLAYER_PROFILE.heroEvolved = true;
+          savePlayerProfile();
+
+          try {
+            const cfg = window.getBattleConfigForRun
+              ? window.getBattleConfigForRun({ questId: window.CURRENT_QUEST_ID })
+              : null;
+            if (cfg && cfg.hero) {
+              window.BATTLE_STATS = window.BATTLE_STATS || {};
+              window.BATTLE_STATS.hero = cfg.hero;
+            }
+          } catch (e) {
+            console.warn(
+              "[Map] failed to refresh hero stats after evolution",
+              e
+            );
+          }
+
+          // Mark treasure node complete → unlock next node
+          advanceToNextNodeIfAvailable();
+
+          // Back to map; treasure node will now show as completed/checked
+          showMap();
+          setStage("intro");
+        },
+      });
+    };
+
+    // Try to show treasure scroll, but NEVER block evolution if it fails
+    if (window.POSTMSG && typeof window.POSTMSG.show === "function") {
+      console.log("[Map] showing treasure scroll…");
+      window.POSTMSG
+        .show({
+          questId: window.CURRENT_QUEST_ID || "quest_1",
+          key: "treasure",
+        })
+        .then((res) => {
+          console.log("[Map] treasure scroll resolved:", res);
+          runEvolution();
+        })
+        .catch((err) => {
+          console.error("[Map] treasure scroll error, skipping:", err);
+          runEvolution();
+        });
+    } else {
+      console.warn("[Map] POSTMSG.show missing, skipping treasure scroll");
+      runEvolution();
+    }
+
+    return; // ✅ done with chest path
+  }
+  
+    // ---------- NORMAL BATTLE / BOSS FLOW ----------
     await delay(150);
   
     showGame();
     setStage("intro");
   
     await delay(250);
-  
-    const nodeType = NODE_TYPES[idx] || "battle";
   
     // Battle ordinal = which battle is this among battle nodes only (0..)
     const battleOrdinal =
@@ -355,41 +494,7 @@ let activeNodeIndex = Number.isFinite(urlNode) ? urlNode : 0; // 0 = bottom node
       return;
     }
   
-// ✅ Chest = hero evolution mini-game
-if (nodeType === "chest") {
-  window.runGameMode("hero-evolution", {
-    config: {
-      questId: window.CURRENT_QUEST_ID,
-      nodeIndex: idx,
-      nodeType,
-    },
-    onComplete(result) {
-      // mark evolved (so battles swap to upgraded hero)
-      window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
-      window.PLAYER_PROFILE.heroEvolved = true;
-
-      savePlayerProfile();
-      
-      // ✅ update current battle globals immediately
-      try {
-        const cfg = window.getBattleConfigForRun
-          ? window.getBattleConfigForRun({ questId: window.CURRENT_QUEST_ID })
-          : null;
-        if (cfg && cfg.hero) {
-          window.BATTLE_STATS = window.BATTLE_STATS || {};
-          window.BATTLE_STATS.hero = cfg.hero;
-        }
-      } catch (e) {}
-
-      advanceToNextNodeIfAvailable();
-      showMap();
-      setStage("intro");
-    },
-  });
-  return;
-}
-  
-    // ✅ Otherwise: normal monster battle
+    // ✅ Monster battle (regular node or boss)
     setEquationAreaMode("monster-battle");
   
     window.runGameMode("monster-battle", {
@@ -420,6 +525,9 @@ if (nodeType === "chest") {
   function advanceToNextNodeIfAvailable() {
     if (activeNodeIndex < TOTAL_NODES - 1) {
       activeNodeIndex += 1;
+  
+      // ✅ persist per-quest so checkmarks survive refresh
+      setActiveNodeIndexForQuest(window.CURRENT_QUEST_ID || "quest_1", activeNodeIndex);
     }
   }
 
@@ -473,35 +581,58 @@ if (nodeType === "chest") {
     }
 
     // --------- Startup flow ---------
-    document.querySelectorAll(".quest-card").forEach((card) => {
-      card.addEventListener("click", async () => {
-        const questId = card.dataset.questId || "quest_1";
-    
-        window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
-        window.PLAYER_PROFILE.acceptedQuests = window.PLAYER_PROFILE.acceptedQuests || {};
-    
-        const firstTime = !window.PLAYER_PROFILE.acceptedQuests[questId];
-    
-        // set quest id globally
-        CURRENT_QUEST_ID = questId;
-        window.CURRENT_QUEST_ID = questId;
-    
-        // hide quest screen first (so overlay feels like the next step)
-        hideQuest();
-    
-        // first-time accept message
-        if (firstTime && window.POSTMSG && typeof window.POSTMSG.show === "function") {
-          await window.POSTMSG.show({ questId, key: "accept" });
-    
-          window.PLAYER_PROFILE.acceptedQuests[questId] = true;
-          savePlayerProfile(); // ✅ use your existing helper
-        }
-    
-        // proceed
-        showMap();
-        setStage("intro");
-      });
-    });
+    // --------- Startup flow ---------
+document.querySelectorAll(".quest-card").forEach((card) => {
+  card.addEventListener("click", async () => {
+    const questId = card.dataset.questId || "quest_1";
+
+    window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
+    window.PLAYER_PROFILE.acceptedQuests =
+      window.PLAYER_PROFILE.acceptedQuests || {};
+
+    const firstTime = !window.PLAYER_PROFILE.acceptedQuests[questId];
+
+    // set quest id globally
+    CURRENT_QUEST_ID = questId;
+    window.CURRENT_QUEST_ID = questId;
+    activeNodeIndex = getActiveNodeIndexForQuest(questId);
+
+    // hide quest screen
+    hideQuest();
+
+    // 🌟 FIRST-TIME QUEST MESSAGE (scroll BEFORE map)
+    if (firstTime && window.POSTMSG && typeof window.POSTMSG.show === "function") {
+      const result = await window.POSTMSG.show({ questId, key: "accept" });
+
+      if (result?.action === "back") {
+        // User chose Back → return to landing (quest screen)
+        showQuest();
+      
+        // 🕒 After the scroll has faded out, reset the hard-hide so future flows work.
+        // Match / slightly exceed your scroll fade duration (e.g. 400–500ms).
+        setTimeout(() => {
+          const gameRoot = document.getElementById("game-root");
+          if (gameRoot) {
+            gameRoot.classList.remove("game-root--hard-hide");
+          }
+        }, 600);
+      
+        return; // 🚨 STOP here — do NOT show map
+      }
+
+// Otherwise they clicked Accept
+window.PLAYER_PROFILE.acceptedQuests[questId] = true;
+savePlayerProfile();
+
+      window.PLAYER_PROFILE.acceptedQuests[questId] = true;
+      savePlayerProfile();
+    }
+
+    // then show map
+    showMap();
+    setStage("intro");
+  });
+});
 
     // If you ever want to auto-show quest:
     showQuest();
