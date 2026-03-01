@@ -391,26 +391,43 @@ if (Number.isFinite(urlNode)) activeNodeIndex = urlNode;
       activeNodeIndex,
       NODE_TYPES[idx]
     );
-  
+
     if (idx !== activeNodeIndex) return;
-  
+
     const nodeType = NODE_TYPES[idx] || "battle";
-  
-  // ---------- CHEST / TREASURE FLOW ----------
-  if (nodeType === "chest") {
-    console.log("[Map] chest flow start");
 
-    const runEvolution = async () => {
-      await delay(150);
+    // ---------- CHEST / TREASURE FLOW ----------
+    if (nodeType === "chest") {
+      console.log("[Map] chest flow start");
 
-      console.log("[Map] switching to game root for hero-evolution");
+      // 1) Immediately move to the game stage so there is NO map flash
       showGame();
       setStage("intro");
 
-      await delay(250);
+      // (optional – evolution will hide puzzle UI anyway, but this keeps it consistent)
+      setEquationAreaMode("monster-battle");
+
+      // 2) Show treasure scroll over the GAME stage (not the map)
+      if (window.POSTMSG && typeof window.POSTMSG.show === "function") {
+        try {
+          console.log("[Map] showing treasure scroll…");
+          await window.POSTMSG.show({
+            questId: window.CURRENT_QUEST_ID || "quest_1",
+            key: "treasure",
+          });
+          console.log("[Map] treasure scroll resolved");
+        } catch (err) {
+          console.error("[Map] treasure scroll error, skipping:", err);
+        }
+      } else {
+        console.warn("[Map] POSTMSG.show missing, skipping treasure scroll");
+      }
+
+      // 3) Tiny beat so stage classes settle, then launch hero-evolution
+      await delay(150);
 
       if (typeof window.runGameMode !== "function") {
-        console.error("[Map] runGameMode is not defined or not loaded");
+        console.error("runGameMode is not defined or not loaded");
         return;
       }
 
@@ -424,10 +441,12 @@ if (Number.isFinite(urlNode)) activeNodeIndex = urlNode;
         onComplete(result) {
           console.log("[Map] hero-evolution complete:", result);
 
+          // Mark that the hero has evolved (for any UI that cares)
           window.PLAYER_PROFILE = window.PLAYER_PROFILE || {};
           window.PLAYER_PROFILE.heroEvolved = true;
           savePlayerProfile();
 
+          // Pull fresh hero stats so future battles use the upgraded hero art + stats
           try {
             const cfg = window.getBattleConfigForRun
               ? window.getBattleConfigForRun({ questId: window.CURRENT_QUEST_ID })
@@ -437,10 +456,7 @@ if (Number.isFinite(urlNode)) activeNodeIndex = urlNode;
               window.BATTLE_STATS.hero = cfg.hero;
             }
           } catch (e) {
-            console.warn(
-              "[Map] failed to refresh hero stats after evolution",
-              e
-            );
+            console.warn("[Map] failed to refresh hero stats after evolution", e);
           }
 
           // Mark treasure node complete → unlock next node
@@ -451,64 +467,46 @@ if (Number.isFinite(urlNode)) activeNodeIndex = urlNode;
           setStage("intro");
         },
       });
-    };
 
-    // Try to show treasure scroll, but NEVER block evolution if it fails
-    if (window.POSTMSG && typeof window.POSTMSG.show === "function") {
-      console.log("[Map] showing treasure scroll…");
-      window.POSTMSG
-        .show({
-          questId: window.CURRENT_QUEST_ID || "quest_1",
-          key: "treasure",
-        })
-        .then((res) => {
-          console.log("[Map] treasure scroll resolved:", res);
-          runEvolution();
-        })
-        .catch((err) => {
-          console.error("[Map] treasure scroll error, skipping:", err);
-          runEvolution();
-        });
-    } else {
-      console.warn("[Map] POSTMSG.show missing, skipping treasure scroll");
-      runEvolution();
+      return; // ✅ done with chest path
     }
 
-    return; // ✅ done with chest path
-  }
-  
     // ---------- NORMAL BATTLE / BOSS FLOW ----------
     await delay(150);
-  
+
     showGame();
     setStage("intro");
-  
+
     await delay(250);
-  
-    // Battle ordinal = which battle is this among battle nodes only (0..)
+
     const battleOrdinal =
       NODE_TYPES.slice(0, idx + 1).filter((t) => t === "battle").length - 1;
-  
+
     if (typeof window.runGameMode !== "function") {
       console.error("runGameMode is not defined or not loaded");
       return;
     }
-  
+
     // ✅ Monster battle (regular node or boss)
     setEquationAreaMode("monster-battle");
-  
+
     window.runGameMode("monster-battle", {
       config: {
         questId: window.CURRENT_QUEST_ID,
         nodeIndex: idx,
-        nodeType,      // "battle" | "boss"
+        nodeType, // "battle" | "boss"
         battleOrdinal,
       },
       onComplete(result) {
-        if (result === "win") {
+        // result might be "win" or { outcome: "win" }
+        const outcome = (result && result.outcome) || result;
+
+        if (outcome === "win") {
           awardWinProgress();
           advanceToNextNodeIfAvailable();
         }
+
+        // Always go back to map after battle
         showMap();
         setStage("intro");
       },

@@ -33,97 +33,95 @@
   </div>
 </section>
 
-    <main class="game stage-intro" id="game-root">
-      <!-- Cinematic Stage (Intro + Result) -->
-      <section class="cinematic" id="cinematic">
-        <div class="cinematic-stage">
-          <!-- Hero + Hero Stats -->
-          <div class="cinematic-character cinematic-character--hero">
-            <img
-              alt="Hero"
-              class="cinematic-sprite cinematic-sprite--hero"
-              id="cinematic-hero"
-            />
+<main class="game stage-intro" id="game-root">
+  <!-- Cinematic Stage (Intro + Result) -->
+  <section class="cinematic" id="cinematic">
+    <div class="cinematic-stage">
+      <!-- Hero + Hero Stats -->
+      <div class="cinematic-character cinematic-character--hero">
+        <img
+          alt="Hero"
+          class="cinematic-sprite cinematic-sprite--hero"
+          id="cinematic-hero"
+        />
 
-            <div class="stat-panel stat-panel--hero">
-              <div class="stat-panel__name" id="hero-name"></div>
-              <div class="stat-panel__health-row">
-                <div class="stat-panel__health-track">
-                  <div
-                    class="stat-panel__health-fill"
-                    id="hero-health-fill"
-                  ></div>
-                </div>
-              </div>
+        <div class="stat-panel stat-panel--hero">
+          <div class="stat-panel__name" id="hero-name"></div>
+          <div class="stat-panel__health-row">
+            <div class="stat-panel__health-track">
+              <div
+                class="stat-panel__health-fill"
+                id="hero-health-fill"
+              ></div>
             </div>
           </div>
-
-          <!-- VS badge -->
-          <img
-            src="images/global/battle_vs.png"
-            alt="Versus"
-            class="cinematic-vs"
-            id="cinematic-vs"
-          />
-
-          <!-- Monster + Monster Stats -->
-          <div class="cinematic-character cinematic-character--monster">
-            <img
-              alt="Monster"
-              class="cinematic-sprite cinematic-sprite--monster"
-              id="cinematic-monster"
-            />
-
-            <div class="stat-panel stat-panel--monster">
-              <div class="stat-panel__name" id="monster-name"></div>
-              <div class="stat-panel__health-row">
-                <div class="stat-panel__health-track">
-                  <div
-                    class="stat-panel__health-fill"
-                    id="monster-health-fill"
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Attack overlay (result only) -->
-          <img
-            alt="Attack"
-            class="cinematic-attack"
-            id="cinematic-attack"
-          />
         </div>
-      </section>
+      </div>
 
-      <!-- Universal Game Mount -->
-      <section id="game-mount" class="game-mount is-hidden"></section>
+      <!-- VS badge -->
+      <img
+        src="images/global/battle_vs.png"
+        alt="Versus"
+        class="cinematic-vs"
+        id="cinematic-vs"
+      />
 
-      <!-- Reusable Post Message Screen -->
-      <section id="postmsg" class="postmsg is-hidden" aria-hidden="true">
-        <div class="postmsg__bg" aria-hidden="true"></div>
-      
-        <div class="postmsg__wrap" role="dialog" aria-modal="true" aria-labelledby="postmsg-title">
-          <img class="postmsg__seal" src="images/global/seal.png" alt="" />
-      
-          <div class="postmsg__text">
-            <h2 id="postmsg-title" class="postmsg__title">Title</h2>
-            <p id="postmsg-sub" class="postmsg__sub">Sub</p>
-          </div>
-      
-          <div class="postmsg__actions">
-            <button id="postmsg-btn" class="postmsg__btn" type="button">
-              Continue
-            </button>
-            <div id="postmsg-back" class="postmsg__back is-hidden">
-              Back
+      <!-- Monster + Monster Stats -->
+      <div class="cinematic-character cinematic-character--monster">
+        <img
+          alt="Monster"
+          class="cinematic-sprite cinematic-sprite--monster"
+          id="cinematic-monster"
+        />
+
+        <div class="stat-panel stat-panel--monster">
+          <div class="stat-panel__name" id="monster-name"></div>
+          <div class="stat-panel__health-row">
+            <div class="stat-panel__health-track">
+              <div
+                class="stat-panel__health-fill"
+                id="monster-health-fill"
+              ></div>
             </div>
           </div>
-
         </div>
-      </section>
+      </div>
 
-    </main>
+      <!-- Attack overlay (result only) -->
+      <img
+        alt="Attack"
+        class="cinematic-attack"
+        id="cinematic-attack"
+      />
+    </div>
+  </section>
+
+  <!-- Universal Game Mount -->
+  <section id="game-mount" class="game-mount is-hidden"></section>
+</main>
+
+<!-- Reusable Post Message Screen (moved OUTSIDE #game-root) -->
+<section id="postmsg" class="postmsg is-hidden" aria-hidden="true">
+  <div class="postmsg__bg" aria-hidden="true"></div>
+
+  <div class="postmsg__wrap" role="dialog" aria-modal="true" aria-labelledby="postmsg-title">
+    <img id="postmsg-seal" class="postmsg__seal" src="" alt="Wax Seal" />
+
+    <div class="postmsg__text">
+      <h2 id="postmsg-title" class="postmsg__title">Title</h2>
+      <p id="postmsg-sub" class="postmsg__sub">Sub</p>
+    </div>
+
+    <div class="postmsg__actions">
+      <button id="postmsg-btn" class="postmsg__btn" type="button">
+        Continue
+      </button>
+      <div id="postmsg-back" class="postmsg__back is-hidden">
+        Back
+      </div>
+    </div>
+  </div>
+</section>
   </div>
 
   <!-- Orientation Overlay (shown in portrait on mobile) -->

@@ -205,8 +205,46 @@
     return {
       questId,
       mathTypeKey: questDef.mathTypeKey || "addition",
-      playerLevel: HERO_LEVEL || 1,
+      playerLevel: window.HERO_LEVEL ?? HERO_LEVEL ?? 1,
     };
+  }
+
+  function refreshHeroFromProfile() {
+    const ctx = getQuestContext();
+    const statsConfig = getBattleConfig(ctx) || {};
+  
+    // Re-pull hero + pools based on current PLAYER_PROFILE.heroEvolved
+    HERO_BASE =
+      statsConfig.HERO_BASE ||
+      HERO_BASE ||
+      SAFE_DEFAULT_STATS.hero;
+  
+    MONSTER_POOLS =
+      statsConfig.MONSTER_POOLS ||
+      MONSTER_POOLS ||
+      { 1: [MONSTER_BASE] };
+  
+    QUEST_CFG = statsConfig.QUEST || QUEST_CFG;
+    BOSS_BASE = statsConfig.BOSS || BOSS_BASE;
+  
+    // Recompute hero level (prefer AFTER-evolution global)
+    HERO_LEVEL =
+      window.HERO_LEVEL ??
+      ctx.playerLevel ??
+      ctx.level ??
+      HERO_BASE.level ??
+      1;
+  
+    // Make sure we ALWAYS have a sprite
+    if (!HERO_BASE.spriteImage) {
+      HERO_BASE.spriteImage = SAFE_DEFAULT_STATS.hero.spriteImage;
+    }
+  
+    // Sync the cinematic hero sprite and clear any stuck opacity
+    if (cinematicHero) {
+      cinematicHero.src = HERO_BASE.spriteImage;
+      cinematicHero.style.opacity = "";  // let animations control this
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -598,6 +636,18 @@
     resetStatPanels();
     renderStatPanels();
 
+    // 🔒 Extra safety: clear any leftover Web Animations
+    [cinematicHero, cinematicMonster].forEach((el) => {
+      if (!el || typeof el.getAnimations !== "function") return;
+      try {
+        el.getAnimations().forEach((anim) => {
+          try {
+            anim.cancel();
+          } catch (e) {}
+        });
+      } catch (e) {}
+    });
+
     await delay(750);
 
     showCinematicShadows();
@@ -608,6 +658,7 @@
     applyBattleOffset();
 
     await delay(1500);
+
     animateStatPanels();
 
     await delay(1000);
@@ -647,6 +698,10 @@
     applyBattleOffset();
 
     await delay(1500);
+
+    // ✅ ensure hero + monster aren't stuck at opacity: 0 after the animation
+    if (cinematicHero)   cinematicHero.style.opacity   = "1";
+    if (cinematicMonster) cinematicMonster.style.opacity = "1";
 
     animateStatPanels();
 
@@ -703,6 +758,10 @@
 
     await delay(1500);
 
+    // ✅ ensure hero + monster aren't stuck at opacity: 0 after the animation
+    if (cinematicHero)   cinematicHero.style.opacity   = "1";
+    if (cinematicMonster) cinematicMonster.style.opacity = "1";
+
     animateStatPanels();
 
     await delay(1000);
@@ -742,10 +801,12 @@
   // Start a new battle run
   // ---------------------------------------------------------------------------
   function startNewBattleRun(config) {
-    hidePostMsgNow();            // ✅ hide reusable template if it was open
+    hidePostMsgNow();
     currentBattleConfig = config || {};
     const isBossBattle = currentBattleConfig.nodeType === "boss";
-
+  
+    // 🔥 NEW: always re-evaluate hero based on current profile
+    refreshHeroFromProfile();
     
     // Monster selection (deterministic per node)
     if (isBossBattle) {
@@ -754,22 +815,18 @@
         (typeof window.getBossStatsForCurrentQuest === "function"
           ? window.getBossStatsForCurrentQuest()
           : null);
-
+  
       if (bossStats) {
         MONSTER_BASE = bossStats;
       }
     } else {
-      // ✅ battleOrdinal comes from main.js (skips treasure node)
-      // battle nodes: 0,1,3,4 => ordinal 0,1,2,3
       let battleOrdinal = Number(currentBattleConfig.battleOrdinal);
-    
-      // Fallback if you haven't wired battleOrdinal yet:
       if (!Number.isFinite(battleOrdinal)) {
         const nodeIdx = Number(currentBattleConfig.nodeIndex);
-        const map = { 0: 0, 1: 1, 3: 2, 4: 3 }; // <-- skips treasure at idx 2
+        const map = { 0: 0, 1: 1, 3: 2, 4: 3 }; // skips treasure
         battleOrdinal = map[nodeIdx];
       }
-    
+  
       const mapped =
         Number.isFinite(battleOrdinal) &&
         QUEST_CFG &&
@@ -777,37 +834,33 @@
         QUEST_CFG.monsters[battleOrdinal]
           ? QUEST_CFG.monsters[battleOrdinal]
           : null;
-    
+  
       if (mapped) {
         MONSTER_BASE = mapped;
       } else {
-        // Fallback: keep old rotation behavior
+        // fallback rotation
         selectMonsterForCurrentHeroLevel();
       }
     }
-
-    // Sync monster sprite + health after selection
+  
+    // Sync monster + backgrounds (your existing code)
     monsterHealthCurrent = MONSTER_BASE.health;
     if (cinematicMonster && MONSTER_BASE.spriteImage) {
       cinematicMonster.src = MONSTER_BASE.spriteImage;
     }
-
-
-    // Background selection
+  
     const battleBg = isBossBattle
       ? getBossBattleBackgroundForCurrentQuest()
       : getNextBattleBackground();
-
+  
     if (gameRoot && battleBg) {
       const bgAbs = new URL(battleBg, document.baseURI).href;
       gameRoot.style.setProperty("--battle-bg-image", `url("${bgAbs}")`);
-
     }
-
-    // Reset health + intro
+  
     resetGameHealth();
     hideMiniGameMount();
-
+  
     runIntroSequence().catch((err) => {
       console.error("[MonsterBattle] runIntroSequence crashed:", err);
     });

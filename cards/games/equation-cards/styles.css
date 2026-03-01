@@ -118,18 +118,25 @@
    FILLED GRID SLOT
    ============================================================ */
 
-   .eq-cell.has-token {
-    background-image: url("../../images/games/equation-cards/game_card.png");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  
-    border: 4px solid #FFBA62;
-    color: #7D2D00;
-    
-  
-    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-  }
+/* Numbers get card background */
+.eq-cell.has-token:not(.is-symbol) {
+  background-image: url("../../images/games/equation-cards/game_card.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  border: 4px solid #FFBA62;
+  color: #7D2D00;
+
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+/* Symbols stay plain parchment */
+.eq-cell.is-symbol {
+  background: #FFBA62;        /* fill interior with outline color */
+  border: 4px solid #FFBA62;  /* same color so it looks like one solid tile */
+  color: #7D2D00;             /* keep text dark for contrast (adjust if needed) */
+}
 
 .eq-cell.is-fixed {
   cursor: default;

@@ -80,8 +80,7 @@
         battleVsImage: "images/global/battle_vs.png",
         backgrounds: {
           battleCycle: [
-            "images/games/monster-battle/quest_1/bg/bg_1.png",
-            "images/games/monster-battle/quest_1/bg/bg_2.png",
+          "images/games/monster-battle/quest_1/bg/bg_battle.png"
           ],
           boss: "images/games/monster-battle/quest_1/bg/bg_boss.png",
         },
@@ -96,10 +95,16 @@
 
   function chooseHero(cfg) {
     if (!cfg) return null;
-  
+
     const prof = window.PLAYER_PROFILE || {};
-    const evolved = !!prof.heroEvolved; // ✅ ONLY evolution triggers sprite 2
-  
+    const profileLevel = Number(prof.heroLevel || 1) || 1;
+    const globalLevel  = Number(window.HERO_LEVEL || cfg.hero?.level || 1) || 1;
+
+    const evolvedFlag   = !!prof.heroEvolved;
+    const evolvedByLevel = profileLevel > 1 || globalLevel > 1;
+
+    const evolved = evolvedFlag || evolvedByLevel;
+
     return evolved && cfg.heroUpgraded ? cfg.heroUpgraded : cfg.hero;
   }
 
@@ -140,15 +145,8 @@
     window.QUEST_BATTLE_STATS[1] ||
     null;
 
-  // Read evolution state from profile
-  const prof = window.PLAYER_PROFILE || {};
-  const evolved = !!prof.heroEvolved;
-
-  // Choose hero using the same logic as chooseHero()
-  const defaultHero =
-    defaultQuest && (evolved && defaultQuest.heroUpgraded
-      ? defaultQuest.heroUpgraded
-      : defaultQuest.hero);
+  // Use the same logic everywhere
+  const defaultHero = defaultQuest ? chooseHero(defaultQuest) : null;
 
   // Legacy BATTLE_STATS object for older code paths
   window.BATTLE_STATS = {

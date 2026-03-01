@@ -28,12 +28,26 @@
         button: "Return Home",
       },
       treasure: {
-        title: "Treasure",
-        sub: "You crack open the treasure chest and find powerful new weapons and armor. Your knight just leveled up!",
-        button: "Grab Treasure",
+        title: "Treasure Found",
+        sub: "You crack open the chest and find powerful new weapons and armor!",
+        button: "Equip",
       },
     },
   };
+
+  // ------------------------------------------------------------
+// Seal mapping by message type
+// ------------------------------------------------------------
+const SEAL_MAP = {
+  accept: "images/global/seal_crown.png",
+
+  win: "images/global/seal_swords.png",
+  loss: "images/global/seal_swords.png",
+  boss_win: "images/global/seal_swords.png",
+  boss_loss: "images/global/seal_swords.png",
+
+  treasure: "images/global/seal_chest.png",
+};
 
   function $(id) {
     return document.getElementById(id);
@@ -93,6 +107,7 @@
     const elSub = $("postmsg-sub");
     const elBtn = $("postmsg-btn");
     const elBack = $("postmsg-back");
+    const elSeal = $("postmsg-seal");
   
     if (!root || !elTitle || !elSub || !elBtn) {
       console.warn("[postmsg] Missing DOM (#postmsg / title / sub / btn).");
@@ -105,6 +120,12 @@
     elTitle.textContent = copy.title || "";
     elSub.textContent = copy.sub || "";
     elBtn.textContent = copy.button || "Continue";
+
+        // Set correct wax seal
+    if (elSeal) {
+      const sealSrc = SEAL_MAP[key] || SEAL_MAP.win;
+      elSeal.src = sealSrc;
+    }
   
     // ✅ Only show "Back" on initial quest accept
     if (elBack) {
@@ -154,14 +175,20 @@
       // Primary button click (Accept / Continue / Try Again / Return Home)
       const onButtonClick = async () => {
         elBtn.blur();
-      
-        // ✅ Always prep map + kill battle BEFORE we fade out
-        await primeMapForReturn();
-      
-        // ✅ Fade out the scroll smoothly
+
+        // Only prep / show the map when we're actually going *to* the map.
+        // For treasure, we want to jump into hero-evolution instead.
+        const shouldPrimeMap =
+          key === "accept" || key === "win" || key === "loss" || key === "boss_win";
+
+        if (shouldPrimeMap) {
+          await primeMapForReturn();
+        }
+
+        // Fade out the scroll smoothly
         hideScroll();
-      
-        // ✅ Then tell caller what happened
+
+        // Then tell caller what happened
         resolve({ action: "button", questId, key });
       };
   

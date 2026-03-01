@@ -866,9 +866,13 @@
               if (v != null) {
                 btn.textContent = v;
                 btn.classList.add("has-token");
-              } else {
-                btn.textContent = "";
-                btn.classList.remove("has-token");
+              
+                // NEW: detect symbol vs number
+                if (!/^\d+$/.test(String(v))) {
+                  btn.classList.add("is-symbol");
+                } else {
+                  btn.classList.remove("is-symbol");
+                }
               }
 
               if (puz.fixed.has(i)) {

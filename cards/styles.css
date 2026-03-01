@@ -489,19 +489,58 @@ body {
   box-shadow: 0 4px 12px rgba(0, 85, 252, 0.45);
 }
 
-/* --------------------------------------------------------------------- */
-/* Cinematic                                               */
-/* --------------------------------------------------------------------- */
+/* ========================================================= */
+/* HERO EVOLUTION MODE — FULL SCREEN CENTERED LAYOUT        */
+/* ========================================================= */
 
-/* --- Hero evolution layout (treasure node) --- */
-.cinematic.cinematic--evolution .cinematic-stage {
+.cinematic.cinematic--evolution {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* Kill battle grid layout completely */
+.cinematic.cinematic--evolution .cinematic-stage {
+  all: unset;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hide everything except hero */
+.cinematic.cinematic--evolution .cinematic-character--monster,
+.cinematic.cinematic--evolution .cinematic-vs,
+.cinematic.cinematic--evolution .stat-panel {
+  display: none !important;
+}
+
+/* Center hero container absolutely */
 .cinematic.cinematic--evolution .cinematic-character--hero {
-  transform: none !important;
+  position: absolute !important;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) !important;
+  animation: none !important;   /* stop battle intro slide */
+  transition: none !important;  /* stop any tween on transform */
+}
+
+/* Scale hero nicely for evolution moment */
+.cinematic.cinematic--evolution .cinematic-sprite--hero {
+  max-width: 75vw;
+  max-height: 75vh;
+  width: auto;
+  height: auto;
+  animation: none !important;   /* no leftover keyframes */
+  transition: none !important;  /* no CSS transitions */
+}
+
+.cinematic.cinematic--evolution .cinematic-character--hero.cinematic-character--shadow-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1.1, 0.9);
 }
 
 /* --------------------------------------------------------------------- */
@@ -701,6 +740,24 @@ body {
 #postmsg.postmsg--visible .postmsg__wrap {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+#postmsg .postmsg__seal {
+  animation: seal-pop 1600ms cubic-bezier(0.23, 0.9, 0.25, 1.2);
+}
+
+@keyframes seal-pop {
+  0% {
+    transform: scale(0.6) rotate(-8deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1) rotate(4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
 }
 
 /* --------------------------------------------------------------------- */
