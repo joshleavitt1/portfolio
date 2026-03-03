@@ -138,7 +138,13 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+}
+
+.quest-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;     /* ✅ gap belongs here */
 }
 
 
@@ -221,17 +227,19 @@ body {
 .quest-card-left {
   display: flex;
   flex-direction: column;
-  align-items: center;   /* horizontal center */
+  align-items: flex-start;   /* left align content */
   justify-content: center;
-  gap: 16px;
-  text-align: center;
+  gap: 8px;
+  text-align: left;
+  padding-left: 8px;
+  padding-left: 8px;
 }
 
 /* Title: same values, just ensure no margin top */
 .quest-card-title {
   margin: 0;
   font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
   color: #7D2D00;
   line-height: 1.1;
@@ -243,10 +251,36 @@ body {
 .quest-card-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
+
+  padding: 6px 12px;                /* 4 vertical, 12 horizontal */
+
+  border-radius: 999px;             /* fully rounded */
+  background: rgba(255, 255, 255, 0.4); /* 40% white overlay */
+
+  color: #5a1a00;                   /* dark brown/red text */
+  font-size: 16px;
+  font-weight: 500;                 /* semibold */
+
+  white-space: nowrap;
+  align-self: flex-start;           /* stay left in the column */
+}
+
+/* CTA + progress bar on quest card */
+
+/* Footer area inside the left side of the card */
+.quest-card-footer {
+  margin-top: 8px;
+  width: 100%;
+}
+
+/* "Play Now" — reuse the old red pill styling */
+.quest-card-cta {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
 
-  padding: 10px 20px;   /* 8-ish padding around text, no fixed width */
-
+  padding: 6px 12px;           /* same as original pill */
   border-radius: 8px;
   border: 2px solid #770101;
 
@@ -255,9 +289,48 @@ body {
   color: #ffffff;
   font-size: 16px;
   font-weight: 600;
+  white-space: nowrap;
 
-  white-space: nowrap; /* don’t wrap onto 2 lines */
-  align-self: center;  /* center relative to the column */
+  box-shadow: 0 4px 0 rgba(88, 0, 0, 0.7);
+
+  pointer-events: none;         /* outer .quest-card handles the click */
+}
+
+.quest-card-cta--hidden {
+  display: none;
+}
+
+/* Progress bar, width constrained by the left container */
+.quest-card-progress {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 260px;             /* keeps it within the left column */
+}
+
+.quest-card-progress-track {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  padding: 3px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  background: #73090a;
+}
+
+.quest-card-progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom,
+    #36DC36,  /* top */
+    #00B600   /* bottom */
+  );
+  transition: width 220ms ease-out;
+}
+
+.quest-card-progress--hidden {
+  display: none;
 }
 
 /* RIGHT: hero image */
@@ -269,13 +342,13 @@ body {
     width: 100%;
     height: 100%;  
     transform: scale(1.2);
+    overflow: visible;
+    padding-right: 8px;
 }
 
 .quest-card-hero {
-  width: 85%;        /* 🔥 fill right column width */
+  width: 110%;        /* 🔥 fill right column width */
   height: auto;       /* preserve aspect ratio */
-  max-width: none;    /* remove old caps */
-  max-height: 80%;   /* don’t overflow vertically */
 
   object-fit: contain;
   pointer-events: none;

@@ -1,0 +1,257 @@
+:root {
+  --eq-gap: 12px;
+  --eq-square: 60px;
+}
+
+
+/* ============================================================
+   GAME BACKGROUND OVERLAY (40%)
+   ============================================================ */
+
+/* Fade EVERYTHING (cards + overlay + bg) together on exit */
+#game-root {
+  opacity: 1;
+  transition: opacity 260ms ease;
+}
+
+#game-root.eq-exiting {
+  opacity: 0;
+}
+
+/* During exit, FORCE battle background visible and game background hidden
+   (works with your #game-root::before / ::after background layering) */
+#game-root.eq-exiting::before { opacity: 1 !important; }
+#game-root.eq-exiting::after  { opacity: 0 !important; }
+
+/* Also keep the dark overlay ON as a safety mask during the handoff */
+#game-root.eq-exiting .game-bg-overlay { opacity: 1 !important; }
+
+/* Keep the dark overlay ON while exiting, even if stage-game gets removed */
+#game-root.eq-exiting .game-bg-overlay {
+  opacity: 1 !important;
+}
+
+#game-root .game-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.40);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease;
+  z-index: 0;
+}
+
+#game-root > * {
+  z-index: 1;
+}
+
+#game-root.stage-game .game-bg-overlay {
+  opacity: 1;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+
+#game-mount {
+  width: calc(100vw - 32px);
+  height: calc(100vh - 32px);
+  margin: 16px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+}
+
+/* ============================================================
+   GRID (5×5)
+   ============================================================ */
+
+.eq-grid {
+  display: grid;
+  width: 100%;
+  max-width: calc((var(--eq-square) * 5) + (var(--eq-gap) * 4));
+  margin: 0 auto;
+
+  grid-template-columns: repeat(5, var(--eq-square));
+  grid-template-rows: repeat(5, var(--eq-square));
+  gap: var(--eq-gap);
+
+  justify-content: center;
+  align-items: center;
+}
+
+/* ============================================================
+   EMPTY SLOT
+   ============================================================ */
+
+.eq-cell {
+  width: var(--eq-square);
+  height: var(--eq-square);
+
+  border-radius: 12px;
+  border: 4px solid #FFBA62;
+  background: #FFE4C1;
+
+  display: grid;
+  place-items: center;
+
+  font-weight: 800;
+  font-size: 24px;
+  color: #7D2D00;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+/* Hover (non-fixed only) */
+.eq-cell:not(.is-fixed):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+/* ============================================================
+   FILLED GRID SLOT
+   ============================================================ */
+
+/* Numbers get card background */
+.eq-cell.has-token:not(.is-symbol) {
+  background-image: url("../../images/games/equation-cards/game_card.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  border: 4px solid #FFBA62;
+  color: #7D2D00;
+
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+/* Symbols stay plain parchment */
+.eq-cell.is-symbol {
+  background: #FFBA62;        /* fill interior with outline color */
+  border: 4px solid #FFBA62;  /* same color so it looks like one solid tile */
+  color: #7D2D00;             /* keep text dark for contrast (adjust if needed) */
+}
+
+.eq-cell.is-fixed {
+  cursor: default;
+}
+
+/* ============================================================
+   HAND (PLAYER CARDS)
+   ============================================================ */
+
+.eq-hand {
+  display: grid;
+  grid-template-columns: repeat(5, var(--eq-square));
+  gap: var(--eq-gap);
+  width: 100%;
+  max-width: calc((var(--eq-square) * 5) + (var(--eq-gap) * 4));
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.eq-card {
+  width: var(--eq-square);
+  height: var(--eq-square);
+
+  border-radius: 12px;
+  border: 4px solid #FFBA62;
+
+  background-image: url("../../images/games/equation-cards/game_card.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  display: grid;
+  place-items: center;
+
+  font-weight: 800;
+  font-size: 24px;
+  color: #7D2D00;
+
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  transition: transform 120ms ease;
+}
+
+.eq-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+.eq-card.is-selected {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,0.55),
+    0 4px 8px rgba(0,0,0,0.5);
+}
+
+.eq-card.is-used {
+  opacity: 0.25;
+  filter: grayscale(0.8);
+}
+
+.eq-card.is-dragging {
+  opacity: 0.35;          /* original stays visible but inactive */
+  transform: scale(0.98);
+  pointer-events: none;   /* prevents accidental re-click during drag */
+}
+
+/* ============================================================
+   DRAG GHOST
+   ============================================================ */
+
+.drag-ghost {
+  opacity: 1;
+  transform: translate(-9999px, -9999px) scale(1.06);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+
+/* ============================================================
+   DROP HOVER
+   ============================================================ */
+
+.eq-cell.drop-hover {
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,0.55),
+    0 4px 8px rgba(0,0,0,0.5);
+}
+
+/* ============================================================
+   WRONG ANSWER WIGGLE
+   ============================================================ */
+
+#game-mount.eq-bad {
+  animation: eq-wiggle 800ms ease-in-out;
+}
+
+@keyframes eq-wiggle {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-6px); }
+  40%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
+
+/* ============================================================
+   WIN ROW HIGHLIGHT
+   ============================================================ */
+
+.eq-cell.eq-row-win {
+  animation: eq-row-win 800ms ease-in-out;
+  box-shadow:
+    0 0 0 4px rgba(255,255,255,0.65),
+    0 4px 8px rgba(0,0,0,0.5);
+}
+
+@keyframes eq-row-win {
+  0%   { transform: scale(1); filter: brightness(1); }
+  35%  { transform: scale(1.05); filter: brightness(1.2); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
