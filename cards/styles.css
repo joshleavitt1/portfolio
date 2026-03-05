@@ -36,6 +36,14 @@ body {
   content: none !important;
 }
 
+#game-root.stage-game #cinematic {
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
 /* --------------------------------------------------------------------- */
 /* Design tokens                                                         */
 /* --------------------------------------------------------------------- */
@@ -188,9 +196,20 @@ body {
   border-radius: 16px;
 
   transform-origin: top center;
-  animation: quest-card-post 520ms cubic-bezier(0.23, 0.9, 0.25, 1.2) 180ms both;
+  animation: quest-card-post 520ms cubic-bezier(0.23, 0.9, 0.25, 1.2) both;
+  animation-delay: var(--quest-card-enter-delay, 180ms);
 }
 
+
+
+/* Stagger quest cards on Home (card 2 enters 300ms after card 1) */
+.quest-card:nth-child(1) .quest-card-inner {
+  --quest-card-enter-delay: 180ms;
+}
+
+.quest-card:nth-child(2) .quest-card-inner {
+  --quest-card-enter-delay: 480ms; /* 180ms + 300ms */
+}
 
 /* Extra soft shadow "behind" the card */
 .quest-card-inner::before {
@@ -221,6 +240,48 @@ body {
   }
 }
 
+.quest-card-inner--swap-in {
+  animation: quest-card-swap-in 520ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes quest-card-swap-in {
+  0% {
+    transform: translateY(10px) scale(0.98);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-4px) scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Card swaps to the next quest after boss completion */
+.quest-card-inner--swap-out {
+  animation: quest-card-swap-out 520ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes quest-card-swap-out {
+  0% {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+    opacity: 1;
+  }
+  60% {
+    transform: translateY(-6px) scale(1.02);
+    filter: brightness(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(10px) scale(0.98);
+    filter: brightness(0.95);
+    opacity: 0;
+  }
+}
+
 
 /* LEFT: title + pill */
 
@@ -229,7 +290,7 @@ body {
   flex-direction: column;
   align-items: flex-start;   /* left align content */
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
   text-align: left;
   padding-left: 8px;
   padding-left: 8px;
@@ -259,8 +320,8 @@ body {
   background: rgba(255, 255, 255, 0.4); /* 40% white overlay */
 
   color: #5a1a00;                   /* dark brown/red text */
-  font-size: 16px;
-  font-weight: 500;                 /* semibold */
+  font-size: 14px;
+  font-weight: 600;                 /* semibold */
 
   white-space: nowrap;
   align-self: flex-start;           /* stay left in the column */
@@ -287,7 +348,7 @@ body {
   background: linear-gradient(to bottom, #D62C2F, #770101);
 
   color: #ffffff;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
 
@@ -333,6 +394,149 @@ body {
   display: none;
 }
 
+/* Smooth out the global animation so it feels a bit more HP-like */
+.quest-card-progress-fill--animating {
+  transition: width 360ms cubic-bezier(0.23, 0.9, 0.25, 1.1);
+}
+
+/* When a quest has just been fully completed (boss win),
+   give the bar a subtle pulse + glow */
+.quest-card-progress-fill--complete {
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.9),
+              0 0 18px rgba(0, 182, 0, 0.7);
+  animation: quest-progress-complete-pulse 420ms ease-out;
+}
+
+@keyframes quest-progress-complete-pulse {
+  0% {
+    transform: scaleX(1);
+  }
+  60% {
+    transform: scaleX(1.04);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.quest-card-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: visible;
+}
+
+.quest-card-confetti-piece {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+
+  width: 12px;
+  height: 18px;
+  border-radius: 3px;
+
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+
+  animation-name: quest-confetti-burst3;
+  animation-duration: 1100ms; /* ✅ ADD THIS */
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.25, 1);
+  animation-fill-mode: forwards;
+}
+
+/* FORCE SOLID METALS (beats old rainbow rules) */
+.quest-card-confetti .quest-card-confetti-piece[data-metal="gold"] {
+  background: linear-gradient(135deg, #FFE7A6, #FFD700, #FFB800) !important;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.55);
+}
+
+.quest-card-confetti .quest-card-confetti-piece[data-metal="bronze"] {
+  background: linear-gradient(135deg, #F0C59A, #CD7F32, #9A5315) !important;
+  box-shadow: 0 0 10px rgba(205, 127, 50, 0.45);
+}
+
+@keyframes quest-confetti-burst3 {
+  0% {
+    transform: translate(-50%, -50%) scale(0.25) rotate(0deg);
+    opacity: 0;
+  }
+
+  /* tiny pop + initial outward */
+  14% {
+    transform: translate(calc(-50% + var(--dx1)), calc(-50% + var(--dy1)))
+      scale(calc(1.2 * var(--pieceScale))) rotate(var(--rot));
+    opacity: 1;
+  }
+
+  /* reach burst edge */
+  48% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy)))
+      scale(var(--pieceScale)) rotate(var(--rot));
+    opacity: 1;
+  }
+
+  /* gentle drift down */
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 95px))
+      scale(calc(0.9 * var(--pieceScale))) rotate(calc(var(--rot) + 220deg));
+    opacity: 0;
+  }
+}
+
+/* Card victory pop */
+.quest-card-inner--victory-pop {
+  animation: quest-card-victory-pop 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@keyframes quest-card-victory-pop {
+  0%   { transform: translateY(0) scale(1); filter: brightness(1); }
+  55%  { transform: translateY(-4px) scale(1.03); filter: brightness(1.12); }
+  100% { transform: translateY(0) scale(1); filter: brightness(1); }
+}
+
+.quest-card-burst-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+  border: 3px solid rgba(255, 215, 0, 0.95);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.45);
+  animation: quest-burst-ring 520ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes quest-burst-ring {
+  0%   { transform: translate(-50%, -50%) scale(0.25); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(9.5); opacity: 0; }
+}
+
+/* Star pieces */
+.quest-card-confetti-piece--star {
+  width: 14px;
+  height: 14px;
+  border-radius: 0;
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+}
+
 /* RIGHT: hero image */
 
 .quest-card-right {
@@ -347,7 +551,7 @@ body {
 }
 
 .quest-card-hero {
-  width: 110%;        /* 🔥 fill right column width */
+  width: 100%;        /* 🔥 fill right column width */
   height: auto;       /* preserve aspect ratio */
 
   object-fit: contain;

@@ -11,15 +11,15 @@
       level: 1,
       health: 40,
       damage: 8,
-      spriteImage: "images/games/monster-battle/quest_1/hero/hero_1.png",
-      attackImage: "images/games/monster-battle/quest_1/hero/attack_1.png",
+      spriteImage: "images/games/monster-battle/addition/quest_1/hero/hero_1.png",
+      attackImage: "images/games/monster-battle/addition/quest_1/hero/attack_1.png",
     },
     monster: {
       name: "Goblin",
       health: 30,
       damage: 6,
-      spriteImage: "images/games/monster-battle/quest_1/monster/monster_1.png",
-      attackImage: "images/games/monster-battle/quest_1/monster/attack_1.png",
+      spriteImage: "images/games/monster-battle/addition/quest_1/monster/monster_1.png",
+      attackImage: "images/games/monster-battle/addition/quest_1/monster/attack_1.png",
     },
   };
 

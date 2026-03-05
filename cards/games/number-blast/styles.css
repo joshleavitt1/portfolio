@@ -1,0 +1,310 @@
+/* games/number-blast/styles.css */
+
+:root {
+  --nb-bg: #4b66b8;          /* outer blue */
+  --nb-board: #1f2a4d;       /* board dark */
+  --nb-board-edge: #17203d;
+  --nb-grid: rgba(255,255,255,0.07);
+
+  --nb-cell: 62px;
+  --nb-gap: 8px;
+
+  --nb-hand-cell: calc(var(--nb-cell) * 0.90); /* ✅ 10% smaller */
+
+  --nb-hand-size: 165px; /* increase this to grow the hand squares */
+}
+
+/* Pin the game to the viewport so the tray can't fall below the fold */
+/* Center the whole game */
+#game-mount {
+  width: 100%;
+  height: 100%;
+
+  margin: 0 auto;
+
+  padding: 18px;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(0,0,0,1);
+
+
+/* exit fade (reused) */
+#game-root { opacity: 1; transition: opacity 260ms ease; }
+#game-root.eq-exiting { opacity: 0; }
+
+#game-root .game-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.0);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease;
+  z-index: 0;
+}
+
+.nb-wrap {
+  width: 100%;
+  max-height: calc(100vh - 32px);
+
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 64px;
+
+  justify-items: stretch;   /* CHANGE: allow children to fill width */
+}
+
+/* TOPBAR */
+.nb-topbar {
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  padding: 10px 12px;
+
+  display: grid;
+  place-items: center;
+
+  box-shadow: none;
+  width: 100%;
+
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+}
+
+.nb-top-center{
+  display: grid;
+  justify-items: center;
+  gap: 24px;
+}
+
+.nb-make {
+  font-weight: 900;
+  font-size: 16px;
+  color: rgba(255,255,255,0.90);
+}
+
+.nb-score {
+  font-weight: 1000;
+  font-size: 38px;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 3px 18px rgba(0,0,0,0.35);
+}
+
+.nb-top-right { justify-self: end; }
+
+.nb-attack-label {
+  font-weight: 900;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.85);
+  text-align: right;
+}
+
+.nb-pips {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 0;
+}
+
+.nb-pip {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.22);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.16);
+}
+.nb-pip.is-on {
+  background: rgba(255,255,255,0.95);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.25),
+    0 10px 18px rgba(0,0,0,0.25);
+}
+
+/* BOARD */
+.nb-board-wrap {
+  width: 100%;
+  border-radius: 18px;
+  border: 2px solid rgba(0,0,0,0.35);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+
+  padding: 12px;
+
+  display: grid;
+  place-items: center;
+}
+
+.nb-grid {
+  display: grid;
+  grid-template-columns: repeat(5, var(--nb-cell));
+  grid-template-rows: repeat(5, var(--nb-cell));
+  gap: var(--nb-gap);
+  position: relative;
+  margin: 0 auto;
+}
+
+.nb-cell {
+  width: var(--nb-cell);
+  height: var(--nb-cell);
+  border-radius: 12px;
+
+  border: 2px solid rgba(255,255,255,0.10);
+  /* 12% white background */
+  background: rgba(255,255,255,0.16);
+
+  display: grid;
+  place-items: center;
+
+  font-weight: 1000;
+  font-size: 24px;
+  color: rgba(255,255,255,0.92);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 8px 18px rgba(0,0,0,0.22);
+
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* drop feedback */
+.nb-cell.drop-hover {
+  outline: 3px solid rgba(255,255,255,0.70);
+  outline-offset: 2px;
+  color: #fff;    
+}
+
+/* clearing animation */
+.nb-cell.nb-clearing {
+  animation: nb-pop 220ms ease-out;
+}
+@keyframes nb-pop {
+  0% { transform: scale(1); filter: brightness(1); }
+  60% { transform: scale(1.10); filter: brightness(1.25); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+/* TILE THEMES (glossy) */
+.nb-c1 { background: linear-gradient(to bottom, #b9f1ff, #29b9f0); }
+.nb-c2 { background: linear-gradient(to bottom, #c7ffbf, #2bd86c); }
+.nb-c3 { background: linear-gradient(to bottom, #ffd5a8, #ff7d2f); }
+.nb-c4 { background: linear-gradient(to bottom, #e6d2ff, #9b61ff); }
+.nb-c5 { background: linear-gradient(to bottom, #fff59b, #ffce2f); }
+
+.nb-cell.filled {
+  border: 2px solid rgba(255,255,255,0.35);
+  color: #17202b;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+  box-shadow:
+    inset 0 3px 0 rgba(255,255,255,0.35),
+    0 10px 22px rgba(0,0,0,0.28);
+}
+
+/* ✅ FORCE hover numbers to be visible (overrides .filled) */
+.nb-cell.drop-hover,
+.nb-cell.filled.drop-hover {
+  color: #fff !important;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.55) !important;
+}
+
+/* ✅ ghost piece numbers white */
+.drag-ghost .nb-mini {
+  color: #fff !important;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.55) !important;
+}
+
+/* Hand: full width, 3 equal columns */
+.nb-hand{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+}
+
+.nb-hand-rail {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* The draggable piece itself (no card styling) */
+.nb-piece{
+  width: auto;
+  height: auto;
+
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+
+  display: grid;
+  place-items: center;
+
+  touch-action: none;
+  cursor: grab;
+}
+
+.nb-piece:active { cursor: grabbing; }
+.nb-piece.is-dragging { opacity: 0.3; }
+
+/* Shape container (only real blocks, no grid) */
+.nb-piece-shape {
+  position: relative;
+  width: auto;
+  height: auto;
+}
+
+/* Actual mini blocks */
+.nb-mini {
+  position: absolute;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+
+  font-weight: 1000;
+  font-size: 20px;
+  line-height: 1;
+
+  color: #17202b;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,0.30),
+    0 8px 14px rgba(0,0,0,0.22);
+}
+
+/* Color themes for mini blocks */
+.nb-mini.nb-c1 { background: linear-gradient(to bottom, #b9f1ff, #29b9f0); }
+.nb-mini.nb-c2 { background: linear-gradient(to bottom, #c7ffbf, #2bd86c); }
+.nb-mini.nb-c3 { background: linear-gradient(to bottom, #ffd5a8, #ff7d2f); }
+.nb-mini.nb-c4 { background: linear-gradient(to bottom, #e6d2ff, #9b61ff); }
+.nb-mini.nb-c5 { background: linear-gradient(to bottom, #fff59b, #ffce2f); }
+
+/* drag ghost */
+.drag-ghost {
+  filter: drop-shadow(0 16px 28px rgba(0,0,0,0.45));
+  color: #fff;
+}
+
+/* ✅ WIN EXPLODE: whole-board tile scatter */
+.nb-win-explode .nb-cell.filled {
+  animation: nb-win-fly 520ms cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+@keyframes nb-win-fly {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; filter: brightness(1); }
+  35%  { transform: translate(var(--dx), var(--dy)) scale(1.12); filter: brightness(1.35); }
+  100% { transform: translate(calc(var(--dx) * 1.6), calc(var(--dy) * 1.6)) scale(0.85); opacity: 0; filter: brightness(1.1); }
+}
+
+/* optional: make the board flash a bit */
+.nb-win-explode .nb-board-wrap {
+  animation: nb-win-flash 260ms ease-out;
+}
+@keyframes nb-win-flash {
+  0% { filter: brightness(1); }
+  40% { filter: brightness(1.25); }
+  100% { filter: brightness(1); }
+}

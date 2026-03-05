@@ -54,7 +54,7 @@
   /* Use a CSS variable so JS can swap battle backgrounds */
   background-image: var(
     --battle-bg-image,
-    url("../../images/games/monster-battle/quest_1/bg/bg_battle.png")
+    url("../../images/games/monster-battle/addition/quest_1/bg/bg_battle.png")
   );
   opacity: 1;
 }

@@ -4,7 +4,7 @@
 
   function loadPlayerProfile() {
     try {
-      const raw = localStorage.getItem("MM_PLAYER_PROFILE");
+      const raw = localStorage.getItem("PLAYER_PROFILE");
       if (raw) return JSON.parse(raw);
     } catch (e) {}
     return {};
@@ -12,7 +12,7 @@
   
   function savePlayerProfile(profile) {
     try {
-      localStorage.setItem("MM_PLAYER_PROFILE", JSON.stringify(profile || {}));
+      localStorage.setItem("PLAYER_PROFILE", JSON.stringify(profile || {}));
     } catch (e) {}
   }
   
@@ -110,6 +110,105 @@ if (gameId === "equation-cards" && result && (result.outcome === "win" || result
     } catch (err) {
       console.error("[GameRunner] Game crashed:", err);
     }
+  }
+
+    // ------------------------------------------------------------
+  // URL Test Harness
+  // Usage:
+  //   index.html?game=number-blast
+  //   index.html?game=number-blast&level=5
+  //   index.html?game=monster-battle&questId=quest_1&nodeIndex=0
+  // ------------------------------------------------------------
+  async function bootGameFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const gameId = params.get("game");
+    if (!gameId) return;
+
+    // Hide the normal app layers for clean testing
+    const questScreen = document.getElementById("quest-screen");
+    const mapScreen = document.getElementById("map-screen");
+    const gameRoot = document.getElementById("game-root");
+    const mount = document.getElementById("game-mount");
+
+    if (questScreen) questScreen.classList.add("quest-screen--hidden");
+    if (mapScreen) mapScreen.classList.add("map-screen--hidden");
+
+    if (gameRoot) {
+      gameRoot.classList.remove("game-root--hard-hide");
+      gameRoot.classList.add("game--visible");
+      gameRoot.classList.remove("stage-intro", "stage-result");
+      gameRoot.classList.add("stage-game");
+    }
+
+    if (mount) mount.classList.remove("is-hidden");
+
+    // Read basic config from URL (extend anytime)
+    const level = Number(params.get("level") || 1) || 1;
+    const questId = params.get("questId") || (window.CURRENT_QUEST_ID || "quest_1");
+    const nodeIndex = Number(params.get("nodeIndex") || 0) || 0;
+    const nodeType = params.get("nodeType") || "battle";
+
+    const configFromUrl = {
+      level,
+      playerLevel: level,
+      questId,
+      nodeIndex,
+      nodeType,
+    };
+
+    // If game isn't registered yet, try to lazy-load it from /games/<id>/
+    async function ensureGameRegistered(id) {
+      const existing = window.GameRegistry?.get?.(id);
+      if (existing) return true;
+
+      // 1) CSS (optional; safe if missing)
+      const cssHref = `games/${id}/styles.css`;
+      if (!document.querySelector(`link[data-game-css="${id}"]`)) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = cssHref;
+        link.setAttribute("data-game-css", id);
+        document.head.appendChild(link);
+      }
+
+      // 2) JS
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = `games/${id}/index.js`;
+        script.async = true;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Failed to load games/${id}/index.js`));
+        document.body.appendChild(script);
+      });
+
+      return !!window.GameRegistry?.get?.(id);
+    }
+
+    try {
+      const ok = await ensureGameRegistered(gameId);
+      if (!ok) {
+        console.error("[GameRunner] URL boot: game did not register:", gameId);
+        return;
+      }
+
+      // Run it
+      window.runGameMode(gameId, {
+        config: configFromUrl,
+        onComplete(res) {
+          console.log("[URL Test] Result:", res);
+          // keep the result visible in console (no auto-nav)
+        },
+      });
+    } catch (err) {
+      console.error("[GameRunner] URL boot failed:", err);
+    }
+  }
+
+  // Boot after DOM is ready (safe either way)
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootGameFromQuery);
+  } else {
+    bootGameFromQuery();
   }
 
   window.runGameMode = runGameMode;

@@ -259,13 +259,177 @@
     },
   };
 
-  window.__debugCompleteNodes = function (questId, count) {
-    questId ||= window.CURRENT_QUEST_ID || "quest_1";
-    const clamped = Math.max(0, Math.min(Number(count) || 0, TOTAL_NODES));
-    setActiveNodeIndexForQuest(questId, clamped);
-    console.log("[DEBUG] Set completed nodes for", questId, "to", clamped);
-    location.reload();
-  };
+  // --- DEV HELPER: force quest card progress animations reliably ---
+  
+  // --- DEV FX: coin burst on quest completion (uses existing confetti animation) ---
+  function spawnCoinsOnCard(cardEl, count = 16) {
+    if (!cardEl) return;
+
+    // remove any previous burst
+    const old = cardEl.querySelector(".quest-card-confetti");
+    if (old) old.remove();
+
+    const layer = document.createElement("div");
+    layer.className = "quest-card-confetti";
+    cardEl.appendChild(layer);
+
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement("div");
+      p.className = "quest-card-confetti-piece";
+      p.dataset.metal = "gold";
+
+      // coin-ish shape
+      p.style.width = "14px";
+      p.style.height = "14px";
+      p.style.borderRadius = "999px";
+
+      // burst vectors
+      const dx = `${Math.round(Math.random() * 220 - 110)}px`;
+      const dy = `${Math.round(Math.random() * 160 - 120)}px`;
+      const dx1 = `${Math.round(Math.random() * 120 - 60)}px`;
+      const dy1 = `${Math.round(Math.random() * 90 - 70)}px`;
+      const rot = `${Math.round(Math.random() * 240 - 120)}deg`;
+      const scale = (0.85 + Math.random() * 0.6).toFixed(2);
+
+      p.style.setProperty("--dx", dx);
+      p.style.setProperty("--dy", dy);
+      p.style.setProperty("--dx1", dx1);
+      p.style.setProperty("--dy1", dy1);
+      p.style.setProperty("--rot", rot);
+      p.style.setProperty("--pieceScale", scale);
+
+      // stagger slightly
+      p.style.animationDelay = `${Math.random() * 80}ms`;
+
+      layer.appendChild(p);
+    }
+
+    // cleanup
+    setTimeout(() => {
+      if (layer && layer.parentNode) layer.remove();
+    }, 1300);
+  }
+  window.__spawnCoinsOnCard = spawnCoinsOnCard;
+
+
+  // --- DEV HELPER: force quest card progress animations reliably ---
+  function forceQuestCardProgressAnimation() {
+    const fills = document.querySelectorAll(".quest-card-progress-fill");
+
+    fills.forEach((fill) => {
+      const track = fill.closest(".quest-card-progress-track");
+      const wrapper = fill.closest(".quest-card-progress");
+
+      if (wrapper && wrapper.classList.contains("quest-card-progress--hidden")) return;
+
+      const target =
+        Number(fill.dataset.target || "") ||
+        Number(track?.getAttribute("aria-valuenow") || "0");
+
+      const pct = Math.max(0, Math.min(100, target));
+
+      // Start at 0 instantly (no transition)
+      fill.classList.remove("quest-card-progress-fill--animating", "quest-card-progress-fill--complete");
+      fill.style.transition = "none";
+      fill.style.width = "0%";
+
+      // Force layout so 0% paints
+      void fill.getBoundingClientRect();
+
+      // Next frames: animate to target
+      requestAnimationFrame(() => {
+        fill.style.transition = ""; // return to CSS control
+        fill.classList.add("quest-card-progress-fill--animating");
+
+        requestAnimationFrame(() => {
+          fill.style.width = pct + "%";
+
+          // Completion FX
+          if (pct >= 100) {
+            const cardInner = fill.closest(".quest-card-inner");
+            setTimeout(() => {
+              fill.classList.add("quest-card-progress-fill--complete");
+              spawnCoinsOnCard(cardInner, 18);
+            }, 380);
+          }
+        });
+      });
+    });
+  }
+
+  function renderQuestCardsAndAnimate() {
+    if (typeof window.buildQuestCards === "function") window.buildQuestCards();
+    setTimeout(() => forceQuestCardProgressAnimation(), 1600);
+  }
+  window.__renderQuestCards = renderQuestCardsAndAnimate;
+
+window.__debugCompleteNodes = function (questId, count, opts) {
+  questId ||= window.CURRENT_QUEST_ID || "quest_1";
+  const clamped = Math.max(0, Math.min(Number(count) || 0, TOTAL_NODES));
+
+  // opts:
+  // - advanceTrack: boolean (default true only if clamped >= TOTAL_NODES)
+  // - animateTo100ThenAdvance: boolean (default false)
+  opts = opts || {};
+
+  const questScreenEl = document.getElementById("quest-screen");
+
+  // Always show quest/home (not map)
+  if (questScreenEl) questScreenEl.classList.remove("quest-screen--hidden");
+  if (mapScreenEl) mapScreenEl.classList.add("map-screen--hidden");
+
+  // If you want the “boss defeat” feel: animate to 100% first, then advance
+  if (opts.animateTo100ThenAdvance && clamped >= TOTAL_NODES) {
+    // show quest screen
+    if (questScreenEl) questScreenEl.classList.remove("quest-screen--hidden");
+    if (mapScreenEl) mapScreenEl.classList.add("map-screen--hidden");
+  
+    // 1) render once at 5/6
+    setActiveNodeIndexForQuest(questId, TOTAL_NODES - 1);
+    renderQuestCardsAndAnimate();
+  
+    // 2) after the card is visible + bar filled, bump to 100 without rebuilding
+    setTimeout(() => {
+      setActiveNodeIndexForQuest(questId, TOTAL_NODES);
+  
+      // 83% → 100% AHA
+      bumpQuestProgressUI(questId, 100);
+  
+      // 3) hold the moment, then advance track + rebuild to reveal next quest
+      setTimeout(() => {
+        handleQuestCompleted(questId);
+        renderQuestCardsAndAnimate();
+      }, 1100);
+    }, 700);
+  
+    return;
+  }
+
+  // Normal path
+  setActiveNodeIndexForQuest(questId, clamped);
+
+  const shouldAdvance =
+    typeof opts.advanceTrack === "boolean"
+      ? opts.advanceTrack
+      : clamped >= TOTAL_NODES;
+
+  if (shouldAdvance && clamped >= TOTAL_NODES) {
+    handleQuestCompleted(questId);
+  }
+
+  console.log("[DEBUG] Completed", questId, "nodes:", clamped, "advanceTrack:", shouldAdvance);
+
+  // Rebuild cards
+  renderQuestCardsAndAnimate();
+
+};
+
+// Convenience: simulate “boss defeat → quest 2 appears”
+window.__debugBossDefeat = function (questId) {
+  window.__debugCompleteNodes(questId || "quest_1", TOTAL_NODES, {
+    animateTo100ThenAdvance: true,
+  });
+};
 
   // ---------------------------------------------------------------------
   // Stage helpers
@@ -332,6 +496,31 @@
     }
   }
 
+  function bumpQuestProgressUI(questId, percent) {
+    const card = document.querySelector(`.quest-card[data-quest-id="${questId}"]`);
+    const track = card?.querySelector(".quest-card-progress-track");
+    const fill = card?.querySelector(".quest-card-progress-fill");
+    if (!track || !fill) return false;
+  
+    const pct = Math.max(0, Math.min(100, Number(percent) || 0));
+    track.setAttribute("aria-valuenow", String(pct));
+    fill.dataset.target = String(pct);
+  
+    // animate from CURRENT width → new width (no reset to 0)
+    fill.classList.remove("quest-card-progress-fill--complete");
+    fill.classList.add("quest-card-progress-fill--animating");
+    fill.style.width = pct + "%";
+  
+    if (pct >= 100) {
+      setTimeout(() => {
+        fill.classList.add("quest-card-progress-fill--complete");
+        __spawnCoinsOnCard(fill.closest(".quest-card-inner"), 24);
+      }, 380);
+    }
+    return true;
+  }
+  window.__bumpQuestProgressUI = bumpQuestProgressUI;
+
   // ---------------------------------------------------------------------
   // Map node layout (mobile-first, always centered)
   // ---------------------------------------------------------------------
@@ -381,9 +570,9 @@
   ];
 
   const NODE_SPRITES_FALLBACK = {
-    battle: "images/quests/quest_1/node/battle.png",
-    boss: "images/quests/quest_1/node/boss.png",
-    lock: "images/quests/quest_1/node/lock.png",
+    battle: "images/quests/addition/quest_1/node/battle.png",
+    boss: "images/quests/addition/quest_1/node/boss.png",
+    lock: "images/quests/addition/quest_1/node/lock.png",
   };
 
   function getNodeSpritesForCurrentQuest() {
@@ -405,6 +594,7 @@
       if (idx < activeNodeIndex) {
         node.disabled = true;
         node.style.backgroundImage = `url("${sprites.check}")`;
+        node.style.setProperty("--node-mask", `url("${sprites.check}")`);
         return;
       }
 
@@ -413,12 +603,14 @@
         node.disabled = false;
         node.classList.add("map-node--active");
         node.style.backgroundImage = `url("${sprites[type]}")`;
+        node.style.setProperty("--node-mask", `url("${sprites[type]}")`);
         return;
       }
 
       // 🔒 FUTURE LOCKED NODES
       node.disabled = true;
       node.style.backgroundImage = `url("${sprites.lock}")`;
+      node.style.setProperty("--node-mask", `url("${sprites.lock}")`);
     });
   }
 
@@ -630,9 +822,7 @@
     function showQuest() {
       if (questScreenEl) {
         // Rebuild cards in case track progress changed
-        if (typeof buildQuestCards === "function") {
-          buildQuestCards();
-        }
+        renderQuestCardsAndAnimate();
         questScreenEl.classList.remove("quest-screen--hidden");
       }
     }
@@ -692,9 +882,7 @@
                   Play Now
                 </div>
                 <div
-                  class="quest-card-progress ${
-                    hasProgress ? "" : "quest-card-progress--hidden"
-                  }"
+                  class="quest-card-progress ${hasProgress ? "" : "quest-card-progress--hidden"}"
                   aria-hidden="${hasProgress ? "false" : "true"}"
                 >
                   <div
@@ -705,10 +893,11 @@
                     aria-valuemax="100"
                     aria-valuenow="${progressPercent}"
                   >
-                    <div
-                      class="quest-card-progress-fill"
-                      style="width: ${progressPercent}%;"
-                    ></div>
+                  <div
+                    class="quest-card-progress-fill"
+                    data-target="${progressPercent}"
+                    style="width:0%"
+                  ></div>
                   </div>
                 </div>
               </div>
@@ -729,11 +918,11 @@
       });
     }
 
-    // Initial card build
-    buildQuestCards();
+    // ✅ expose for debug + other modules
+window.buildQuestCards = buildQuestCards;
 
-        // Initial card build
-        buildQuestCards();
+    // Initial card build
+    renderQuestCardsAndAnimate();
 
         // --------- Quest card click → first-time scroll → map ---------
         if (questListEl) {
@@ -781,9 +970,6 @@
             setStage("intro");
           });
         }
-    
-        // Always land on quest/home screen on load
-        showQuest();
 
     // Always land on quest/home screen on load
     showQuest();
