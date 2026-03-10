@@ -39,7 +39,7 @@
         1;
 
       if (!Number.isFinite(fallback)) fallback = 1;
-      fallback = clamp(fallback, 1, 10);
+      fallback = clamp(fallback, 1, 20);
 
       profile.categoryLevels = {
         addition: fallback,
@@ -70,7 +70,7 @@
     const raw = Number(profile.categoryLevels[key]);
     const lvl = Number.isFinite(raw) ? raw : 1;
 
-    return clamp(lvl, 1, 10);
+    return clamp(lvl, 1, 20);
   }
 
   function setCategoryLevel(mathTypeKey, newLevel) {
@@ -81,7 +81,7 @@
       ? mathTypeKey
       : "addition";
 
-    profile.categoryLevels[key] = clamp(Number(newLevel) || 1, 1, 10);
+    profile.categoryLevels[key] = clamp(Number(newLevel) || 1, 1, 20);
 
     saveProfile(profile);
   }
@@ -137,9 +137,9 @@
 
     let next = current;
     if (normalized === "win") {
-      next = clamp(current + 1, 1, 10);
+      next = clamp(current + 1, 1, 20);
     } else if (normalized === "loss") {
-      next = clamp(current - 1, 1, 10);
+      next = clamp(current - 1, 1, 20);
     }
 
     if (next !== current) {
