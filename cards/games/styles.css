@@ -37,7 +37,7 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: rgba(0,0,0,0.20); /* adjust darkness */
+  background: rgba(0,0,0,0.35); /* adjust darkness */
 }
 
 #game-mount::after {
@@ -86,35 +86,19 @@ body {
   padding: 0;
 }
 
-/* Hand panel */
+/* Keep HAND exactly how it was */
 .nb-hand {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-
-  min-height: calc(var(--nb-hand-size) + 8px);
-  height: auto;
-  padding: 24px 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 18px;
-
   position: relative;
   overflow: visible;
   border-radius: 16px;
-
   border: 2px solid rgba(245, 211, 112);
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-
+  background: rgba(19, 40, 83, 0.2);
   box-shadow:
     0 2px 0 rgba(255, 236, 171, 0.18) inset,
-    0 -10px 24px rgba(0, 0, 0, 0.45) inset,
+    0 -10px 24px rgba(0, 0, 0, 0.32) inset,
     var(--nb-panel-shadow);
 }
 
-/* inner frame (leave this) */
 .nb-hand::before {
   content: "";
   position: absolute;
@@ -123,14 +107,14 @@ body {
   pointer-events: none;
 }
 
-/* REMOVE blue tint */
 .nb-hand::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: transparent;
+  background: rgba(19, 40, 83, 0.2);
 }
+
 
 .nb-topbar {
   width: 100%;
@@ -277,8 +261,8 @@ body {
 
   background: #7D2D00;
   border-radius: 12px;
-  filter: blur(20px);
-  opacity: 0.85;
+  filter: blur(30px);
+  opacity: 0.75;
 
   z-index: -1;
   pointer-events: none;
@@ -345,7 +329,7 @@ body {
   will-change: transform, opacity;
   transform: translateZ(0);
   font-weight: 1000;
-  font-size: 30px;
+  font-size: 26px;
   line-height: 1;
   color: rgba(255, 255, 255, 0.98);
   text-shadow:
@@ -428,6 +412,18 @@ body {
   place-items: center;
 }
 
+.nb-hand {
+  width: 100%;
+  min-height: calc(var(--nb-hand-size) + 8px);
+  height: auto;
+  padding: 24px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  background: linear-gradient(180deg, rgba(16, 30, 63, 0.95), rgba(6, 11, 25, 0.98));
+}
+
 /* ------------------------------------------------ */
 /* Tile spawn pop (board creation juicy pop)        */
 /* ------------------------------------------------ */
@@ -500,7 +496,7 @@ body {
   place-items: center;
   border-radius: 12px;
   font-weight: 1000;
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1;
   color: rgba(255, 255, 255, 0.98);
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
@@ -785,41 +781,4 @@ body {
   100% {
     transform: translateY(0) scaleY(1);
   }
-}
-
-.nb-crystals {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 14px;
-  display: grid;
-  place-items: center;
-}
-
-.nb-crystals img {
-  width: 120px;
-  height: 120px;
-  display: block;
-  object-fit: contain;
-  user-select: none;
-  pointer-events: none;
-}
-
-.nb-crystal-number {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-
-  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: 48px;
-  font-weight: 1000;
-  line-height: 1;
-  color: #fff;
-  text-align: center;
-
-  text-shadow:
-    0 3px 10px rgba(0, 0, 0, 0.65),
-    0 0 18px rgba(255, 255, 255, 0.18);
-  pointer-events: none;
 }

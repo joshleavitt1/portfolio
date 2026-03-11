@@ -4,6 +4,7 @@
   const PLAN = [
     {
       level: 1,
+      boardSize: 5,
       target: 10,
       handSize: 1,
       maxLargePieces: 0,
@@ -20,6 +21,7 @@
     },
     {
       level: 2,
+      boardSize: 5,
       target: 10,
       handSize: 1,
       maxLargePieces: 0,
@@ -37,6 +39,7 @@
     },
     {
       level: 3,
+      boardSize: 5,
       target: 10,
       handSize: 1,
       maxLargePieces: 0,
@@ -55,6 +58,8 @@
     },
     {
       level: 4,
+      boardSize: 5,
+      target: 10,
       handSize: 3,
       maxLargePieces: 1,
       numberMin: 1,

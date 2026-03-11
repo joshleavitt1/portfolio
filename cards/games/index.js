@@ -6,7 +6,6 @@
   const HAND_SIZE = 1;
   const LEVEL_MAX = 20;
   const ROW_EXPLODE_MS = 420;
-  
   let shouldAnimateBoardSpawn = false;
 
   const WINS_KEY = "NB_GAME_WINS";
@@ -268,7 +267,7 @@
       difficultyWins: Math.max(0, readNumber(NB_DIFFICULTY_WINS_KEY, 0)),
       numberMin: difficultyRules?.numberMin ?? 1,
       numberMax: difficultyRules?.numberMax ?? levelNumberMax(savedDifficulty),
-      targetSum: difficultyRules?.target ?? (10 + Math.floor(Math.random() * 6)),
+      targetSum: difficultyRules?.target ?? 10,
       rules: difficultyRules || {},
     };
 
@@ -745,7 +744,7 @@
           state.size = latestRules.boardSize ?? DEFAULT_SIZE;
           state.numberMin = latestRules.numberMin ?? 1;
           state.numberMax = latestRules.numberMax ?? levelNumberMax(state.level);
-          state.targetSum = latestRules.target ?? (10 + Math.floor(Math.random() * 6));
+          state.targetSum = latestRules.target ?? 10;
           state.board = Array(state.size * state.size).fill(null);
           applyBoardPreset(state);
           removeAutoClearsFromPreset(state);
@@ -879,22 +878,15 @@
           if (!top.querySelector(".nb-power-fill")) {
             top.innerHTML = `
             <div class="nb-crystals">
-              <img src="images/games/number-blast/crystal.png" alt="Crystal" />
-              <div class="nb-crystal-number">${state.targetSum}</div>
+            <img src="images/games/number-blast/crystal.png" style="width: 120px; height: 120px;" alt="Crystal" />
             </div>
-          
-            <div class="nb-power-wrap">
-              <div class="nb-power-label"></div>
-              <div class="nb-power-bar" aria-label="Progress">
-                <div class="nb-power-fill"></div>
+              <div class="nb-power-wrap">
+                <div class="nb-power-label"></div>
+                <div class="nb-power-bar" aria-label="Progress">
+                  <div class="nb-power-fill"></div>
+                </div>
               </div>
-            </div>
-          `;
-          }
-
-          const crystalNumber = top.querySelector(".nb-crystal-number");
-          if (crystalNumber) {
-            crystalNumber.textContent = String(state.targetSum);
+            `;
           }
 
           const fill = top.querySelector(".nb-power-fill");
