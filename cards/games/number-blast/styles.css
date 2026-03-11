@@ -386,7 +386,7 @@ body {
   background: linear-gradient(180deg, #ff9a8b 0%, #ff6b56 50%, #cf3a23 100%);
 }
 
-.nb-hand-rail {
+.nb-tile.is-filled.nb-hand-rail {
   width: 100%;
   height: auto;
   display: grid;
@@ -403,6 +403,36 @@ body {
   align-items: center;
   gap: 18px;
   background: linear-gradient(180deg, rgba(16, 30, 63, 0.95), rgba(6, 11, 25, 0.98));
+}
+
+/* ------------------------------------------------ */
+/* Tile spawn pop (board creation juicy pop)        */
+/* ------------------------------------------------ */
+
+.nb-tile.nb-spawn {
+  animation: nbTileSpawn 320ms cubic-bezier(.2,1.4,.3,1) both;
+  animation-delay: var(--spawn-delay, 0ms);
+}
+
+@keyframes nbTileSpawn {
+  0% {
+    opacity: 0;
+    transform: scale(0.55) translateY(10px);
+  }
+
+  55% {
+    opacity: 1;
+    transform: scale(1.18) translateY(-4px);
+  }
+
+  75% {
+    transform: scale(0.96) translateY(1px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .nb-piece {

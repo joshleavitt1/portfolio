@@ -5,7 +5,8 @@
   const DEFAULT_SIZE = 4;
   const HAND_SIZE = 1;
   const LEVEL_MAX = 20;
-  const ROW_EXPLODE_MS = 760;
+  const ROW_EXPLODE_MS = 420;
+  let shouldAnimateBoardSpawn = false;
 
   const WINS_KEY = "NB_GAME_WINS";
   const RUN_ROUNDS = 15;
@@ -180,19 +181,21 @@
     const cB = pieceBounds(candidate);
     const hasW3 = hand.some((p) => pieceBounds(p).w >= 3) || cB.w >= 3;
     const hasH3 = hand.some((p) => pieceBounds(p).h >= 3) || cB.h >= 3;
-
+  
+    const all = hand.slice();
+    all.push(candidate);
+  
+    // never allow more than one exact h2 piece in hand
+    if (all.filter((p) => p.shapeId === "h2").length > 1) return false;
+  
     if (hasW3) {
-      const all = hand.slice();
-      all.push(candidate);
       if (all.filter((p) => pieceBounds(p).w >= 2).length > 1) return false;
     }
-
+  
     if (hasH3) {
-      const all = hand.slice();
-      all.push(candidate);
       if (all.filter((p) => pieceBounds(p).h >= 2).length > 1) return false;
     }
-
+  
     return true;
   }
 
@@ -218,12 +221,24 @@
 
       if (!piece) {
         piece = makePiece(state);
+      
         for (let tries = 0; tries < 40; tries++) {
           const b = pieceBounds(piece);
           const isLarge = b.w >= 3 || b.h >= 3;
-          if (!(isLarge && largeCount >= maxLargePieces)) break;
-          piece = makePiece(state);
+      
+          if (isLarge && largeCount >= maxLargePieces) {
+            piece = makePiece(state);
+            continue;
+          }
+      
+          if (!handAllowedWithCandidate(hand, piece)) {
+            piece = makePiece(state);
+            continue;
+          }
+      
+          break;
         }
+      
         const b2 = pieceBounds(piece);
         if (b2.w >= 3 || b2.h >= 3) largeCount++;
       }
@@ -733,14 +748,16 @@
           state.board = Array(state.size * state.size).fill(null);
           applyBoardPreset(state);
           removeAutoClearsFromPreset(state);
-
+        
           const handSize = latestRules.handSize ?? HAND_SIZE;
           const maxLargePieces = latestRules.maxLargePieces ?? 1;
           state.hand = generateHand(state, handSize, maxLargePieces);
-
+        
           if (!applyPresetHand(state)) {
             ensurePlayableHand(state, 24);
           }
+        
+          shouldAnimateBoardSpawn = true;
         }
 
         resetRoundBoard();
@@ -761,6 +778,30 @@
         function getPointerAnchor(clientX, clientY) {
           const biasY = Math.min(window.innerHeight * 0.025, 18);
           return cellIndexFromPointer(clientX, clientY - biasY);
+        }
+
+        function getAdjustedAnchor(clientX, clientY, piece, grabCell) {
+          const hoverIndex = cellIndexFromPointer(
+            clientX,
+            clientY - Math.min(window.innerHeight * 0.025, 18)
+          );
+        
+          if (hoverIndex == null || !piece || !grabCell) return hoverIndex;
+        
+          const hoverRC = rc(state, hoverIndex);
+          const anchorR = hoverRC.r - grabCell.y;
+          const anchorC = hoverRC.c - grabCell.x;
+        
+          if (
+            anchorR < 0 ||
+            anchorC < 0 ||
+            anchorR >= state.size ||
+            anchorC >= state.size
+          ) {
+            return null;
+          }
+        
+          return idx(state, anchorR, anchorC);
         }
 
         function cellIndexFromPointer(x, y) {
@@ -838,7 +879,7 @@
             top.innerHTML = `
               <div class="nb-title">Blast 10</div>
               <div class="nb-power-wrap">
-                <div class="nb-power-label">Blasts</div>
+                <div class="nb-power-label"></div>
                 <div class="nb-power-bar" aria-label="Progress">
                   <div class="nb-power-fill"></div>
                 </div>
@@ -864,20 +905,35 @@
               btn.type = "button";
               btn.className = "nb-cell";
               btn.setAttribute("data-cell-index", String(i));
-
+          
               const tile = document.createElement("div");
               tile.className = "nb-tile";
               btn.appendChild(tile);
-
+          
               const cell = state.board[i];
               if (cell) {
                 tile.classList.add("is-filled", getNumberColorClass(cell.v));
                 tile.textContent = String(cell.v);
+          
+                if (shouldAnimateBoardSpawn) {
+                  const index = r * state.size + c;
+                  const stagger = index * 18;
+                
+                  tile.style.setProperty("--spawn-delay", stagger + "ms");
+                  tile.classList.add("nb-spawn");
+                
+                  setTimeout(() => {
+                    tile.classList.remove("nb-spawn");
+                    tile.style.removeProperty("--spawn-delay");
+                  }, 360 + stagger);
+                }
               }
-
+          
               gridEl.appendChild(btn);
             }
           }
+          
+          shouldAnimateBoardSpawn = false;
         }
 
         function renderHand() {
@@ -916,6 +972,8 @@
                 const d = document.createElement("div");
                 d.className = `nb-mini ${getNumberColorClass(pc.v)}`;
                 d.textContent = String(pc.v);
+                d.dataset.px = String(pc.x);
+                d.dataset.py = String(pc.y);
                 d.style.width = `${cell}px`;
                 d.style.height = `${cell}px`;
                 d.style.left = `${startX + pc.x * (cell + gap)}px`;
@@ -934,6 +992,13 @@
               const rect = btn.getBoundingClientRect();
               const grabOffsetX = ev.clientX - rect.left;
               const grabOffsetY = ev.clientY - rect.top;
+              const grabbedMini = ev.target.closest(".nb-mini");
+              const grabCell = grabbedMini
+                ? {
+                    x: Number(grabbedMini.dataset.px || 0),
+                    y: Number(grabbedMini.dataset.py || 0),
+                  }
+  : { x: 0, y: 0 };
               const ghostNudgeY = 10;
 
               const ghost = btn.cloneNode(true);
@@ -968,13 +1033,16 @@
               }
 
               applyGhost();
-              highlightPlacement(getPointerAnchor(ev.clientX, ev.clientY), state.hand[hi]);
+              highlightPlacement(
+                getAdjustedAnchor(ev.clientX, ev.clientY, state.hand[hi], grabCell),
+                state.hand[hi]
+              );
 
               try { btn.setPointerCapture(ev.pointerId); } catch (e) {}
 
               const onMove = (e) => {
                 queueGhost(e.clientX, e.clientY);
-                const ci = getPointerAnchor(e.clientX, e.clientY);
+                const ci = getAdjustedAnchor(e.clientX, e.clientY, state.hand[hi], grabCell);
                 if (ci == null) {
                   clearHover();
                   return;
@@ -987,7 +1055,7 @@
                 window.removeEventListener("pointerup", onUp);
                 if (raf) cancelAnimationFrame(raf);
 
-                const ci = getPointerAnchor(evUp.clientX, evUp.clientY);
+                const ci = getAdjustedAnchor(evUp.clientX, evUp.clientY, state.hand[hi], grabCell);
                 clearHover();
                 if (ci != null) Promise.resolve(placePiece(ci, hi)).catch(console.error);
 
