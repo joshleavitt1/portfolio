@@ -876,30 +876,33 @@
         function updateTopbar() {
           const progress = clamp((state.roundWins / RUN_ROUNDS) * 100, 0, 100);
 
-          if (!top.querySelector(".nb-power-fill")) {
+          if (!top.querySelector(".nb-crystal-ring-fill")) {
             top.innerHTML = `
-            <div class="nb-crystals">
-              <img src="images/games/number-blast/crystal.png" alt="Crystal" />
-              <div class="nb-crystal-number">${state.targetSum}</div>
-            </div>
+              <div class="nb-power-wrap">
+                <div
+                  class="nb-crystal-ring"
+                  aria-label="Blast progress"
+                  style="--progress: 0%;"
+                >
+                  <div class="nb-crystal-ring-fill"></div>
           
-            <div class="nb-power-wrap">
-              <div class="nb-power-label"></div>
-              <div class="nb-power-bar" aria-label="Progress">
-                <div class="nb-power-fill"></div>
+                  <div class="nb-crystals">
+                    <img src="images/games/number-blast/crystal.png" alt="Crystal" />
+                    <div class="nb-crystal-number">${state.targetSum}</div>
+                  </div>
+                </div>
               </div>
-            </div>
-          `;
+            `;
           }
 
           const crystalNumber = top.querySelector(".nb-crystal-number");
           if (crystalNumber) {
             crystalNumber.textContent = String(state.targetSum);
           }
-
-          const fill = top.querySelector(".nb-power-fill");
+          
+          const ring = top.querySelector(".nb-crystal-ring");
           requestAnimationFrame(() => {
-            fill.style.width = progress + "%";
+            ring.style.setProperty("--progress", progress + "%");
           });
         }
 
@@ -1235,11 +1238,11 @@
           writeNumber(NB_DIFFICULTY_WINS_KEY, state.difficultyWins);
           updateTopbar();
 
-          const fill = top.querySelector(".nb-power-fill");
-          if (fill) {
-            fill.classList.remove("bump");
-            void fill.offsetWidth;
-            fill.classList.add("bump");
+          const ring = top.querySelector(".nb-crystal-ring");
+          if (ring) {
+            ring.classList.remove("bump");
+            void ring.offsetWidth;
+            ring.classList.add("bump");
           }
         }
 

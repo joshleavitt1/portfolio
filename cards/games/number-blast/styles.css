@@ -37,7 +37,7 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: rgba(0,0,0,0.20); /* adjust darkness */
+  background: rgba(0,0,0,0.40); /* adjust darkness */
 }
 
 #game-mount::after {
@@ -103,15 +103,6 @@ body {
   position: relative;
   overflow: visible;
   border-radius: 16px;
-
-  border: 2px solid rgba(245, 211, 112);
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-
-  box-shadow:
-    0 2px 0 rgba(255, 236, 171, 0.18) inset,
-    0 -10px 24px rgba(0, 0, 0, 0.45) inset,
-    var(--nb-panel-shadow);
 }
 
 /* inner frame (leave this) */
@@ -155,90 +146,124 @@ body {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 360px;
-  margin: 0 auto;
   display: grid;
-  gap: 14px;
+  place-items: center;
+  padding-bottom: 40px;
 }
 
-.nb-power-label {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 24px;
-  font-weight: 900;
-  letter-spacing: 0.3px;
-  color: var(--nb-gold-1);
-  text-align: center;
-  text-shadow:
-    0 2px 0 rgba(68, 32, 0, 0.7),
-    0 0 18px rgba(255, 217, 120, 0.18);
-}
+.nb-crystal-ring {
+  --ring-size: 140px;
+  --ring-thickness: 12px;
+  --progress: 0%;
 
-.nb-power-bar {
   position: relative;
-  width: 100%;
-  height: 22px;
-  padding: 2px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: linear-gradient(180deg, rgba(7, 13, 27, 0.95), rgba(31, 27, 23, 0.95));
-  border: 1px solid rgba(255, 221, 137, 0.18);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 -2px 4px rgba(0, 0, 0, 0.45) inset,
-    0 0 0 2px rgba(11, 17, 35, 0.55) inset;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  display: grid;
+  place-items: center;
 }
 
-.nb-power-fill {
-  position: relative;
-  width: 0;
-  height: 100%;
-  border-radius: inherit;
-  overflow: hidden;
-  transform-origin: center;
-  background: linear-gradient(180deg, #7dff7d 0%, #31d84a 45%, #118f26 100%);
-  box-shadow:
-    0 0 18px rgba(71, 255, 102, 0.28),
-    0 0 32px rgba(71, 255, 102, 0.18),
-    0 1px 0 rgba(255, 255, 255, 0.42) inset;
-  transition: width 450ms cubic-bezier(.2, .9, .2, 1), transform 180ms ease;
-}
-
-.nb-power-fill::before {
-  content: "";
+.nb-crystal-ring-fill {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
+  border-radius: 50%;
   pointer-events: none;
-  background: linear-gradient(110deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.08) 26%, rgba(255, 255, 255, 0.38) 48%, rgba(255, 255, 255, 0.08) 70%, rgba(255, 255, 255, 0) 100%);
-  transform: translateX(-140%);
-  animation: nbPowerSweep 1.15s linear infinite;
+
+  background:
+    conic-gradient(
+      from -90deg,
+      #7dff7d 0%,
+      #31d84a var(--progress),
+      rgba(9, 18, 38, 0.92) var(--progress),
+      rgba(9, 18, 38, 0.92) 100%
+    );
+
+  -webkit-mask:
+    radial-gradient(
+      farthest-side,
+      transparent calc(100% - var(--ring-thickness) - 1px),
+      #000 calc(100% - var(--ring-thickness))
+    );
+  mask:
+    radial-gradient(
+      farthest-side,
+      transparent calc(100% - var(--ring-thickness) - 1px),
+      #000 calc(100% - var(--ring-thickness))
+    );
+
+  box-shadow:
+    0 0 20px rgba(71, 255, 102, 0.18),
+    0 0 36px rgba(71, 255, 102, 0.12);
+  transition: background 450ms cubic-bezier(.2, .9, .2, 1), transform 180ms ease;
 }
 
-.nb-power-fill::after {
+.nb-crystal-ring::before {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 50%;
-  border-radius: inherit;
+  inset: 6px;
+  border-radius: 50%;
   pointer-events: none;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.02));
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 221, 137, 0.16),
+    inset 0 8px 18px rgba(255, 255, 255, 0.08),
+    inset 0 -10px 18px rgba(0, 0, 0, 0.34);
 }
 
-.nb-power-fill.bump {
-  animation: nbPowerBump 260ms ease;
+.nb-crystal-ring::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(71,255,102,0.18) 0%, rgba(71,255,102,0.06) 42%, transparent 72%);
+  filter: blur(10px);
+  opacity: 0.9;
 }
 
-@keyframes nbPowerSweep {
-  0% { transform: translateX(-140%); }
-  100% { transform: translateX(140%); }
+.nb-crystals {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  z-index: 2;
 }
 
-@keyframes nbPowerBump {
-  0% { transform: scaleY(1); }
-  40% { transform: scaleY(1.16); }
-  100% { transform: scaleY(1); }
+.nb-crystals img {
+  width: 120px;
+  height: 120px;
+  display: block;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
+.nb-crystal-number {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-size: 48px;
+  font-weight: 1000;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  text-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.65),
+    0 0 18px rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+}
+
+.nb-crystal-ring.bump .nb-crystal-ring-fill {
+  animation: nbRingBump 260ms ease;
+}
+
+@keyframes nbRingBump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  100% { transform: scale(1); }
 }
 
 .nb-board-wrap {
@@ -277,9 +302,8 @@ body {
 
   background: #7D2D00;
   border-radius: 12px;
-  filter: blur(20px);
-  opacity: 0.85;
-
+  filter: blur(10px);
+  opacity: 0.55;
   z-index: -1;
   pointer-events: none;
 }
@@ -291,24 +315,53 @@ body {
   display: grid;
   place-items: center;
   overflow: visible;
-  border-radius: 18px;
-  appearance: none;
-  -webkit-appearance: none;
-  background: #FFE4C1;
+
+  border-radius: 12px;
+
+  background: linear-gradient(
+    180deg,
+    #fbefdb 0%,
+    #f5e5cb 58%,
+    #edd9bb 100%
+  );
+
+  border: 1px solid rgba(146,109,67,0.22);
+
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,0.65),
+    inset 0 -2px 0 rgba(214,190,158,0.45),
+    0 3px 8px rgba(77,42,12,0.18);
 }
-
-
 
 .nb-cell::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 2px;
+  border-radius: 10px;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 50% 28%, rgba(255, 255, 255, 0.22), transparent 50%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0));
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.45);
 }
 
+.nb-cell::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 6px;
+  height: 24%;
+
+  border-radius: 999px;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.20),
+    rgba(255,255,255,0)
+  );
+
+  pointer-events: none;
+}
 
 .nb-cell.drop-hover {
   transform: translateY(-1px);
@@ -334,12 +387,12 @@ body {
 
 .nb-tile {
   position: absolute;
-  inset: 0;
+  inset: -2px;
   display: grid;
   place-items: center;
   box-sizing: border-box;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 12px;
   opacity: 0;
   pointer-events: none;
   will-change: transform, opacity;
@@ -367,15 +420,14 @@ body {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 28%, rgba(255, 255, 255, 0.22), transparent 46%);
 }
 
 .nb-tile.is-filled::after,
 .nb-mini::after {
   content: "";
   position: absolute;
-  left: 8px;
-  right: 8px;
+  left: 6px;
+  right: 6px;
   top: 6px;
   height: 34%;
   border-radius: 999px;
@@ -396,36 +448,57 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* -------------------------------- */
+/* Tile colors (match crystal board) */
+/* -------------------------------- */
 .nb-tile.is-filled.nb-c1,
 .nb-mini.nb-c1 {
-  background: linear-gradient(180deg, #b48eff 0%, #8a61ff 52%, #5a33d9 100%);
+  background: linear-gradient(
+    180deg,
+    #c6a6ff 0%,
+    #7c4dff 45%,
+    #4b2cc6 100%
+  );
 }
 
 .nb-tile.is-filled.nb-c2,
 .nb-mini.nb-c2 {
-  background: linear-gradient(180deg, #7cff87 0%, #47d85a 50%, #1f9b34 100%);
+  background: linear-gradient(
+    180deg,
+    #6dff9b 0%,
+    #18c65b 45%,
+    #0f8a3e 100%
+  );
 }
 
 .nb-tile.is-filled.nb-c3,
 .nb-mini.nb-c3 {
-  background: linear-gradient(180deg, #ffe17d 0%, #ffc947 48%, #d08b12 100%);
+  background: linear-gradient(
+    180deg,
+    #ffe070 0%,
+    #ffbb1c 45%,
+    #c47a05 100%
+  );
 }
 
 .nb-tile.is-filled.nb-c4,
 .nb-mini.nb-c4 {
-  background: linear-gradient(180deg, #8fbdff 0%, #5688ff 48%, #2d4ec4 100%);
+  background: linear-gradient(
+    180deg,
+    #7faeff 0%,
+    #2d6bff 45%,
+    #1f49c2 100%
+  );
 }
 
 .nb-tile.is-filled.nb-c5,
 .nb-mini.nb-c5 {
-  background: linear-gradient(180deg, #ff9a8b 0%, #ff6b56 50%, #cf3a23 100%);
-}
-
-.nb-tile.is-filled.nb-hand-rail {
-  width: 100%;
-  height: auto;
-  display: grid;
-  place-items: center;
+  background: linear-gradient(
+    180deg,
+    #ff8d80 0%,
+    #e52e1a 45%,
+    #a21f15 100%
+  );
 }
 
 /* ------------------------------------------------ */
@@ -479,7 +552,7 @@ body {
 .nb-piece:hover,
 .nb-piece:focus-visible {
   transform: translateY(-4px) scale(1.03);
-  border-radius: 16px;
+  border-radius: 14px;
   background: radial-gradient(circle at center, rgba(255, 255, 255, 0.08), transparent 66%);
   filter: drop-shadow(0 8px 18px rgba(80, 145, 255, 0.24));
 }
@@ -791,7 +864,7 @@ body {
   position: relative;
   width: 120px;
   height: 120px;
-  margin: 0 auto 14px;
+  margin: 0 auto;
   display: grid;
   place-items: center;
 }
@@ -822,4 +895,50 @@ body {
     0 3px 10px rgba(0, 0, 0, 0.65),
     0 0 18px rgba(255, 255, 255, 0.18);
   pointer-events: none;
+}
+
+/* ================================================= */
+/* MOBILE LAYOUT                                     */
+/* ================================================= */
+
+@media (max-width: 520px) {
+
+  :root{
+    --nb-cell: 58px;
+    --nb-gap: 6px;
+    --nb-hand-size: 150px;
+    --nb-page-max: 420px;
+  }
+
+  .nb-wrap{
+    gap: 0px;
+  }
+
+  .nb-title{
+    font-size: 28px;
+  }
+
+  .nb-crystals{
+    width: 120px;
+    height: 120px;
+  }
+
+  .nb-crystals img{
+    width: 120px;
+    height: 120px;
+  }
+
+  .nb-crystal-number{
+    font-size: 40px;
+  }
+
+  .nb-hand{
+    padding: 18px 16px;
+    gap: 14px;
+  }
+
+  .nb-mini{
+    font-size: 20px;
+  }
+
 }
