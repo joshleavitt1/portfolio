@@ -62,15 +62,13 @@
       winsToAdvance: 20,
       allowShapes: ["s1", "h2", "v2"],
       boardPreset: [
-        { r: 1, c: 1, v: 2 },
         { r: 1, c: 2, v: 3 },
-        { r: 1, c: 3, v: 4 },
-        { r: 2, c: 1, v: 1 },
-        { r: 2, c: 2, v: 2 },
-        { r: 2, c: 3, v: 3 },
-        { r: 3, c: 1, v: 2 },
-        { r: 3, c: 2, v: 4 },
-        { r: 3, c: 3, v: 1 }
+        { r: 2, c: 1, v: 2 },
+        { r: 2, c: 2, v: 4 },
+        { r: 2, c: 3, v: 1 },
+        { r: 3, c: 1, v: 3 },
+        { r: 3, c: 2, v: 2 },
+        { r: 3, c: 3, v: 4 }
       ],
       presetHand: [
         { shapeId: "s1", values: [1] },

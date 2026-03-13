@@ -37,7 +37,7 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: rgba(0,0,0,0.40); /* adjust darkness */
+  background: rgba(0,0,0,0.0); /* adjust darkness */
 }
 
 #game-mount::after {
@@ -131,6 +131,29 @@ body {
   font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* -------------------------------- */
+/* Intro reveal states              */
+/* -------------------------------- */
+
+.nb-topbar,
+.nb-board-wrap,
+.nb-hand-rail,
+.nb-crystal-number {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  transition:
+    opacity 320ms ease,
+    transform 420ms cubic-bezier(.22,1,.36,1);
+}
+
+.nb-topbar.nb-reveal,
+.nb-board-wrap.nb-reveal,
+.nb-hand-rail.nb-reveal,
+.nb-crystal-number.nb-reveal {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
 .nb-title {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 34px;
@@ -152,8 +175,8 @@ body {
 }
 
 .nb-crystal-ring {
-  --ring-size: 140px;
-  --ring-thickness: 12px;
+  --ring-size: 164px;
+  --ring-thickness: 16px;
   --progress: 0%;
 
   position: relative;
@@ -165,78 +188,105 @@ body {
 
 .nb-crystal-ring-fill {
   position: absolute;
-  inset: 0;
+  inset: 10px;
   border-radius: 50%;
   pointer-events: none;
+  z-index: 3;
+  opacity: 1.0;
 
-  background:
-    conic-gradient(
-      from -90deg,
-      #7dff7d 0%,
-      #31d84a var(--progress),
-      rgba(9, 18, 38, 0.92) var(--progress),
-      rgba(9, 18, 38, 0.92) 100%
-    );
+  background: transparent;
 
   -webkit-mask:
     radial-gradient(
       farthest-side,
-      transparent calc(100% - var(--ring-thickness) - 1px),
-      #000 calc(100% - var(--ring-thickness))
+      transparent calc(100% - 15px),
+      #000 calc(100% - 14px),
+      #000 calc(100% - 7px),
+      transparent calc(100% - 6px)
     );
+
   mask:
     radial-gradient(
       farthest-side,
-      transparent calc(100% - var(--ring-thickness) - 1px),
-      #000 calc(100% - var(--ring-thickness))
+      transparent calc(100% - 15px),
+      #000 calc(100% - 14px),
+      #000 calc(100% - 7px),
+      transparent calc(100% - 6px)
     );
 
-  box-shadow:
-    0 0 20px rgba(71, 255, 102, 0.18),
-    0 0 36px rgba(71, 255, 102, 0.12);
-  transition: background 450ms cubic-bezier(.2, .9, .2, 1), transform 180ms ease;
+  mix-blend-mode: screen;
+
+  filter:
+    drop-shadow(0 0 4px rgba(82, 160, 255, 0.24))
+    drop-shadow(0 0 10px rgba(38, 108, 255, 0.22))
+    drop-shadow(0 0 18px rgba(18, 60, 180, 0.18));
+
+  transition:
+    opacity 320ms ease,
+    filter 320ms ease,
+    transform 520ms cubic-bezier(.22,1,.36,1),
+    background 520ms cubic-bezier(.22,1,.36,1);
+}
+
+@keyframes nbMeterShimmer {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .nb-crystal-ring::before {
   content: "";
   position: absolute;
-  inset: 6px;
   border-radius: 50%;
   pointer-events: none;
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 221, 137, 0.16),
-    inset 0 8px 18px rgba(255, 255, 255, 0.08),
-    inset 0 -10px 18px rgba(0, 0, 0, 0.34);
+  z-index: 0;
+  background:
+    radial-gradient(circle, rgba(90, 175, 255, 0.16) 0%, rgba(90, 175, 255, 0.06) 45%, transparent 72%);
+  filter: blur(12px);
+  opacity: 0.95;
 }
 
 .nb-crystal-ring::after {
   content: "";
   position: absolute;
-  inset: -8px;
+  inset: -16px;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(circle, rgba(71,255,102,0.18) 0%, rgba(71,255,102,0.06) 42%, transparent 72%);
-  filter: blur(10px);
+  z-index: 0;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(120,220,255,0.18) 0%,
+      rgba(72,160,255,0.12) 36%,
+      rgba(32,110,255,0.06) 58%,
+      transparent 72%
+    );
+
+  filter: blur(14px);
   opacity: 0.9;
+
+  animation: energyFlow 3s linear infinite;
 }
 
 .nb-crystals {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0;
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
   z-index: 2;
 }
 
 .nb-crystals img {
-  width: 120px;
-  height: 120px;
+  width: 92%;
+  height: 92%;
   display: block;
   object-fit: contain;
   user-select: none;
   pointer-events: none;
+  filter:
+    saturate(1.02)
+    drop-shadow(0 0 8px rgba(103, 181, 255, 0.18))
+    drop-shadow(0 0 12px rgba(128, 95, 255, 0.10));
 }
 
 .nb-crystal-number {
@@ -244,26 +294,135 @@ body {
   inset: 0;
   display: grid;
   place-items: center;
+  z-index: 4;
+
   font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: 48px;
+  font-size: 52px;
   font-weight: 1000;
   line-height: 1;
   color: #fff;
   text-align: center;
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+
   text-shadow:
-    0 3px 10px rgba(0, 0, 0, 0.65),
-    0 0 18px rgba(255, 255, 255, 0.18);
+    0 4px 12px rgba(0, 0, 0, 0.70),
+    0 0 18px rgba(255, 255, 255, 0.15);
   pointer-events: none;
 }
 
-.nb-crystal-ring.bump .nb-crystal-ring-fill {
-  animation: nbRingBump 260ms ease;
+/* crystal charge effect */
+
+.nb-crystal-ring.charge {
+  animation: crystalCharge 720ms cubic-bezier(.22,1,.36,1);
 }
 
-@keyframes nbRingBump {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.06); }
-  100% { transform: scale(1); }
+@keyframes crystalCharge {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  35% {
+    transform: scale(1.045);
+    filter: brightness(1);
+  }
+
+  65% {
+    transform: scale(1.02);
+    filter: brightness(1);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* blue magical energy */
+
+.nb-crystal-ring::after{
+
+  animation: energyFlow 3s linear infinite;
+
+}
+
+@keyframes energyFlow{
+
+  0%{ transform: rotate(0deg) scale(1); }
+
+  50%{ transform: rotate(180deg) scale(1.1); }
+
+  100%{ transform: rotate(360deg) scale(1); }
+
+}
+
+@keyframes crystalAura{
+
+  0%{
+    opacity:.4;
+    transform: scale(.95);
+  }
+
+  50%{
+    opacity:1;
+    transform: scale(1.1);
+  }
+
+  100%{
+    opacity:.4;
+    transform: scale(.95);
+  }
+
+}
+
+/* -------------------------------- */
+/* Fortune reveal animation         */
+/* -------------------------------- */
+
+.nb-crystal-ring.revealing {
+  animation: crystalRevealBuild 900ms ease forwards;
+}
+
+.nb-crystal-number.reveal-final {
+  animation: crystalFinalPop 420ms cubic-bezier(.22,1,.36,1);
+  color:#fff;
+}
+
+@keyframes crystalRevealBuild {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.86);
+    filter: brightness(1);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.04);
+    filter: brightness(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes crystalFinalPop {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.55;
+    filter: brightness(1);
+  }
+  55% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
 }
 
 .nb-board-wrap {
@@ -860,41 +1019,10 @@ body {
   }
 }
 
-.nb-crystals {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto;
+.nb-hand-rail {
+  width: 100%;
   display: grid;
   place-items: center;
-}
-
-.nb-crystals img {
-  width: 120px;
-  height: 120px;
-  display: block;
-  object-fit: contain;
-  user-select: none;
-  pointer-events: none;
-}
-
-.nb-crystal-number {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-
-  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: 48px;
-  font-weight: 1000;
-  line-height: 1;
-  color: #fff;
-  text-align: center;
-
-  text-shadow:
-    0 3px 10px rgba(0, 0, 0, 0.65),
-    0 0 18px rgba(255, 255, 255, 0.18);
-  pointer-events: none;
 }
 
 /* ================================================= */
@@ -918,18 +1046,23 @@ body {
     font-size: 28px;
   }
 
+  .nb-crystal-ring {
+    --ring-size: 180px;
+    --ring-thickness: 15px;
+  }
+  
   .nb-crystals{
-    width: 120px;
-    height: 120px;
+    width: var(--ring-size);
+    height: var(--ring-size);
   }
-
+  
   .nb-crystals img{
-    width: 120px;
-    height: 120px;
+    width: 100%;
+    height: 100%;
   }
-
+  
   .nb-crystal-number{
-    font-size: 40px;
+    font-size: 48px;
   }
 
   .nb-hand{

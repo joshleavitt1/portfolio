@@ -251,7 +251,7 @@
   }
 
   function makeGameState(level) {
-    const savedDifficulty = clamp(readNumber(NB_DIFFICULTY_KEY, Number(level || 1) || 1), 1, LEVEL_MAX);
+    const savedDifficulty = 4;
     const difficultyRules = window.NumberBlastLevelPlan?.getNumberBlastRules(savedDifficulty) || null;
     const difficultySize = difficultyRules?.boardSize ?? DEFAULT_SIZE;
 
@@ -410,6 +410,10 @@
   }
 
   function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
@@ -639,8 +643,7 @@
   }
 
   function createNumberBlastGame({ config = {}, context } = {}) {
-    const startLevelRaw = config.level ?? config.playerLevel ?? context?.playerLevel ?? context?.level ?? 1;
-    const level = clamp(Number(startLevelRaw) || 1, 1, LEVEL_MAX);
+    const level = 4;
 
     let mount =
       config.mount ||
@@ -746,8 +749,14 @@
           state.numberMin = latestRules.numberMin ?? 1;
           state.numberMax = latestRules.numberMax ?? levelNumberMax(state.level);
           state.targetSum = latestRules.target ?? (10 + Math.floor(Math.random() * 6));
+          state.crystalRevealed = false;
           state.board = Array(state.size * state.size).fill(null);
+
           applyBoardPreset(state);
+          
+          /* NEW — drop preset tiles to bottom */
+          applyGravity(state);
+          
           removeAutoClearsFromPreset(state);
         
           const handSize = latestRules.handSize ?? HAND_SIZE;
@@ -758,7 +767,7 @@
             ensurePlayableHand(state, 24);
           }
         
-          shouldAnimateBoardSpawn = true;
+          shouldAnimateBoardSpawn = false;
         }
 
         resetRoundBoard();
@@ -873,9 +882,32 @@
           }
         }
 
-        function updateTopbar() {
-          const progress = clamp((state.roundWins / RUN_ROUNDS) * 100, 0, 100);
+        function setRingProgress(ring, ringFill, progress) {
+          const p = Math.max(0, Math.min(100, progress));
+        
+          const p1 = p * 0.45;
+          const p2 = p * 0.8;
+        
+          const bg = `conic-gradient(
+            from 0deg,
+            #3f7bff 0%,
+            #2d5fff ${p1}%,
+            #1a3dc8 ${p2}%,
+            #0c1e78 ${p}%,
+            rgba(12,30,120,0) ${p}%,
+            rgba(12,30,120,0) 100%
+          )`;
+        
+          if (ringFill) {
+            ringFill.style.background = bg;
+          }
+        }
 
+        function updateTopbar() {
+          const rules = window.NumberBlastLevelPlan?.getNumberBlastRules(state.level) || state.rules || {};
+          const winsNeeded = Math.max(1, Number(rules.winsToAdvance || 1));
+          const progress = clamp((state.difficultyWins / winsNeeded) * 100, 0, 100);
+        
           if (!top.querySelector(".nb-crystal-ring-fill")) {
             top.innerHTML = `
               <div class="nb-power-wrap">
@@ -885,32 +917,38 @@
                   style="--progress: 0%;"
                 >
                   <div class="nb-crystal-ring-fill"></div>
-          
+        
                   <div class="nb-crystals">
-                    <img src="images/games/number-blast/crystal.png" alt="Crystal" />
+                    <img src="images/games/number-blast/counter_ring.png" alt="Target counter" />
                     <div class="nb-crystal-number">${state.targetSum}</div>
                   </div>
                 </div>
               </div>
             `;
           }
-
+        
           const crystalNumber = top.querySelector(".nb-crystal-number");
-          if (crystalNumber) {
-            crystalNumber.textContent = String(state.targetSum);
-          }
-          
           const ring = top.querySelector(".nb-crystal-ring");
+          const ringFill = top.querySelector(".nb-crystal-ring-fill");
+        
+          if (crystalNumber && ring) {
+            crystalNumber.textContent = String(state.targetSum);
+          
+            if (!state.crystalRevealed) {
+              state.crystalRevealed = true;
+            }
+          }
+
           requestAnimationFrame(() => {
-            ring.style.setProperty("--progress", progress + "%");
+            setRingProgress(ring, ringFill, progress);
           });
         }
-
-        function renderGrid() {
+                  
+        function renderGrid(showFilled = true) {
           gridEl.style.gridTemplateColumns = `repeat(${state.size}, var(--nb-cell))`;
           gridEl.style.gridTemplateRows = `repeat(${state.size}, var(--nb-cell))`;
           gridEl.innerHTML = "";
-
+        
           for (let r = 0; r < state.size; r++) {
             for (let c = 0; c < state.size; c++) {
               const i = idx(state, r, c);
@@ -918,34 +956,35 @@
               btn.type = "button";
               btn.className = "nb-cell";
               btn.setAttribute("data-cell-index", String(i));
-          
+        
               const tile = document.createElement("div");
               tile.className = "nb-tile";
               btn.appendChild(tile);
-          
+        
               const cell = state.board[i];
-              if (cell) {
+        
+              if (cell && showFilled) {
                 tile.classList.add("is-filled", getNumberColorClass(cell.v));
                 tile.textContent = String(cell.v);
-          
+        
                 if (shouldAnimateBoardSpawn) {
                   const index = r * state.size + c;
                   const stagger = index * 18;
-                
+        
                   tile.style.setProperty("--spawn-delay", stagger + "ms");
                   tile.classList.add("nb-spawn");
-                
+        
                   setTimeout(() => {
                     tile.classList.remove("nb-spawn");
                     tile.style.removeProperty("--spawn-delay");
                   }, 360 + stagger);
                 }
               }
-          
+        
               gridEl.appendChild(btn);
             }
           }
-          
+        
           shouldAnimateBoardSpawn = false;
         }
 
@@ -1089,14 +1128,78 @@
           });
         }
 
-        function render() {
+        function render(showFilled = true) {
           cleanupFns.forEach((fn) => {
             try { fn(); } catch (e) {}
           });
           cleanupFns = [];
           updateTopbar();
-          renderGrid();
+          renderGrid(showFilled);
           renderHand();
+        }
+
+        async function runIntroSequence() {
+          const STEP = 320;
+          const START_DELAY = 120;
+        
+          const ring = top.querySelector(".nb-crystal-ring");
+          const crystalNumber = top.querySelector(".nb-crystal-number");
+        
+          top.classList.remove("nb-reveal");
+          boardWrap.classList.remove("nb-reveal");
+          handRail.classList.remove("nb-reveal");
+        
+          if (crystalNumber) {
+            crystalNumber.classList.remove("nb-reveal", "reveal-final");
+          }
+        
+          if (ring) {
+            ring.classList.remove("revealing");
+          }
+        
+          await delay(START_DELAY);
+        
+          /* 1. crystal ring */
+          top.classList.add("nb-reveal");
+        
+          if (ring) {
+            ring.classList.remove("revealing");
+            void ring.offsetWidth;
+            ring.classList.add("revealing");
+          }
+        
+          await delay(STEP);
+        
+          /* 2. empty board shell */
+          boardWrap.classList.add("nb-reveal");
+        
+          await delay(STEP);
+        
+          /* 3. crystal number + auto brighten ring */
+          if (ring) {
+            ring.classList.remove("revealing");
+            void ring.offsetWidth;
+            ring.classList.add("revealing");
+          }
+        
+          if (crystalNumber) {
+            crystalNumber.classList.add("nb-reveal");
+            crystalNumber.classList.remove("reveal-final");
+            void crystalNumber.offsetWidth;
+            crystalNumber.classList.add("reveal-final");
+          }
+        
+          /* slight delay so tiles land when number slams */
+          await delay(240);
+        
+          /* 4. tiles come in AFTER number */
+          shouldAnimateBoardSpawn = true;
+          renderGrid(true);
+        
+          await delay(STEP);
+        
+          /* 5. hand */
+          handRail.classList.add("nb-reveal");
         }
 
         function animateRowExplode(hitSet, opts = {}) {
@@ -1240,9 +1343,9 @@
 
           const ring = top.querySelector(".nb-crystal-ring");
           if (ring) {
-            ring.classList.remove("bump");
+            ring.classList.remove("charge");
             void ring.offsetWidth;
-            ring.classList.add("bump");
+            ring.classList.add("charge");
           }
         }
 
@@ -1316,7 +1419,8 @@
             if (maybeAdvanceDifficulty()) {
               setTimeout(() => {
                 resetRoundBoard();
-                render();
+                render(false);
+                runIntroSequence();
               }, 450);
             }
 
@@ -1340,7 +1444,8 @@
           return true;
         }
 
-        render();
+        render(false);
+        runIntroSequence();
       });
     }
 
