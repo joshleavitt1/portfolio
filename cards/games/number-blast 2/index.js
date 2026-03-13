@@ -3,7 +3,7 @@
   "use strict";
 
   const DEFAULT_SIZE = 5;
-  const HAND_SIZE = 3;
+  const HAND_SIZE = 1;
   const LEVEL_MAX = 20;
   const ROW_EXPLODE_MS = 420;
   
@@ -68,9 +68,12 @@
   }
 
   function getNumberColorClass(value) {
-    const v = clamp(Number(value) || 1, 1, 9);
-    return `nb-c${v}`;
-  }  
+    if (value === 1 || value === 6) return "nb-c1";
+    if (value === 2 || value === 7) return "nb-c2";
+    if (value === 3 || value === 8) return "nb-c3";
+    if (value === 4 || value === 9) return "nb-c4";
+    return "nb-c5";
+  }
 
   function shapeWeight(shapeId, level) {
     if (shapeId === "s1") return level <= 2 ? 14 : 8;
@@ -198,39 +201,54 @@
   }
 
   function generateHand(state, handSize = HAND_SIZE, maxLargePieces = 1) {
-    const targetHandSize = 3;
     const hand = [];
     let largeCount = 0;
-  
-    for (let i = 0; i < targetHandSize; i++) {
+
+    for (let i = 0; i < handSize; i++) {
       let piece = null;
-  
-      for (let tries = 0; tries < 80; tries++) {
+
+      for (let tries = 0; tries < 40; tries++) {
         const candidate = makePiece(state);
         const b = pieceBounds(candidate);
         const isLarge = b.w >= 3 || b.h >= 3;
-  
+
         if (isLarge && largeCount >= maxLargePieces) continue;
         if (!handAllowedWithCandidate(hand, candidate)) continue;
-  
+
         piece = candidate;
         if (isLarge) largeCount++;
         break;
       }
-  
+
       if (!piece) {
-        piece = {
-          id: `fallback_s1_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-          shapeId: "s1",
-          cells: [{ x: 0, y: 0, v: randTileValue(state) }],
-        };
+        piece = makePiece(state);
+      
+        for (let tries = 0; tries < 40; tries++) {
+          const b = pieceBounds(piece);
+          const isLarge = b.w >= 3 || b.h >= 3;
+      
+          if (isLarge && largeCount >= maxLargePieces) {
+            piece = makePiece(state);
+            continue;
+          }
+      
+          if (!handAllowedWithCandidate(hand, piece)) {
+            piece = makePiece(state);
+            continue;
+          }
+      
+          break;
+        }
+      
+        const b2 = pieceBounds(piece);
+        if (b2.w >= 3 || b2.h >= 3) largeCount++;
       }
-  
+
       hand.push(piece);
     }
-  
+
     return hand;
-  }  
+  }
 
   function makeGameState(level) {
     const savedDifficulty = 4;
@@ -731,6 +749,7 @@
           state.numberMin = latestRules.numberMin ?? 1;
           state.numberMax = latestRules.numberMax ?? levelNumberMax(state.level);
           state.targetSum = latestRules.target ?? (10 + Math.floor(Math.random() * 6));
+          state.crystalRevealed = false;
           state.board = Array(state.size * state.size).fill(null);
 
           applyBoardPreset(state);
@@ -863,40 +882,62 @@
           }
         }
 
+        function setRingProgress(ring, ringFill, progress) {
+          const p = Math.max(0, Math.min(100, progress));
+          const deg = (p / 100) * 360;
+        
+          const bg = `conic-gradient(
+            from 0deg,
+            #3f7bff 0deg,
+            #3f7bff ${deg}deg,
+            transparent ${deg}deg,
+            transparent 360deg
+          )`;
+        
+          if (ringFill) {
+            ringFill.style.background = bg;
+          }
+        }
+
         function updateTopbar() {
           const rules = window.NumberBlastLevelPlan?.getNumberBlastRules(state.level) || state.rules || {};
           const winsNeeded = Math.max(1, Number(rules.winsToAdvance || 1));
           const progress = clamp((state.difficultyWins / winsNeeded) * 100, 0, 100);
         
-          if (!top.querySelector(".nb-blast-ui")) {
+          if (!top.querySelector(".nb-crystal-ring-fill")) {
             top.innerHTML = `
-              <div class="nb-blast-ui">
-                <div class="nb-blast-title" aria-label="Blast target">
-                  <span class="nb-blast-word">Blast</span>
-                  <span class="nb-blast-number">${state.targetSum}</span>
-                </div>
+              <div class="nb-power-wrap">
+                <div
+                  class="nb-crystal-ring"
+                  aria-label="Blast progress"
+                  style="--progress: 0%;"
+                >
+                  <div class="nb-crystal-ring-fill"></div>
         
-                <div class="nb-progress-wrap" aria-label="Blast progress">
-                  <div class="nb-progress-bar">
-                    <div class="nb-progress-fill"></div>
-                    <div class="nb-progress-shine"></div>
-                    <div class="nb-progress-stars"></div>
+                  <div class="nb-crystals">
+                    <img src="images/games/number-blast/counter_ring.png" alt="Target counter" />
+                    <div class="nb-crystal-number">${state.targetSum}</div>
                   </div>
                 </div>
               </div>
             `;
           }
         
-          const blastNumber = top.querySelector(".nb-blast-number");
-          const fill = top.querySelector(".nb-progress-fill");
+          const crystalNumber = top.querySelector(".nb-crystal-number");
+          const ring = top.querySelector(".nb-crystal-ring");
+          const ringFill = top.querySelector(".nb-crystal-ring-fill");
         
-          if (blastNumber) {
-            blastNumber.textContent = String(state.targetSum);
+          if (crystalNumber && ring) {
+            crystalNumber.textContent = String(state.targetSum);
+          
+            if (!state.crystalRevealed) {
+              state.crystalRevealed = true;
+            }
           }
-        
-          if (fill) {
-            fill.style.width = `${progress}%`;
-          }
+
+          requestAnimationFrame(() => {
+            setRingProgress(ring, ringFill, progress);
+          });
         }
                   
         function renderGrid(showFilled = true) {
@@ -1073,6 +1114,7 @@
                 setTimeout(() => {
                   try { ghost.remove(); } catch (e) {}
                 }, 110);
+                try { ghost.remove(); } catch (e) {}
                 try { btn.releasePointerCapture(ev.pointerId); } catch (e) {}
                 activeDrag = null;
               };
@@ -1099,69 +1141,77 @@
         }
 
         async function runIntroSequence() {
-          const STEP = 260;
+          const STEP = 320;
           const START_DELAY = 120;
         
-          const blastWord = top.querySelector(".nb-blast-word");
-          const blastNumber = top.querySelector(".nb-blast-number");
-          const progressWrap = top.querySelector(".nb-progress-wrap");
+          const ring = top.querySelector(".nb-crystal-ring");
+          const crystalNumber = top.querySelector(".nb-crystal-number");
         
           top.classList.remove("nb-reveal");
           boardWrap.classList.remove("nb-reveal");
           handRail.classList.remove("nb-reveal");
         
-          if (blastWord) blastWord.classList.remove("nb-pop-in");
-          if (blastNumber) blastNumber.classList.remove("nb-pop-in-strong");
-          if (progressWrap) progressWrap.classList.remove("nb-reveal", "nb-bar-pop");
+          if (crystalNumber) {
+            crystalNumber.classList.remove("nb-reveal", "reveal-final");
+          }
+        
+          if (ring) {
+            ring.classList.remove("revealing");
+          }
         
           await delay(START_DELAY);
         
-          /* 1. Blast title shell */
+          /* 1. crystal ring */
           top.classList.add("nb-reveal");
         
-          if (blastWord) {
-            void blastWord.offsetWidth;
-            blastWord.classList.add("nb-pop-in");
-          }
-        
-          await delay(180);
-        
-          /* 2. X pops harder, delayed */
-          if (blastNumber) {
-            void blastNumber.offsetWidth;
-            blastNumber.classList.add("nb-pop-in-strong");
+          if (ring) {
+            ring.classList.remove("revealing");
+            void ring.offsetWidth;
+            ring.classList.add("revealing");
           }
         
           await delay(STEP);
         
-          /* 3. progress bar */
-          if (progressWrap) {
-            progressWrap.classList.add("nb-reveal");
-            void progressWrap.offsetWidth;
-            progressWrap.classList.add("nb-bar-pop");
-          }
-        
-          await delay(STEP);
-        
-          /* 4. board shell */
+          /* 2. empty board shell */
           boardWrap.classList.add("nb-reveal");
         
-          await delay(220);
+          await delay(STEP);
         
-          /* 5. board tiles */
+          /* 3. crystal number + auto brighten ring */
+          if (ring) {
+            ring.classList.remove("revealing");
+            void ring.offsetWidth;
+            ring.classList.add("revealing");
+          }
+        
+          if (crystalNumber) {
+            crystalNumber.classList.add("nb-reveal");
+            crystalNumber.classList.remove("reveal-final");
+            void crystalNumber.offsetWidth;
+            crystalNumber.classList.add("reveal-final");
+          }
+        
+          /* slight delay so tiles land when number slams */
+          await delay(240);
+        
+          /* 4. tiles come in AFTER number */
           shouldAnimateBoardSpawn = true;
           renderGrid(true);
         
           await delay(STEP);
         
-          /* 6. hand */
+          /* 5. hand */
           handRail.classList.add("nb-reveal");
         }
 
         function animateRowExplode(hitSet, opts = {}) {
           const chainStep = opts.chainStep || 1;
+          const burstScaleClass = chainStep >= 2 ? "nb-burst-strong" : "nb-burst";
+          boardWrap.classList.remove("nb-burst", "nb-burst-strong", "nb-screen-pop");
+          void boardWrap.offsetWidth;
+          boardWrap.classList.add(burstScaleClass, "nb-screen-pop");
           sparkLayer.textContent = "";
-        
+
           const frag = document.createDocumentFragment();
           const boardRect = boardWrap.getBoundingClientRect();
           const tiles = [];
@@ -1258,7 +1308,8 @@
 
           setTimeout(() => {
             sparkLayer.textContent = "";
-          }, ROW_EXPLODE_MS + 120);          
+            boardWrap.classList.remove("nb-burst", "nb-burst-strong", "nb-screen-pop");
+          }, ROW_EXPLODE_MS + 120);
         }
 
         function animateGravityDrop(moved) {
@@ -1279,50 +1330,68 @@
           });
         }
 
-        function burstProgressStars(blasts = 1) {
-          const starsHost = top.querySelector(".nb-progress-stars");
-          if (!starsHost) return;
-        
-          starsHost.innerHTML = "";
-        
+        function burstCrystalStars(blasts = 1) {
+          const ring = top.querySelector(".nb-crystal-ring");
+          if (!ring) return;
+
+          ring.classList.remove("nb-star-pop");
+          void ring.offsetWidth;
+          ring.classList.add("nb-star-pop");
+
           const frag = document.createDocumentFragment();
-          const bar = top.querySelector(".nb-progress-bar");
-          const fill = top.querySelector(".nb-progress-fill");
-        
-          const barWidth = bar ? bar.offsetWidth : 240;
-          const fillWidth = fill ? fill.offsetWidth : 0;
-          const originX = Math.max(18, Math.min(barWidth - 18, fillWidth));
-          const originY = 22;
-        
-          const starCount = Math.min(20, 8 + blasts * 6);
-        
+          const cx = ring.offsetWidth / 2;
+          const cy = ring.offsetHeight / 2;
+
+          const starCount = Math.min(18, 8 + blasts * 4);
+          const sparkCount = Math.min(24, 10 + blasts * 5);
+
           for (let i = 0; i < starCount; i++) {
             const star = document.createElement("div");
-            star.className = "nb-progress-star";
-            star.style.left = `${originX}px`;
-            star.style.top = `${originY}px`;
-        
+            star.className = "nb-crystal-star";
+            star.style.left = `${cx}px`;
+            star.style.top = `${cy}px`;
+
             const angle = Math.random() * Math.PI * 2;
-            const dist = 42 + Math.random() * 56 + blasts * 10;
-            const sx = Math.cos(angle) * dist;
-            const sy = Math.sin(angle) * dist - 14 - Math.random() * 18;
-        
-            star.style.setProperty("--psx", `${sx.toFixed(0)}px`);
-            star.style.setProperty("--psy", `${sy.toFixed(0)}px`);
-            star.style.setProperty("--ps-rot", `${(Math.random() * 220 - 110).toFixed(0)}deg`);
-            star.style.setProperty("--ps-delay", `${Math.random() * 90}ms`);
-            star.style.setProperty("--ps-size", `${16 + Math.random() * 16}px`);
-        
+            const dist = 46 + Math.random() * 84 + blasts * 6;
+            const driftX = Math.cos(angle) * dist;
+            const driftY = Math.sin(angle) * dist;
+
+            star.style.setProperty("--csx", `${driftX.toFixed(0)}px`);
+            star.style.setProperty("--csy", `${driftY.toFixed(0)}px`);
+            star.style.setProperty("--cs-rot", `${(Math.random() * 180 - 90).toFixed(0)}deg`);
+            star.style.setProperty("--cs-delay", `${Math.random() * 70}ms`);
+            star.style.setProperty("--cs-size", `${12 + Math.random() * 15}px`);
+
             frag.appendChild(star);
           }
-        
-          starsHost.appendChild(frag);
-        
+
+          for (let i = 0; i < sparkCount; i++) {
+            const spark = document.createElement("div");
+            spark.className = Math.random() < 0.35 ? "nb-spark nb-spark-star" : "nb-spark";
+            spark.style.left = `${cx}px`;
+            spark.style.top = `${cy}px`;
+            spark.style.setProperty("--blast-delay", `${Math.random() * 80}ms`);
+
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 22 + Math.random() * 68 + blasts * 3;
+            const sx = Math.cos(angle) * dist;
+            const sy = Math.sin(angle) * dist;
+
+            spark.style.setProperty("--sx", `${sx.toFixed(0)}px`);
+            spark.style.setProperty("--sy", `${sy.toFixed(0)}px`);
+            spark.style.setProperty("--spark-size", `${6 + Math.random() * 12}px`);
+
+            frag.appendChild(spark);
+          }
+
+          ring.appendChild(frag);
+
           setTimeout(() => {
-            starsHost.innerHTML = "";
-          }, 1300);
+            ring
+              .querySelectorAll(".nb-crystal-star, .nb-spark")
+              .forEach((el) => el.remove());
+          }, 950);
         }
-        
 
         function awardForGroups(groupCount) {
           const bonus = groupCount >= 3 ? 2 : groupCount >= 2 ? 1 : 0;
@@ -1337,22 +1406,22 @@
           writeNumber(NB_DIFFICULTY_WINS_KEY, state.difficultyWins);
           updateTopbar();
         
-          const fill = top.querySelector(".nb-progress-fill");
-          const bar = top.querySelector(".nb-progress-bar");
-        
-          if (bar) {
-            bar.classList.remove("nb-bar-hit");
-            void bar.offsetWidth;
-            bar.classList.add("nb-bar-hit");
+          const ring = top.querySelector(".nb-crystal-ring");
+          const crystalNumber = top.querySelector(".nb-crystal-number");
+
+          if (ring) {
+            ring.classList.remove("charge");
+            void ring.offsetWidth;
+            ring.classList.add("charge");
           }
-        
-          if (fill) {
-            fill.classList.remove("nb-fill-hit");
-            void fill.offsetWidth;
-            fill.classList.add("nb-fill-hit");
+
+          if (crystalNumber) {
+            crystalNumber.classList.remove("nb-crystal-hit");
+            void crystalNumber.offsetWidth;
+            crystalNumber.classList.add("nb-crystal-hit");
           }
-        
-          burstProgressStars(blasts);
+
+          burstCrystalStars(blasts);
         }
 
         function maybeAdvanceDifficulty() {
