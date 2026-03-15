@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Blast</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="game-mount"></main>
+
+    <script src="level-plan.js"></script>
+    <script src="index.js"></script>
+    <script>
+      window.addEventListener("DOMContentLoaded", async () => {
+        const mount = document.getElementById("game-mount");
+        if (!mount || typeof window.createNumberBlastGame !== "function") return;
+    
+        const game = window.createNumberBlastGame({ config: { mount, level: 1 } });
+        await game.start();
+      });
+    </script>
+  </body>
+</html>
