@@ -266,36 +266,11 @@
     return hand;
   }  
 
-  function getLevelProgressPct(state) {
-    const goal = Math.max(1, Number(state.levelGoal) || 1);
-    return Math.max(0, Math.min(100, (state.score / goal) * 100));
-  }
-  
-  function maybeAdvanceLevel(state) {
-    const nextLevel = clamp((state.level || 1) + 1, 1, LEVEL_MAX);
-  
-    while (state.score >= state.levelGoal && state.level < LEVEL_MAX) {
-      state.level += 1;
-  
-      const nextRules =
-        window.NumberBlastLevelPlan?.getNumberBlastRules(state.level) || {};
-  
-      state.rules = nextRules;
-      state.size = nextRules.boardSize ?? state.size;
-      state.numberMin = nextRules.numberMin ?? state.numberMin;
-      state.numberMax = nextRules.numberMax ?? state.numberMax;
-      state.targetSum = nextRules.target ?? state.targetSum;
-      state.levelGoal = nextRules.pointsGoal ?? state.levelGoal;
-  
-      shouldAnimateBoardSpawn = true;
-    }
-  }
-
   function makeGameState(level) {
     const savedDifficulty = clamp(Number(level) || 1, 1, LEVEL_MAX);
     const difficultyRules = window.NumberBlastLevelPlan?.getNumberBlastRules(savedDifficulty) || null;
     const difficultySize = difficultyRules?.boardSize ?? DEFAULT_SIZE;
-  
+
     const st = {
       level: savedDifficulty,
       forcedSolveCounter: 0,
@@ -307,11 +282,10 @@
       wins: readWins(),
       numberMin: difficultyRules?.numberMin ?? 1,
       numberMax: difficultyRules?.numberMax ?? levelNumberMax(savedDifficulty),
-      targetSum: difficultyRules?.target ?? 10,
-      levelGoal: difficultyRules?.pointsGoal ?? 120,
+      targetSum: 10,
       rules: difficultyRules || {},
     };
-  
+
     const handSize = difficultyRules?.handSize ?? HAND_SIZE;
     const maxLargePieces = difficultyRules?.maxLargePieces ?? 1;
     st.hand = generateHand(st, handSize, maxLargePieces);
@@ -874,12 +848,12 @@
         function resetRoundBoard() {
           const latestRules = window.NumberBlastLevelPlan?.getNumberBlastRules(state.level) || {};
           state.rules = latestRules;
+          state.level = 1;
           state.size = latestRules.boardSize ?? DEFAULT_SIZE;
           state.numberMin = latestRules.numberMin ?? 1;
           state.numberMax = latestRules.numberMax ?? 9;
-          state.targetSum = latestRules.target ?? 10;
-          state.levelGoal = latestRules.pointsGoal ?? 120;
-
+          state.targetSum = 10;
+        
           fillBoardFully(state);
         
           while (boardHasAutoClear(state)) {
@@ -1197,7 +1171,6 @@
 
         function updateTopbar() {
           const highScore = readNumber("NB_HIGH_SCORE", 0);
-          const progressPct = getLevelProgressPct(state);
         
           if (!top.querySelector(".nb-hud")) {
             top.innerHTML = `
@@ -1208,16 +1181,12 @@
                     <span class="nb-score-pill-value">0</span>
                   </div>
         
-                  <div class="nb-target-badge" aria-label="Current level">
-                    <span class="nb-target-badge-value">1</span>
+                  <div class="nb-target-badge" aria-label="Blast number">
+                    <span class="nb-target-badge-value">10</span>
                   </div>
                 </div>
         
-                <div class="nb-big-score" aria-label="Current points">0</div>
-        
-                <div class="nb-level-progress" aria-label="Level progress">
-                  <div class="nb-level-progress-fill"></div>
-                </div>
+                <div class="nb-big-score" aria-label="Current score">0</div>
               </div>
             `;
           }
@@ -1225,12 +1194,10 @@
           const pillValue = top.querySelector(".nb-score-pill-value");
           const badgeValue = top.querySelector(".nb-target-badge-value");
           const bigScore = top.querySelector(".nb-big-score");
-          const fill = top.querySelector(".nb-level-progress-fill");
         
           if (pillValue) pillValue.textContent = String(highScore);
-          if (badgeValue) badgeValue.textContent = String(state.level);
+          if (badgeValue) badgeValue.textContent = String(state.targetSum);
           if (bigScore) bigScore.textContent = String(state.score);
-          if (fill) fill.style.width = `${progressPct}%`;
         }
                   
         function renderGrid(showFilled = true) {
@@ -1761,8 +1728,6 @@
         
           state.clears += groupCount;
           state.score += gained;
-        
-          maybeAdvanceLevel(state);
         
           const best = readNumber("NB_HIGH_SCORE", 0);
           if (state.score > best) {
