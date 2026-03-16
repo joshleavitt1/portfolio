@@ -874,45 +874,29 @@
         async function explodeOpeningHoles(count = 5) {
           const picks = pickOpeningHoleIndices(state, count);
           if (!picks.length) return 0;
-
+        
           const hit = new Set(picks);
           animateRowExplode(hit, { chainStep: 1, groupCount: hit.size });
           await wait(ROW_EXPLODE_MS + 80);
-
+        
           clearHitCells(state, hit);
-
+        
           gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
             el.classList.remove("nb-explode-source-hide");
           });
-
+        
           renderGrid(true);
           await wait(120);
-
+        
           const moved = applyGravity(state);
           renderGrid(true);
-
+        
           if (moved.length) {
             animateGravityDrop(moved);
             await wait(460);
           }
-
-          const blasts = await resolveBoardChains(
-            state,
-            render,
-            animateRowExplode,
-            animateGravityDrop,
-            showComboText,
-            gridEl
-          );
-
-          if (blasts > 0) {
-            awardForGroups(blasts);
-            updateTopbar();
-            popBigScore();
-            burstScoreStars(blasts);
-          }
-
-          return hit.size + blasts;
+        
+          return hit.size;
         }
 
         async function explodeRandomSupportedBlocks(count = 3) {
@@ -1758,7 +1742,7 @@
             clone.style.height = `${fromRect.height}px`;
             clone.style.setProperty("--fall-x", `${dx}px`);
             clone.style.setProperty("--fall-y", `${dy}px`);
-            clone.style.setProperty("--fall-duration", `${520 + rowsDropped * 160}ms`);
+            clone.style.setProperty("--fall-duration", `${260 + rowsDropped * 90}ms`);
 
             frag.appendChild(clone);
             clones.push(clone);
@@ -1780,7 +1764,7 @@
             })
           );
 
-          await wait(520 + maxRows * 160 + 140);
+          await wait(260 + maxRows * 90 + 80);
 
           clones.forEach((clone) => {
             try { clone.remove(); } catch (e) {}
@@ -1840,7 +1824,7 @@
 
             await wait(220);
           } else {
-            await wait(180);
+            await wait(80);
           }
 
           const blasts = await resolveBoardChains(

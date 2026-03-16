@@ -1,10 +1,9 @@
 /* games/number-blast/styles.css */
 
 :root {
-  --nb-app-h: 100dvh;
-  --nb-cell: clamp(50px, min(11vw, 8.2dvh), 76px);
-  --nb-gap: clamp(6px, 1vw, 12px);
-  --nb-hand-size: clamp(92px, min(20vw, 14dvh), 170px);
+  --nb-cell: clamp(58px, 7.2vw, 78px);
+  --nb-gap: clamp(4px, 0.7vw, 8px);
+  --nb-hand-size: clamp(138px, 18vw, 210px);
   --nb-page-max: 920px;
   --nb-top-max: 760px;
   --nb-board-max: 760px;
@@ -23,40 +22,25 @@
 html,
 body {
   margin: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
+  min-height: 100%;
   background: #F7F7F7;
   font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-  touch-action: none;
-}
-
-body {
-  position: fixed;
-  inset: 0;
 }
 
 #game-mount {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
-  margin: 0;
-  padding:
-    max(env(safe-area-inset-top), 14px)
-    max(env(safe-area-inset-right), 14px)
-    max(env(safe-area-inset-bottom), 14px)
-    max(env(safe-area-inset-left), 14px);
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 28px 20px 24px;
   display: grid;
-  place-items: center;
+  place-items: stretch;
   overflow: hidden;
 }
 
 .nb-wrap {
   width: min(100%, 760px);
-  height: 100%;
-  max-height: 100%;
+  min-height: calc(100vh - 52px);
   margin: 0 auto;
 
   display: grid;
@@ -65,7 +49,6 @@ body {
   justify-items: center;
 
   gap: 0;
-  overflow: hidden;
 }
 
 .nb-topbar {
@@ -89,12 +72,12 @@ body {
 
 .nb-hand {
   width: 100%;
-  min-height: 0;
+  min-height: 140px;
   padding: 0;
   display: flex;
   justify-content: space-evenly;
   align-items: flex-end;
-  gap: clamp(10px, 2.4vw, 28px);
+  gap: 28px;
   background: transparent;
   opacity: 0;
   transform: translateY(10px);
@@ -170,14 +153,11 @@ body {
 }
 
 .nb-board-wrap {
-  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   align-self: center;
   width: 100%;
-  min-height: 0;
-  min-width: 0;
   margin: 0 auto;
 
   opacity: 0;
@@ -227,7 +207,7 @@ body {
 .nb-grid {
   position: relative;
   display: grid;
-  gap: var(--nb-gap);
+  gap: 14px;
   padding: 0;
   overflow: visible;
 }
@@ -748,11 +728,11 @@ body {
 
 .nb-hand-rail {
   width: 100%;
-  min-height: 0;
+  min-height: 140px;
   display: grid;
   align-self: end;
   place-items: end center;
-  padding-bottom: 2px;
+  padding-bottom: 4px;
 
   opacity: 0;
   transform: translateY(12px);
@@ -1005,21 +985,18 @@ body {
 }
 
 .nb-placed-fall-clone.is-animating {
-  animation: nbPlacedFall var(--fall-duration, 620ms) cubic-bezier(.18, .88, .22, 1) forwards;
+  animation: nbPlacedFall var(--fall-duration, 320ms) cubic-bezier(.16, .9, .2, 1) forwards;
 }
 
 @keyframes nbPlacedFall {
   0% {
     transform: translate3d(0, 0, 0) scale(1);
   }
-  18% {
-    transform: translate3d(0, 0, 0) scale(1.03);
+  70% {
+    transform: translate3d(var(--fall-x, 0px), calc(var(--fall-y, 0px) + 4px), 0) scaleY(0.98);
   }
-  72% {
-    transform: translate3d(var(--fall-x, 0px), calc(var(--fall-y, 0px) + 6px), 0) scaleY(0.96);
-  }
-  88% {
-    transform: translate3d(var(--fall-x, 0px), calc(var(--fall-y, 0px) - 3px), 0) scaleY(1.015);
+  86% {
+    transform: translate3d(var(--fall-x, 0px), calc(var(--fall-y, 0px) - 2px), 0) scaleY(1.01);
   }
   100% {
     transform: translate3d(var(--fall-x, 0px), var(--fall-y, 0px), 0) scale(1);
@@ -1032,72 +1009,49 @@ body {
 
 @media (max-width: 699px) {
   :root {
-    --nb-cell: clamp(46px, min(13vw, 7.6dvh), 62px);
-    --nb-gap: clamp(6px, 1.8vw, 10px);
-    --nb-hand-size: clamp(84px, min(18vw, 11.5dvh), 124px);
+    --nb-cell: clamp(54px, 14vw, 62px);
+    --nb-hand-size: clamp(104px, 22vw, 132px);
   }
 
   #game-mount {
-    padding:
-      max(env(safe-area-inset-top), 10px)
-      max(env(safe-area-inset-right), 10px)
-      max(env(safe-area-inset-bottom), 10px)
-      max(env(safe-area-inset-left), 10px);
+    padding: 24px;
   }
 
   .nb-wrap {
-    width: 100%;
-    height: 100%;
+    min-height: calc(100vh - 36px);
   }
 
   .nb-hud {
-    gap: 12px;
-  }
-
-  .nb-hud-row {
-    align-items: center;
+    gap: 18px;
   }
 
   .nb-score-pill {
-    height: 46px;
-    padding: 10px 12px;
-    gap: 8px;
-  }
-
-  .nb-score-pill-icon {
-    width: 28px;
-    height: 22px;
+    padding: 16px 16px;
   }
 
   .nb-score-pill-value {
-    font-size: 22px;
-  }
-
-  .nb-target-badge {
-    width: 68px;
-    aspect-ratio: 1;
-  }
-
-  .nb-target-badge-value {
-    top: 4px;
     font-size: 24px;
   }
 
-  .nb-big-score {
-    font-size: clamp(52px, 12vw, 82px);
+  .nb-target-badge {
+    width: 76px;
+    height: 76px;
+  }
+
+  .nb-target-badge-value {
+    font-size: 26px;
   }
 
   .nb-grid {
-    gap: var(--nb-gap);
+    gap: 10px;
   }
 
   .nb-hand {
-    gap: clamp(10px, 3vw, 16px);
+    gap: 18px;
+    min-height: 120px;
   }
 
-  .nb-mini,
-  .drag-ghost .nb-mini,
-  .nb-tile {
-    font-size: clamp(22px, 5.6vw, 30px) !important;
+  .nb-mini {
+    font-size: 20px;
   }
 }
