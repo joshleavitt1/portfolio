@@ -21,6 +21,7 @@
     { id: "l3b", cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }] },
     { id: "l3c", cells: [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }] },
     { id: "l3d", cells: [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }] },
+    { id: "smartL", cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }] },
     { id: "sq4", cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }] },
   ];
 
@@ -74,6 +75,7 @@
     if (shapeId === "h3" || shapeId === "v3") return level <= 6 ? 6 : 8;
     if (shapeId.startsWith("l3")) return level <= 6 ? 4 : 7;
     if (shapeId === "sq4") return level <= 7 ? 3 : 5;
+    
     return 1;
   }
 
@@ -145,15 +147,51 @@
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
+  function scoreShapeFit(state, normCells) {
+    let validPlacements = 0;
+  
+    for (let bi = 0; bi < state.board.length; bi++) {
+      if (canPlacePiece(state, bi, { cells: normCells })) {
+        validPlacements++;
+      }
+    }
+  
+    return validPlacements;
+  }
+  
+  function pickBestLShapeForBoard(state) {
+    const lShapes = SHAPES.filter((s) => /^l3[abcd]$/.test(s.id));
+  
+    let bestShape = lShapes[0];
+    let bestScore = -1;
+  
+    for (const shape of lShapes) {
+      const norm = normalizePieceCells(shape.cells);
+      const score = scoreShapeFit(state, norm);
+  
+      if (score > bestScore) {
+        bestScore = score;
+        bestShape = shape;
+      }
+    }
+  
+    return bestShape;
+  }
+
   function makePiece(state, opts = {}) {
     if (opts.forceClearNow) {
       const forced = findGuaranteedClearPiece(state);
       if (forced) return forced;
     }
-
-    const shape = weightedPickShape(state.level, state.rules);
+  
+    let shape = weightedPickShape(state.level, state.rules);
+  
+    if (shape.id === "smartL") {
+      shape = pickBestLShapeForBoard(state);
+    }
+  
     const norm = normalizePieceCells(shape.cells);
-
+  
     return {
       id: `${shape.id}_${Date.now()}_${Math.random().toString(16).slice(2)}`,
       shapeId: shape.id,
@@ -244,7 +282,7 @@
       wins: readWins(),
       numberMin: difficultyRules?.numberMin ?? 1,
       numberMax: difficultyRules?.numberMax ?? levelNumberMax(savedDifficulty),
-      targetSum: difficultyRules?.target ?? (10 + Math.floor(Math.random() * 6)),
+      targetSum: 10,
       rules: difficultyRules || {},
     };
 
@@ -252,6 +290,12 @@
     const maxLargePieces = difficultyRules?.maxLargePieces ?? 1;
     st.hand = generateHand(st, handSize, maxLargePieces);
     return st;
+  }
+
+  function fillBoardFully(state) {
+    state.board = Array.from({ length: state.size * state.size }, () => ({
+      v: randTileValue(state),
+    }));
   }
 
   function applyBoardPreset(state) {
@@ -267,9 +311,69 @@
     });
   }
 
+  function isInteriorCell(state, r, c) {
+    return r > 0 && c > 0 && r < state.size - 1 && c < state.size - 1;
+  }
+
+  function hasFilledCrossNeighbors(state, r, c) {
+    if (!isInteriorCell(state, r, c)) return false;
+    return !!(
+      state.board[idx(state, r - 1, c)] &&
+      state.board[idx(state, r + 1, c)] &&
+      state.board[idx(state, r, c - 1)] &&
+      state.board[idx(state, r, c + 1)]
+    );
+  }
+
+  function getSurroundedEmptyIndices(state) {
+    const out = [];
+
+    for (let r = 1; r < state.size - 1; r++) {
+      for (let c = 1; c < state.size - 1; c++) {
+        const i = idx(state, r, c);
+        if (state.board[i] != null) continue;
+        if (hasFilledCrossNeighbors(state, r, c)) out.push(i);
+      }
+    }
+
+    return out;
+  }
+
+  function pickRandomSupportedExplosionIndices(state, count = 3) {
+    const candidates = [];
+
+    for (let r = 1; r < state.size - 1; r++) {
+      for (let c = 1; c < state.size - 1; c++) {
+        const i = idx(state, r, c);
+        if (!state.board[i]) continue;
+        if (!hasFilledCrossNeighbors(state, r, c)) continue;
+        candidates.push(i);
+      }
+    }
+
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+
+    return candidates.slice(0, count);
+  }
+
   function boardHasAutoClear(state) {
     const result = findGroupsToClear(state, state.board);
     return result.groups.length > 0;
+  }
+
+  function boardHasAutoClearSim(board, size, target) {
+    const testState = {
+      board,
+      size,
+      targetSum: target
+    };
+  
+    const groups = findGroupsToClear(testState);
+  
+    return groups && groups.length > 0;
   }
   
   function removeAutoClearsFromPreset(state, maxPasses = 12) {
@@ -421,6 +525,25 @@
     return moved;
   }
 
+  function pickOpeningHoleIndices(state, count = 5) {
+    const candidates = [];
+  
+    for (let r = 1; r < state.size - 1; r++) {
+      for (let c = 1; c < state.size - 1; c++) {
+        const i = idx(state, r, c);
+        if (!state.board[i]) continue;
+        candidates.push(i);
+      }
+    }
+  
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+  
+    return candidates.slice(0, count);
+  }
+
   async function resolveBoardChains(state, render, animateBlast, animateGravity, showComboText, gridEl) {
     
     let totalBlasts = 0;
@@ -462,15 +585,15 @@
   }
 
   function wouldClearAfterPlacement(state, anchor, piece) {
-    if (!canPlacePiece(state, anchor, piece)) return false;
-
-    const covered = getCoveredIndices(state, anchor, piece);
+    const covered = getSettledCoveredIndices(state, anchor, piece);
+    if (!covered) return false;
+  
     const shadow = state.board.slice();
-
+  
     for (let k = 0; k < covered.length; k++) {
       shadow[covered[k]] = { v: piece.cells[k].v };
     }
-
+  
     const { groups } = findGroupsToClear(state, shadow);
     return groups.length > 0;
   }
@@ -512,7 +635,7 @@
       const norm = normalizePieceCells(shape.cells);
 
       for (let bi = 0; bi < state.board.length; bi++) {
-        const covered = getCoveredIndices(state, bi, { cells: norm });
+        const covered = getSettledCoveredIndices(state, bi, { cells: norm });
         if (!covered || !canPlacePiece(state, bi, { cells: norm })) continue;
 
         const testCells = covered.map((boardIndex) => {
@@ -602,14 +725,12 @@
     return false;
   }
 
-  function ensurePlayableHand(state, tries = 24) {
-    if (!anyMovesAvailable(state)) return false;
-
+  function ensurePlayableHand(state, tries = 60) {
     for (let t = 0; t < tries; t++) {
       if (hasClearMove(state)) return true;
       state.hand = generateHand(state);
     }
-
+  
     return hasClearMove(state);
   }
 
@@ -715,26 +836,22 @@
         function resetRoundBoard() {
           const latestRules = window.NumberBlastLevelPlan?.getNumberBlastRules(state.level) || {};
           state.rules = latestRules;
+          state.level = 1;
           state.size = latestRules.boardSize ?? DEFAULT_SIZE;
           state.numberMin = latestRules.numberMin ?? 1;
-          state.numberMax = latestRules.numberMax ?? levelNumberMax(state.level);
-          state.targetSum = latestRules.target ?? (10 + Math.floor(Math.random() * 6));
-          state.board = Array(state.size * state.size).fill(null);
-
-          applyBoardPreset(state);
-          
-          /* NEW — drop preset tiles to bottom */
-          applyGravity(state);
-          
-          removeAutoClearsFromPreset(state);
+          state.numberMax = latestRules.numberMax ?? 9;
+          state.targetSum = 10;
+        
+          fillBoardFully(state);
+        
+          while (boardHasAutoClear(state)) {
+            fillBoardFully(state);
+          }
         
           const handSize = latestRules.handSize ?? HAND_SIZE;
           const maxLargePieces = latestRules.maxLargePieces ?? 1;
           state.hand = generateHand(state, handSize, maxLargePieces);
-        
-          if (!applyPresetHand(state)) {
-            ensurePlayableHand(state, 24);
-          }
+          ensurePlayableHand(state, 24);
         
           shouldAnimateBoardSpawn = false;
         }
@@ -754,30 +871,170 @@
 
         function showComboText() {}
 
+        async function explodeOpeningHoles(count = 5) {
+          const picks = pickOpeningHoleIndices(state, count);
+          if (!picks.length) return 0;
+        
+          const hit = new Set(picks);
+          animateRowExplode(hit, { chainStep: 1, groupCount: hit.size });
+          await wait(ROW_EXPLODE_MS + 80);
+        
+          clearHitCells(state, hit);
+        
+          gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
+            el.classList.remove("nb-explode-source-hide");
+          });
+        
+          renderGrid(true);
+          await wait(120);
+        
+          const moved = applyGravity(state);
+          renderGrid(true);
+        
+          if (moved.length) {
+            animateGravityDrop(moved);
+            await wait(460);
+          }
+        
+          return hit.size;
+        }
+
+        async function explodeRandomSupportedBlocks(count = 3) {
+          const picks = pickRandomSupportedExplosionIndices(state, count);
+          if (!picks.length) return 0;
+        
+          const hit = new Set(picks);
+          animateRowExplode(hit, { chainStep: 1, groupCount: hit.size });
+          await wait(ROW_EXPLODE_MS + 80);
+        
+          clearHitCells(state, hit);
+        
+          gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
+            el.classList.remove("nb-explode-source-hide");
+          });
+        
+          renderGrid(true);
+          await wait(120);
+        
+          const moved = applyGravity(state);
+          renderGrid(true);
+        
+          if (moved.length) {
+            animateGravityDrop(moved);
+            await wait(460);
+          }
+        
+          const blasts = await resolveBoardChains(
+            state,
+            render,
+            animateRowExplode,
+            animateGravityDrop,
+            showComboText,
+            gridEl
+          );
+        
+          if (blasts > 0) {
+            awardForGroups(blasts);
+            updateTopbar();
+            popBigScore();
+            burstScoreStars(blasts);
+          }
+        
+          return hit.size;
+        }
+
+        async function ensureThreeSupportedEmptySquares() {
+          return 0;
+        }
+
         function getPointerAnchor(clientX, clientY) {
           const biasY = Math.min(window.innerHeight * 0.04, 28);
           return cellIndexFromPointer(clientX, clientY - biasY);
         }
 
-        function getAdjustedAnchor(clientX, clientY, piece, grabCell, hoverBiasY = 0) {
+        function getAdjustedAnchor(clientX, clientY, piece, grabCell, hoverBiasY = 0, ghostEl = null) {
           const hoverIndex = cellIndexFromPointer(clientX, clientY - hoverBiasY, 10);
 
-          if (hoverIndex == null || !piece || !grabCell) return hoverIndex;
+          if (hoverIndex == null || !piece) return hoverIndex;
 
           const hoverRC = rc(state, hoverIndex);
-          const anchorR = hoverRC.r - grabCell.y;
-          const anchorC = hoverRC.c - grabCell.x;
+
+          if (!ghostEl) {
+            if (!grabCell) return hoverIndex;
+
+            const fallbackAnchorR = hoverRC.r - grabCell.y;
+            const fallbackAnchorC = hoverRC.c - grabCell.x;
+
+            if (
+              fallbackAnchorR < 0 ||
+              fallbackAnchorC < 0 ||
+              fallbackAnchorR >= state.size ||
+              fallbackAnchorC >= state.size
+            ) {
+              return null;
+            }
+
+            return idx(state, fallbackAnchorR, fallbackAnchorC);
+          }
+
+          const ghostRect = ghostEl.getBoundingClientRect();
+          const sampleCell = gridEl ? gridEl.querySelector(".nb-cell") : null;
+          const cellPx = sampleCell
+            ? sampleCell.getBoundingClientRect().width
+            : 62;
+          const gapPx = gridEl
+            ? parseFloat(getComputedStyle(gridEl).gap) || 14
+            : 14;
+
+          let bestAnchor = null;
+          let bestScore = Infinity;
+
+          piece.cells.forEach((pc, pieceCellIndex) => {
+            const anchorR = hoverRC.r - pc.y;
+            const anchorC = hoverRC.c - pc.x;
+
+            if (
+              anchorR < 0 ||
+              anchorC < 0 ||
+              anchorR >= state.size ||
+              anchorC >= state.size
+            ) {
+              return;
+            }
+
+            const centerX = ghostRect.left + pc.x * (cellPx + gapPx) + cellPx / 2;
+            const centerY = ghostRect.top + pc.y * (cellPx + gapPx) + cellPx / 2;
+            const dx = clientX - centerX;
+            const dy = (clientY - hoverBiasY) - centerY;
+            const dist = Math.hypot(dx, dy);
+
+            const grabBonus = grabCell && grabCell.x === pc.x && grabCell.y === pc.y ? -0.75 : 0;
+            const indexBias = pieceCellIndex * 0.01;
+            const score = dist + grabBonus + indexBias;
+
+            if (score < bestScore) {
+              bestScore = score;
+              bestAnchor = idx(state, anchorR, anchorC);
+            }
+          });
+
+          if (bestAnchor != null) return bestAnchor;
+
+          if (!grabCell) return hoverIndex;
+
+          const fallbackAnchorR = hoverRC.r - grabCell.y;
+          const fallbackAnchorC = hoverRC.c - grabCell.x;
 
           if (
-            anchorR < 0 ||
-            anchorC < 0 ||
-            anchorR >= state.size ||
-            anchorC >= state.size
+            fallbackAnchorR < 0 ||
+            fallbackAnchorC < 0 ||
+            fallbackAnchorR >= state.size ||
+            fallbackAnchorC >= state.size
           ) {
             return null;
           }
 
-          return idx(state, anchorR, anchorC);
+          return idx(state, fallbackAnchorR, fallbackAnchorC);
         }
 
         function cellIndexFromPointer(x, y, pad = 10) {
@@ -855,7 +1112,7 @@
           clearHover();
           if (anchorIndex == null || !piece) return;
         
-          const covered = getCoveredIndices(state, anchorIndex, piece);
+          const covered = getSettledCoveredIndices(state, anchorIndex, piece);
           if (!covered) return;
         
           const ok = canPlacePiece(state, anchorIndex, piece);
@@ -1088,7 +1345,7 @@
             moveGhost(ev.clientX, ev.clientY);
             
             highlightPlacement(
-              getAdjustedAnchor(ev.clientX, ev.clientY, originalPiece, grabCell, ghostNudgeY),
+              getAdjustedAnchor(ev.clientX, ev.clientY, originalPiece, grabCell, ghostNudgeY, ghost),
               originalPiece
             );
 
@@ -1096,7 +1353,7 @@
         
             const onMove = (e) => {
               moveGhost(e.clientX, e.clientY);
-              const ci = getAdjustedAnchor(e.clientX, e.clientY, originalPiece, grabCell, ghostNudgeY);
+              const ci = getAdjustedAnchor(e.clientX, e.clientY, originalPiece, grabCell, ghostNudgeY, ghost);
               if (ci == null) {
                 clearHover();
                 return;
@@ -1118,7 +1375,8 @@
                 evUp.clientY,
                 originalPiece,
                 grabCell,
-                ghostNudgeY
+                ghostNudgeY,
+                currentGhost
               );
               const canUse =
                 ci != null &&
@@ -1202,7 +1460,7 @@
         
           if (hudRow) hudRow.classList.remove("nb-reveal");
           if (bigScore) bigScore.classList.remove("nb-reveal", "nb-score-pop");
-          handEl.classList.remove("nb-reveal");
+          handEl.classList.remove("nb-reveal", "nb-ready");
           gridEl.classList.remove("nb-tiles-reveal");
         
           await delay(START_DELAY);
@@ -1241,6 +1499,19 @@
           /* 6. hand tiles */
           handEl.classList.add("nb-reveal");
           renderHand();
+
+          /* allow board to settle */
+          await delay(650);
+
+          /* board pulse */
+          gridEl.classList.add("nb-pulse");
+          await delay(320);
+          gridEl.classList.remove("nb-pulse");
+
+          /* 7. opening blast */
+          await explodeOpeningHoles(5);
+          ensurePlayableHand(state, 24);
+          render(true);
         }
 
         function animateRowExplode(hitSet, opts = {}) {
@@ -1436,6 +1707,70 @@
           }
         }
 
+        async function animatePlacedPieceGravity(piece, rawPlaced, settledPlaced) {
+          if (!piece || !rawPlaced || !settledPlaced || rawPlaced.length !== settledPlaced.length) {
+            return;
+          }
+
+          const boardRect = boardWrap.getBoundingClientRect();
+          const frag = document.createDocumentFragment();
+          const clones = [];
+
+          for (let k = 0; k < piece.cells.length; k++) {
+            const fromIndex = rawPlaced[k];
+            const toIndex = settledPlaced[k];
+            if (fromIndex == null || toIndex == null) continue;
+
+            const fromCell = cellElFromIndex(fromIndex);
+            const toCell = cellElFromIndex(toIndex);
+            if (!fromCell || !toCell) continue;
+
+            const fromTile = fromCell.querySelector(".nb-tile");
+            const fromRect = fromCell.getBoundingClientRect();
+            const toRect = toCell.getBoundingClientRect();
+
+            const dx = toRect.left - fromRect.left;
+            const dy = toRect.top - fromRect.top;
+            const rowsDropped = Math.max(0, rc(state, toIndex).r - rc(state, fromIndex).r);
+
+            const clone = document.createElement("div");
+            clone.className = `nb-tile is-filled ${getNumberColorClass(piece.cells[k].v)} nb-placed-fall-clone`;
+            clone.textContent = String(piece.cells[k].v);
+            clone.style.left = `${fromRect.left - boardRect.left}px`;
+            clone.style.top = `${fromRect.top - boardRect.top}px`;
+            clone.style.width = `${fromRect.width}px`;
+            clone.style.height = `${fromRect.height}px`;
+            clone.style.setProperty("--fall-x", `${dx}px`);
+            clone.style.setProperty("--fall-y", `${dy}px`);
+            clone.style.setProperty("--fall-duration", `${260 + rowsDropped * 90}ms`);
+
+            frag.appendChild(clone);
+            clones.push(clone);
+          }
+
+          sparkLayer.appendChild(frag);
+
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+
+          clones.forEach((clone) => {
+            clone.classList.add("is-animating");
+          });
+
+          const maxRows = Math.max(
+            1,
+            ...rawPlaced.map((fromIndex, k) => {
+              const toIndex = settledPlaced[k];
+              return Math.max(0, rc(state, toIndex).r - rc(state, fromIndex).r);
+            })
+          );
+
+          await wait(260 + maxRows * 90 + 80);
+
+          clones.forEach((clone) => {
+            try { clone.remove(); } catch (e) {}
+          });
+        }
+
         async function placePiece(anchorIndex, handIndex, pieceOverride) {
           const piece = pieceOverride || state.hand[handIndex];
           if (!piece) return false;
@@ -1445,26 +1780,39 @@
             return false;
           }
 
-          const covered = getCoveredIndices(state, anchorIndex, piece);
+          const covered = getSettledCoveredIndices(state, anchorIndex, piece);
           if (!covered) {
             shakeBad();
             return false;
           }
 
+          const rawPlaced = getCoveredIndices(state, anchorIndex, piece);
+          const settledPlaced = getSettledCoveredIndices(state, anchorIndex, piece);
+
+          if (!rawPlaced || !settledPlaced) {
+            shakeBad();
+            return false;
+          }
+
+          const hasGravityDrop = settledPlaced.some((toIndex, k) => toIndex !== rawPlaced[k]);
+
+          if (hasGravityDrop) {
+            renderGrid(true);
+            await animatePlacedPieceGravity(piece, rawPlaced, settledPlaced);
+          }
+
           for (let k = 0; k < piece.cells.length; k++) {
-            const bi = covered[k];
+            const bi = settledPlaced[k];
             const pc = piece.cells[k];
             state.board[bi] = { v: pc.v };
           }
 
-          const placed = getCoveredIndices(state, anchorIndex, piece);
-
           updateTopbar();
           renderGrid(true);
 
-          if (placed && placed.length) {
-            placed.forEach((i, k) => {
-              const cellEl = wrap.querySelector(`.nb-cell[data-cell-index="${i}"]`);
+          if (!hasGravityDrop) {
+            settledPlaced.forEach((toIndex, k) => {
+              const cellEl = wrap.querySelector(`.nb-cell[data-cell-index="${toIndex}"]`);
               const tileEl = cellEl ? cellEl.querySelector(".nb-tile") : null;
               if (!tileEl) return;
 
@@ -1473,9 +1821,11 @@
               void tileEl.offsetWidth;
               tileEl.classList.add("nb-place-settle");
             });
-          }
 
-          await wait(220);
+            await wait(220);
+          } else {
+            await wait(80);
+          }
 
           const blasts = await resolveBoardChains(
             state,
@@ -1495,8 +1845,18 @@
             burstScoreStars(blasts);
           }
 
+          await ensureThreeSupportedEmptySquares();
+
           state.hand[handIndex] = makePiece(state, { forceClearNow: false });
+          ensurePlayableHand(state, 24);
           render(true, { animateIndices: [handIndex] });
+
+          if (!anyMovesAvailable(state)) {
+            await ensureThreeSupportedEmptySquares();
+            state.hand[handIndex] = makePiece(state, { forceClearNow: false });
+            ensurePlayableHand(state, 24);
+            render(true, { animateIndices: [handIndex] });
+          }
 
           if (!anyMovesAvailable(state)) {
             setTimeout(() => {
@@ -1537,15 +1897,63 @@
     return out;
   }
 
-  function canPlacePiece(state, anchorIndex, piece) {
-    const covered = getCoveredIndices(state, anchorIndex, piece);
-    if (!covered) return false;
-    for (const i of covered) {
-      if (state.board[i] != null) return false;
+  function getSettledCoveredIndices(state, anchorIndex, piece) {
+    if (!state || !piece) return null;
+    if (!Number.isFinite(Number(anchorIndex))) return null;
+  
+    const a = rc(state, anchorIndex);
+    const base = [];
+  
+    for (const pc of piece.cells) {
+      const r = a.r + pc.y;
+      const c = a.c + pc.x;
+      if (r < 0 || r >= state.size || c < 0 || c >= state.size) return null;
+      base.push({ r, c, v: pc.v, x: pc.x, y: pc.y });
     }
-    return true;
+  
+    const occupied = new Set();
+    const settled = [];
+  
+    base.sort((p1, p2) => p2.r - p1.r || p1.c - p2.c);
+  
+    for (const cell of base) {
+      let targetR = cell.r;
+  
+      while (targetR + 1 < state.size) {
+        const belowIndex = idx(state, targetR + 1, cell.c);
+        const belowKey = `${targetR + 1},${cell.c}`;
+  
+        if (state.board[belowIndex] != null) break;
+        if (occupied.has(belowKey)) break;
+  
+        targetR += 1;
+      }
+  
+      const finalKey = `${targetR},${cell.c}`;
+      if (occupied.has(finalKey)) return null;
+      if (state.board[idx(state, targetR, cell.c)] != null) return null;
+  
+      occupied.add(finalKey);
+      settled.push({
+        r: targetR,
+        c: cell.c,
+        v: cell.v,
+        x: cell.x,
+        y: cell.y,
+      });
+    }
+  
+    return piece.cells.map((pc) => {
+      const match = settled.find((s) => s.x === pc.x && s.y === pc.y);
+      return match ? idx(state, match.r, match.c) : null;
+    });
   }
 
+  function canPlacePiece(state, anchorIndex, piece) {
+    const settled = getSettledCoveredIndices(state, anchorIndex, piece);
+    return !!(settled && settled.length);
+  }
+  
   function anyMovesAvailable(state) {
     if (!state || !Array.isArray(state.hand) || !Array.isArray(state.board)) return false;
 

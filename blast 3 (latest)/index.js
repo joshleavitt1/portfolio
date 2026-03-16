@@ -585,15 +585,15 @@
   }
 
   function wouldClearAfterPlacement(state, anchor, piece) {
-    if (!canPlacePiece(state, anchor, piece)) return false;
-
-    const covered = getCoveredIndices(state, anchor, piece);
+    const covered = getSettledCoveredIndices(state, anchor, piece);
+    if (!covered) return false;
+  
     const shadow = state.board.slice();
-
+  
     for (let k = 0; k < covered.length; k++) {
       shadow[covered[k]] = { v: piece.cells[k].v };
     }
-
+  
     const { groups } = findGroupsToClear(state, shadow);
     return groups.length > 0;
   }
@@ -635,7 +635,7 @@
       const norm = normalizePieceCells(shape.cells);
 
       for (let bi = 0; bi < state.board.length; bi++) {
-        const covered = getCoveredIndices(state, bi, { cells: norm });
+        const covered = getSettledCoveredIndices(state, bi, { cells: norm });
         if (!covered || !canPlacePiece(state, bi, { cells: norm })) continue;
 
         const testCells = covered.map((boardIndex) => {
@@ -1112,7 +1112,7 @@
           clearHover();
           if (anchorIndex == null || !piece) return;
         
-          const covered = getCoveredIndices(state, anchorIndex, piece);
+          const covered = getSettledCoveredIndices(state, anchorIndex, piece);
           if (!covered) return;
         
           const ok = canPlacePiece(state, anchorIndex, piece);
@@ -1716,7 +1716,7 @@
             return false;
           }
 
-          const covered = getCoveredIndices(state, anchorIndex, piece);
+          const covered = getSettledCoveredIndices(state, anchorIndex, piece);
           if (!covered) {
             shakeBad();
             return false;
@@ -1728,21 +1728,41 @@
             state.board[bi] = { v: pc.v };
           }
 
-          const placed = getCoveredIndices(state, anchorIndex, piece);
-
+          const placed = getSettledCoveredIndices(state, anchorIndex, piece);
+          const rawPlaced = getCoveredIndices(state, anchorIndex, piece);
+          
           updateTopbar();
           renderGrid(true);
-
-          if (placed && placed.length) {
-            placed.forEach((i, k) => {
-              const cellEl = wrap.querySelector(`.nb-cell[data-cell-index="${i}"]`);
+          
+          if (placed && placed.length && rawPlaced && rawPlaced.length) {
+            placed.forEach((toIndex, k) => {
+              const fromIndex = rawPlaced[k];
+              const fromPos = rc(state, fromIndex);
+              const toPos = rc(state, toIndex);
+          
+              const rowsDropped = Math.max(0, toPos.r - fromPos.r);
+          
+              const cellEl = wrap.querySelector(`.nb-cell[data-cell-index="${toIndex}"]`);
               const tileEl = cellEl ? cellEl.querySelector(".nb-tile") : null;
               if (!tileEl) return;
-
-              tileEl.classList.remove("nb-place-settle");
-              tileEl.style.setProperty("--place-delay", `${k * 24}ms`);
-              void tileEl.offsetWidth;
-              tileEl.classList.add("nb-place-settle");
+          
+              if (rowsDropped > 0) {
+                const sampleCell = gridEl ? gridEl.querySelector(".nb-cell") : null;
+                const cellPx = sampleCell ? sampleCell.getBoundingClientRect().width : 62;
+                const gapPx = gridEl ? parseFloat(getComputedStyle(gridEl).gap) || 14 : 14;
+                const dropPx = rowsDropped * (cellPx + gapPx);
+          
+                tileEl.style.setProperty("--drop-distance", `${dropPx}px`);
+                tileEl.style.setProperty("--drop-duration", `${260 + rowsDropped * 90}ms`);
+                tileEl.classList.remove("nb-gravity-drop");
+                void tileEl.offsetWidth;
+                tileEl.classList.add("nb-gravity-drop");
+              } else {
+                tileEl.classList.remove("nb-place-settle");
+                tileEl.style.setProperty("--place-delay", `${k * 24}ms`);
+                void tileEl.offsetWidth;
+                tileEl.classList.add("nb-place-settle");
+              }
             });
           }
 
@@ -1818,34 +1838,63 @@
     return out;
   }
 
-  function canPlacePiece(state, anchorIndex, piece) {
-    const covered = getCoveredIndices(state, anchorIndex, piece);
-    if (!covered) return false;
+  function getSettledCoveredIndices(state, anchorIndex, piece) {
+    if (!state || !piece) return null;
+    if (!Number.isFinite(Number(anchorIndex))) return null;
   
-    const coveredSet = new Set(covered);
+    const a = rc(state, anchorIndex);
+    const base = [];
   
-    /* 1. cells must be empty */
-    for (const i of covered) {
-      if (state.board[i] != null) return false;
+    for (const pc of piece.cells) {
+      const r = a.r + pc.y;
+      const c = a.c + pc.x;
+      if (r < 0 || r >= state.size || c < 0 || c >= state.size) return null;
+      base.push({ r, c, v: pc.v, x: pc.x, y: pc.y });
     }
   
-    /* 2. support rule (stacking only) */
-    for (const i of covered) {
-      const { r, c } = rc(state, i);
+    const occupied = new Set();
+    const settled = [];
   
-      if (r === state.size - 1) continue;
+    base.sort((p1, p2) => p2.r - p1.r || p1.c - p2.c);
   
-      const below = idx(state, r + 1, c);
+    for (const cell of base) {
+      let targetR = cell.r;
   
-      if (state.board[below] != null) continue;
-      if (coveredSet.has(below)) continue;
+      while (targetR + 1 < state.size) {
+        const belowIndex = idx(state, targetR + 1, cell.c);
+        const belowKey = `${targetR + 1},${cell.c}`;
   
-      return false;
+        if (state.board[belowIndex] != null) break;
+        if (occupied.has(belowKey)) break;
+  
+        targetR += 1;
+      }
+  
+      const finalKey = `${targetR},${cell.c}`;
+      if (occupied.has(finalKey)) return null;
+      if (state.board[idx(state, targetR, cell.c)] != null) return null;
+  
+      occupied.add(finalKey);
+      settled.push({
+        r: targetR,
+        c: cell.c,
+        v: cell.v,
+        x: cell.x,
+        y: cell.y,
+      });
     }
   
-    return true;
+    return piece.cells.map((pc) => {
+      const match = settled.find((s) => s.x === pc.x && s.y === pc.y);
+      return match ? idx(state, match.r, match.c) : null;
+    });
   }
 
+  function canPlacePiece(state, anchorIndex, piece) {
+    const settled = getSettledCoveredIndices(state, anchorIndex, piece);
+    return !!(settled && settled.length);
+  }
+  
   function anyMovesAvailable(state) {
     if (!state || !Array.isArray(state.hand) || !Array.isArray(state.board)) return false;
 
