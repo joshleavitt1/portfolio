@@ -725,13 +725,25 @@
     return false;
   }
 
-  function ensurePlayableHand(state, tries = 60) {
+  function ensurePlayableHand(state, tries = 24) {
+    if (hasClearMove(state)) return true;
+  
+    const originalHand = state.hand.slice();
+  
     for (let t = 0; t < tries; t++) {
-      if (hasClearMove(state)) return true;
-      state.hand = generateHand(state);
+      const candidateHand = generateHand(state);
+      const prevHand = state.hand;
+      state.hand = candidateHand;
+  
+      if (hasClearMove(state)) {
+        return true;
+      }
+  
+      state.hand = prevHand;
     }
   
-    return hasClearMove(state);
+    state.hand = originalHand;
+    return false;
   }
 
   function clearMount(mount) {
@@ -1790,59 +1802,60 @@
         async function placePiece(anchorIndex, handIndex, pieceOverride) {
           const piece = pieceOverride || state.hand[handIndex];
           if (!piece) return false;
-
+        
           if (!canPlacePiece(state, anchorIndex, piece)) {
             shakeBad();
             return false;
           }
-
+        
           const covered = getSettledCoveredIndices(state, anchorIndex, piece);
           if (!covered) {
             shakeBad();
             return false;
           }
-
+        
           const rawPlaced = getCoveredIndices(state, anchorIndex, piece);
           const settledPlaced = getSettledCoveredIndices(state, anchorIndex, piece);
-
+        
           if (!rawPlaced || !settledPlaced) {
             shakeBad();
             return false;
           }
-
+        
           const hasGravityDrop = settledPlaced.some((toIndex, k) => toIndex !== rawPlaced[k]);
-
-          if (hasGravityDrop) {
-            renderGrid(true);
-            await animatePlacedPieceGravity(piece, rawPlaced, settledPlaced);
-          }
-
+        
           for (let k = 0; k < piece.cells.length; k++) {
             const bi = settledPlaced[k];
             const pc = piece.cells[k];
             state.board[bi] = { v: pc.v };
           }
-
+        
           updateTopbar();
           renderGrid(true);
-
-          if (!hasGravityDrop) {
+        
+          if (hasGravityDrop) {
+            const moved = settledPlaced.map((to, k) => ({
+              from: rawPlaced[k],
+              to,
+            }));
+        
+            animateGravityDrop(moved);
+            await wait(460);
+          } else {
             settledPlaced.forEach((toIndex, k) => {
               const cellEl = wrap.querySelector(`.nb-cell[data-cell-index="${toIndex}"]`);
               const tileEl = cellEl ? cellEl.querySelector(".nb-tile") : null;
               if (!tileEl) return;
-
+        
               tileEl.classList.remove("nb-place-settle");
               tileEl.style.setProperty("--place-delay", `${k * 24}ms`);
               void tileEl.offsetWidth;
               tileEl.classList.add("nb-place-settle");
             });
-
+        
             await wait(220);
-          } else {
-            await wait(180);
           }
-
+        
           const blasts = await resolveBoardChains(
             state,
             render,
@@ -1851,29 +1864,36 @@
             showComboText,
             gridEl
           );
-
+        
           clearHover();
-
+        
           if (blasts > 0) {
             awardForGroups(blasts);
             updateTopbar();
             popBigScore();
             burstScoreStars(blasts);
           }
-
+        
           await ensureThreeSupportedEmptySquares();
-
+        
           state.hand[handIndex] = makePiece(state, { forceClearNow: false });
-          ensurePlayableHand(state, 24);
-          render(true, { animateIndices: [handIndex] });
 
+          if (!hasClearMove(state)) {
+            const forced = findGuaranteedClearPiece(state);
+            if (forced) {
+              state.hand[handIndex] = forced;
+            }
+          }
+
+          render(true, { animateIndices: [handIndex] });
+        
           if (!anyMovesAvailable(state)) {
             await ensureThreeSupportedEmptySquares();
             state.hand[handIndex] = makePiece(state, { forceClearNow: false });
             ensurePlayableHand(state, 24);
             render(true, { animateIndices: [handIndex] });
           }
-
+        
           if (!anyMovesAvailable(state)) {
             setTimeout(() => {
               finish("lose", {
@@ -1883,7 +1903,7 @@
               });
             }, 250);
           }
-
+        
           return true;
         }
 
