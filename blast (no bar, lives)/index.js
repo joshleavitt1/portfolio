@@ -6,6 +6,7 @@
   const HAND_SIZE = 3;
   const LEVEL_MAX = 20;
   const ROW_EXPLODE_MS = 420;
+  const STARTING_LIVES = 3;
   
   let shouldAnimateBoardSpawn = false;
 
@@ -265,14 +266,35 @@
   
     return hand;
   }  
+  
+  function maybeAdvanceLevel(state) {
+    const nextLevel = clamp((state.level || 1) + 1, 1, LEVEL_MAX);
+  
+    while (state.score >= state.levelGoal && state.level < LEVEL_MAX) {
+      state.level += 1;
+  
+      const nextRules =
+        window.NumberBlastLevelPlan?.getNumberBlastRules(state.level) || {};
+  
+      state.rules = nextRules;
+      state.size = nextRules.boardSize ?? state.size;
+      state.numberMin = nextRules.numberMin ?? state.numberMin;
+      state.numberMax = nextRules.numberMax ?? state.numberMax;
+      state.targetSum = nextRules.target ?? state.targetSum;
+      state.levelGoal = nextRules.pointsGoal ?? state.levelGoal;
+  
+      shouldAnimateBoardSpawn = true;
+    }
+  }
 
   function makeGameState(level) {
     const savedDifficulty = clamp(Number(level) || 1, 1, LEVEL_MAX);
     const difficultyRules = window.NumberBlastLevelPlan?.getNumberBlastRules(savedDifficulty) || null;
     const difficultySize = difficultyRules?.boardSize ?? DEFAULT_SIZE;
-
+  
     const st = {
       level: savedDifficulty,
+      lives: STARTING_LIVES,
       forcedSolveCounter: 0,
       size: difficultySize,
       board: Array(difficultySize * difficultySize).fill(null),
@@ -282,10 +304,11 @@
       wins: readWins(),
       numberMin: difficultyRules?.numberMin ?? 1,
       numberMax: difficultyRules?.numberMax ?? levelNumberMax(savedDifficulty),
-      targetSum: 10,
+      targetSum: difficultyRules?.target ?? 10,
+      levelGoal: difficultyRules?.pointsGoal ?? 120,
       rules: difficultyRules || {},
     };
-
+  
     const handSize = difficultyRules?.handSize ?? HAND_SIZE;
     const maxLargePieces = difficultyRules?.maxLargePieces ?? 1;
     st.hand = generateHand(st, handSize, maxLargePieces);
@@ -848,12 +871,12 @@
         function resetRoundBoard() {
           const latestRules = window.NumberBlastLevelPlan?.getNumberBlastRules(state.level) || {};
           state.rules = latestRules;
-          state.level = 1;
           state.size = latestRules.boardSize ?? DEFAULT_SIZE;
           state.numberMin = latestRules.numberMin ?? 1;
           state.numberMax = latestRules.numberMax ?? 9;
-          state.targetSum = 10;
-        
+          state.targetSum = latestRules.target ?? 10;
+          state.levelGoal = latestRules.pointsGoal ?? 120;
+
           fillBoardFully(state);
         
           while (boardHasAutoClear(state)) {
@@ -1176,27 +1199,28 @@
             top.innerHTML = `
               <div class="nb-hud">
                 <div class="nb-hud-row">
-                  <div class="nb-score-pill" aria-label="High score">
-                    <span class="nb-score-pill-icon"></span>
-                    <span class="nb-score-pill-value">0</span>
+                  <div class="nb-hud-box nb-hud-box--score" aria-label="High score">
+                    <span class="nb-hud-box-icon nb-hud-box-icon--crown"></span>
+                    <span class="nb-hud-box-value nb-hud-box-value--score">0</span>
                   </div>
         
-                  <div class="nb-target-badge" aria-label="Blast number">
-                    <span class="nb-target-badge-value">10</span>
+                  <div class="nb-hud-box nb-hud-box--lives" aria-label="Lives">
+                    <span class="nb-hud-box-icon nb-hud-box-icon--heart"></span>
+                    <span class="nb-hud-box-value nb-hud-box-value--lives">0</span>
                   </div>
                 </div>
         
-                <div class="nb-big-score" aria-label="Current score">0</div>
+                <div class="nb-big-score" aria-label="Current points">0</div>
               </div>
             `;
           }
         
-          const pillValue = top.querySelector(".nb-score-pill-value");
-          const badgeValue = top.querySelector(".nb-target-badge-value");
+          const scoreValue = top.querySelector(".nb-hud-box-value--score");
+          const livesValue = top.querySelector(".nb-hud-box-value--lives");
           const bigScore = top.querySelector(".nb-big-score");
         
-          if (pillValue) pillValue.textContent = String(highScore);
-          if (badgeValue) badgeValue.textContent = String(state.targetSum);
+          if (scoreValue) scoreValue.textContent = String(highScore);
+          if (livesValue) livesValue.textContent = String(state.lives);
           if (bigScore) bigScore.textContent = String(state.score);
         }
                   
@@ -1728,6 +1752,8 @@
         
           state.clears += groupCount;
           state.score += gained;
+        
+          maybeAdvanceLevel(state);
         
           const best = readNumber("NB_HIGH_SCORE", 0);
           if (state.score > best) {
