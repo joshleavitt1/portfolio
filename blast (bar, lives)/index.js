@@ -287,6 +287,11 @@
     }
   }
 
+  function getLevelProgressPct(state) {
+    const goal = Math.max(1, Number(state.levelGoal) || 1);
+    return Math.max(0, Math.min(100, (state.score / goal) * 100));
+  }
+
   function makeGameState(level) {
     const savedDifficulty = clamp(Number(level) || 1, 1, LEVEL_MAX);
     const difficultyRules = window.NumberBlastLevelPlan?.getNumberBlastRules(savedDifficulty) || null;
@@ -469,24 +474,41 @@
 
     function scanLine(indices) {
       let start = 0;
-
+    
       while (start < indices.length) {
-        while (start < indices.length && !board[indices[start]]) start++;
+        while (
+          start < indices.length &&
+          (!board[indices[start]] || isSkullCell(board[indices[start]]))
+        ) {
+          start++;
+        }
+    
         if (start >= indices.length) break;
-
+    
         let end = start;
-        while (end < indices.length && board[indices[end]]) end++;
-
+        while (
+          end < indices.length &&
+          board[indices[end]] &&
+          !isSkullCell(board[indices[end]])
+        ) {
+          end++;
+        }
+    
         for (let i = start; i < end; i++) {
           let sum = 0;
+    
           for (let j = i; j < end; j++) {
-            sum += board[indices[j]].v;
+            const cell = board[indices[j]];
+            if (!cell || isSkullCell(cell)) break;
+    
+            sum += cell.v;
             const len = j - i + 1;
+    
             if (len >= 2 && sum === state.targetSum) addGroup(indices.slice(i, j + 1));
             if (sum >= state.targetSum) break;
           }
         }
-
+    
         start = end;
       }
     }
@@ -548,6 +570,72 @@
     return moved;
   }
 
+  function isSkullCell(cell) {
+    return !!(cell && cell.kind === "skull");
+  }
+  
+  function findSkullIndex(state) {
+    for (let i = 0; i < state.board.length; i++) {
+      if (isSkullCell(state.board[i])) return i;
+    }
+    return -1;
+  }
+  
+  function getOrthogonalNeighbors(state, index) {
+    const { r, c } = rc(state, index);
+    const out = [];
+  
+    if (r > 0) out.push(idx(state, r - 1, c));
+    if (r < state.size - 1) out.push(idx(state, r + 1, c));
+    if (c > 0) out.push(idx(state, r, c - 1));
+    if (c < state.size - 1) out.push(idx(state, r, c + 1));
+  
+    return out;
+  }
+  
+  function pickRandomTopSpawnColumn(state) {
+    const cols = [];
+    for (let c = 0; c < state.size; c++) {
+      if (!state.board[idx(state, 0, c)]) cols.push(c);
+    }
+    if (!cols.length) return null;
+    return cols[Math.floor(Math.random() * cols.length)];
+  }
+  
+  function spawnSkullAtTop(state) {
+    if (findSkullIndex(state) !== -1) return null;
+  
+    const col = pickRandomTopSpawnColumn(state);
+    if (col == null) return null;
+  
+    const startIndex = idx(state, 0, col);
+    state.board[startIndex] = { kind: "skull" };
+  
+    const moved = applyGravity(state);
+    const finalIndex = findSkullIndex(state);
+  
+    return {
+      startIndex,
+      finalIndex,
+      moved,
+    };
+  }
+  
+  function collectSkullsHitByBlast(state, hitSet) {
+    const skullIndex = findSkullIndex(state);
+    if (skullIndex === -1) return [];
+  
+    const neighbors = getOrthogonalNeighbors(state, skullIndex);
+    const touched = neighbors.some((i) => hitSet.has(i));
+  
+    return touched ? [skullIndex] : [];
+  }
+  
+  function damageLifeFromSkull(state) {
+    state.lives = Math.max(0, state.lives - 1);
+    return state.lives;
+  }
+
   function pickOpeningHoleIndices(state, count = 5) {
     const candidates = [];
   
@@ -567,13 +655,17 @@
     return candidates.slice(0, count);
   }
 
-  async function resolveBoardChains(state, render, animateBlast, animateGravity, showComboText, gridEl) {
+  async function resolveBoardChains(state, render, animateBlast, animateGravity, showComboText, gridEl, finish) {
     
     let totalBlasts = 0;
     let chainStep = 0;
 
     while (true) {
       const { groups, hit } = findGroupsToClear(state, state.board);
+      const skullHits = collectSkullsHitByBlast(state, hit);
+      skullHits.forEach((i) => {
+        hit.add(i);
+      });
       if (!groups.length) break;
 
       chainStep += 1;
@@ -582,6 +674,19 @@
       await wait(ROW_EXPLODE_MS + 80);
 
       clearHitCells(state, hit);
+      if (skullHits.length) {
+        damageLifeFromSkull(state);
+      
+        if (state.lives <= 0) {
+          render();
+          finish("lose", {
+            reason: "out-of-lives",
+            score: state.score,
+            wins: state.wins,
+          });
+          return totalBlasts;
+        }
+      }
       gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
         el.classList.remove("nb-explode-source-hide");
       });
@@ -601,6 +706,16 @@
         await wait(320);
       } else {
         await wait(200);
+      }
+    }
+    if (findSkullIndex(state) === -1 && state.lives > 0) {
+      const skullSpawn = spawnSkullAtTop(state);
+      render();
+    
+      if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
+        animateGravity(skullSpawn.moved, { chainStep: 0 });
+        await wait(460);
+        render();
       }
     }
 
@@ -937,7 +1052,8 @@
             animateRowExplode,
             animateGravityDrop,
             showComboText,
-            gridEl
+            gridEl,
+            finish
           );
 
           if (blasts > 0) {
@@ -981,7 +1097,8 @@
             animateRowExplode,
             animateGravityDrop,
             showComboText,
-            gridEl
+            gridEl,
+            finish
           );
         
           if (blasts > 0) {
@@ -1194,6 +1311,7 @@
 
         function updateTopbar() {
           const highScore = readNumber("NB_HIGH_SCORE", 0);
+          const progressPct = getLevelProgressPct(state);
         
           if (!top.querySelector(".nb-hud")) {
             top.innerHTML = `
@@ -1210,7 +1328,13 @@
                   </div>
                 </div>
         
-                <div class="nb-big-score" aria-label="Current points">0</div>
+                <div class="nb-big-score-wrap">
+                  <div class="nb-big-score" aria-label="Current points">0</div>
+        
+                  <div class="nb-level-progress" aria-label="Level progress">
+                    <div class="nb-level-progress-fill"></div>
+                  </div>
+                </div>
               </div>
             `;
           }
@@ -1218,10 +1342,19 @@
           const scoreValue = top.querySelector(".nb-hud-box-value--score");
           const livesValue = top.querySelector(".nb-hud-box-value--lives");
           const bigScore = top.querySelector(".nb-big-score");
+          const progressFill = top.querySelector(".nb-level-progress-fill");
         
           if (scoreValue) scoreValue.textContent = String(highScore);
           if (livesValue) livesValue.textContent = String(state.lives);
           if (bigScore) bigScore.textContent = String(state.score);
+        
+          if (progressFill) {
+            progressFill.style.width = `${progressPct}%`;
+          }
+
+          progressFill.classList.remove("nb-fill-hit");
+          void progressFill.offsetWidth;
+          progressFill.classList.add("nb-fill-hit");
         }
                   
         function renderGrid(showFilled = true) {
@@ -1244,16 +1377,26 @@
               const cell = state.board[i];
         
               if (cell && showFilled) {
-                tile.classList.add("is-filled", getNumberColorClass(cell.v));
-                tile.textContent = String(cell.v);
-        
+                if (isSkullCell(cell)) {
+                  tile.classList.add("is-filled", "nb-skull-tile");
+              
+                  const skullIcon = document.createElement("img");
+                  skullIcon.className = "nb-skull-icon";
+                  skullIcon.src = "images/skull.svg";
+                  skullIcon.alt = "";
+                  tile.appendChild(skullIcon);
+                } else {
+                  tile.classList.add("is-filled", getNumberColorClass(cell.v));
+                  tile.textContent = String(cell.v);
+                }
+              
                 if (shouldAnimateBoardSpawn) {
                   const index = r * state.size + c;
                   const stagger = index * 18;
-        
+              
                   tile.style.setProperty("--spawn-delay", stagger + "ms");
                   tile.classList.add("nb-spawn");
-        
+              
                   setTimeout(() => {
                     tile.classList.remove("nb-spawn");
                     tile.style.removeProperty("--spawn-delay");
@@ -1564,6 +1707,18 @@
           await explodeOpeningHoles(5);
           ensurePlayableHand(state, 24);
           render(true);
+          
+          await delay(220);
+          
+          const skullSpawn = spawnSkullAtTop(state);
+          render(true);
+          
+          if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
+            animateGravityDrop(skullSpawn.moved);
+            await wait(460);
+          }
+          
+          render(true);
         }
 
         function animateRowExplode(hitSet, opts = {}) {
@@ -1725,7 +1880,7 @@
             star.style.top = `${originY}px`;
 
             const angle = Math.random() * Math.PI * 2;
-            const dist = 34 + Math.random() * 44 + blasts * 8;
+            const dist = 72 + Math.random() * 72 + blasts * 14;
             const sx = Math.cos(angle) * dist;
             const sy = Math.sin(angle) * dist - 8 - Math.random() * 18;
 
@@ -1733,7 +1888,7 @@
             star.style.setProperty("--ssy", `${sy.toFixed(0)}px`);
             star.style.setProperty("--ss-rot", `${(Math.random() * 220 - 110).toFixed(0)}deg`);
             star.style.setProperty("--ss-delay", `${Math.random() * 80}ms`);
-            star.style.setProperty("--ss-size", `${12 + Math.random() * 12}px`);
+            star.style.setProperty("--ss-size", `${8 + Math.random() * 24}px`);
 
             frag.appendChild(star);
           }
@@ -1742,7 +1897,7 @@
 
           setTimeout(() => {
             starsHost.innerHTML = "";
-          }, 1100);
+          }, 1450);
         }
         
 
@@ -1886,27 +2041,14 @@
 
           // replace the used hand piece immediately, before any blast chain starts
           state.hand[handIndex] = makePiece(state, { forceClearNow: false });
-    
+          
           if (!hasClearMove(state)) {
             const forced = findGuaranteedClearPiece(state);
             if (forced) {
               state.hand[handIndex] = forced;
             }
           }
-    
-          renderHand({ animateIndices: [handIndex] });
-    
-          clearHover();
-
-          state.hand[handIndex] = makePiece(state, { forceClearNow: false });
-
-          if (!hasClearMove(state)) {
-            const forced = findGuaranteedClearPiece(state);
-            if (forced) {
-              state.hand[handIndex] = forced;
-            }
-          }
-
+          
           render(true, { animateIndices: [handIndex] });
 
           const blasts = await resolveBoardChains(
@@ -1915,7 +2057,8 @@
             animateRowExplode,
             animateGravityDrop,
             showComboText,
-            gridEl
+            gridEl,
+            finish
           );
 
           if (blasts > 0) {

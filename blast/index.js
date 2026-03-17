@@ -26,6 +26,24 @@
     { id: "sq4", cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }] },
   ];
 
+  function syncViewportScale() {
+    const root = document.documentElement;
+
+    const baseW = 390;
+    const baseH = 844;
+    const outerPad = 48; // 24px left + 24px right / top + bottom
+
+    const usableW = Math.max(320, window.innerWidth - outerPad);
+    const usableH = Math.max(560, window.innerHeight - outerPad);
+
+    const scaleFromWidth = usableW / baseW;
+    const scaleFromHeight = usableH / baseH;
+
+    const scale = Math.max(1, Math.min(scaleFromWidth, scaleFromHeight, 1.6));
+
+    root.style.setProperty("--nb-ui-scale", scale.toFixed(4));
+  }
+
   function clamp(n, a, b) {
     return Math.max(a, Math.min(b, n));
   }
@@ -954,6 +972,18 @@
 
         clearMount(mount);
 
+        syncViewportScale();
+
+        const onResize = () => {
+          syncViewportScale();
+          if (wrap && wrap.isConnected) {
+            render(true);
+          }
+        };
+
+        window.addEventListener("resize", onResize);
+        addCleanup(() => window.removeEventListener("resize", onResize));
+
         const wrap = document.createElement("div");
         wrap.className = "nb-wrap";
         mount.appendChild(wrap);
@@ -961,6 +991,10 @@
         const top = document.createElement("div");
         top.className = "nb-topbar";
         wrap.appendChild(top);
+
+        const scoreBlock = document.createElement("div");
+        scoreBlock.className = "nb-top-score-block";
+        wrap.appendChild(scoreBlock);
 
         const boardWrap = document.createElement("div");
         boardWrap.className = "nb-board-wrap";
@@ -1321,19 +1355,23 @@
                     <span class="nb-hud-box-icon nb-hud-box-icon--crown"></span>
                     <span class="nb-hud-box-value nb-hud-box-value--score">0</span>
                   </div>
-        
+          
                   <div class="nb-hud-box nb-hud-box--lives" aria-label="Lives">
                     <span class="nb-hud-box-icon nb-hud-box-icon--heart"></span>
                     <span class="nb-hud-box-value nb-hud-box-value--lives">0</span>
                   </div>
                 </div>
-        
-                <div class="nb-big-score-wrap">
-                  <div class="nb-big-score" aria-label="Current points">0</div>
-        
-                  <div class="nb-level-progress" aria-label="Level progress">
-                    <div class="nb-level-progress-fill"></div>
-                  </div>
+              </div>
+            `;
+          }
+          
+          if (!scoreBlock.querySelector(".nb-big-score-wrap")) {
+            scoreBlock.innerHTML = `
+              <div class="nb-big-score-wrap">
+                <div class="nb-big-score" aria-label="Current points">0</div>
+          
+                <div class="nb-level-progress" aria-label="Level progress">
+                  <div class="nb-level-progress-fill"></div>
                 </div>
               </div>
             `;
@@ -1341,8 +1379,8 @@
         
           const scoreValue = top.querySelector(".nb-hud-box-value--score");
           const livesValue = top.querySelector(".nb-hud-box-value--lives");
-          const bigScore = top.querySelector(".nb-big-score");
-          const progressFill = top.querySelector(".nb-level-progress-fill");
+          const bigScore = scoreBlock.querySelector(".nb-big-score");
+          const progressFill = scoreBlock.querySelector(".nb-level-progress-fill");
         
           if (scoreValue) scoreValue.textContent = String(highScore);
           if (livesValue) livesValue.textContent = String(state.lives);
@@ -1427,7 +1465,9 @@
           
           const MAX_DIM = 3;
           const pad = 0;
-          const gap = 6;
+          const scale =
+          parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nb-ui-scale")) || 1;
+        const gap = Math.round(6 * scale);
           const cell = Math.floor((handSize - pad * 2 - gap * (MAX_DIM - 1)) / MAX_DIM);
           const b = pieceBounds(piece);
           const shapeW = b.w * cell + (b.w - 1) * gap;
@@ -1647,12 +1687,13 @@
           const START_DELAY = 90;
         
           const hudRow = top.querySelector(".nb-hud-row");
-          const bigScore = top.querySelector(".nb-big-score");
-        
+          const bigScore = scoreBlock.querySelector(".nb-big-score");
+          
           top.classList.remove("nb-reveal");
+          scoreBlock.classList.remove("nb-reveal");
           boardWrap.classList.remove("nb-reveal");
           handRail.classList.remove("nb-reveal");
-        
+          
           if (hudRow) hudRow.classList.remove("nb-reveal");
           if (bigScore) bigScore.classList.remove("nb-reveal", "nb-score-pop");
           handEl.classList.remove("nb-reveal", "nb-ready");
@@ -1663,10 +1704,11 @@
           /* 1. top bar */
           top.classList.add("nb-reveal");
           if (hudRow) hudRow.classList.add("nb-reveal");
-        
+
           await delay(STEP);
-        
-          /* 2. score */
+
+          /* 2. score block */
+          scoreBlock.classList.add("nb-reveal");
           if (bigScore) {
             bigScore.classList.add("nb-reveal");
             void bigScore.offsetWidth;
@@ -1843,33 +1885,33 @@
         }
 
         function popBigScore() {
-          const bigScore = top.querySelector(".nb-big-score");
+          const bigScore = scoreBlock.querySelector(".nb-big-score");
           if (!bigScore) return;
-
+        
           bigScore.classList.remove("nb-score-pop");
           void bigScore.offsetWidth;
           bigScore.classList.add("nb-score-pop");
         }
 
         function burstScoreStars(blasts = 1) {
-          const bigScore = top.querySelector(".nb-big-score");
+          const bigScore = scoreBlock.querySelector(".nb-big-score");
           if (!bigScore) return;
-
-          let starsHost = top.querySelector(".nb-score-stars");
+        
+          let starsHost = scoreBlock.querySelector(".nb-score-stars");
           if (!starsHost) {
             starsHost = document.createElement("div");
             starsHost.className = "nb-score-stars";
-            top.appendChild(starsHost);
+            scoreBlock.appendChild(starsHost);
           }
-
+        
           starsHost.innerHTML = "";
-
+        
           const frag = document.createDocumentFragment();
-          const topRect = top.getBoundingClientRect();
+          const scoreBlockRect = scoreBlock.getBoundingClientRect();
           const scoreRect = bigScore.getBoundingClientRect();
 
-          const originX = scoreRect.left - topRect.left + scoreRect.width / 2;
-          const originY = scoreRect.top - topRect.top + scoreRect.height / 2;
+          const originX = scoreRect.left - scoreBlockRect.left + scoreRect.width / 2;
+          const originY = scoreRect.top - scoreBlockRect.top + scoreRect.height / 2;
 
           const starCount = Math.min(18, 6 + blasts * 4);
 
