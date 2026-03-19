@@ -18,13 +18,30 @@
     <script src="level-plan.js"></script>
     <script src="index.js"></script>
     <script>
-      window.addEventListener("DOMContentLoaded", async () => {
-        const mount = document.getElementById("game-mount");
-        if (!mount || typeof window.createNumberBlastGame !== "function") return;
-    
-        const game = window.createNumberBlastGame({ config: { mount, level: 1 } });
-        await game.start();
-      });
+window.addEventListener("DOMContentLoaded", () => {
+  const mount = document.getElementById("game-mount");
+  if (!mount || typeof window.createNumberBlastGame !== "function") return;
+
+  mount.innerHTML = `
+    <button id="start-game-btn" style="
+      width:100%;
+      height:100%;
+      border:none;
+      background:#F7F7F7;
+      font:900 28px 'Segoe UI', sans-serif;
+      color:#021F63;
+      cursor:pointer;
+    ">
+      Tap to Start
+    </button>
+  `;
+
+  const btn = document.getElementById("start-game-btn");
+  btn.addEventListener("pointerdown", async () => {
+    const game = window.createNumberBlastGame({ config: { mount, level: 1 } });
+    await game.start();
+  }, { once: true });
+});
     </script>
   </body>
 </html>

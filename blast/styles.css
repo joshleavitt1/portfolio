@@ -56,7 +56,35 @@ body {
   padding: 24px;
   display: grid;
   place-items: center;
-  overflow: hidden;
+}
+
+/* Prevent accidental desktop text highlighting / selection */
+.nb-cell,
+.nb-tile,
+.nb-piece,
+.nb-piece-shape,
+.nb-mini,
+.drag-ghost,
+.drag-ghost .nb-mini {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Remove blue tap / selection highlight on webkit */
+.nb-cell,
+.nb-piece,
+.nb-mini,
+.nb-tile {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Desktop: don't imply draggable text/object behavior */
+@media (pointer: fine) {
+  .nb-piece,
+  .nb-piece:active {
+    cursor: default;
+  }
 }
 
 .nb-wrap {
@@ -78,7 +106,6 @@ body {
   align-items: stretch;
   justify-items: center;
   gap: 0;
-  overflow: hidden;
 }
 
 .nb-topbar {
@@ -981,17 +1008,26 @@ body {
 @keyframes nb-board-pulse {
   0% {
     transform: scale(1);
+    filter: brightness(1);
   }
-  40% {
-    transform: scale(1.035);
+  22% {
+    transform: scale(1.055);
+    filter: brightness(1.06);
+  }
+  58% {
+    transform: scale(0.985);
+    filter: brightness(0.99);
   }
   100% {
     transform: scale(1);
+    filter: brightness(1);
   }
 }
 
 .nb-grid.nb-pulse {
-  animation: nb-board-pulse 320ms ease-out;
+  animation: nb-board-pulse 420ms cubic-bezier(.18,1.08,.22,1);
+  transform-origin: 50% 50%;
+  will-change: transform, filter;
 }
 
 .nb-placed-fall-clone {
@@ -1046,6 +1082,7 @@ body {
 
 .nb-tile.is-filled.nb-skull-tile {
   background: linear-gradient(180deg, #B0B0B0 0%, #333 100%);
+  filter: saturate(1.2) contrast(1.1);
   box-shadow:
     inset 0 6px 12px rgba(255,255,255,0.10),
     inset 0 -8px 0 #222,
@@ -1062,4 +1099,320 @@ body {
   object-fit: contain;
   pointer-events: none;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,0.26));
+}
+
+/* ================================================ */
+/* Level Complete Screen                            */
+/* ================================================ */
+
+.nb-win-screen {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+
+  width: 100%;
+  height: 100%;
+
+  display: grid;
+  grid-template-rows: 1fr auto;
+  background: #F7F7F7;
+}
+
+.nb-win-main {
+  width: 100%;
+  height: 100%;
+
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 64px;
+  text-align: center;
+  overflow: visible;
+}
+
+.nb-win-title {
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  font-weight: 900;
+  font-size: 56px;
+  line-height: 1;
+  text-align: center;
+  color: #021F63;
+}
+
+.nb-win-stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.nb-win-stat-card {
+  overflow: hidden;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.08);
+}
+
+.nb-win-stat-head {
+  padding: 12px 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, #36DC36 0%, #00B600 100%);
+  color: #fff;
+  font-weight: 900;
+  font-size: 20px;
+}
+
+.nb-win-stat-body {
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+}
+
+.nb-win-stat-body--solo {
+  justify-content: center;
+}
+
+.nb-win-stat-icon {
+  height: 32px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.nb-win-stat-value {
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  font-weight: 900;
+  font-size: 28px;
+  line-height: 1;
+  color: #021F63;
+}
+
+.nb-win-next {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 80px;
+  align-self: end;
+  border: none;
+  overflow: hidden;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #16A8FF 0%, #0A6CFF 100%);
+  color: #fff;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  font-weight: 900;
+  font-size: 28px;
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,0.22),
+    0 10px 22px rgba(0,0,0,0.20);
+  text-shadow: 0 4px 8px rgba(0,0,0,0.18);
+  cursor: pointer;
+}
+
+.nb-wrap {
+  position: relative;
+}
+
+.nb-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at center, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.68) 34%, rgba(255,255,255,0) 72%);
+}
+
+.nb-wrap.nb-win-transition::after {
+  animation: nbWinGlowWash var(--nb-win-glow-ms, 720ms) ease-out forwards;
+}
+
+@keyframes nbWinGlowWash {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  28% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+.nb-level-progress-fill.nb-level-goal-hit {
+  animation: nbGoalHit var(--nb-goal-hit-ms, 520ms) cubic-bezier(.18,1.2,.22,1);
+}
+
+@keyframes nbGoalHit {
+  0% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
+  42% { transform: scaleY(1.22) scaleX(1.02); filter: brightness(1.14); }
+  100% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
+}
+
+.nb-win-confetti {
+  position: absolute;
+  width: var(--confetti-size, 14px);
+  height: calc(var(--confetti-size, 14px) * 0.78);
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 9;
+  opacity: 0;
+  background: linear-gradient(180deg, #ffd54d 0%, #ff8a00 100%);
+  box-shadow: 0 0 10px rgba(255, 170, 60, 0.22);
+  animation: nbWinConfetti var(--nb-confetti-ms, 1500ms) cubic-bezier(.18,1,.22,1) forwards;
+  animation-delay: var(--confetti-delay, 0ms);
+}
+
+.nb-win-confetti:nth-child(3n) {
+  background: linear-gradient(180deg, #6dff9b 0%, #18c65b 100%);
+}
+
+.nb-win-confetti:nth-child(4n) {
+  background: linear-gradient(180deg, #7faeff 0%, #2d6bff 100%);
+}
+
+.nb-win-confetti:nth-child(5n) {
+  background: linear-gradient(180deg, #ffb3e6 0%, #ff58b0 100%);
+}
+
+@keyframes nbWinConfetti {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(0.8);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--confetti-x), var(--confetti-y), 0) rotate(var(--confetti-rot)) scale(1);
+  }
+}
+
+.nb-win-level-badge-wrap,
+.nb-win-title,
+.nb-win-stat-card,
+.nb-win-next {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.nb-win-level-badge-wrap.is-hidden,
+.nb-win-title.is-hidden,
+.nb-win-stat-card.is-hidden,
+.nb-win-next.is-hidden {
+  opacity: 0;
+  transform: translateY(calc(12px * var(--nb-ui-scale))) scale(0.96);
+}
+
+.nb-win-reveal-in {
+  animation: nbWinRevealIn var(--nb-win-reveal-ms, 520ms) cubic-bezier(.18,1.2,.22,1) both;
+}
+
+@keyframes nbWinRevealIn {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(12px * var(--nb-ui-scale))) scale(0.94);
+  }
+  62% {
+    opacity: 1;
+    transform: translateY(calc(-2px * var(--nb-ui-scale))) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.nb-win-level-badge-wrap {
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.nb-win-level-badge {
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: linear-gradient(180deg, #FFC300 0%, #FF7A00 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,0.28),
+    0 12px 22px rgba(0,0,0,0.20);
+}
+
+.nb-win-level-number {
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  font-weight: 900;
+  font-size: 40px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 4px 8px rgba(0,0,0,0.16);
+  transition: opacity 140ms ease;
+}
+
+.nb-win-screen .nb-win-level-number {
+  letter-spacing: 0;
+}
+
+.nb-win-level-number.is-hidden {
+  opacity: 0;
+}
+
+.nb-win-level-check {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(0.42);
+}
+
+.nb-win-level-check.is-visible {
+  opacity: 1;
+}
+
+.nb-win-check-popin {
+  animation: nbWinCheckPopIn var(--nb-win-check-ms, 440ms) cubic-bezier(.18,1.2,.22,1) both;
+}
+
+@keyframes nbWinCheckPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.42);
+  }
+  62% {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.nb-win-level-number-popout {
+  animation: nbWinLevelNumberPopOut var(--nb-win-number-pop-ms, 460ms) cubic-bezier(.18,1,.22,1) forwards;
+}
+
+@keyframes nbWinLevelNumberPopOut {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.18) translateY(calc(-8px * var(--nb-ui-scale)));
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.72) translateY(calc(-26px * var(--nb-ui-scale)));
+  }
 }
