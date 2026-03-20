@@ -26,13 +26,17 @@
       place: "place.mp3",
       blast: "blast.mp3",
       load: "load.mp3",
+      skull: "skull.mp3",
+      break: "break.mp3",
     };
     
     const masterVolume = {
       pickup: 0.9,
       place: 0.9,
-      blast: 0.4,
+      blast: 0.3,
       load: 0.9,
+      skull: 0.3,
+      break: 0.3,
     };
 
     const pools = {};
@@ -40,7 +44,11 @@
     let muted = false;
 
     Object.keys(files).forEach((key) => {
-      const poolSize = key === "pickup" ? 8 : key === "blast" ? 6 : 4;
+      const poolSize =
+      key === "pickup" ? 8 :
+      key === "blast" ? 6 :
+      key === "break" ? 5 :
+      4;
     
       pools[key] = Array.from({ length: poolSize }, () => {
         const a = new Audio(`${SOUND_PATH}/${files[key]}`);
@@ -99,8 +107,6 @@
         a.currentTime = from;
         a.playbackRate = rate;
         a.volume = volume;
-    
-        console.log("[SFX] play:", key, "time:", performance.now().toFixed(1));
     
         const p = a.play();
         if (p && typeof p.catch === "function") {
@@ -806,14 +812,27 @@
     gridEl,
     finish,
     sfx,
-    onGameOver
-  ) {  
+    onGameOver,
+    skullFx = {},
+    opts = {}
+  ) {
+
     let totalBlasts = 0;
     let chainStep = 0;
+
+    const skipAutoSkullSpawn = !!opts.skipAutoSkullSpawn;
+
+    const triggerSkullTilePunch = skullFx.triggerSkullTilePunch || (() => {});
+const triggerSkullScreenFX = skullFx.triggerSkullScreenFX || (() => {});
 
     while (true) {
       const { groups, hit } = findGroupsToClear(state, state.board);
       const skullHits = collectSkullsHitByBlast(state, hit);
+
+      console.log("hit set:", [...hit]);
+console.log("skull index:", findSkullIndex(state));
+console.log("skull hits:", skullHits);
+
       skullHits.forEach((i) => {
         hit.add(i);
       });
@@ -822,38 +841,63 @@
       chainStep += 1;
       totalBlasts += groups.length;
       animateBlast(hit, { chainStep, groupCount: groups.length });
-      sfx.playBlast(groups.length, chainStep);
-      await wait(ROW_EXPLODE_MS + 80);
-
-      clearHitCells(state, hit);
-      if (skullHits.length) {
-        damageLifeFromSkull(state);
       
-        if (state.lives <= 0) {
-          render();
-        
-          if (typeof onGameOver === "function") {
-            await onGameOver({
-              reason: "out-of-lives",
-              score: state.totalScore,
-              wins: state.wins,
-            });
-          } else {
-            finish("lose", {
-              reason: "out-of-lives",
-              score: state.totalScore,
-              wins: state.wins,
-            });
-          }
-        
-          return totalBlasts;
-        }
+      if (!skullHits.length) {
+        sfx.playBlast(groups.length, chainStep);
       }
-      gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
-        el.classList.remove("nb-explode-source-hide");
-      });
-      render();
-      await wait(140);
+      
+      const hadSkullHit = skullHits.length > 0;
+
+if (hadSkullHit) {
+  triggerSkullTilePunch();
+}
+
+await wait(ROW_EXPLODE_MS + 80);
+
+clearHitCells(state, hit);
+
+if (hadSkullHit) {
+  setTimeout(() => {
+    sfx.play("skull", {
+      volume: 1,
+      rate: 0.92 + Math.random() * 0.06,
+    });
+  }, 40);
+
+  damageLifeFromSkull(state);
+}
+
+gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
+  el.classList.remove("nb-explode-source-hide");
+});
+
+render();
+
+if (hadSkullHit) {
+  await wait(16);
+  triggerSkullScreenFX();
+  await wait(220);
+}
+
+if (state.lives <= 0) {
+  if (typeof onGameOver === "function") {
+    await onGameOver({
+      reason: "out-of-lives",
+      score: state.totalScore,
+      wins: state.wins,
+    });
+  } else {
+    finish("lose", {
+      reason: "out-of-lives",
+      score: state.totalScore,
+      wins: state.wins,
+    });
+  }
+
+  return totalBlasts;
+}
+
+await wait(140);
 
       const moved = applyGravity(state);
       render();
@@ -870,9 +914,19 @@
         await wait(200);
       }
     }
-    if (findSkullIndex(state) === -1 && state.lives > 0) {
+
+    if (!skipAutoSkullSpawn && findSkullIndex(state) === -1 && state.lives > 0) {
       const skullSpawn = spawnSkullAtTop(state);
       render();
+    
+      if (skullSpawn) {
+        setTimeout(() => {
+          sfx.play("skull", {
+            volume: 0.8,
+            rate: 0.98,
+          });
+        }, 40);
+      }
     
       if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
         animateGravity(skullSpawn.moved, { chainStep: 0 });
@@ -1210,6 +1264,59 @@ let introPopPlayed = false;
           restartClass(mount, "eq-shake");
         }
 
+        function triggerSkullScreenFX() {
+          wrap.classList.remove("nb-skull-hit");
+          void wrap.offsetWidth;
+          wrap.classList.add("nb-skull-hit");
+        
+          const livesBox = top.querySelector(".nb-hud-box--lives");
+          if (livesBox) {
+            livesBox.classList.remove("nb-lives-hit");
+            void livesBox.offsetWidth;
+            livesBox.classList.add("nb-lives-hit");
+          }
+        
+          setTimeout(() => {
+            wrap.classList.remove("nb-skull-hit");
+            if (livesBox) livesBox.classList.remove("nb-lives-hit");
+          }, 320);
+        }
+        
+        function triggerSkullTilePunch() {
+          const skullTile = wrap.querySelector(".nb-skull-tile");
+          if (!skullTile) return;
+        
+          skullTile.classList.remove("nb-skull-punch");
+          void skullTile.offsetWidth;
+          skullTile.classList.add("nb-skull-punch");
+        
+          setTimeout(() => {
+            skullTile.classList.remove("nb-skull-punch");
+          }, 300);
+        }
+
+        function triggerSkullScreenFX() {
+          // REMOVE first (critical)
+          wrap.classList.remove("nb-skull-hit");
+          void wrap.offsetWidth;
+        
+          wrap.classList.add("nb-skull-hit");
+        
+          const livesBox = top.querySelector(".nb-hud-box--lives");
+          if (livesBox) {
+            livesBox.classList.remove("nb-lives-hit");
+            void livesBox.offsetWidth;
+        
+            livesBox.classList.add("nb-lives-hit");
+          }
+        
+          // 👇 CLEANUP so it can retrigger next time
+          setTimeout(() => {
+            wrap.classList.remove("nb-skull-hit");
+            if (livesBox) livesBox.classList.remove("nb-lives-hit");
+          }, 320);
+        }
+
         function showComboText() {}
 
         function formatElapsed(ms) {
@@ -1534,38 +1641,27 @@ let introPopPlayed = false;
             updateTopbar();
         
             lastProgressPct = getLevelProgressPct(state);
-        
-            console.log("Added:", amount);
-            console.log("Level:", state.levelScore, "/", state.levelGoal);
           },
         
           setLevelScore(value = 0) {
             state.levelScore = Math.max(0, value);
             updateTopbar();
-        
-            console.log("LevelScore set to:", state.levelScore, "/", state.levelGoal);
           },
         
           setProgress(value = 0) {
             state.levelScore = Math.max(0, Math.min(value, state.levelGoal));
             updateTopbar();
-        
-            console.log("Progress set to:", state.levelScore, "/", state.levelGoal);
           },
         
           addProgress(amount = 10) {
             state.levelScore = Math.min(state.levelGoal, state.levelScore + amount);
             state.totalScore += amount;
             updateTopbar();
-        
-            console.log("Progress:", state.levelScore, "/", state.levelGoal);
           },
         
           setLives(value = 1) {
             state.lives = Math.max(0, Number(value) || 0);
             updateTopbar();
-        
-            console.log("Lives set to:", state.lives);
           },
         
           winLevel() {
@@ -1583,20 +1679,7 @@ let introPopPlayed = false;
             state.levelBlasts = 0;
             state.levelStartedAt = Date.now();
             updateTopbar();
-        
-            console.log("Level progress reset");
           },
-        
-          getState() {
-            console.log({
-              level: state.level,
-              levelScore: state.levelScore,
-              levelGoal: state.levelGoal,
-              totalScore: state.totalScore,
-              levelBlasts: state.levelBlasts,
-              lives: state.lives
-            });
-          }
         };
 
         async function explodeOpeningHoles(count = 5) {
@@ -1605,6 +1688,10 @@ let introPopPlayed = false;
 
           const hit = new Set(picks);
           animateRowExplode(hit, { chainStep: 1, groupCount: hit.size });
+          sfx.play("break", {
+            volume: 1,
+            rate: 0.98 + Math.random() * 0.04,
+          });
           await wait(ROW_EXPLODE_MS + 80);
 
           clearHitCells(state, hit);
@@ -1633,7 +1720,12 @@ let introPopPlayed = false;
             gridEl,
             finish,
             sfx,
-            runGameOverSequence
+            runGameOverSequence,
+            {
+              triggerSkullTilePunch,
+              triggerSkullScreenFX,
+            },
+            { skipAutoSkullSpawn: true }
           );
 
           if (blasts > 0) {
@@ -1681,7 +1773,11 @@ let introPopPlayed = false;
             gridEl,
             finish,
             sfx,
-            runGameOverSequence
+            runGameOverSequence,
+            {
+              triggerSkullTilePunch,
+              triggerSkullScreenFX,
+            }
           );
         
           if (blasts > 0) {
@@ -2332,22 +2428,34 @@ for (let i = 0; i < 6; i++) {
 
           await explodeOpeningHoles(5);
 
-          gridEl.classList.remove("nb-pulse");
-          ensurePlayableHand(state, 24);
-          render(true);
-          
-          await delay(220);
-          
-          const skullSpawn = spawnSkullAtTop(state);
-          render(true);
-          
-          if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
-            animateGravityDrop(skullSpawn.moved);
-            await wait(460);
-          }
-          
-          render(true);
-          handLocked = false;
+gridEl.classList.remove("nb-pulse");
+ensurePlayableHand(state, 24);
+render(true);
+
+await delay(220);
+
+if (findSkullIndex(state) === -1 && state.lives > 0) {
+  const skullSpawn = spawnSkullAtTop(state);
+  render(true);
+
+  if (skullSpawn) {
+    setTimeout(() => {
+      sfx.play("skull", {
+        volume: 0.8,
+        rate: 0.98,
+      });
+    }, 40);
+  }
+
+  if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
+    animateGravityDrop(skullSpawn.moved);
+    await wait(460);
+  }
+
+  render(true);
+}
+
+handLocked = false;
         }
 
         function animateRowExplode(hitSet, opts = {}) {
@@ -2695,7 +2803,11 @@ for (let i = 0; i < 6; i++) {
             gridEl,
             finish,
             sfx,
-            runGameOverSequence
+            runGameOverSequence,
+            {
+              triggerSkullTilePunch,
+              triggerSkullScreenFX,
+            }
           );
 
           if (blasts > 0) {

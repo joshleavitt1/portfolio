@@ -1416,3 +1416,65 @@ body {
     transform: scale(0.72) translateY(calc(-26px * var(--nb-ui-scale)));
   }
 }
+
+.nb-wrap.nb-skull-hit {
+  animation: nbSkullHitShake 220ms ease;
+}
+
+@keyframes nbSkullHitShake {
+  0%   { transform: translateX(0); }
+  18%  { transform: translateX(calc(-3px * var(--nb-ui-scale))); }
+  36%  { transform: translateX(calc(3px * var(--nb-ui-scale))); }
+  54%  { transform: translateX(calc(-2px * var(--nb-ui-scale))); }
+  72%  { transform: translateX(calc(2px * var(--nb-ui-scale))); }
+  100% { transform: translateX(0); }
+}
+
+.nb-hud-box--lives.nb-lives-hit {
+  animation: nbLivesHitFlash 320ms cubic-bezier(.18,1.2,.22,1);
+}
+
+@keyframes nbLivesHitFlash {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.28),
+      0 8px 18px rgba(0,0,0,0.22);
+  }
+  35% {
+    transform: scale(1.08);
+    filter: brightness(1.18) saturate(1.08);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.35),
+      0 0 0 3px rgba(255, 72, 120, 0.18),
+      0 10px 24px rgba(255, 40, 96, 0.28);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.28),
+      0 8px 18px rgba(0,0,0,0.22);
+  }
+}
+
+.nb-skull-tile.nb-skull-punch {
+  animation: nbSkullPunch 260ms cubic-bezier(.18,1.2,.22,1);
+  transform-origin: 50% 50%;
+}
+
+@keyframes nbSkullPunch {
+  0% {
+    transform: scale(1);
+    filter: saturate(1.2) contrast(1.1);
+  }
+  42% {
+    transform: scale(1.1);
+    filter: saturate(1.35) contrast(1.16) brightness(1.06);
+  }
+  100% {
+    transform: scale(1);
+    filter: saturate(1.2) contrast(1.1);
+  }
+}
