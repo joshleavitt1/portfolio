@@ -28,6 +28,7 @@
       load: "load.mp3",
       skull: "skull.mp3",
       break: "break.mp3",
+      win: "win.mp3",
     };
     
     const masterVolume = {
@@ -37,6 +38,7 @@
       load: 0.9,
       skull: 0.3,
       break: 0.3,
+      win: 0.3,
     };
 
     const pools = {};
@@ -810,6 +812,7 @@
     animateGravity,
     showComboText,
     gridEl,
+    wrap,
     finish,
     sfx,
     onGameOver,
@@ -828,10 +831,6 @@ const triggerSkullScreenFX = skullFx.triggerSkullScreenFX || (() => {});
     while (true) {
       const { groups, hit } = findGroupsToClear(state, state.board);
       const skullHits = collectSkullsHitByBlast(state, hit);
-
-      console.log("hit set:", [...hit]);
-console.log("skull index:", findSkullIndex(state));
-console.log("skull hits:", skullHits);
 
       skullHits.forEach((i) => {
         hit.add(i);
@@ -907,6 +906,26 @@ await wait(140);
         await wait(460);
       }
 
+      chainStep++;
+
+      // POWER CLEAR (first pass, multiple groups)
+      if (chainStep === 1 && groups.length >= 2) {
+        showComboText("Power Clear");
+        
+        wrap.classList.remove("nb-combo-hit");
+        void wrap.offsetWidth;
+        wrap.classList.add("nb-combo-hit");
+      }
+      
+      // TRUE COMBO (chain reactions)
+      else if (chainStep >= 2) {
+        showComboText(`Combo x${chainStep}`);
+        
+        wrap.classList.remove("nb-combo-hit");
+        void wrap.offsetWidth;
+        wrap.classList.add("nb-combo-hit");
+      }
+
       if (chainStep >= 2) {
         showComboText(chainStep);
         await wait(320);
@@ -918,15 +937,6 @@ await wait(140);
     if (!skipAutoSkullSpawn && findSkullIndex(state) === -1 && state.lives > 0) {
       const skullSpawn = spawnSkullAtTop(state);
       render();
-    
-      if (skullSpawn) {
-        setTimeout(() => {
-          sfx.play("skull", {
-            volume: 0.8,
-            rate: 0.98,
-          });
-        }, 40);
-      }
     
       if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
         animateGravity(skullSpawn.moved, { chainStep: 0 });
@@ -1103,6 +1113,56 @@ await wait(140);
   function clearMount(mount) {
     mount.innerHTML = "";
     mount.classList.remove("eq-bad", "eq-shake");
+  }
+
+  function showHome(mount) {
+    mount.innerHTML = `
+      <div class="nb-home nb-page">
+        <div></div>
+  
+        <div class="nb-page-center">
+          <div class="nb-page-stack">
+            <img class="nb-home-logo nb-home-reveal-item" src="images/logo.png" alt="Blast Math" />
+          </div>
+        </div>
+  
+        <div class="nb-home-actions nb-page-actions nb-page-actions--double nb-home-reveal-group">
+          <button id="nb-classic-btn" class="nb-home-btn nb-home-btn--blue nb-home-reveal-item" type="button">
+            Classic
+          </button>
+  
+          <button id="nb-adventure-btn" class="nb-home-btn nb-home-btn--green nb-home-reveal-item" type="button">
+            Adventure
+          </button>
+        </div>
+      </div>
+    `;
+  
+    const classicBtn = mount.querySelector("#nb-classic-btn");
+    const adventureBtn = mount.querySelector("#nb-adventure-btn");
+    const logo = mount.querySelector(".nb-home-logo");
+    const homeButtons = Array.from(mount.querySelectorAll(".nb-home-btn"));
+  
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        logo?.classList.add("nb-reveal");
+      }, 90);
+  
+      setTimeout(() => {
+        homeButtons.forEach((btn) => btn.classList.add("nb-reveal"));
+      }, 270);
+    });
+  
+    classicBtn?.addEventListener("pointerdown", async () => {
+      const game = window.createNumberBlastGame({
+        config: { mount, level: 1, mode: "classic" }
+      });
+      await game.start();
+    });
+  
+    adventureBtn?.addEventListener("pointerdown", () => {
+      console.log("Adventure mode coming next.");
+    });
   }
 
   function createNumberBlastGame({ config = {}, context } = {}) {
@@ -1317,7 +1377,34 @@ let introPopPlayed = false;
           }, 320);
         }
 
-        function showComboText() {}
+        function showComboText(chainStep) {
+          if (chainStep < 2) return;
+        
+          const comboEl = document.createElement("div");
+          comboEl.className = "nb-combo-text";
+        
+          let label = `Combo ${chainStep}`;
+        
+          if (chainStep === 3) label = "Nice!";
+          if (chainStep === 4) label = "Hot!";
+          if (chainStep >= 5) label = "BLAST";
+        
+          comboEl.innerHTML = `
+            <span class="nb-combo-label">${label}</span>
+            <span class="nb-combo-number">${chainStep}</span>
+          `;
+        
+          document.querySelector(".nb-board-wrap")?.appendChild(comboEl);
+        
+          requestAnimationFrame(() => {
+            comboEl.classList.add("nb-combo-in");
+          });
+        
+          setTimeout(() => {
+            comboEl.classList.add("nb-combo-out");
+            setTimeout(() => comboEl.remove(), 300);
+          }, 700);
+        }
 
         function formatElapsed(ms) {
           const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -1422,14 +1509,13 @@ let introPopPlayed = false;
           
             renderGrid(true);
           
-            await wait(230);
+            await wait(650);
           }
         }
 
         function playBoardToWinTransition() {
           return new Promise((resolve) => {
             wrap.classList.remove("nb-win-transition");
-            wrap.style.setProperty("--nb-win-glow-ms", `${endMs(720)}ms`);
             void wrap.offsetWidth;
             wrap.classList.add("nb-win-transition");
 
@@ -1459,61 +1545,68 @@ let introPopPlayed = false;
           }
 
           wrap.innerHTML = `
-            <div class="nb-win-screen ${staged ? "is-staged" : ""}">
-              <div class="nb-win-main">
-                <div class="nb-win-level-badge-wrap ${staged ? "is-hidden" : ""}" aria-hidden="true">
-                  <div class="nb-win-level-badge">
-                    <span class="nb-win-level-number">${state.level}</span>
-                    <img class="nb-win-level-check" src="images/check.svg" alt="" />
-                  </div>
-                </div>
+            <div class="nb-win-screen nb-page ${staged ? "is-staged" : ""}">
+  <div></div>
 
-                <div class="nb-win-title ${staged ? "is-hidden" : ""}">
-                  ${isWin ? "Level<br />Complete" : "Game<br />Over"}
-                </div>
+  <div class="nb-page-center">
+    <div class="nb-win-main nb-page-stack">
+      <div class="nb-win-level-badge-wrap ${staged ? "is-hidden" : ""}" aria-hidden="true">
+        <div class="nb-win-level-badge">
+          <span class="nb-win-level-number">${state.level}</span>
+          <img class="nb-win-level-check" src="images/check.svg" alt="" />
+        </div>
+      </div>
 
-                                <div class="nb-win-stats">
-                  ${
-                    isWin
-                      ? `
-                    <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
-                      <div class="nb-win-stat-head">Speed</div>
-                      <div class="nb-win-stat-body">
-                        <img class="nb-win-stat-icon" src="images/speed.svg" alt="" />
-                        <div class="nb-win-stat-value">${formatElapsed(state.elapsedMs)}</div>
-                      </div>
-                    </div>
+      <div class="nb-win-title ${staged ? "is-hidden" : ""}">
+        ${isWin ? "Level<br />Complete" : "Game<br />Over"}
+      </div>
 
-                    <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
-                      <div class="nb-win-stat-head">Blasts</div>
-                      <div class="nb-win-stat-body">
-                        <img class="nb-win-stat-icon" src="images/blast.svg" alt="" />
-                        <div class="nb-win-stat-value">${state.levelBlasts || 0}</div>
-                      </div>
-                    </div>
-                  `
-                      : `
-                    <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
-                      <div class="nb-win-stat-head">Score</div>
-                      <div class="nb-win-stat-body nb-win-stat-body--solo">
-                        <div class="nb-win-stat-value">${state.totalScore}</div>
-                      </div>
-                    </div>
-
-                    <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
-                      <div class="nb-win-stat-head">Top Score</div>
-                      <div class="nb-win-stat-body nb-win-stat-body--solo">
-                        <div class="nb-win-stat-value">${highScore}</div>
-                      </div>
-                    </div>
-                  `
-                  }
-                </div>
-
-              <button type="button" class="nb-win-next ${staged ? "is-hidden" : ""}">
-                ${isWin ? (isLastLevel ? "Play Again" : "Next Level") : "Play Again"}
-              </button>
+      <div class="nb-win-stats">
+        ${
+          isWin
+            ? `
+          <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
+            <div class="nb-win-stat-head">Speed</div>
+            <div class="nb-win-stat-body">
+              <img class="nb-win-stat-icon" src="images/speed.svg" alt="" />
+              <div class="nb-win-stat-value">${formatElapsed(state.elapsedMs)}</div>
             </div>
+          </div>
+
+          <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
+            <div class="nb-win-stat-head">Blasts</div>
+            <div class="nb-win-stat-body">
+              <img class="nb-win-stat-icon" src="images/blast.svg" alt="" />
+              <div class="nb-win-stat-value">${state.levelBlasts || 0}</div>
+            </div>
+          </div>
+        `
+            : `
+          <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
+            <div class="nb-win-stat-head">Score</div>
+            <div class="nb-win-stat-body nb-win-stat-body--solo">
+              <div class="nb-win-stat-value">${state.totalScore}</div>
+            </div>
+          </div>
+
+          <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
+            <div class="nb-win-stat-head">Top Score</div>
+            <div class="nb-win-stat-body nb-win-stat-body--solo">
+              <div class="nb-win-stat-value">${highScore}</div>
+            </div>
+          </div>
+        `
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="nb-page-actions nb-page-actions--single">
+    <button type="button" class="nb-win-next ${staged ? "is-hidden" : ""}">
+      ${isWin ? (isLastLevel ? "Play Again" : "Next Level") : "Play Again"}
+    </button>
+  </div>
+</div>
           `;
 
           const nextBtn = wrap.querySelector(".nb-win-next");
@@ -1592,13 +1685,20 @@ let introPopPlayed = false;
 
         async function runLevelCompleteSequence() {
           lockGameInput(true);
-
+        
           await pulseProgressGoalHit();
+        
+          // 🔥 ADD THIS LINE RIGHT HERE
+          sfx.play("win", {
+            volume: 1,
+            rate: 1
+          });
+        
           spawnWinConfetti(30);
-          await wait(endMs(360));
+          await wait(endMs(1200));
 
           await explodeBoardForWinSequence();
-          await wait(endMs(120));
+          await wait(endMs(0));
 
           await playBoardToWinTransition();
 
@@ -1718,6 +1818,7 @@ let introPopPlayed = false;
             animateGravityDrop,
             showComboText,
             gridEl,
+            wrap,
             finish,
             sfx,
             runGameOverSequence,
@@ -1771,6 +1872,7 @@ let introPopPlayed = false;
             animateGravityDrop,
             showComboText,
             gridEl,
+            wrap,
             finish,
             sfx,
             runGameOverSequence,
@@ -2438,15 +2540,6 @@ if (findSkullIndex(state) === -1 && state.lives > 0) {
   const skullSpawn = spawnSkullAtTop(state);
   render(true);
 
-  if (skullSpawn) {
-    setTimeout(() => {
-      sfx.play("skull", {
-        volume: 0.8,
-        rate: 0.98,
-      });
-    }, 40);
-  }
-
   if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
     animateGravityDrop(skullSpawn.moved);
     await wait(460);
@@ -2638,9 +2731,10 @@ handLocked = false;
         }
         
 
-        function awardForGroups(groupCount) {
+        function awardForGroups(groupCount, chainStep = 1) {
           const bonus = groupCount >= 3 ? 2 : groupCount >= 2 ? 1 : 0;
-          const gained = 10 * groupCount + 15 * bonus;
+          const comboMultiplier = Math.max(1, chainStep * 0.5);
+          const gained = (10 * groupCount + 15 * bonus) * comboMultiplier;
         
           state.clears += groupCount;
           state.levelBlasts += groupCount;
@@ -2801,6 +2895,7 @@ handLocked = false;
             animateGravityDrop,
             showComboText,
             gridEl,
+            wrap,
             finish,
             sfx,
             runGameOverSequence,

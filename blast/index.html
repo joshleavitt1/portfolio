@@ -9,7 +9,7 @@
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#F7F7F7" />
+    <meta name="theme-color" content="#092C7E" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -18,30 +18,62 @@
     <script src="level-plan.js"></script>
     <script src="index.js"></script>
     <script>
-window.addEventListener("DOMContentLoaded", () => {
-  const mount = document.getElementById("game-mount");
-  if (!mount || typeof window.createNumberBlastGame !== "function") return;
-
-  mount.innerHTML = `
-    <button id="start-game-btn" style="
-      width:100%;
-      height:100%;
-      border:none;
-      background:#F7F7F7;
-      font:900 28px 'Segoe UI', sans-serif;
-      color:#021F63;
-      cursor:pointer;
-    ">
-      Tap to Start
-    </button>
-  `;
-
-  const btn = document.getElementById("start-game-btn");
-  btn.addEventListener("pointerdown", async () => {
-    const game = window.createNumberBlastGame({ config: { mount, level: 1 } });
-    await game.start();
-  }, { once: true });
-});
+      window.addEventListener("DOMContentLoaded", () => {
+        const mount = document.getElementById("game-mount");
+        if (!mount || typeof window.createNumberBlastGame !== "function") return;
+      
+        function showHome() {
+          mount.innerHTML = `
+    <div class="nb-home nb-page">
+      <div></div>
+    
+      <div class="nb-page-center">
+        <div class="nb-page-stack">
+          <img class="nb-home-logo nb-home-reveal-item" src="images/logo.png" alt="Blast Math" />
+        </div>
+      </div>
+    
+      <div class="nb-home-actions nb-page-actions nb-page-actions--double nb-home-reveal-group">
+        <button id="nb-classic-btn" class="nb-home-btn nb-home-btn--blue nb-home-reveal-item" type="button">
+          Classic
+        </button>
+    
+        <button id="nb-adventure-btn" class="nb-home-btn nb-home-btn--green nb-home-reveal-item" type="button">
+          Adventure
+        </button>
+      </div>
+    </div>
+          `;
+    
+          const classicBtn = document.getElementById("nb-classic-btn");
+          const adventureBtn = document.getElementById("nb-adventure-btn");
+          const logo = mount.querySelector(".nb-home-logo");
+          const homeButtons = Array.from(mount.querySelectorAll(".nb-home-btn"));
+    
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              logo?.classList.add("nb-reveal");
+            }, 90);
+    
+            setTimeout(() => {
+              homeButtons.forEach((btn) => btn.classList.add("nb-reveal"));
+            }, 270);
+          });
+    
+          classicBtn?.addEventListener("pointerdown", async () => {
+            const game = window.createNumberBlastGame({
+              config: { mount, level: 1, mode: "classic" }
+            });
+            await game.start();
+          });
+    
+          adventureBtn?.addEventListener("pointerdown", () => {
+            console.log("Adventure mode coming next.");
+          });
+        }
+      
+        showHome();
+      });
     </script>
   </body>
 </html>
