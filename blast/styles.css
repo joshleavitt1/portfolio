@@ -167,7 +167,7 @@ body {
 }
 
 .nb-home-logo {
-  width: min(82%, 320px);
+  width: 360px;
   max-width: 100%;
   height: auto;
   justify-self: center;
