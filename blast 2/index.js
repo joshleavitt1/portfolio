@@ -18,7 +18,7 @@
 
   const WINS_KEY = "NB_GAME_WINS";
 
-  const SOUND_PATH = "sounds";
+  const SOUND_PATH = "sounds/puzzle";
 
   function createAudioSystem() {
     const files = {
@@ -27,7 +27,7 @@
       blast: "blast.mp3",
       load: "load.mp3",
       skull: "skull.mp3",
-      break: "break.mp3",
+      win: "win.mp3",
     };
     
     const masterVolume = {
@@ -36,7 +36,7 @@
       blast: 0.3,
       load: 0.9,
       skull: 0.3,
-      break: 0.3,
+      win: 0.3,
     };
 
     const pools = {};
@@ -47,7 +47,6 @@
       const poolSize =
       key === "pickup" ? 8 :
       key === "blast" ? 6 :
-      key === "break" ? 5 :
       4;
     
       pools[key] = Array.from({ length: poolSize }, () => {
@@ -167,6 +166,21 @@
     { id: "sq4", cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }] },
   ];
 
+  const BOMB_PIECE_ID = "bomb_1";
+
+  function makeBombPiece() {
+    return {
+      id: `${BOMB_PIECE_ID}_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      shapeId: BOMB_PIECE_ID,
+      isBomb: true,
+      cells: [{ x: 0, y: 0, v: null }],
+    };
+  }
+
+  function isBombPiece(piece) {
+    return !!(piece && piece.isBomb);
+  }
+
   function syncViewportScale() {
     const root = document.documentElement;
 
@@ -187,6 +201,10 @@
 
   function clamp(n, a, b) {
     return Math.max(a, Math.min(b, n));
+  }
+
+  function safeValue(v, fallback = 1) {
+    return Number.isFinite(v) ? v : fallback;
   }
 
   function idx(state, r, c) {
@@ -229,6 +247,19 @@
     return `nb-c${v}`;
   }  
 
+  function getBoardStats(state) {
+    let filled = 0;
+  
+    for (let i = 0; i < state.board.length; i++) {
+      if (state.board[i] != null) filled++;
+    }
+  
+    return {
+      filled,
+      open: state.board.length - filled,
+    };
+  }
+
   function shapeWeight(shapeId, level) {
     if (shapeId === "s1") return level <= 2 ? 14 : 8;
     if (shapeId === "h2" || shapeId === "v2") return level <= 4 ? 10 : 8;
@@ -239,32 +270,60 @@
     return 1;
   }
 
-  function weightedPickShape(level, rules) {
+  function weightedPickShape(state, rules) {
     const allow = Array.isArray(rules?.allowShapes) ? rules.allowShapes : null;
+    const { filled, open } = getBoardStats(state);
     const candidates = [];
-
+  
+    function boardAwareWeight(shape) {
+      const shapeId = shape.id;
+  
+      // late game: 8 or fewer open spots -> prioritize singles
+      if (open <= 8) {
+        if (shapeId === "s1") return 20;
+        if (shapeId === "h2" || shapeId === "v2") return 3;
+        if (shapeId === "h3" || shapeId === "v3") return 1;
+        if (shapeId === "smartL" || /^l3[abcd]$/.test(shapeId)) return 1;
+        if (shapeId === "sq4") return 0.5;
+        return 1;
+      }
+  
+      // early game: 10 or fewer filled spots -> prioritize 2s and 3s
+      if (filled <= 10) {
+        if (shapeId === "s1") return 2;
+        if (shapeId === "h2" || shapeId === "v2") return 12;
+        if (shapeId === "h3" || shapeId === "v3") return 10;
+        if (shapeId === "smartL" || /^l3[abcd]$/.test(shapeId)) return 8;
+        if (shapeId === "sq4") return 4;
+        return 1;
+      }
+  
+      // default / mid game
+      return shapeWeight(shapeId, state.level);
+    }
+  
     for (const shape of SHAPES) {
       if (allow && !allow.includes(shape.id)) continue;
-      const wt = shapeWeight(shape.id, level);
+      const wt = boardAwareWeight(shape);
       if (wt > 0) candidates.push({ shape, wt });
     }
-
+  
     if (!candidates.length) {
       for (const shape of SHAPES) {
-        const wt = shapeWeight(shape.id, level);
+        const wt = boardAwareWeight(shape);
         if (wt > 0) candidates.push({ shape, wt });
       }
     }
-
+  
     let total = 0;
     for (const c of candidates) total += c.wt;
+  
     let r = Math.random() * total;
-
     for (const c of candidates) {
       r -= c.wt;
       if (r <= 0) return c.shape;
     }
-
+  
     return candidates[candidates.length - 1].shape;
   }
 
@@ -344,7 +403,7 @@
       if (forced) return forced;
     }
   
-    let shape = weightedPickShape(state.level, state.rules);
+    let shape = weightedPickShape(state, state.rules);
   
     if (shape.id === "smartL") {
       shape = pickBestLShapeForBoard(state);
@@ -355,8 +414,24 @@
     return {
       id: `${shape.id}_${Date.now()}_${Math.random().toString(16).slice(2)}`,
       shapeId: shape.id,
-      cells: norm.map((p) => ({ x: p.x, y: p.y, v: randTileValue(state) })),
+      cells: norm.map((p) => ({
+        x: p.x,
+        y: p.y,
+        v: safeValue(randTileValue(state)),
+      })),
     };
+  }
+
+  function pieceSegmentCount(piece) {
+    return Array.isArray(piece?.cells) ? piece.cells.length : 0;
+  }
+  
+  function isThreeSegmentPiece(piece) {
+    return pieceSegmentCount(piece) === 3;
+  }
+  
+  function isTwoSegmentPiece(piece) {
+    return pieceSegmentCount(piece) === 2;
   }
 
   function pieceBounds(piece) {
@@ -370,45 +445,30 @@
   }
 
   function handAllowedWithCandidate(hand, candidate) {
-    const cB = pieceBounds(candidate);
-    const hasW3 = hand.some((p) => pieceBounds(p).w >= 3) || cB.w >= 3;
-    const hasH3 = hand.some((p) => pieceBounds(p).h >= 3) || cB.h >= 3;
+    const all = [...hand, candidate];
   
-    const all = hand.slice();
-    all.push(candidate);
+    const threeSegmentCount = all.filter(isThreeSegmentPiece).length;
+    const twoSegmentCount = all.filter(isTwoSegmentPiece).length;
   
-    // never allow more than one exact h2 piece in hand
-    if (all.filter((p) => p.shapeId === "h2").length > 1) return false;
-  
-    if (hasW3) {
-      if (all.filter((p) => pieceBounds(p).w >= 2).length > 1) return false;
-    }
-  
-    if (hasH3) {
-      if (all.filter((p) => pieceBounds(p).h >= 2).length > 1) return false;
-    }
+    if (threeSegmentCount > 1) return false;
+    if (twoSegmentCount > 2) return false;
   
     return true;
   }
 
-  function generateHand(state, handSize = HAND_SIZE, maxLargePieces = 1) {
-    const targetHandSize = 3;
+  function generateHand(state, handSize = HAND_SIZE) {
+    const targetHandSize = handSize;
     const hand = [];
-    let largeCount = 0;
   
     for (let i = 0; i < targetHandSize; i++) {
       let piece = null;
   
       for (let tries = 0; tries < 80; tries++) {
         const candidate = makePiece(state);
-        const b = pieceBounds(candidate);
-        const isLarge = b.w >= 3 || b.h >= 3;
   
-        if (isLarge && largeCount >= maxLargePieces) continue;
         if (!handAllowedWithCandidate(hand, candidate)) continue;
   
         piece = candidate;
-        if (isLarge) largeCount++;
         break;
       }
   
@@ -424,7 +484,32 @@
     }
   
     return hand;
-  }  
+  }
+
+  function makeHandReplacement(state, hand, replaceIndex) {
+    const otherPieces = hand.filter((_, i) => i !== replaceIndex);
+
+    if (state.forceBombNextReplacement) {
+      state.forceBombNextReplacement = false;
+      return makeBombPiece();
+    }
+
+    for (let tries = 0; tries < 80; tries++) {
+      const candidate = makePiece(state, { forceClearNow: false });
+
+      if (!handAllowedWithCandidate(otherPieces, candidate)) {
+        continue;
+      }
+
+      return candidate;
+    }
+
+    return {
+      id: `fallback_s1_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      shapeId: "s1",
+      cells: [{ x: 0, y: 0, v: randTileValue(state) }],
+    };
+  }
   
   function hasLevelWin(state) {
     return state.levelScore >= state.levelGoal;
@@ -435,14 +520,28 @@
     return Math.max(0, Math.min(100, (state.levelScore / goal) * 100));
   }
   
-  function makeGameState(level) {
+  function makeGameState(level, battleConfig = null) {
+    const adventureStats = getAdventureCharacterStats();
     const savedDifficulty = clamp(Number(level) || 1, 1, LEVEL_MAX);
-    const difficultyRules = window.NumberBlastLevelPlan?.getNumberBlastRules(savedDifficulty) || null;
-    const difficultySize = difficultyRules?.boardSize ?? DEFAULT_SIZE;
+  
+    const plannedRules =
+      window.NumberBlastLevelPlan?.getNumberBlastRules(savedDifficulty) || {};
+  
+    const difficultyRules = {
+      ...plannedRules,
+      ...(battleConfig || {}),
+    };
+  
+    const difficultySize = difficultyRules.boardSize ?? DEFAULT_SIZE;
   
     const st = {
       level: savedDifficulty,
-      lives: STARTING_LIVES,
+      lives: adventureStats.currentHearts,
+      maxLives: adventureStats.maxHearts,
+      heroAttack: adventureStats.attack,
+      heroArmor: adventureStats.armor,
+      heroCombo: adventureStats.combo,
+      armorBlocksRemaining: Math.max(0, (adventureStats.armor || 1) - 1),
       forcedSolveCounter: 0,
       size: difficultySize,
       board: Array(difficultySize * difficultySize).fill(null),
@@ -455,17 +554,44 @@
       levelStartedAt: Date.now(),
   
       wins: readWins(),
-      numberMin: difficultyRules?.numberMin ?? 1,
-      numberMax: difficultyRules?.numberMax ?? levelNumberMax(savedDifficulty),
-      targetSum: difficultyRules?.target ?? 10,
-      levelGoal: difficultyRules?.pointsGoal ?? 120,
-      rules: difficultyRules || {},
+      comboCarry: 0,
+      numberMin: difficultyRules.numberMin ?? 1,
+      numberMax: difficultyRules.numberMax ?? levelNumberMax(savedDifficulty),
+      targetSum: difficultyRules.target ?? 10,
+      levelGoal: difficultyRules.pointsGoal ?? 120,
+      rules: difficultyRules,
     };
   
-    const handSize = difficultyRules?.handSize ?? HAND_SIZE;
-    const maxLargePieces = difficultyRules?.maxLargePieces ?? 1;
-    st.hand = generateHand(st, handSize, maxLargePieces);
+    const handSize = difficultyRules.handSize ?? HAND_SIZE;
+    st.hand = generateHand(st, handSize);
     return st;
+  }
+
+  function getAdventureCharacterStats() {
+    const adventureApi = window.BlastAdventureData;
+    if (!adventureApi?.loadState || !adventureApi?.getCharacterProgress) {
+      return {
+        currentHearts: STARTING_LIVES,
+        maxHearts: STARTING_LIVES,
+        attack: 1,
+        armor: 1,
+        combo: 1,
+      };
+    }
+
+    const adventureState = adventureApi.loadState();
+    const character = adventureApi.getCharacterProgress(
+      adventureState,
+      adventureState.selectedCharacterId || "knight"
+    );
+
+    return {
+      currentHearts: Number.isFinite(character.currentHearts) ? character.currentHearts : STARTING_LIVES,
+      maxHearts: Number.isFinite(character.maxHearts) ? character.maxHearts : STARTING_LIVES,
+      attack: Number.isFinite(character.attack) ? character.attack : 1,
+      armor: Number.isFinite(character.armor) ? character.armor : 1,
+      combo: Number.isFinite(character.combo) ? character.combo : 1,
+    };
   }
 
   function fillBoardFully(state) {
@@ -593,7 +719,10 @@
       const cells = normalizePieceCells(shape.cells).map((cell, cellIndex) => ({
         x: cell.x,
         y: cell.y,
-        v: clamp(Number(pieceDef?.values?.[cellIndex]) || 1, 1, 9),
+        v: safeValue(
+          clamp(Number(pieceDef?.values?.[cellIndex]), 1, 9),
+          1
+        ),
       }));
 
       return {
@@ -626,7 +755,7 @@
       while (start < indices.length) {
         while (
           start < indices.length &&
-          (!board[indices[start]] || isSkullCell(board[indices[start]]))
+          (!board[indices[start]] || isSkullCell(board[indices[start]]) || isBombCell(board[indices[start]]))
         ) {
           start++;
         }
@@ -637,7 +766,7 @@
         while (
           end < indices.length &&
           board[indices[end]] &&
-          !isSkullCell(board[indices[end]])
+          !isSkullCell(board[indices[end]]) && !isBombCell(board[indices[end]])
         ) {
           end++;
         }
@@ -647,7 +776,7 @@
     
           for (let j = i; j < end; j++) {
             const cell = board[indices[j]];
-            if (!cell || isSkullCell(cell)) break;
+            if (!cell || isSkullCell(cell) || isBombCell(cell)) break;
     
             sum += cell.v;
             const len = j - i + 1;
@@ -677,6 +806,29 @@
   }
 
   function clearHitCells(state, hitSet) {
+    hitSet.forEach((i) => {
+      state.board[i] = null;
+    });
+  }
+
+  function collectBombCrossHitSet(state, originIndex) {
+    const hit = new Set();
+    const origin = rc(state, originIndex);
+
+    for (let c = 0; c < state.size; c++) {
+      const i = idx(state, origin.r, c);
+      if (state.board[i] != null) hit.add(i);
+    }
+
+    for (let r = 0; r < state.size; r++) {
+      const i = idx(state, r, origin.c);
+      if (state.board[i] != null) hit.add(i);
+    }
+
+    return hit;
+  }
+
+  function clearHitCellsNoSkullPenalty(state, hitSet) {
     hitSet.forEach((i) => {
       state.board[i] = null;
     });
@@ -720,6 +872,10 @@
 
   function isSkullCell(cell) {
     return !!(cell && cell.kind === "skull");
+  }
+
+  function isBombCell(cell) {
+    return !!(cell && cell.kind === "bomb");
   }
   
   function findSkullIndex(state) {
@@ -780,6 +936,11 @@
   }
   
   function damageLifeFromSkull(state) {
+    if ((state.armorBlocksRemaining || 0) > 0) {
+      state.armorBlocksRemaining -= 1;
+      return state.lives;
+    }
+
     state.lives = Math.max(0, state.lives - 1);
     return state.lives;
   }
@@ -803,6 +964,45 @@
     return candidates.slice(0, count);
   }
 
+  async function resolveBombDetonation(
+    state,
+    bombIndex,
+    render,
+    animateBlast,
+    animateGravity,
+    gridEl,
+    sfx
+  ) {
+    const hit = collectBombCrossHitSet(state, bombIndex);
+
+    if (!hit.size) return { totalCleared: 0 };
+
+    animateBlast(hit, { chainStep: 1, groupCount: hit.size });
+    sfx.playBlast(Math.max(2, hit.size), 1);
+
+    await wait(ROW_EXPLODE_MS + 80);
+
+    clearHitCellsNoSkullPenalty(state, hit);
+
+    gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
+      el.classList.remove("nb-explode-source-hide");
+    });
+
+    render();
+
+    await wait(140);
+
+    const moved = applyGravity(state);
+    render();
+
+    if (moved.length) {
+      animateGravity(moved, { chainStep: 1 });
+      await wait(460);
+    }
+
+    return { totalCleared: hit.size };
+  }
+
   async function resolveBoardChains(
     state,
     render,
@@ -810,123 +1010,148 @@
     animateGravity,
     showComboText,
     gridEl,
+    wrap,
     finish,
     sfx,
     onGameOver,
     skullFx = {},
     opts = {}
   ) {
-
-    let totalBlasts = 0;
-    let chainStep = 0;
-
+    let totalGroups = 0;
+    let chainCount = 0;
+    let hadAnySkullHit = false;
+    let firstWaveGroupCount = 0;
+  
     const skipAutoSkullSpawn = !!opts.skipAutoSkullSpawn;
-
+  
     const triggerSkullTilePunch = skullFx.triggerSkullTilePunch || (() => {});
-const triggerSkullScreenFX = skullFx.triggerSkullScreenFX || (() => {});
-
+    const triggerSkullScreenFX = skullFx.triggerSkullScreenFX || (() => {});
+  
     while (true) {
       const { groups, hit } = findGroupsToClear(state, state.board);
-      const skullHits = collectSkullsHitByBlast(state, hit);
-
-      console.log("hit set:", [...hit]);
-console.log("skull index:", findSkullIndex(state));
-console.log("skull hits:", skullHits);
-
-      skullHits.forEach((i) => {
-        hit.add(i);
-      });
       if (!groups.length) break;
-
-      chainStep += 1;
-      totalBlasts += groups.length;
-      animateBlast(hit, { chainStep, groupCount: groups.length });
-      
-      if (!skullHits.length) {
-        sfx.playBlast(groups.length, chainStep);
+  
+      const waveNumber = chainCount + 1;
+      const skullHits = collectSkullsHitByBlast(state, hit);
+  
+      skullHits.forEach((i) => hit.add(i));
+  
+      if (waveNumber === 1) {
+        firstWaveGroupCount = groups.length;
       }
-      
-      const hadSkullHit = skullHits.length > 0;
-
-if (hadSkullHit) {
-  triggerSkullTilePunch();
-}
-
-await wait(ROW_EXPLODE_MS + 80);
-
-clearHitCells(state, hit);
-
-if (hadSkullHit) {
-  setTimeout(() => {
-    sfx.play("skull", {
-      volume: 1,
-      rate: 0.92 + Math.random() * 0.06,
-    });
-  }, 40);
-
-  damageLifeFromSkull(state);
-}
-
-gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
-  el.classList.remove("nb-explode-source-hide");
-});
-
-render();
-
-if (hadSkullHit) {
-  await wait(16);
-  triggerSkullScreenFX();
-  await wait(220);
-}
-
-if (state.lives <= 0) {
-  if (typeof onGameOver === "function") {
-    await onGameOver({
-      reason: "out-of-lives",
-      score: state.totalScore,
-      wins: state.wins,
-    });
-  } else {
-    finish("lose", {
-      reason: "out-of-lives",
-      score: state.totalScore,
-      wins: state.wins,
-    });
-  }
-
-  return totalBlasts;
-}
-
-await wait(140);
-
+  
+      chainCount += 1;
+      totalGroups += groups.length;
+  
+      const hadSkullHitThisWave = skullHits.length > 0;
+      if (hadSkullHitThisWave) {
+        hadAnySkullHit = true;
+        triggerSkullTilePunch();
+      }
+  
+      animateBlast(hit, { chainStep: waveNumber, groupCount: groups.length });
+  
+      if (!hadSkullHitThisWave) {
+        sfx.playBlast(groups.length, waveNumber);
+      }
+  
+      await wait(ROW_EXPLODE_MS + 80);
+  
+      clearHitCells(state, hit);
+  
+      if (hadSkullHitThisWave) {
+        setTimeout(() => {
+          sfx.play("skull", {
+            volume: 1,
+            rate: 0.92 + Math.random() * 0.06,
+          });
+        }, 40);
+  
+        damageLifeFromSkull(state);
+      }
+  
+      gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
+        el.classList.remove("nb-explode-source-hide");
+      });
+  
+      render();
+  
+      if (hadSkullHitThisWave) {
+        await wait(16);
+        triggerSkullScreenFX();
+        await wait(220);
+      }
+  
+      if (state.lives <= 0) {
+        if (typeof onGameOver === "function") {
+          await onGameOver({
+            reason: "out-of-lives",
+            score: state.totalScore,
+            wins: state.wins,
+          });
+        } else {
+          finish("lose", {
+            reason: "out-of-lives",
+            score: state.totalScore,
+            wins: state.wins,
+          });
+        }
+  
+        return {
+          totalGroups,
+          chainCount,
+          hadAnySkullHit,
+          firstWaveGroupCount,
+        };
+      }
+  
+      await wait(140);
+  
       const moved = applyGravity(state);
       render();
-
+  
       if (moved.length) {
-        animateGravity(moved, { chainStep });
+        animateGravity(moved, { chainStep: waveNumber });
         await wait(460);
       }
-
-      if (chainStep >= 2) {
-        showComboText(chainStep);
-        await wait(320);
-      } else {
-        await wait(200);
+    }
+  
+    if (!hadAnySkullHit) {
+      const comboBase = opts.comboCarry || 0;
+      const visibleChainCount = chainCount > 0 ? chainCount + comboBase : 0;
+    
+      if (visibleChainCount >= 2) {
+        showComboText({ type: "combo", chainStep: visibleChainCount });
+    
+        wrap.classList.remove("nb-combo-hit");
+        void wrap.offsetWidth;
+        wrap.classList.add("nb-combo-hit");
+      } else if (chainCount === 1 && firstWaveGroupCount >= 2) {
+        showComboText({ type: "power" });
+    
+        wrap.classList.remove("nb-combo-hit");
+        void wrap.offsetWidth;
+        wrap.classList.add("nb-combo-hit");
       }
     }
-
+  
     if (!skipAutoSkullSpawn && findSkullIndex(state) === -1 && state.lives > 0) {
       const skullSpawn = spawnSkullAtTop(state);
       render();
-    
+  
       if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
         animateGravity(skullSpawn.moved, { chainStep: 0 });
         await wait(460);
         render();
       }
     }
-
-    return totalBlasts;
+  
+    return {
+      totalGroups,
+      chainCount,
+      hadAnySkullHit,
+      firstWaveGroupCount,
+    };
   }
 
   function wouldClearAfterPlacement(state, anchor, piece) {
@@ -1154,7 +1379,13 @@ let introPopPlayed = false;
           if (finished) return;
           finished = true;
 
-          queueMicrotask(() => resolve({ outcome, ...extra }));
+          queueMicrotask(() =>
+            resolve({
+              outcome,
+              remainingLives: state.lives,
+              ...extra,
+            })
+          );
 
           setTimeout(() => {
             destroy();
@@ -1178,15 +1409,11 @@ let introPopPlayed = false;
         const wrap = document.createElement("div");
         wrap.className = "nb-wrap";
         mount.appendChild(wrap);
-
-        const top = document.createElement("div");
-        top.className = "nb-topbar";
-        wrap.appendChild(top);
-
-        const scoreBlock = document.createElement("div");
-        scoreBlock.className = "nb-top-score-block";
-        wrap.appendChild(scoreBlock);
-
+        
+        const hud = document.createElement("div");
+        hud.className = "nb-hud";
+        wrap.appendChild(hud);
+        
         const boardWrap = document.createElement("div");
         boardWrap.className = "nb-board-wrap";
         wrap.appendChild(boardWrap);
@@ -1198,17 +1425,20 @@ let introPopPlayed = false;
         const gridEl = document.createElement("div");
         gridEl.className = "nb-grid";
         boardWrap.appendChild(gridEl);
-
-        const handEl = document.createElement("div");
-        handEl.className = "nb-hand";
+        
         const handRail = document.createElement("div");
         handRail.className = "nb-hand-rail";
+        
+        const handEl = document.createElement("div");
+        handEl.className = "nb-hand";
+        
         handRail.appendChild(handEl);
         wrap.appendChild(handRail);
 
-        const state = makeGameState(level);
+        const state = makeGameState(level, config.battleConfig || null);
 
         const sfx = createAudioSystem();
+        sfx.setMuted(true);
         
         let lastProgressPct = 0;
 
@@ -1235,8 +1465,7 @@ let introPopPlayed = false;
           }
         
           const handSize = latestRules.handSize ?? HAND_SIZE;
-          const maxLargePieces = latestRules.maxLargePieces ?? 1;
-          state.hand = generateHand(state, handSize, maxLargePieces);
+          state.hand = generateHand(state, handSize);
           ensurePlayableHand(state, 24);
         
           shouldAnimateBoardSpawn = false;
@@ -1253,24 +1482,6 @@ let introPopPlayed = false;
         function shakeBad() {
           restartClass(mount, "eq-bad");
           restartClass(mount, "eq-shake");
-        }
-
-        function triggerSkullScreenFX() {
-          wrap.classList.remove("nb-skull-hit");
-          void wrap.offsetWidth;
-          wrap.classList.add("nb-skull-hit");
-        
-          const livesBox = top.querySelector(".nb-hud-box--lives");
-          if (livesBox) {
-            livesBox.classList.remove("nb-lives-hit");
-            void livesBox.offsetWidth;
-            livesBox.classList.add("nb-lives-hit");
-          }
-        
-          setTimeout(() => {
-            wrap.classList.remove("nb-skull-hit");
-            if (livesBox) livesBox.classList.remove("nb-lives-hit");
-          }, 320);
         }
         
         function triggerSkullTilePunch() {
@@ -1293,7 +1504,7 @@ let introPopPlayed = false;
         
           wrap.classList.add("nb-skull-hit");
         
-          const livesBox = top.querySelector(".nb-hud-box--lives");
+          const livesBox = hud.querySelector(".nb-hud-box--lives");
           if (livesBox) {
             livesBox.classList.remove("nb-lives-hit");
             void livesBox.offsetWidth;
@@ -1308,7 +1519,38 @@ let introPopPlayed = false;
           }, 320);
         }
 
-        function showComboText() {}
+        function showComboText({ type, chainStep = 1 }) {
+          const comboEl = document.createElement("div");
+          comboEl.className = "nb-combo-text";
+        
+          if (type === "power") {
+            comboEl.innerHTML = `
+              <span class="nb-combo-line">
+                <span class="nb-combo-label">POWER CLEAR</span>
+              </span>
+            `;
+          }
+        
+          if (type === "combo") {
+            comboEl.innerHTML = `
+              <span class="nb-combo-line">
+                <span class="nb-combo-label">COMBO</span>
+                <span class="nb-combo-number">x${chainStep}</span>
+              </span>
+            `;
+          }
+        
+          document.querySelector(".nb-board-wrap")?.appendChild(comboEl);
+        
+          requestAnimationFrame(() => {
+            comboEl.classList.add("nb-combo-in");
+          });
+        
+          setTimeout(() => {
+            comboEl.classList.add("nb-combo-out");
+            setTimeout(() => comboEl.remove(), 320);
+          }, 700);
+        }
 
         function formatElapsed(ms) {
           const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -1322,9 +1564,9 @@ let introPopPlayed = false;
         }
 
         function spawnWinConfetti(count = 26) {
-          const progressFill = scoreBlock.querySelector(".nb-level-progress-fill");
-          const progressTrack = scoreBlock.querySelector(".nb-level-progress");
-          const originEl = progressFill || progressTrack || scoreBlock;
+          const progressFill = hud.querySelector(".nb-level-progress-fill");
+          const progressTrack = hud.querySelector(".nb-level-progress");
+          const originEl = progressFill || progressTrack || hud;
 
           if (!originEl) return;
 
@@ -1362,7 +1604,7 @@ let introPopPlayed = false;
 
         function pulseProgressGoalHit() {
           return new Promise((resolve) => {
-            const fill = scoreBlock.querySelector(".nb-level-progress-fill");
+            const fill = hud.querySelector(".nb-level-progress-fill");
             if (!fill) {
               resolve();
               return;
@@ -1413,14 +1655,13 @@ let introPopPlayed = false;
           
             renderGrid(true);
           
-            await wait(230);
+            await wait(650);
           }
         }
 
         function playBoardToWinTransition() {
           return new Promise((resolve) => {
             wrap.classList.remove("nb-win-transition");
-            wrap.style.setProperty("--nb-win-glow-ms", `${endMs(720)}ms`);
             void wrap.offsetWidth;
             wrap.classList.add("nb-win-transition");
 
@@ -1450,61 +1691,68 @@ let introPopPlayed = false;
           }
 
           wrap.innerHTML = `
-            <div class="nb-win-screen ${staged ? "is-staged" : ""}">
-              <div class="nb-win-main">
-                <div class="nb-win-level-badge-wrap ${staged ? "is-hidden" : ""}" aria-hidden="true">
-                  <div class="nb-win-level-badge">
-                    <span class="nb-win-level-number">${state.level}</span>
-                    <img class="nb-win-level-check" src="images/check.svg" alt="" />
-                  </div>
-                </div>
+            <div class="nb-win-screen nb-page ${staged ? "is-staged" : ""}">
+  <div></div>
 
-                <div class="nb-win-title ${staged ? "is-hidden" : ""}">
-                  ${isWin ? "Level<br />Complete" : "Game<br />Over"}
-                </div>
+  <div class="nb-page-center">
+    <div class="nb-win-main nb-page-stack">
+      <div class="nb-win-level-badge-wrap ${staged ? "is-hidden" : ""}" aria-hidden="true">
+        <div class="nb-win-level-badge">
+          <span class="nb-win-level-number">${state.level}</span>
+          <img class="nb-win-level-check" src="images/puzzle/check.svg" alt="" />
+        </div>
+      </div>
 
-                                <div class="nb-win-stats">
-                  ${
-                    isWin
-                      ? `
-                    <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
-                      <div class="nb-win-stat-head">Speed</div>
-                      <div class="nb-win-stat-body">
-                        <img class="nb-win-stat-icon" src="images/speed.svg" alt="" />
-                        <div class="nb-win-stat-value">${formatElapsed(state.elapsedMs)}</div>
-                      </div>
-                    </div>
+      <div class="nb-win-title ${staged ? "is-hidden" : ""}">
+        ${isWin ? "Level<br />Complete" : "Game<br />Over"}
+      </div>
 
-                    <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
-                      <div class="nb-win-stat-head">Blasts</div>
-                      <div class="nb-win-stat-body">
-                        <img class="nb-win-stat-icon" src="images/blast.svg" alt="" />
-                        <div class="nb-win-stat-value">${state.levelBlasts || 0}</div>
-                      </div>
-                    </div>
-                  `
-                      : `
-                    <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
-                      <div class="nb-win-stat-head">Score</div>
-                      <div class="nb-win-stat-body nb-win-stat-body--solo">
-                        <div class="nb-win-stat-value">${state.totalScore}</div>
-                      </div>
-                    </div>
-
-                    <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
-                      <div class="nb-win-stat-head">Top Score</div>
-                      <div class="nb-win-stat-body nb-win-stat-body--solo">
-                        <div class="nb-win-stat-value">${highScore}</div>
-                      </div>
-                    </div>
-                  `
-                  }
-                </div>
-
-              <button type="button" class="nb-win-next ${staged ? "is-hidden" : ""}">
-                ${isWin ? (isLastLevel ? "Play Again" : "Next Level") : "Play Again"}
-              </button>
+      <div class="nb-win-stats">
+        ${
+          isWin
+            ? `
+          <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
+            <div class="nb-win-stat-head">Speed</div>
+            <div class="nb-win-stat-body">
+              <img class="nb-win-stat-icon" src="images/puzzle/speed.svg" alt="" />
+              <div class="nb-win-stat-value">${formatElapsed(state.elapsedMs)}</div>
             </div>
+          </div>
+
+          <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
+            <div class="nb-win-stat-head">Blasts</div>
+            <div class="nb-win-stat-body">
+              <img class="nb-win-stat-icon" src="images/puzzle/blast.svg" alt="" />
+              <div class="nb-win-stat-value">${state.levelBlasts || 0}</div>
+            </div>
+          </div>
+        `
+            : `
+          <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
+            <div class="nb-win-stat-head">Score</div>
+            <div class="nb-win-stat-body nb-win-stat-body--solo">
+              <div class="nb-win-stat-value">${state.totalScore}</div>
+            </div>
+          </div>
+
+          <div class="nb-win-stat-card ${staged ? "is-hidden" : ""}">
+            <div class="nb-win-stat-head">Top Score</div>
+            <div class="nb-win-stat-body nb-win-stat-body--solo">
+              <div class="nb-win-stat-value">${highScore}</div>
+            </div>
+          </div>
+        `
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="nb-page-actions nb-page-actions--single">
+    <button type="button" class="nb-win-next ${staged ? "is-hidden" : ""}">
+      ${isWin ? (isLastLevel ? "Play Again" : "Next Level") : "Play Again"}
+    </button>
+  </div>
+</div>
           `;
 
           const nextBtn = wrap.querySelector(".nb-win-next");
@@ -1525,6 +1773,7 @@ let introPopPlayed = false;
             queueMicrotask(() =>
               onResolved({
                 outcome: mode,
+                remainingLives: state.lives,
                 score: state.totalScore,
                 level: state.level,
                 nextLevel: isWin ? (isLastLevel ? 1 : nextLevel) : 1,
@@ -1583,13 +1832,20 @@ let introPopPlayed = false;
 
         async function runLevelCompleteSequence() {
           lockGameInput(true);
-
+        
           await pulseProgressGoalHit();
+        
+          // 🔥 ADD THIS LINE RIGHT HERE
+          sfx.play("win", {
+            volume: 1,
+            rate: 1
+          });
+        
           spawnWinConfetti(30);
-          await wait(endMs(360));
+          await wait(endMs(1200));
 
           await explodeBoardForWinSequence();
-          await wait(endMs(120));
+          await wait(endMs(0));
 
           await playBoardToWinTransition();
 
@@ -1629,35 +1885,39 @@ let introPopPlayed = false;
           addScore(amount = 50) {
             state.levelScore += amount;
             state.totalScore += amount;
-            updateTopbar();
+            updateHud();
         
             lastProgressPct = getLevelProgressPct(state);
+          },
+
+          giveBomb() {
+            state.forceBombNextReplacement = true;
           },
         
           setLevelScore(value = 0) {
             state.levelScore = Math.max(0, value);
-            updateTopbar();
+            updateHud();
           },
         
           setProgress(value = 0) {
             state.levelScore = Math.max(0, Math.min(value, state.levelGoal));
-            updateTopbar();
+            updateHud();
           },
         
           addProgress(amount = 10) {
             state.levelScore = Math.min(state.levelGoal, state.levelScore + amount);
             state.totalScore += amount;
-            updateTopbar();
+            updateHud();
           },
         
           setLives(value = 1) {
             state.lives = Math.max(0, Number(value) || 0);
-            updateTopbar();
+            updateHud();
           },
         
           winLevel() {
             state.levelScore = state.levelGoal;
-            updateTopbar();
+            updateHud();
             showEndScreen({ mode: "win" });
           },
         
@@ -1669,7 +1929,7 @@ let introPopPlayed = false;
             state.levelScore = 0;
             state.levelBlasts = 0;
             state.levelStartedAt = Date.now();
-            updateTopbar();
+            updateHud();
           },
         };
 
@@ -1679,10 +1939,7 @@ let introPopPlayed = false;
 
           const hit = new Set(picks);
           animateRowExplode(hit, { chainStep: 1, groupCount: hit.size });
-          sfx.play("break", {
-            volume: 1,
-            rate: 0.98 + Math.random() * 0.04,
-          });
+          sfx.playBlast(hit.size, 1);
           await wait(ROW_EXPLODE_MS + 80);
 
           clearHitCells(state, hit);
@@ -1702,13 +1959,14 @@ let introPopPlayed = false;
             await wait(460);
           }
 
-          const blasts = await resolveBoardChains(
+          const chainResult = await resolveBoardChains(
             state,
             render,
             animateRowExplode,
             animateGravityDrop,
             showComboText,
             gridEl,
+            wrap,
             finish,
             sfx,
             runGameOverSequence,
@@ -1716,17 +1974,20 @@ let introPopPlayed = false;
               triggerSkullTilePunch,
               triggerSkullScreenFX,
             },
-            { skipAutoSkullSpawn: true }
+            {
+              skipAutoSkullSpawn: true,
+              comboCarry: 1,
+            }
           );
-
-          if (blasts > 0) {
-            awardForGroups(blasts);
-            updateTopbar();
+          
+          if (chainResult.totalGroups > 0) {
+            awardForGroups(chainResult.totalGroups, chainResult.chainCount);
+            updateHud();
             popBigScore();
-            burstScoreStars(blasts);
+            burstScoreStars(chainResult.totalGroups);
           }
-
-          return hit.size + blasts;
+          
+          return hit.size + chainResult.totalGroups;
         }
 
         async function explodeRandomSupportedBlocks(count = 3) {
@@ -1755,13 +2016,14 @@ let introPopPlayed = false;
             await wait(460);
           }
         
-          const blasts = await resolveBoardChains(
+          const chainResult = await resolveBoardChains(
             state,
             render,
             animateRowExplode,
             animateGravityDrop,
             showComboText,
             gridEl,
+            wrap,
             finish,
             sfx,
             runGameOverSequence,
@@ -1770,12 +2032,12 @@ let introPopPlayed = false;
               triggerSkullScreenFX,
             }
           );
-        
-          if (blasts > 0) {
-            awardForGroups(blasts);
-            updateTopbar();
+          
+          if (chainResult.totalGroups > 0) {
+            awardForGroups(chainResult.totalGroups, chainResult.chainCount);
+            updateHud();
             popBigScore();
-            burstScoreStars(blasts);
+            burstScoreStars(chainResult.totalGroups);
           }
         
           return hit.size;
@@ -1972,69 +2234,52 @@ let introPopPlayed = false;
                 });
               }
         
-              tile.className = `nb-tile is-filled ${getNumberColorClass(piece.cells[k].v)}`;
-              tile.textContent = String(piece.cells[k].v);
+              if (isBombPiece(piece)) {
+                tile.className = "nb-tile is-filled nb-bomb-tile";
+                tile.textContent = "";
+              } else {
+                tile.className = `nb-tile is-filled ${getNumberColorClass(piece.cells[k].v)}`;
+                tile.textContent = String(piece.cells[k].v);
+              }
+
               tile.setAttribute("data-preview", "1");
             }
           }
         }
 
-        function updateTopbar() {
-          const highScore = readNumber("NB_HIGH_SCORE", 0);
-          const progressPct = getLevelProgressPct(state);
+        function updateHud() {
+          const enemyName = config.enemyName || "Dragon";
+          const enemySprite = config.enemySprite || "images/adventure/monster/dragon.svg";
+          const heroName = config.heroName || "Knight";
+          const heroSprite = config.heroSprite || "images/adventure/hero/knight.svg";
         
-          if (!top.querySelector(".nb-hud")) {
-            top.innerHTML = `
-              <div class="nb-hud">
-                <div class="nb-hud-row">
-                  <div class="nb-hud-box nb-hud-box--score" aria-label="High score">
-                    <span class="nb-hud-box-icon nb-hud-box-icon--crown"></span>
-                    <span class="nb-hud-box-value nb-hud-box-value--score">0</span>
-                  </div>
-          
-                  <div class="nb-hud-box nb-hud-box--lives" aria-label="Lives">
-                    <span class="nb-hud-box-icon nb-hud-box-icon--heart"></span>
-                    <span class="nb-hud-box-value nb-hud-box-value--lives">0</span>
-                  </div>
-                </div>
+          const heroHpMax = Math.max(1, state.maxLives || STARTING_LIVES);
+          const heroHpNow = Math.max(0, state.lives);
+          const heroHpPct = Math.max(0, Math.min(100, (heroHpNow / heroHpMax) * 100));
+        
+          const enemyHpMax = Math.max(1, Number(state.levelGoal) || 1);
+          const enemyHpNow = Math.max(0, enemyHpMax - state.levelScore);
+          const enemyHpPct = Math.max(0, Math.min(100, (enemyHpNow / enemyHpMax) * 100));
+        
+          hud.innerHTML = `
+          <div class="nb-battle-hud">
+            <div class="nb-battle-hud-side nb-battle-hud-side--hero">
+              <img class="nb-battle-hud-sprite nb-battle-hud-sprite--hero" src="${heroSprite}" alt="${heroName}" />
+              <div class="nb-battle-hud-name">${heroName}</div>
+              <div class="nb-battle-hp">
+                <div class="nb-battle-hp-fill" style="width:${heroHpPct}%"></div>
               </div>
-            `;
-          }
-          
-          if (!scoreBlock.querySelector(".nb-big-score-wrap")) {
-            scoreBlock.innerHTML = `
-              <div class="nb-big-score-wrap">
-                <div class="nb-big-score" aria-label="Current points">0</div>
-          
-                <div class="nb-level-progress" aria-label="Level progress">
-                  <div class="nb-level-progress-fill"></div>
-                </div>
+            </div>
+        
+            <div class="nb-battle-hud-side nb-battle-hud-side--enemy">
+              <img class="nb-battle-hud-sprite nb-battle-hud-sprite--enemy" src="${enemySprite}" alt="${enemyName}" />
+              <div class="nb-battle-hud-name">${enemyName}</div>
+              <div class="nb-battle-hp">
+                <div class="nb-battle-hp-fill" style="width:${enemyHpPct}%"></div>
               </div>
-            `;
-          }
-        
-          const scoreValue = top.querySelector(".nb-hud-box-value--score");
-          const livesValue = top.querySelector(".nb-hud-box-value--lives");
-          const bigScore = scoreBlock.querySelector(".nb-big-score");
-          const progressFill = scoreBlock.querySelector(".nb-level-progress-fill");
-        
-          if (scoreValue) scoreValue.textContent = String(highScore);
-          if (livesValue) livesValue.textContent = String(state.lives);
-          if (bigScore) bigScore.textContent = String(state.totalScore);
-        
-          if (progressFill) {
-            progressFill.style.width = `${progressPct}%`;
-          }
-
-          if (progressPct > lastProgressPct + 0.01) {
-          }
-          lastProgressPct = progressPct;
-
-          if (progressFill) {
-            progressFill.classList.remove("nb-fill-hit");
-            void progressFill.offsetWidth;
-            progressFill.classList.add("nb-fill-hit");
-          }
+            </div>
+          </div>
+        `;
         }
                   
         function renderGrid(showFilled = true) {
@@ -2057,17 +2302,25 @@ let introPopPlayed = false;
               const cell = state.board[i];
         
               if (cell && showFilled) {
-                if (isSkullCell(cell)) {
+                if (cell.kind === "bomb") {
+                  tile.classList.add("is-filled", "nb-bomb-tile");
+                  tile.textContent = "";
+                } else if (isSkullCell(cell)) {
                   tile.classList.add("is-filled", "nb-skull-tile");
               
                   const skullIcon = document.createElement("img");
                   skullIcon.className = "nb-skull-icon";
-                  skullIcon.src = "images/skull.svg";
+                  skullIcon.src = "images/puzzle/skull.svg";
                   skullIcon.alt = "";
                   tile.appendChild(skullIcon);
                 } else {
                   tile.classList.add("is-filled", getNumberColorClass(cell.v));
-                  tile.textContent = String(cell.v);
+                  if (cell.v == null) {
+                    console.warn("Missing tile value at index", i, cell);
+                    tile.textContent = "";
+                  } else {
+                    tile.textContent = String(safeValue(cell.v));
+                  }
                 }
               
                 if (shouldAnimateBoardSpawn) {
@@ -2136,8 +2389,15 @@ let introPopPlayed = false;
           
           piece.cells.forEach((pc) => {
             const d = document.createElement("div");
-            d.className = `nb-mini ${getNumberColorClass(pc.v)}`;
-            d.textContent = String(pc.v);
+
+            if (isBombPiece(piece)) {
+              d.className = "nb-mini nb-bomb-mini";
+              d.textContent = "";
+            } else {
+              d.className = `nb-mini ${getNumberColorClass(pc.v)}`;
+              d.textContent = String(pc.v);
+            }
+
             d.dataset.px = String(pc.x);
             d.dataset.py = String(pc.y);
             d.style.width = `${cell}px`;
@@ -2335,7 +2595,7 @@ let introPopPlayed = false;
             try { fn(); } catch (e) {}
           });
           cleanupFns = [];
-          updateTopbar();
+          updateHud();
           renderGrid(showFilled);
           renderHand(handOpts);
         }
@@ -2345,108 +2605,66 @@ let introPopPlayed = false;
           const STEP = 180;
           const START_DELAY = 90;
         
-          const hudRow = top.querySelector(".nb-hud-row");
-          const bigScore = scoreBlock.querySelector(".nb-big-score");
-          
-          top.classList.remove("nb-reveal");
-          scoreBlock.classList.remove("nb-reveal");
+          hud.classList.remove("nb-reveal");
           boardWrap.classList.remove("nb-reveal");
           handRail.classList.remove("nb-reveal");
-          
-          if (hudRow) hudRow.classList.remove("nb-reveal");
-          if (bigScore) bigScore.classList.remove("nb-reveal", "nb-score-pop");
           handEl.classList.remove("nb-reveal", "nb-ready");
           gridEl.classList.remove("nb-tiles-reveal");
         
           await delay(START_DELAY);
         
-          /* 1. top bar */
-          top.classList.add("nb-reveal");
-          if (hudRow) hudRow.classList.add("nb-reveal");
-
-          await delay(STEP);
-
-          /* 2. score block */
-          scoreBlock.classList.add("nb-reveal");
-          if (bigScore) {
-            bigScore.classList.add("nb-reveal");
-            void bigScore.offsetWidth;
-            bigScore.classList.add("nb-score-pop");
-          }
-        
+          hud.classList.add("nb-reveal");
           await delay(STEP);
         
-          /* 3. board shell */
           boardWrap.classList.add("nb-reveal");
-          if (!introPopPlayed) {
-            introPopPlayed = true;
-          }
-
           await delay(STEP);
-          /* 4. hand space */
+        
           handRail.classList.add("nb-reveal");
-        
           await delay(STEP);
         
-/* 5. board tiles */
-shouldAnimateBoardSpawn = true;
-renderGrid(true);
-
-// 🎯 sync to tile stagger
-const TILE_STAGGER = 18; // matches your spawn delay
-const GROUP_DELAY = 60;  // spacing between hits
-
-for (let i = 0; i < 6; i++) {
-  setTimeout(() => {
-    sfx.play("load", {
-      volume: 0.9,
-      rate: 1 + i * 0.02,
-    });
-  }, i * GROUP_DELAY);
-}
+          shouldAnimateBoardSpawn = true;
+          renderGrid(true);
         
-          /* 6. hand tiles */
+          const GROUP_DELAY = 60;
+          for (let i = 0; i < 6; i++) {
+            setTimeout(() => {
+              sfx.play("load", {
+                volume: 0.9,
+                rate: 1 + i * 0.02,
+              });
+            }, i * GROUP_DELAY);
+          }
+        
           handEl.classList.add("nb-reveal");
           renderHand();
-
-          /* allow board to settle */
+        
           await delay(650);
-
-          /* board pulse + opening blast happen together */
+        
           gridEl.classList.remove("nb-pulse");
           void gridEl.offsetWidth;
           gridEl.classList.add("nb-pulse");
-
+        
           await explodeOpeningHoles(5);
-
-gridEl.classList.remove("nb-pulse");
-ensurePlayableHand(state, 24);
-render(true);
-
-await delay(220);
-
-if (findSkullIndex(state) === -1 && state.lives > 0) {
-  const skullSpawn = spawnSkullAtTop(state);
-  render(true);
-
-  if (skullSpawn) {
-    setTimeout(() => {
-      sfx.play("skull", {
-        volume: 0.8,
-        rate: 0.98,
-      });
-    }, 40);
-  }
-
-  if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
-    animateGravityDrop(skullSpawn.moved);
-    await wait(460);
-  }
-
-  render(true);
-}
-
-handLocked = false;
+        
+          gridEl.classList.remove("nb-pulse");
+          ensurePlayableHand(state, 24);
+          render(true);
+        
+          await delay(220);
+        
+          if (findSkullIndex(state) === -1 && state.lives > 0) {
+            const skullSpawn = spawnSkullAtTop(state);
+            render(true);
+        
+            if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
+              animateGravityDrop(skullSpawn.moved);
+              await wait(460);
+            }
+        
+            render(true);
+          }
+        
+          handLocked = false;
         }
 
         function animateRowExplode(hitSet, opts = {}) {
@@ -2570,142 +2788,28 @@ handLocked = false;
           });
         }
 
-        function popBigScore() {
-          const bigScore = scoreBlock.querySelector(".nb-big-score");
-          if (!bigScore) return;
-        
-          bigScore.classList.remove("nb-score-pop");
-          void bigScore.offsetWidth;
-          bigScore.classList.add("nb-score-pop");
-        }
-
-        function burstScoreStars(blasts = 1) {
-          const bigScore = scoreBlock.querySelector(".nb-big-score");
-          if (!bigScore) return;
-        
-          let starsHost = scoreBlock.querySelector(".nb-score-stars");
-          if (!starsHost) {
-            starsHost = document.createElement("div");
-            starsHost.className = "nb-score-stars";
-            scoreBlock.appendChild(starsHost);
-          }
-        
-          starsHost.innerHTML = "";
-        
-          const frag = document.createDocumentFragment();
-          const scoreBlockRect = scoreBlock.getBoundingClientRect();
-          const scoreRect = bigScore.getBoundingClientRect();
-
-          const originX = scoreRect.left - scoreBlockRect.left + scoreRect.width / 2;
-          const originY = scoreRect.top - scoreBlockRect.top + scoreRect.height / 2;
-
-          const starCount = Math.min(18, 6 + blasts * 4);
-
-          for (let i = 0; i < starCount; i++) {
-            const star = document.createElement("div");
-            star.className = "nb-score-star";
-            star.style.left = `${originX}px`;
-            star.style.top = `${originY}px`;
-
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 72 + Math.random() * 72 + blasts * 14;
-            const sx = Math.cos(angle) * dist;
-            const sy = Math.sin(angle) * dist - 8 - Math.random() * 18;
-
-            star.style.setProperty("--ssx", `${sx.toFixed(0)}px`);
-            star.style.setProperty("--ssy", `${sy.toFixed(0)}px`);
-            star.style.setProperty("--ss-rot", `${(Math.random() * 220 - 110).toFixed(0)}deg`);
-            star.style.setProperty("--ss-delay", `${Math.random() * 80}ms`);
-            star.style.setProperty("--ss-size", `${8 + Math.random() * 24}px`);
-
-            frag.appendChild(star);
-          }
-
-          starsHost.appendChild(frag);
-
-          setTimeout(() => {
-            starsHost.innerHTML = "";
-          }, 1450);
-        }
+        function popBigScore() {}
+        function burstScoreStars() {}
         
 
-        function awardForGroups(groupCount) {
+        function awardForGroups(groupCount, chainCount = 1) {
           const bonus = groupCount >= 3 ? 2 : groupCount >= 2 ? 1 : 0;
-          const gained = 10 * groupCount + 15 * bonus;
-        
+
+          const attackBonus = Math.max(0, (state.heroAttack || 1) - 1) * 5;
+          const comboStepValue = 0.5 + Math.max(0, (state.heroCombo || 1) - 1) * 0.25;
+          const comboMultiplier = 1 + (chainCount - 1) * comboStepValue;
+
+          const gained = Math.round(((10 * groupCount) + (15 * bonus) + attackBonus) * comboMultiplier);
+
           state.clears += groupCount;
           state.levelBlasts += groupCount;
           state.levelScore += gained;
           state.totalScore += gained;
-        
+
           const best = readNumber("NB_HIGH_SCORE", 0);
           if (state.totalScore > best) {
             writeNumber("NB_HIGH_SCORE", state.totalScore);
           }
-        }
-
-        async function animatePlacedPieceGravity(piece, rawPlaced, settledPlaced) {
-          if (!piece || !rawPlaced || !settledPlaced || rawPlaced.length !== settledPlaced.length) {
-            return;
-          }
-
-          const boardRect = boardWrap.getBoundingClientRect();
-          const frag = document.createDocumentFragment();
-          const clones = [];
-
-          for (let k = 0; k < piece.cells.length; k++) {
-            const fromIndex = rawPlaced[k];
-            const toIndex = settledPlaced[k];
-            if (fromIndex == null || toIndex == null) continue;
-
-            const fromCell = cellElFromIndex(fromIndex);
-            const toCell = cellElFromIndex(toIndex);
-            if (!fromCell || !toCell) continue;
-
-            const fromTile = fromCell.querySelector(".nb-tile");
-            const fromRect = fromCell.getBoundingClientRect();
-            const toRect = toCell.getBoundingClientRect();
-
-            const dx = toRect.left - fromRect.left;
-            const dy = toRect.top - fromRect.top;
-            const rowsDropped = Math.max(0, rc(state, toIndex).r - rc(state, fromIndex).r);
-
-            const clone = document.createElement("div");
-            clone.className = `nb-tile is-filled ${getNumberColorClass(piece.cells[k].v)} nb-placed-fall-clone`;
-            clone.textContent = String(piece.cells[k].v);
-            clone.style.left = `${fromRect.left - boardRect.left}px`;
-            clone.style.top = `${fromRect.top - boardRect.top}px`;
-            clone.style.width = `${fromRect.width}px`;
-            clone.style.height = `${fromRect.height}px`;
-            clone.style.setProperty("--fall-x", `${dx}px`);
-            clone.style.setProperty("--fall-y", `${dy}px`);
-            clone.style.setProperty("--fall-duration", `${520 + rowsDropped * 160}ms`);
-
-            frag.appendChild(clone);
-            clones.push(clone);
-          }
-
-          sparkLayer.appendChild(frag);
-
-          await new Promise((resolve) => requestAnimationFrame(resolve));
-
-          clones.forEach((clone) => {
-            clone.classList.add("is-animating");
-          });
-
-          const maxRows = Math.max(
-            1,
-            ...rawPlaced.map((fromIndex, k) => {
-              const toIndex = settledPlaced[k];
-              return Math.max(0, rc(state, toIndex).r - rc(state, fromIndex).r);
-            })
-          );
-
-          await wait(520 + maxRows * 160 + 140);
-
-          clones.forEach((clone) => {
-            try { clone.remove(); } catch (e) {}
-          });
         }
 
         async function placePiece(anchorIndex, handIndex, pieceOverride) {
@@ -2742,18 +2846,23 @@ handLocked = false;
           for (let k = 0; k < piece.cells.length; k++) {
             const bi = settledPlaced[k];
             const pc = piece.cells[k];
-            state.board[bi] = { v: pc.v };
+
+            if (isBombPiece(piece)) {
+              state.board[bi] = { kind: "bomb" };
+            } else {
+              state.board[bi] = { v: safeValue(pc.v) };
+            }
           }
         
-          updateTopbar();
+          updateHud();
           renderGrid(true);
-        
+
           if (hasGravityDrop) {
             const moved = settledPlaced.map((to, k) => ({
               from: rawPlaced[k],
               to,
             }));
-        
+
             animateGravityDrop(moved);
             await wait(460);
           } else {
@@ -2761,52 +2870,91 @@ handLocked = false;
               const cellEl = wrap.querySelector(`.nb-cell[data-cell-index="${toIndex}"]`);
               const tileEl = cellEl ? cellEl.querySelector(".nb-tile") : null;
               if (!tileEl) return;
-        
+
               tileEl.classList.remove("nb-place-settle");
               tileEl.style.setProperty("--place-delay", `${k * 24}ms`);
               void tileEl.offsetWidth;
               tileEl.classList.add("nb-place-settle");
             });
-        
+
             await wait(220);
           }
         
           clearHover();
 
           // replace the used hand piece immediately, before any blast chain starts
-          state.hand[handIndex] = makePiece(state, { forceClearNow: false });
-          
+          state.hand[handIndex] = makeHandReplacement(state, state.hand, handIndex);
+
           if (!hasClearMove(state)) {
             const forced = findGuaranteedClearPiece(state);
-            if (forced) {
+            const otherPieces = state.hand.filter((_, i) => i !== handIndex);
+
+            if (forced && handAllowedWithCandidate(otherPieces, forced)) {
               state.hand[handIndex] = forced;
             }
           }
-          
+
           render(true, { animateIndices: [handIndex] });
 
-          const blasts = await resolveBoardChains(
+          if (isBombPiece(piece)) {
+            const bombIndex = settledPlaced[0];
+
+            const bombResult = await resolveBombDetonation(
+              state,
+              bombIndex,
+              render,
+              animateRowExplode,
+              animateGravityDrop,
+              gridEl,
+              sfx
+            );
+
+            if (bombResult.totalCleared > 0) {
+              const gained = bombResult.totalCleared * 10;
+              state.levelScore += gained;
+              state.totalScore += gained;
+              state.levelBlasts += 1;
+
+              const best = readNumber("NB_HIGH_SCORE", 0);
+              if (state.totalScore > best) {
+                writeNumber("NB_HIGH_SCORE", state.totalScore);
+              }
+
+              updateHud();
+            }
+          }
+
+          const comboCarry = state.comboCarry || 0;
+
+          const chainResult = await resolveBoardChains(
             state,
             render,
             animateRowExplode,
             animateGravityDrop,
             showComboText,
             gridEl,
+            wrap,
             finish,
             sfx,
             runGameOverSequence,
             {
               triggerSkullTilePunch,
               triggerSkullScreenFX,
+            },
+            {
+              comboCarry,
             }
           );
-
-          if (blasts > 0) {
-            state.levelBlasts += blasts;
-            awardForGroups(blasts);
-            updateTopbar();
+          
+          if (chainResult.totalGroups > 0) {
+            state.comboCarry = 0;
+          }
+          
+          if (chainResult.totalGroups > 0) {
+            awardForGroups(chainResult.totalGroups, chainResult.chainCount);
+            updateHud();
             popBigScore();
-            burstScoreStars(blasts);
+            burstScoreStars(chainResult.totalGroups);
           }
           
           if (hasLevelWin(state)) {
@@ -2819,7 +2967,7 @@ handLocked = false;
         
           if (!anyMovesAvailable(state)) {
             await ensureThreeSupportedEmptySquares();
-            state.hand[handIndex] = makePiece(state, { forceClearNow: false });
+            state.hand[handIndex] = makeHandReplacement(state, state.hand, handIndex);
             ensurePlayableHand(state, 24);
             render(true, { animateIndices: [handIndex] });
           }
