@@ -8,6 +8,11 @@
   const ROW_EXPLODE_MS = 420;
   const STARTING_LIVES = 3;
 
+  const OPENING_REMOVAL_COUNT = 7;
+  const OPENING_BUILD_ATTEMPTS = 80;
+  const OPENING_DROP_FROM_ROWS = 2.25;
+  const OPENING_DROP_MS = 560;
+
   const END_SEQUENCE_SLOWDOWN = 1.45;
 
   function endMs(ms) {
@@ -545,7 +550,6 @@
       heroAttack: adventureStats.attack,
       heroArmor: adventureStats.armor,
       heroCombo: adventureStats.combo,
-      armorBlocksRemaining: Math.max(0, (adventureStats.armor || 1) - 1),
       forcedSolveCounter: 0,
       size: difficultySize,
       board: Array(difficultySize * difficultySize).fill(null),
@@ -565,8 +569,10 @@
       levelGoal: difficultyRules.pointsGoal ?? 120,
       rules: difficultyRules,
 
+      canUseLastChance: !!difficultyRules.canUseLastChance,
       hasUsedLastChance: false,
       isLastChanceMode: false,
+      hudIntroPlayed: false,
       lastChanceSetup: null,
     };
   
@@ -944,11 +950,6 @@
   }
   
   function damageLifeFromSkull(state) {
-    if ((state.armorBlocksRemaining || 0) > 0) {
-      state.armorBlocksRemaining -= 1;
-      return state.lives;
-    }
-
     state.lives = Math.max(0, state.lives - 1);
     return state.lives;
   }
@@ -970,6 +971,81 @@
     }
   
     return candidates.slice(0, count);
+  }
+
+  function cloneBoard(board) {
+    return board.map((cell) => (cell ? { ...cell } : null));
+  }
+
+    function pickOpeningRemovalIndices(state, count = OPENING_REMOVAL_COUNT) {
+    const candidates = [];
+
+    for (let r = 0; r < state.size; r++) {
+      for (let c = 0; c < state.size; c++) {
+        const i = idx(state, r, c);
+        if (!state.board[i]) continue;
+
+        let weight = 1;
+
+        // top-down bias
+        if (r === 0) weight = 7;
+        else if (r === 1) weight = 6;
+        else if (r === 2) weight = 4;
+        else if (r === 3) weight = 2;
+        else weight = 1;
+
+        for (let k = 0; k < weight; k++) {
+          candidates.push(i);
+        }
+      }
+    }
+
+    const picked = new Set();
+
+    while (candidates.length && picked.size < count) {
+      const rand = Math.floor(Math.random() * candidates.length);
+      picked.add(candidates[rand]);
+      candidates.splice(rand, 1);
+    }
+
+    return Array.from(picked);
+  }
+
+  function buildOpeningBoardState(state, removalCount = OPENING_REMOVAL_COUNT) {
+    for (let attempt = 0; attempt < OPENING_BUILD_ATTEMPTS; attempt++) {
+      fillBoardFully(state);
+
+      while (boardHasAutoClear(state)) {
+        fillBoardFully(state);
+      }
+
+      const removed = pickOpeningRemovalIndices(state, removalCount);
+
+      removed.forEach((i) => {
+        state.board[i] = null;
+      });
+
+      const skullSpawn = spawnSkullAtTop(state);
+      if (!skullSpawn) continue;
+
+      if (boardHasAutoClear(state)) continue;
+
+      const openingBoard = cloneBoard(state.board);
+
+      return {
+        board: openingBoard,
+      };
+    }
+
+    // fallback
+    fillBoardFully(state);
+    while (boardHasAutoClear(state)) {
+      fillBoardFully(state);
+    }
+
+    return {
+      board: cloneBoard(state.board),
+    };
   }
 
   async function resolveBombDetonation(
@@ -1034,10 +1110,16 @@
   
     const triggerSkullTilePunch = skullFx.triggerSkullTilePunch || (() => {});
     const triggerSkullScreenFX = skullFx.triggerSkullScreenFX || (() => {});
+    const triggerEnemyHitFX = skullFx.triggerEnemyHitFX || (() => {});
+    const triggerHeroHitFX = skullFx.triggerHeroHitFX || (() => {});
   
     while (true) {
-      const { groups, hit } = findGroupsToClear(state, state.board);
-      if (!groups.length) break;
+const { groups, hit } = findGroupsToClear(state, state.board);
+if (!groups.length) break;
+
+setTimeout(() => {
+  triggerEnemyHitFX();
+}, 70);
   
       const waveNumber = chainCount + 1;
       const skullHits = collectSkullsHitByBlast(state, hit);
@@ -1076,6 +1158,10 @@
         }, 40);
   
         damageLifeFromSkull(state);
+
+        setTimeout(() => {
+          triggerHeroHitFX();
+        }, 90);
       }
   
       gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
@@ -1334,46 +1420,89 @@
       {
         boardSize: 5,
         board: [
-          { r: 3, c: 2, v: 7 },
-          { r: 3, c: 3, v: 2 },
-          { r: 4, c: 1, v: 3 },
-          { r: 4, c: 2, v: 8 },
-          { r: 4, c: 3, v: 9 },
-        ],
-        hand: [1, 2, 3],
-        correct: {
-          value: 1,
-          anchor: { r: 3, c: 1 },
-        },
-      },
-      {
-        boardSize: 5,
-        board: [
-          { r: 3, c: 1, v: 6 },
-          { r: 3, c: 2, v: 3 },
-          { r: 4, c: 2, v: 7 },
-          { r: 4, c: 3, v: 8 },
-          { r: 3, c: 3, v: 2 },
-        ],
-        hand: [1, 2, 3],
-        correct: {
-          value: 1,
-          anchor: { r: 4, c: 1 },
-        },
-      },
-      {
-        boardSize: 5,
-        board: [
-          { r: 3, c: 1, v: 4 },
           { r: 3, c: 2, v: 5 },
           { r: 4, c: 2, v: 7 },
-          { r: 4, c: 3, v: 8 },
-          { r: 3, c: 3, v: 2 },
+          { r: 4, c: 3, v: 5 },
         ],
-        hand: [1, 2, 3],
+        hand: [3, 6, 8],
+        correct: {
+          value: 3,
+          settled: { r: 4, c: 1 },
+        },
+      },
+      {
+        boardSize: 5,
+        board: [
+          { r: 3, c: 2, v: 5 },
+          { r: 3, c: 3, v: 3 },
+          { r: 4, c: 1, v: 5 },
+          { r: 4, c: 2, v: 7 },
+          { r: 4, c: 3, v: 8 },
+        ],
+        hand: [2, 4, 9],
+        correct: {
+          value: 2,
+          settled: { r: 4, c: 4 },
+        },
+      },
+      {
+        boardSize: 5,
+        board: [
+          { r: 2, c: 2, v: 6 },
+          { r: 3, c: 1, v: 2 },
+          { r: 3, c: 2, v: 5 },
+          { r: 4, c: 0, v: 2 },
+          { r: 4, c: 1, v: 5 },
+          { r: 4, c: 2, v: 7 },
+        ],
+        hand: [3, 4, 8],
+        correct: {
+          value: 3,
+          settled: { r: 4, c: 3 },
+        },
+      },
+      {
+        boardSize: 5,
+        board: [
+          { r: 3, c: 2, v: 6 },
+          { r: 4, c: 2, v: 5 },
+          { r: 4, c: 3, v: 4 },
+        ],
+        hand: [5, 2, 8],
+        correct: {
+          value: 5,
+          settled: { r: 4, c: 1 },
+        },
+      },
+      {
+        boardSize: 5,
+        board: [
+          { r: 3, c: 2, v: 2 },
+          { r: 3, c: 3, v: 5 },
+          { r: 4, c: 0, v: 8 },
+          { r: 4, c: 1, v: 5 },
+          { r: 4, c: 2, v: 9 },
+        ],
+        hand: [1, 4, 7],
         correct: {
           value: 1,
-          anchor: { r: 4, c: 1 },
+          settled: { r: 4, c: 4 },
+        },
+      },
+      {
+        boardSize: 5,
+        board: [
+          { r: 2, c: 2, v: 5 },
+          { r: 3, c: 1, v: 4 },
+          { r: 3, c: 2, v: 3 },
+          { r: 4, c: 0, v: 1 },
+          { r: 4, c: 1, v: 7 },
+          { r: 4, c: 2, v: 6 },
+        ],
+        hand: [4, 2, 8],
+        correct: {
+          value: 4,
+          settled: { r: 4, c: 3 },
         },
       },
     ],
@@ -1385,7 +1514,16 @@
   
   function pickLastChancePreset(level = 1) {
     const pool = LAST_CHANCE_PRESETS[level] || LAST_CHANCE_PRESETS[1];
-    const picked = pool[Math.floor(Math.random() * pool.length)];
+    let last = window.__nb_lastChanceLastIndex ?? -1;
+let next;
+
+do {
+  next = Math.floor(Math.random() * pool.length);
+} while (pool.length > 1 && next === last);
+
+window.__nb_lastChanceLastIndex = next;
+
+const picked = pool[next];
     return cloneLastChancePreset(picked);
   }
   
@@ -1408,8 +1546,86 @@
       board,
       hand,
       correctValue: preset.correct.value,
-      correctAnchorIndex: preset.correct.anchor.r * size + preset.correct.anchor.c,
+      correctSettledIndex: preset.correct.settled.r * size + preset.correct.settled.c,
     };
+  }
+  
+  function countLastChanceWinningMoves(preset) {
+    const built = buildLastChanceStateFromPreset(preset);
+  
+    const wins = [];
+    const seen = new Set();
+  
+    for (let handIndex = 0; handIndex < built.hand.length; handIndex++) {
+      const piece = built.hand[handIndex];
+  
+      for (let anchorIndex = 0; anchorIndex < built.board.length; anchorIndex++) {
+        const working = {
+          size: built.size,
+          board: built.board.map((cell) => (cell ? { ...cell } : null)),
+          targetSum: 10,
+        };
+  
+        if (!canPlacePiece(working, anchorIndex, piece)) continue;
+  
+        const covered = getSettledCoveredIndices(working, anchorIndex, piece);
+        if (!covered || !covered.length) continue;
+  
+        for (let k = 0; k < covered.length; k++) {
+          working.board[covered[k]] = { v: piece.cells[k].v };
+        }
+  
+        resolveLastChanceBoardSim(working);
+  
+        if (isBoardEmpty(working)) {
+          const settledIndex = covered[0];
+          const value = piece.cells[0]?.v;
+          const key = `${value}:${settledIndex}`;
+  
+          if (seen.has(key)) continue;
+          seen.add(key);
+  
+          wins.push({
+            handIndex,
+            value,
+            settledIndex,
+          });
+        }
+      }
+    }
+  
+    return wins;
+  }
+  
+  function isLastChancePresetValid(preset) {
+    if (!isLastChanceBoardGravityValid(preset.board, preset.boardSize || 5)) {
+      return false;
+    }
+  
+    const wins = countLastChanceWinningMoves(preset);
+    if (wins.length !== 1) return false;
+  
+    const onlyWin = wins[0];
+    const size = preset.boardSize || 5;
+    const expectedSettledIndex =
+      preset.correct.settled.r * size + preset.correct.settled.c;
+  
+    return (
+      onlyWin.value === preset.correct.value &&
+      onlyWin.settledIndex === expectedSettledIndex
+    );
+  }
+
+  function isLastChanceBoardGravityValid(boardEntries, size) {
+    const boardSet = new Set(boardEntries.map(({ r, c }) => `${r},${c}`));
+  
+    for (const { r, c } of boardEntries) {
+      if (r === size - 1) continue;
+      const belowKey = `${r + 1},${c}`;
+      if (!boardSet.has(belowKey)) return false;
+    }
+  
+    return true;
   }
 
   function createNumberBlastGame({ config = {}, context } = {}) {
@@ -1421,11 +1637,11 @@
       document.getElementById("game-mount") ||
       document.body;
 
-    let cleanupFns = [];
-    let activeDrag = null;
-    let hoverPreview = new Map();
-    let handLocked = true;
-let introPopPlayed = false;
+      let cleanupFns = [];
+      let activeDrag = null;
+      let hoverPreview = new Map();
+      let handLocked = true;
+      let lastChanceHintTimer = null;
 
     function addCleanup(fn) {
       cleanupFns.push(fn);
@@ -1470,6 +1686,11 @@ let introPopPlayed = false;
           if (finished) return;
           finished = true;
 
+          const shouldPreserveMount =
+            outcome === "win" ||
+            outcome === "retry_success" ||
+            outcome === "retry_fail";
+
           queueMicrotask(() =>
             resolve({
               outcome,
@@ -1479,9 +1700,48 @@ let introPopPlayed = false;
           );
 
           setTimeout(() => {
+            if (shouldPreserveMount) {
+              stopActiveDrag();
+              try {
+                cleanupFns.forEach((fn) => {
+                  try { fn(); } catch (e) {}
+                });
+              } catch (e) {}
+              cleanupFns = [];
+              return;
+            }
+
             destroy();
           }, 350);
         }
+
+        window.nbLastChanceTest = {
+          success() {
+            finish("retry_success", {
+              reason: "debug-last-chance-success",
+              score: state.totalScore,
+              wins: state.wins,
+            });
+          },
+          fail() {
+            finish("retry_fail", {
+              reason: "debug-last-chance-fail",
+              score: state.totalScore,
+              wins: state.wins,
+            });
+          },
+          win() {
+            finish("win", {
+              reason: "debug-win",
+              score: state.totalScore,
+              wins: state.wins,
+            });
+          }
+        };
+
+        window.__nb_forceLastChance = function () {
+          enterLastChanceMode();
+        };
 
         clearMount(mount);
 
@@ -1533,6 +1793,17 @@ let introPopPlayed = false;
 
         const state = makeGameState(level, config.battleConfig || null);
 
+        window.nbBombTest = {
+          now(slotIndex = 0) {
+            state.hand[slotIndex] = makeBombPiece();
+            render(true);
+          },
+        
+          next() {
+            state.forceBombNextReplacement = true;
+          },
+        };
+
         syncViewportScale();
         render(true);
 
@@ -1550,20 +1821,23 @@ let introPopPlayed = false;
 
         function resetRoundBoard() {
           const latestRules = window.NumberBlastLevelPlan?.getNumberBlastRules(state.level) || {};
-          state.rules = latestRules;
-          state.size = latestRules.boardSize ?? DEFAULT_SIZE;
-          state.numberMin = latestRules.numberMin ?? 1;
-          state.numberMax = latestRules.numberMax ?? 9;
-          state.targetSum = latestRules.target ?? 10;
-          state.levelGoal = latestRules.pointsGoal ?? 120;
-
-          fillBoardFully(state);
         
-          while (boardHasAutoClear(state)) {
-            fillBoardFully(state);
-          }
+          const mergedRules = {
+            ...latestRules,
+            ...(config.battleConfig || {}),
+          };
         
-          const handSize = latestRules.handSize ?? HAND_SIZE;
+          state.rules = mergedRules;
+          state.size = mergedRules.boardSize ?? DEFAULT_SIZE;
+          state.numberMin = mergedRules.numberMin ?? 1;
+          state.numberMax = mergedRules.numberMax ?? 9;
+          state.targetSum = mergedRules.target ?? 10;
+          state.levelGoal = mergedRules.pointsGoal ?? 120;
+        
+          const opening = buildOpeningBoardState(state, OPENING_REMOVAL_COUNT);
+          state.board = opening.board;
+        
+          const handSize = mergedRules.handSize ?? HAND_SIZE;
           state.hand = generateHand(state, handSize);
           ensurePlayableHand(state, 24);
         
@@ -1576,12 +1850,22 @@ let introPopPlayed = false;
           const lastChance = buildLastChanceStateFromPreset(preset);
         
           state.hasUsedLastChance = true;
+
+          if (window.BlastAdventureData?.loadState && window.BlastAdventureData?.saveState) {
+            const adventureState = window.BlastAdventureData.loadState();
+            window.BlastAdventureData.markLastChanceUsedForLevel(adventureState, config.level);
+            window.BlastAdventureData.saveState(adventureState);
+          }
+
           state.isLastChanceMode = true;
           state.lastChanceSetup = preset;
         
           state.size = lastChance.size;
           state.board = lastChance.board;
           state.hand = lastChance.hand;
+
+          state.correctValue = lastChance.correctValue;
+          state.correctSettledIndex = lastChance.correctSettledIndex;
         
           render(true);
           showLastChanceOverlay();
@@ -1598,6 +1882,32 @@ let introPopPlayed = false;
         function shakeBad() {
           restartClass(mount, "eq-bad");
           restartClass(mount, "eq-shake");
+        }
+
+        function triggerEnemyHitFX() {
+          const enemySprite = hud.querySelector(".nb-battle-hud-sprite--enemy");
+          if (!enemySprite) return;
+        
+          enemySprite.classList.remove("nb-enemy-hit");
+          void enemySprite.offsetWidth;
+          enemySprite.classList.add("nb-enemy-hit");
+        
+          setTimeout(() => {
+            enemySprite.classList.remove("nb-enemy-hit");
+          }, 220);
+        }
+        
+        function triggerHeroHitFX() {
+          const heroSprite = hud.querySelector(".nb-battle-hud-sprite--hero");
+          if (!heroSprite) return;
+        
+          heroSprite.classList.remove("nb-hero-hit");
+          void heroSprite.offsetWidth;
+          heroSprite.classList.add("nb-hero-hit");
+        
+          setTimeout(() => {
+            heroSprite.classList.remove("nb-hero-hit");
+          }, 240);
         }
         
         function triggerSkullTilePunch() {
@@ -1639,24 +1949,30 @@ let introPopPlayed = false;
           const comboEl = document.createElement("div");
           comboEl.className = "nb-combo-text";
         
-          if (type === "power") {
+          if (type === "last_chance_good") {
             comboEl.innerHTML = `
               <span class="nb-combo-line">
-                <span class="nb-combo-label">POWER CLEAR</span>
+                <span class="nb-combo-label">Good Job</span>
               </span>
             `;
-          }
-        
-          if (type === "combo") {
+          } else if (type === "power") {
             comboEl.innerHTML = `
               <span class="nb-combo-line">
-                <span class="nb-combo-label">COMBO</span>
-                <span class="nb-combo-number">x${chainStep}</span>
+                <span class="nb-combo-label">Power Clear</span>
               </span>
             `;
+          } else if (type === "combo") {
+            comboEl.innerHTML = `
+              <span class="nb-combo-line">
+                <span class="nb-combo-label">Combo</span>
+                <span class="nb-combo-number">+${Math.max(1, chainStep - 1)}</span>
+              </span>
+            `;
+          } else {
+            return;
           }
         
-          document.querySelector(".nb-board-wrap")?.appendChild(comboEl);
+          boardWrap.appendChild(comboEl);
         
           requestAnimationFrame(() => {
             comboEl.classList.add("nb-combo-in");
@@ -1665,7 +1981,7 @@ let introPopPlayed = false;
           setTimeout(() => {
             comboEl.classList.add("nb-combo-out");
             setTimeout(() => comboEl.remove(), 320);
-          }, 700);
+          }, 1000);
         }
 
         function formatElapsed(ms) {
@@ -1979,7 +2295,7 @@ let introPopPlayed = false;
         }
 
         async function runGameOverSequence(extra = {}) {
-          if (!state.hasUsedLastChance) {
+          if (!state.hasUsedLastChance && state.canUseLastChance) {
             lockGameInput(true);
             await wait(endMs(120));
             enterLastChanceMode();
@@ -1989,11 +2305,10 @@ let introPopPlayed = false;
         
           lockGameInput(true);
 
-          clearLastChanceUI();
           wrap.classList.add("nb-last-chance-fail");
           await wait(420);
           
-          finish("lose", {
+          finish("retry_fail", {
             reason: extra.reason || "last-chance-failed",
             score: state.totalScore,
             wins: state.wins,
@@ -2001,126 +2316,51 @@ let introPopPlayed = false;
         }
 
         function showLastChanceOverlay() {
-          wrap.querySelector(".nb-last-chance-overlay")?.remove();
+          wrap.classList.add("nb-last-chance-mode");
         
-          const overlay = document.createElement("div");
-          overlay.className = "nb-last-chance-overlay";
-          overlay.innerHTML = `
-            <div class="nb-last-chance-icon-wrap">
+          hud.innerHTML = `
+            <div class="nb-last-chance-icon-wrap" aria-hidden="true">
               <div class="nb-last-chance-icon">
-                <img src="images/puzzle/skull.svg" alt="" />
+                <span class="nb-last-chance-icon-badge"></span>
+                <img src="images/puzzle/skull.svg" alt="" class="nb-last-chance-skull-icon" />
               </div>
             </div>
-        
-            <div class="nb-last-chance-title">Last Chance</div>
-            <div class="nb-last-chance-copy">Find the move to clear all tiles and continue</div>
           `;
         
-          wrap.appendChild(overlay);
+          let header = wrap.querySelector(".nb-last-chance-header-row");
+        
+          if (!header) {
+            header = document.createElement("div");
+            header.className = "nb-last-chance-header-row";
+            wrap.insertBefore(header, boardWrap);
+          }
+        
+          header.innerHTML = `
+            <div class="nb-last-chance-header">
+              <div class="nb-last-chance-title">Last Chance</div>
+              <div class="nb-last-chance-copy">Find the move to clear all tiles and continue</div>
+            </div>
+          `;
         }
 
         function clearLastChanceUI() {
-          wrap.querySelector(".nb-last-chance-overlay")?.remove();
+          if (lastChanceHintTimer) {
+            clearTimeout(lastChanceHintTimer);
+            lastChanceHintTimer = null;
+          }
+        
           wrap.classList.remove(
+            "nb-last-chance-mode",
             "nb-last-chance-wrong",
             "nb-last-chance-win",
             "nb-last-chance-fail"
           );
+        
+          hud.innerHTML = "";
+        
+          const header = wrap.querySelector(".nb-last-chance-header-row");
+          if (header) header.remove();
         }
-      
-
-        window.nbDebug = {
-
-          enterLastChance() {
-            state.hasUsedLastChance = false;
-            state.isLastChanceMode = false;
-            clearLastChanceUI();
-            enterLastChanceMode();
-          },
-
-          enterLastChancePreset(presetIndex = 0) {
-            clearLastChanceUI();
-          
-            const pool = LAST_CHANCE_PRESETS[state.level || 1] || LAST_CHANCE_PRESETS[1];
-            const preset = cloneLastChancePreset(pool[presetIndex] || pool[0]);
-            const lastChance = buildLastChanceStateFromPreset(preset);
-          
-            state.hasUsedLastChance = true;
-            state.isLastChanceMode = true;
-            state.lastChanceSetup = preset;
-          
-            state.size = lastChance.size;
-            state.board = lastChance.board;
-            state.hand = lastChance.hand;
-          
-            render(true);
-            showLastChanceOverlay();
-          },
-
-          async failLastChance() {
-            clearLastChanceUI();
-            state.hasUsedLastChance = true;
-            state.isLastChanceMode = true;
-            render(true);
-            showLastChanceOverlay();
-          
-            await runGameOverSequence({
-              reason: "last-chance-failed",
-              score: state.totalScore,
-              wins: state.wins,
-            });
-          },
-
-          addScore(amount = 50) {
-            state.levelScore += amount;
-            state.totalScore += amount;
-            updateHud();
-        
-            lastProgressPct = getLevelProgressPct(state);
-          },
-
-          giveBomb() {
-            state.forceBombNextReplacement = true;
-          },
-        
-          setLevelScore(value = 0) {
-            state.levelScore = Math.max(0, value);
-            updateHud();
-          },
-        
-          setProgress(value = 0) {
-            state.levelScore = Math.max(0, Math.min(value, state.levelGoal));
-            updateHud();
-          },
-        
-          addProgress(amount = 10) {
-            state.levelScore = Math.min(state.levelGoal, state.levelScore + amount);
-            state.totalScore += amount;
-            updateHud();
-          },
-        
-          setLives(value = 1) {
-            state.lives = Math.max(0, Number(value) || 0);
-            updateHud();
-          },
-        
-          winLevel() {
-            state.levelScore = state.levelGoal;
-            updateHud();
-            showEndScreen({ mode: "win" });
-          },
-        
-          loseLevel() {
-            showEndScreen({ mode: "lose" });
-          },
-        
-          resetLevelProgress() {
-            state.levelScore = 0;
-            state.levelBlasts = 0;
-            state.levelStartedAt = Date.now();
-            updateHud();
-          },
-        };
 
         async function explodeOpeningHoles(count = 5) {
           const picks = pickOpeningHoleIndices(state, count);
@@ -2162,6 +2402,8 @@ let introPopPlayed = false;
             {
               triggerSkullTilePunch,
               triggerSkullScreenFX,
+              triggerEnemyHitFX,
+              triggerHeroHitFX,
             },
             {
               skipAutoSkullSpawn: true,
@@ -2219,6 +2461,8 @@ let introPopPlayed = false;
             {
               triggerSkullTilePunch,
               triggerSkullScreenFX,
+              triggerEnemyHitFX,
+              triggerHeroHitFX,
             }
           );
           
@@ -2376,6 +2620,17 @@ let introPopPlayed = false;
           };
         }
 
+        function clearLastChanceHint() {
+          if (lastChanceHintTimer) {
+            clearTimeout(lastChanceHintTimer);
+            lastChanceHintTimer = null;
+          }
+        
+          wrap.querySelectorAll(".nb-cell.nb-last-chance-correct").forEach((el) => {
+            el.classList.remove("nb-last-chance-correct");
+          });
+        }
+
         function clearHover() {
           if (hoverPreview && hoverPreview.size) {
             hoverPreview.forEach((prev, i) => {
@@ -2438,7 +2693,6 @@ let introPopPlayed = false;
 
         function updateHud() {
           if (state.isLastChanceMode) {
-            hud.innerHTML = "";
             return;
           }
 
@@ -2458,17 +2712,17 @@ let introPopPlayed = false;
           hud.innerHTML = `
           <div class="nb-battle-hud">
             <div class="nb-battle-hud-side nb-battle-hud-side--hero">
-              <img class="nb-battle-hud-sprite nb-battle-hud-sprite--hero" src="${heroSprite}" alt="${heroName}" />
-              <div class="nb-battle-hud-name">${heroName}</div>
-              <div class="nb-battle-hp">
+              <img class="nb-battle-hud-sprite nb-battle-hud-sprite--hero${state.hudIntroPlayed ? "" : " nb-battle-hud-sprite--spawn"}" src="${heroSprite}" alt="${heroName}" />
+<div class="nb-battle-hud-name${state.hudIntroPlayed ? "" : " nb-battle-hud-name--spawn"}">${heroName}</div>
+<div class="nb-battle-hp${state.hudIntroPlayed ? "" : " nb-battle-hp--spawn"}">
                 <div class="nb-battle-hp-fill" style="width:${heroHpPct}%"></div>
               </div>
             </div>
         
             <div class="nb-battle-hud-side nb-battle-hud-side--enemy">
-              <img class="nb-battle-hud-sprite nb-battle-hud-sprite--enemy" src="${enemySprite}" alt="${enemyName}" />
-              <div class="nb-battle-hud-name">${enemyName}</div>
-              <div class="nb-battle-hp">
+              <img class="nb-battle-hud-sprite nb-battle-hud-sprite--enemy${state.hudIntroPlayed ? "" : " nb-battle-hud-sprite--spawn"}" src="${enemySprite}" alt="${enemyName}" />
+<div class="nb-battle-hud-name${state.hudIntroPlayed ? "" : " nb-battle-hud-name--spawn"}">${enemyName}</div>
+<div class="nb-battle-hp${state.hudIntroPlayed ? "" : " nb-battle-hp--spawn"}">
                 <div class="nb-battle-hp-fill" style="width:${enemyHpPct}%"></div>
               </div>
             </div>
@@ -2799,66 +3053,47 @@ let introPopPlayed = false;
           handLocked = true;
           const STEP = 180;
           const START_DELAY = 90;
-        
+
           hud.classList.remove("nb-reveal");
           boardWrap.classList.remove("nb-reveal");
           handRail.classList.remove("nb-reveal");
           handEl.classList.remove("nb-reveal", "nb-ready");
           gridEl.classList.remove("nb-tiles-reveal");
-        
+
           await delay(START_DELAY);
-        
+
           hud.classList.add("nb-reveal");
           await delay(STEP);
-        
+
           boardWrap.classList.add("nb-reveal");
           await delay(STEP);
-        
+
           handRail.classList.add("nb-reveal");
-          await delay(STEP);
-        
-          shouldAnimateBoardSpawn = true;
+
           renderGrid(true);
-        
-          const GROUP_DELAY = 60;
-          for (let i = 0; i < 6; i++) {
+          animateOpeningBoardDrop();
+
+          for (let i = 0; i < 4; i++) {
             setTimeout(() => {
               sfx.play("load", {
                 volume: 0.9,
-                rate: 1 + i * 0.02,
+                rate: 0.98 + i * 0.02,
               });
-            }, i * GROUP_DELAY);
+            }, i * 70);
           }
-        
-          handEl.classList.add("nb-reveal");
-          renderHand();
-        
-          await delay(650);
-        
-          gridEl.classList.remove("nb-pulse");
-          void gridEl.offsetWidth;
-          gridEl.classList.add("nb-pulse");
-        
-          await explodeOpeningHoles(5);
-        
-          gridEl.classList.remove("nb-pulse");
+
+          await delay(OPENING_DROP_MS + 120);
+
           ensurePlayableHand(state, 24);
           render(true);
-        
+
+          state.hudIntroPlayed = true;
+
+          handEl.classList.add("nb-reveal");
+          renderHand({ revealAll: true });
+
           await delay(220);
-        
-          if (findSkullIndex(state) === -1 && state.lives > 0) {
-            const skullSpawn = spawnSkullAtTop(state);
-            render(true);
-        
-            if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
-              animateGravityDrop(skullSpawn.moved);
-              await wait(460);
-            }
-        
-            render(true);
-          }
-        
+
           handLocked = false;
         }
 
@@ -2980,6 +3215,21 @@ let introPopPlayed = false;
             tile.classList.remove("nb-gravity-drop");
             void tile.offsetWidth;
             tile.classList.add("nb-gravity-drop");
+          });
+        }
+
+        function animateOpeningBoardDrop() {
+          const filledTiles = Array.from(gridEl.querySelectorAll(".nb-tile.is-filled"));
+          if (!filledTiles.length) return;
+
+          filledTiles.forEach((tile, index) => {
+            const jitter = Math.floor(Math.random() * 40);
+            tile.style.setProperty("--opening-drop-distance", `${OPENING_DROP_FROM_ROWS * 68}px`);
+            tile.style.setProperty("--opening-drop-duration", `${OPENING_DROP_MS + jitter}ms`);
+
+            tile.classList.remove("nb-opening-drop");
+            void tile.offsetWidth;
+            tile.classList.add("nb-opening-drop");
           });
         }
 
@@ -3139,6 +3389,8 @@ let introPopPlayed = false;
             {
               triggerSkullTilePunch,
               triggerSkullScreenFX,
+              triggerEnemyHitFX,
+              triggerHeroHitFX,
             },
             {
               comboCarry,
@@ -3158,7 +3410,12 @@ let introPopPlayed = false;
           
           if (hasLevelWin(state)) {
             state.elapsedMs = Date.now() - state.levelStartedAt;
-            await runLevelCompleteSequence();
+
+            finish("win", {
+              reason: "level-complete",
+              score: state.totalScore,
+              wins: state.wins,
+            });
             return true;
           }
 
@@ -3225,6 +3482,8 @@ let introPopPlayed = false;
             {
               triggerSkullTilePunch,
               triggerSkullScreenFX,
+              triggerEnemyHitFX,
+              triggerHeroHitFX,
             },
             {
               comboCarry: 0,
@@ -3241,25 +3500,29 @@ let introPopPlayed = false;
         
           if (fullyCleared) {
             state.isLastChanceMode = false;
+          
+            showComboText({ type: "last_chance_good" }); // 👈 ADD HERE
+          
             wrap.classList.add("nb-last-chance-win");
-            await wait(260);
-        
-            clearLastChanceUI();
-        
-            state.elapsedMs = Date.now() - state.levelStartedAt;
-            await runLevelCompleteSequence();
+            await wait(1600);
+          
+            finish("retry_success", {
+              reason: "last-chance-cleared",
+              score: state.totalScore,
+              wins: state.wins,
+            });
             return true;
           }
-        
+          
           wrap.classList.add("nb-last-chance-wrong");
-          await wait(320);
-        
+          await wait(1600);
+          
           await runGameOverSequence({
             reason: "last-chance-failed",
             score: state.totalScore,
             wins: state.wins,
           });
-        
+          
           return false;
         }
 

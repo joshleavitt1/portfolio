@@ -19,9 +19,13 @@
     root.style.setProperty("--nb-ui-scale", scale.toFixed(4));
   }
 
+  function refreshAdventureLayout() {
+    syncAdventureViewportScale();
+  }
+
   function createBlastAdventureApp({ mount }) {
     if (!mount) throw new Error("Mount is required");
-
+    let isStarted = false;
     let state = window.BlastAdventureData.loadState();
 
     function save() {
@@ -56,12 +60,11 @@
         const pct = Math.max(0, Math.min(100, (from / max) * 100));
         
         return `
-          <div class="nb-reward-health-wrap">
-            <div class="nb-reward-healthbar">
-              <div class="nb-reward-healthbar-fill" style="width:${pct}%"></div>
-            </div>
-            <div class="nb-reward-health-count" data-reward-health-count>${from}/${max}</div>
+        <div class="nb-reward-health-wrap">
+          <div class="nb-reward-healthbar">
+            <div class="nb-reward-healthbar-fill" style="width:${pct}%"></div>
           </div>
+        </div>
         `;
       }
 
@@ -82,7 +85,6 @@
       if (!display || display.mode !== "bar") return;
     
       const fill = mount.querySelector(".nb-reward-healthbar-fill");
-      const count = mount.querySelector("[data-reward-health-count]");
       if (!fill) return;
     
       const from = Math.max(0, Number(display.from || 0));
@@ -90,27 +92,12 @@
       const max = Math.max(1, Number(display.max || 1));
     
       fill.style.width = `${(from / max) * 100}%`;
-      if (count) count.textContent = `${from}/${max}`;
     
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           fill.style.width = `${(to / max) * 100}%`;
         });
       });
-    
-      if (!count) return;
-    
-      const duration = 900;
-      const start = performance.now();
-    
-      function tick(now) {
-        const progress = Math.min(1, (now - start) / duration);
-        const value = Math.round(from + (to - from) * progress);
-        count.textContent = `${value}/${max}`;
-        if (progress < 1) requestAnimationFrame(tick);
-      }
-    
-      requestAnimationFrame(tick);
     }
 
     function revealBattleReward({ reward, display, onContinue, autoAdvanceMs = 4000 }) {
@@ -139,13 +126,15 @@
           </div>
         </section>
       `;
+
+      refreshAdventureLayout();
     
       triggerRewardPageReveal();
     
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         animateRewardDisplay(display);
-      });
-    
+      }, 1000);
+
       window.setTimeout(() => {
         onContinue?.();
       }, autoAdvanceMs);
@@ -157,7 +146,7 @@
       mount.innerHTML = `
         <section class="nb-page nb-reward-page">
           <div class="nb-page-center">
-            <div class="nb-reward-wrap">
+            <div class="nb-reward-wrap nb-reward-wrap--intro">
               <h1 class="nb-reward-title nb-reward-reveal-item" data-reward-title>Mystery Prize</h1>
 
               <button
@@ -171,8 +160,6 @@
                   <img src="${mysteryIcon}" alt="" class="nb-reward-icon nb-reward-icon--mystery" />
                 </span>
               </button>
-
-              <div class="nb-reward-meta nb-reward-reveal-item nb-reward-meta--placeholder" data-reward-meta aria-hidden="true"></div>
             </div>
           </div>
         </section>
@@ -184,8 +171,11 @@
         "click",
         () => {
           const rewardBox = mount.querySelector(".nb-reward-box");
+          const rewardTitle = mount.querySelector(".nb-reward-title");
+      
           rewardBox?.classList.add("is-opening");
-
+          rewardTitle?.classList.add("is-opening");
+      
           window.setTimeout(() => {
             revealBattleReward({ reward, display, onContinue, autoAdvanceMs: 4000 });
           }, 420);
@@ -194,9 +184,29 @@
       );
     }
 
+    function transitionRewardToMap({ transitionFromState = null, transitionCompletedNodeId = null } = {}) {
+      const rewardPage = mount.querySelector(".nb-reward-page");
+      rewardPage?.classList.add("nb-page-fade-out");
+    
+      window.setTimeout(() => {
+        renderMapScreen("", {
+          transitionFromState,
+          transitionCompletedNodeId,
+        });
+      }, 320);
+    }
+
     function start() {
+      if (isStarted) return;
+      isStarted = true;
+      const handleResize = () => {
+        syncAdventureViewportScale();
+      };
+
       syncAdventureViewportScale();
-      window.addEventListener("resize", syncAdventureViewportScale);
+      window.addEventListener("resize", handleResize);
+      window.addEventListener("orientationchange", handleResize);
+
       renderHomePage();
     }
 
@@ -220,6 +230,8 @@
           </div>
         </div>
       `;
+
+      refreshAdventureLayout();
     
       requestAnimationFrame(() => {
         const logo = mount.querySelector(".nb-home-logo-wrap");
@@ -346,10 +358,12 @@
       const {
         transitionFromState = null,
         transitionCompletedNodeId = null,
+        forceInitialReveal = false,
       } = options;
-    
-      const lastCompletedNodeId =
-        transitionCompletedNodeId || state.lastCompletedNodeId;
+      
+      const lastCompletedNodeId = forceInitialReveal
+        ? null
+        : (transitionCompletedNodeId || state.lastCompletedNodeId);
     
       const isLevelUpSequence = Boolean(lastCompletedNodeId);
     
@@ -360,8 +374,8 @@
         ? getNextNodeIdByRow(state, lastCompletedNodeId)
         : state.currentNodeId;
     
-      mount.innerHTML = `
-        <div class="nb-page nb-map-page">
+        mount.innerHTML = `
+          <div class="nb-page nb-map-page${forceInitialReveal ? " nb-map-page--enter" : ""}">
           <div class="nb-page-center">
             <div class="nb-map-stage">
               <div class="nb-map-grid">
@@ -371,6 +385,14 @@
           </div>
         </div>
       `;
+
+      refreshAdventureLayout();
+
+      if (forceInitialReveal) {
+        requestAnimationFrame(() => {
+          mount.querySelector(".nb-map-page")?.classList.add("is-visible");
+        });
+      }
     
       mount.querySelectorAll(".nb-map-node[data-node-id]").forEach((el) => {
         el.addEventListener("click", async () => {
@@ -467,13 +489,21 @@
       }, 1200);
     }
 
+    function getFirstNodeIdForCurrentLevel() {
+      const map = window.BlastAdventureData.getCurrentMap(state);
+      if (!map?.nodes?.length) return null;
+
+      const firstNode = [...map.nodes].sort((a, b) => Number(a.row) - Number(b.row))[0];
+      return firstNode?.id || null;
+    }
+
     async function handleNode(nodeId) {
       refreshState();
       const map = window.BlastAdventureData.getCurrentMap(state);
       const node = window.BlastAdventureData.getNodeById(map, nodeId);
       if (!node) return;
     
-      if (node.type === "reward" || node.type === "heal") {
+      if (node.type === "reward") {
         const beforeState = JSON.parse(JSON.stringify(state));
     
         state = window.BlastAdventureData.resolveNode(state, nodeId, "win");
@@ -487,6 +517,35 @@
         return;
       }
     
+      if (node.type === "heal") {
+        const beforeState = JSON.parse(JSON.stringify(state));
+        const characterId = state.selectedCharacterId || "knight";
+    
+        const rewardResult = window.BlastAdventureData.applyBattleReward(
+          state,
+          "full_heal",
+          characterId
+        );
+    
+        state = window.BlastAdventureData.resolveNode(state, nodeId, "win");
+        state.lastCompletedNodeId = nodeId;
+        save();
+    
+        revealBattleReward({
+          reward: rewardResult.reward,
+          display: rewardResult.display,
+          onContinue: () => {
+            transitionRewardToMap({
+              transitionFromState: beforeState,
+              transitionCompletedNodeId: nodeId,
+            });
+          },
+          autoAdvanceMs: 4000,
+        });
+    
+        return;
+      }
+    
       if (node.type === "battle" || node.type === "boss") {
         const game = window.createNumberBlastGame({
           config: {
@@ -494,6 +553,10 @@
             mode: "adventure",
             level: state.currentLevelId,
             nodeId: node.id,
+            canUseLastChance: !window.BlastAdventureData.hasUsedLastChanceForLevel(
+              state,
+              state.currentLevelId
+            ),
             battleConfig: node.battle,
             enemyName: node.battle?.enemyName,
             enemySprite: node.battle?.enemySprite,
@@ -501,7 +564,7 @@
             heroSprite: node.battle?.heroSprite,
           },
         });
-    
+
         const result = await game.start();
 
         const characterId = state.selectedCharacterId || "knight";
@@ -516,8 +579,16 @@
 
           state = window.BlastAdventureData.resolveNode(state, nodeId, "win");
 
-          const pickedReward = window.BlastAdventureData.rollBattleReward();
-          const rewardResult = window.BlastAdventureData.applyBattleReward(state, pickedReward.id);
+          const pickedReward = window.BlastAdventureData.rollBattleReward(
+            state,
+            characterId
+          );
+
+          const rewardResult = window.BlastAdventureData.applyBattleReward(
+            state,
+            pickedReward.id,
+            characterId
+          );
 
           state.lastCompletedNodeId = nodeId;
           save();
@@ -526,7 +597,7 @@
             reward: rewardResult.reward,
             display: rewardResult.display,
             onContinue: () => {
-              renderMapScreen("", {
+              transitionRewardToMap({
                 transitionFromState: beforeState,
                 transitionCompletedNodeId: nodeId,
               });
@@ -536,31 +607,50 @@
           return;
         }
 
+        if (result?.outcome === "retry_success") {
+          const characterId = state.selectedCharacterId || "knight";
+          const character = window.BlastAdventureData.getCharacterProgress(state, characterId);
+
+          character.currentHearts = character.maxHearts || 3;
+          save();
+
+          renderMapScreen();
+          return;
+        }
+
+        if (result?.outcome === "retry_fail") {
+          const firstNodeId = getFirstNodeIdForCurrentLevel();
+
+          if (firstNodeId) {
+            state.currentNodeId = firstNodeId;
+          }
+
+          state.completedNodeIds = [];
+          state.claimedRewardNodeIds = [];
+          state.lastCompletedNodeId = null;
+          window.BlastAdventureData.clearLastChanceUsedForLevel(state, state.currentLevelId);
+          save();
+
+          mount.classList.add("eq-shake");
+
+          window.setTimeout(() => {
+            mount.classList.remove("eq-shake");
+            renderMapScreen();
+          }, 320);
+
+          return;
+        }
+
+        if (result?.outcome === "lose") {
+          renderMapScreen();
+          return;
+        }
+
         save();
         renderMapScreen();
+        return;
       }
     }
-
-    window.__showMap = renderMapScreen;
-
-    window.__testMapTransitionWithLoad = function (beforeState, afterState, completedNodeId) {
-      // Step 1: save BEFORE state and render it (like a real page load)
-      window.BlastAdventureData.saveState(beforeState);
-      state = beforeState;
-    
-      window.__showMap();
-    
-      // Step 2: after a short delay, apply the win + animate
-      setTimeout(() => {
-        window.BlastAdventureData.saveState(afterState);
-        state = afterState;
-    
-        renderMapScreen("", {
-          transitionFromState: beforeState,
-          transitionCompletedNodeId: completedNodeId,
-        });
-      }, 500); // tweak timing if needed
-    };
 
     return { start };
   }

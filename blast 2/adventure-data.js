@@ -49,6 +49,37 @@
     },
   };
 
+  const MONSTER_POOLS = {
+    1: {
+      regular: [
+        {
+          name: "Skeleton",
+          sprite: "images/adventure/monster/level_1/skeleton_base.png",
+        },
+        {
+          name: "Skeleton",
+          sprite: "images/adventure/monster/level_1/skeleton_base.png"
+        },
+        {
+          name: "Skeleton",
+          sprite: "images/adventure/monster/level_1/skeleton_base.png"
+        },
+        {
+          name: "Skeleton",
+          sprite: "images/adventure/monster/level_1/skeleton_base.png"
+        },
+        {
+          name: "Skeleton",
+          sprite: "images/adventure/monster/level_1/skeleton_base.png"
+        },
+      ],
+      boss: {
+        name: "Skeleton",
+          sprite: "images/adventure/monster/level_1/skeleton_base.png"
+      },
+    },
+  };
+
   const BATTLE_REWARD_ICONS = {
     attack: "images/adventure/win/sword.svg",
     heal: "images/adventure/win/heart.svg",
@@ -101,21 +132,48 @@
       }
     },
     {
+      id: "full_heal",
+      title: "Full Heal",
+      label: "Health",
+      icon: BATTLE_REWARD_ICONS.heal,
+      colorClass: "is-heal",
+      apply(state, characterId) {
+        const character = state.characterProgress[characterId];
+        const max = character.maxHearts || 3;
+        character.currentHearts = max;
+      },
+      getDisplay(beforeCharacter, afterCharacter) {
+        return {
+          mode: "bar",
+          label: "Health",
+          from: beforeCharacter.currentHearts || 0,
+          to: afterCharacter.maxHearts || 3,
+          max: afterCharacter.maxHearts || 3,
+        };
+      },
+    },
+    {
       id: "armor",
-      title: "Armor Boost",
-      label: "Armor",
+      title: "Health Boost",
+      label: "Health",
       icon: BATTLE_REWARD_ICONS.armor,
       colorClass: "is-armor",
       apply(state, characterId) {
         const character = state.characterProgress[characterId];
-        character.armor = (character.armor || 1) + 1;
+    
+        character.maxHearts = (character.maxHearts || 3) + 1;
+        character.currentHearts = Math.min(
+          character.maxHearts,
+          (character.currentHearts || 0) + 1
+        );
       },
       getDisplay(beforeCharacter, afterCharacter) {
         return {
-          mode: "value",
-          label: "Armor",
-          from: beforeCharacter.armor || 1,
-          to: afterCharacter.armor || 1,
+          mode: "bar",
+          label: "Health",
+          from: beforeCharacter.currentHearts || 0,
+          to: afterCharacter.currentHearts || 0,
+          max: afterCharacter.maxHearts || 3,
         };
       },
     },
@@ -140,6 +198,28 @@
     },
   ];
 
+  function rollBattleReward(state, characterId) {
+    const rewards = NB_BATTLE_REWARDS.slice();
+  
+    const character = state.characterProgress?.[characterId];
+  
+    let eligible = rewards;
+  
+    if (character) {
+      const current = character.currentHearts || 0;
+      const max = character.maxHearts || 3;
+  
+      // 🚫 remove heal if full HP
+      if (current >= max) {
+        eligible = rewards.filter(r => r.id !== "heal");
+      }
+    }
+  
+    if (!eligible.length) return rewards[0];
+  
+    return eligible[Math.floor(Math.random() * eligible.length)];
+  }
+
   const MAPS = {
     level_1: {
       id: "level_1",
@@ -162,10 +242,10 @@
             target: 10,
             pointsGoal: 150,
             allowShapes: ["s1", "h2", "v2", "smartL"],
-            enemyName: "Dragon",
-            enemySprite: "images/adventure/monster/dragon.png",
+            enemyName: getRegularMonster(1, 0)?.name || "Skeleton",
+            enemySprite: getRegularMonster(1, 3)?.sprite || "images/adventure/monster/level_1/skeleton_base.png",
             heroName: "Knight",
-            heroSprite: "images/adventure/hero/knight.png",
+            heroSprite: "images/adventure/hero/knight_base.png",
           },
         },
         {
@@ -184,10 +264,10 @@
             target: 10,
             pointsGoal: 165,
             allowShapes: ["s1", "h2", "v2", "smartL"],
-            enemyName: "Dragon",
-            enemySprite: "images/adventure/monster/dragon.png",
+            enemyName: getRegularMonster(1, 1)?.name || "Skeleton",
+            enemySprite: getRegularMonster(1, 3)?.sprite || "images/adventure/monster/level_1/skeleton_base.png",
             heroName: "Knight",
-            heroSprite: "images/adventure/hero/knight.png",
+            heroSprite: "images/adventure/hero/knight_base.png",
           },
         },
         {
@@ -218,10 +298,10 @@
             target: 10,
             pointsGoal: 180,
             allowShapes: ["s1", "h2", "v2", "smartL"],
-            enemyName: "Dragon",
-            enemySprite: "images/adventure/monster/dragon.png",
+            enemyName: getRegularMonster(1, 2)?.name || "Skeleton",
+            enemySprite: getRegularMonster(1, 3)?.sprite || "images/adventure/monster/level_1/skeleton_base.png",
             heroName: "Knight",
-            heroSprite: "images/adventure/hero/knight.png",
+            heroSprite: "images/adventure/hero/knight_base.png",
           },
         },
         {
@@ -253,10 +333,10 @@
             target: 10,
             pointsGoal: 195,
             allowShapes: ["s1", "h2", "v2", "smartL"],
-            enemyName: "Dragon",
-            enemySprite: "images/adventure/monster/dragon.png",
+            enemyName: getRegularMonster(1, 3)?.name || "Skeleton",
+            enemySprite: getRegularMonster(1, 3)?.sprite || "images/adventure/monster/level_1/skeleton_base.png",
             heroName: "Knight",
-            heroSprite: "images/adventure/hero/knight.png",
+            heroSprite: "images/adventure/hero/knight_base.png",
           },
         },
         {
@@ -287,15 +367,29 @@
             target: 10,
             pointsGoal: 220,
             allowShapes: ["s1", "h2", "v2", "smartL"],
-            enemyName: "Dragon",
-            enemySprite: "images/adventure/monster/dragon.png",
+            enemyName: getBossMonster(1)?.name || "Skeleton",
+            enemySprite: getBossMonster(1)?.sprite || "images/adventure/monster/level_1/skeleton_base.png",
             heroName: "Knight",
-            heroSprite: "images/adventure/hero/knight.png",
+            heroSprite: "images/adventure/hero/knight_base.png",
           },
         },
       ],
     },
   };
+
+  function getMonsterPool(levelId) {
+    return MONSTER_POOLS[levelId] || null;
+  }
+
+  function getRegularMonster(levelId, index) {
+    const pool = getMonsterPool(levelId);
+    return pool?.regular?.[index] || null;
+  }
+
+  function getBossMonster(levelId) {
+    const pool = getMonsterPool(levelId);
+    return pool?.boss || null;
+  }
 
   function createDefaultState() {
     return {
@@ -306,6 +400,7 @@
       lastCompletedNodeId: null,
       completedNodeIds: [],
       claimedRewardNodeIds: [],
+      usedLastChanceLevelIds: [],
       inventory: {
         coins: 0,
       },
@@ -351,6 +446,9 @@
     next.currentLevelId = Number(incoming.currentLevelId || next.currentLevelId);
     next.currentMapId = incoming.currentMapId || next.currentMapId;
     next.currentNodeId = incoming.currentNodeId || next.currentNodeId;
+    next.usedLastChanceLevelIds = Array.isArray(incoming.usedLastChanceLevelIds)
+  ? [...incoming.usedLastChanceLevelIds]
+  : [];
     next.completedNodeIds = Array.isArray(incoming.completedNodeIds) ? [...incoming.completedNodeIds] : [];
     next.claimedRewardNodeIds = Array.isArray(incoming.claimedRewardNodeIds) ? [...incoming.claimedRewardNodeIds] : [];
     next.inventory = {
@@ -523,11 +621,6 @@
     return state;
   }
 
-  function rollBattleReward() {
-    const index = Math.floor(Math.random() * NB_BATTLE_REWARDS.length);
-    return NB_BATTLE_REWARDS[index];
-  }
-
   function applyBattleReward(state, rewardId) {
     const characterId = state.selectedCharacterId || "knight";
     const reward =
@@ -598,6 +691,39 @@
     return getNodeById(getCurrentMap(state), state.currentNodeId);
   }
 
+  function hasUsedLastChanceForLevel(state, levelId) {
+    return !!state?.usedLastChanceLevelIds?.includes(Number(levelId));
+  }
+  
+  function markLastChanceUsedForLevel(state, levelId) {
+    const resolvedLevelId = Number(levelId);
+    if (!Number.isFinite(resolvedLevelId)) return state;
+  
+    if (!Array.isArray(state.usedLastChanceLevelIds)) {
+      state.usedLastChanceLevelIds = [];
+    }
+  
+    if (!state.usedLastChanceLevelIds.includes(resolvedLevelId)) {
+      state.usedLastChanceLevelIds.push(resolvedLevelId);
+    }
+  
+    return state;
+  }
+  
+  function clearLastChanceUsedForLevel(state, levelId) {
+    const resolvedLevelId = Number(levelId);
+    if (!Array.isArray(state.usedLastChanceLevelIds)) {
+      state.usedLastChanceLevelIds = [];
+      return state;
+    }
+  
+    state.usedLastChanceLevelIds = state.usedLastChanceLevelIds.filter(
+      (id) => Number(id) !== resolvedLevelId
+    );
+  
+    return state;
+  }
+
   window.BlastAdventureData = {
     STORAGE_KEY,
     CHARACTERS,
@@ -624,5 +750,13 @@
     syncCharacterHearts,
     rollBattleReward,
     applyBattleReward,
+    MONSTER_POOLS,
+    getMonsterPool,
+    getRegularMonster,
+    getBossMonster,
+    rollBattleReward,
+    hasUsedLastChanceForLevel,
+markLastChanceUsedForLevel,
+clearLastChanceUsedForLevel,
   };
 })();

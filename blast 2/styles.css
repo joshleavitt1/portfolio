@@ -157,6 +157,31 @@ body {
 }
 
 /* ================================================ */
+/* Drop                                */
+/* ================================================ */
+
+.nb-tile.nb-opening-drop {
+  animation: nbOpeningDrop var(--opening-drop-duration, 560ms) cubic-bezier(.16,.9,.2,1) both;
+}
+
+@keyframes nbOpeningDrop {
+  0% {
+    opacity: 1;
+    transform: translateY(calc(var(--opening-drop-distance, 140px) * -1)) scaleY(1.02);
+  }
+  72% {
+    transform: translateY(calc(4px * var(--nb-ui-scale))) scaleY(0.98);
+  }
+  86% {
+    transform: translateY(calc(-2px * var(--nb-ui-scale))) scaleY(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+/* ================================================ */
 /* Home Screen                                      */
 /* ================================================ */
 
@@ -239,6 +264,76 @@ body {
 .nb-reveal {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+.nb-battle-hud-sprite--hero,
+.nb-battle-hud-sprite--enemy {
+  transform-origin: center bottom;
+  will-change: transform;
+}
+
+.nb-battle-hud-sprite--hero {
+  animation: nbHeroIdle 1.9s ease-in-out infinite;
+}
+
+.nb-battle-hud-sprite--enemy {
+  animation: nbEnemyIdle 1.7s ease-in-out infinite;
+}
+
+@keyframes nbHeroIdle {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(calc(-3px * var(--nb-ui-scale))) scale(1.01);
+  }
+}
+
+@keyframes nbEnemyIdle {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(calc(-4px * var(--nb-ui-scale))) scale(1.015);
+  }
+}
+
+.nb-battle-hud-sprite--enemy.nb-enemy-hit {
+  animation: nbEnemyHit 180ms cubic-bezier(.22,1,.36,1);
+}
+
+.nb-battle-hud-sprite--hero.nb-hero-hit {
+  animation: nbHeroHit 220ms cubic-bezier(.22,1,.36,1);
+}
+
+@keyframes nbEnemyHit {
+  0% {
+    transform: translateX(0) scale(1);
+    filter: brightness(1);
+  }
+  45% {
+    transform: translateX(calc(-10px * var(--nb-ui-scale))) scale(0.95);
+    filter: brightness(1.08);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes nbHeroHit {
+  0% {
+    transform: translateX(0) scale(1);
+    filter: brightness(1);
+  }
+  30% {
+    transform: translateX(calc(8px * var(--nb-ui-scale))) scale(0.96);
+    filter: brightness(1.16) saturate(1.08);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    filter: brightness(1);
+  }
 }
 
 /* ================================================ */
@@ -922,7 +1017,6 @@ body {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: calc(24px * var(--nb-ui-scale));
   align-items: start;
 }
 
@@ -930,11 +1024,11 @@ body {
   display: grid;
   justify-items: center;
   align-content: start;
-  gap: calc(10px * var(--nb-ui-scale));
+  gap: 16px;
 }
 
 .nb-battle-hud-sprite {
-  width: calc(144px * var(--nb-ui-scale));
+  width: 132px;
   height: 100%;
   object-fit: contain;
 }
@@ -1650,8 +1744,8 @@ body {
 }
 
 .nb-map-page {
-  width: var(--nb-stage-w);
-  height: var(--nb-stage-h);
+  width: min(var(--nb-stage-w), calc(100vw - 48px));
+  height: min(var(--nb-stage-h), calc(100dvh - 48px));
   margin: 0 auto;
   display: grid;
   grid-template-rows: 1fr;
@@ -2052,11 +2146,10 @@ body {
   display: grid;
   gap: 16px;
   justify-items: center;
-}
-
-.nb-reward-meta--placeholder {
-  min-height: 98px;
-  visibility: hidden;
+  background-color: #ffffff16;
+  padding: 32px;
+  border-radius: 12px;
+  width: 280px;
 }
 
 .nb-reward-stat-label {
@@ -2073,7 +2166,7 @@ body {
   gap: 16px;
   color: #fff;
   font-weight: 800;
-  font-size: 48px;
+  font-size: 32px;
 }
 
 .nb-reward-value {
@@ -2109,13 +2202,6 @@ body {
   transition: width 900ms cubic-bezier(.22,1,.36,1);
 }
 
-.nb-reward-health-count {
-  font-size: 28px;
-  line-height: 1;
-  font-weight: 800;
-  color: #fff;
-}
-
 .nb-reward-healthbar-fill {
   height: 100%;
   border-radius: 999px;
@@ -2124,7 +2210,8 @@ body {
 }
 
 
-.nb-reward-box.is-opening {
+.nb-reward-box.is-opening,
+.nb-reward-title.is-opening {
   animation: nbRewardOpen 420ms cubic-bezier(.18,1.2,.22,1) forwards;
 }
 
@@ -2192,5 +2279,203 @@ body {
   }
   50% {
     transform: translateY(calc(-6px * var(--nb-ui-scale))) rotate(2deg) scale(1.03);
+  }
+}
+
+.nb-page-fade-out {
+  animation: nbPageFadeOut 320ms ease forwards;
+}
+
+@keyframes nbPageFadeOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+.nb-map-page--enter {
+  opacity: 0;
+  transform: scale(0.985);
+}
+
+.nb-map-page--enter.is-visible {
+  animation: nbMapPageEnter 420ms cubic-bezier(.18,1.12,.22,1) forwards;
+}
+
+@keyframes nbMapPageEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ================================================ */
+/* Last Chance                           */
+/* ================================================ */
+
+.nb-wrap.nb-last-chance-mode {
+  grid-template-rows:
+    auto
+    minmax(calc(8px * var(--nb-ui-scale)), 1fr)
+    auto
+    minmax(calc(20px * var(--nb-ui-scale)), 1fr)
+    auto
+    minmax(calc(20px * var(--nb-ui-scale)), 1fr)
+    auto;
+}
+
+.nb-wrap.nb-last-chance-mode .nb-hud {
+  display: grid;
+  grid-template-rows: auto auto;
+  justify-items: center;
+  align-content: start;
+  gap: calc(18px * var(--nb-ui-scale));
+}
+
+.nb-wrap.nb-last-chance-mode .nb-hud {
+  grid-row: 1;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0;
+}
+
+.nb-last-chance-header-row {
+  grid-row: 3;
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+}
+
+.nb-wrap.nb-last-chance-mode .nb-board-wrap {
+  grid-row: 5;
+}
+
+.nb-wrap.nb-last-chance-mode .nb-hand-rail {
+  grid-row: 7;
+}
+
+.nb-last-chance-icon-wrap {
+  display: grid;
+  place-items: center;
+}
+
+.nb-last-chance-icon {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #333333 0%, #999999 100%);
+  box-shadow:
+    inset 0 6px 0 rgba(255,255,255,0.18),
+    0 14px 32px rgba(0,0,0,0.24);
+}
+
+.nb-last-chance-icon-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.4) 0%,
+    rgba(255,255,255,0) 100%
+  );
+  z-index: 1;
+}
+
+.nb-last-chance-skull-icon {
+  position: relative;
+  z-index: 2;
+  height: calc(38px * var(--nb-ui-scale));
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+}
+
+.nb-last-chance-header {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.nb-last-chance-title {
+  margin: 0;
+  color: #fff;
+  font-size: calc(56px * var(--nb-ui-scale));
+  line-height: 1;
+  font-weight: 800;
+  text-align: center;
+}
+
+.nb-last-chance-copy {
+  margin: 0;
+  max-width: calc(320px * var(--nb-ui-scale));
+  color: rgba(255,255,255,0.2);
+  font-size: calc(28px * var(--nb-ui-scale));
+  line-height: 1.15;
+  font-weight: 700;
+  text-align: center;
+}
+
+.nb-wrap.nb-last-chance-wrong {
+  animation: nbLastChanceWrong 320ms ease;
+}
+
+@keyframes nbLastChanceWrong {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(calc(-5px * var(--nb-ui-scale))); }
+  40% { transform: translateX(calc(5px * var(--nb-ui-scale))); }
+  60% { transform: translateX(calc(-3px * var(--nb-ui-scale))); }
+  80% { transform: translateX(calc(3px * var(--nb-ui-scale))); }
+  100% { transform: translateX(0); }
+}
+
+.nb-wrap.nb-last-chance-fail {
+  animation: nbLastChanceFadeOut 360ms ease forwards;
+}
+
+@keyframes nbLastChanceFadeOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+.nb-wrap.nb-last-chance-win {
+  animation: nbLastChanceWin 260ms ease;
+}
+
+@keyframes nbLastChanceWin {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.015);
+    filter: brightness(1.06);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
   }
 }
