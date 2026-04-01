@@ -547,6 +547,10 @@
       }
     
       if (node.type === "battle" || node.type === "boss") {
+        if (typeof window.createNumberBlastGame !== "function") {
+          console.error("createNumberBlastGame is missing");
+          return;
+        }
         const game = window.createNumberBlastGame({
           config: {
             mount,

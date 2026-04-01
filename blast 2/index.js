@@ -572,6 +572,8 @@
       canUseLastChance: !!difficultyRules.canUseLastChance,
       hasUsedLastChance: false,
       isLastChanceMode: false,
+      hudIntroPlayed: false,
+      hudSpritesDroppedIn: false,
       lastChanceSetup: null,
     };
   
@@ -1109,99 +1111,196 @@
   
     const triggerSkullTilePunch = skullFx.triggerSkullTilePunch || (() => {});
     const triggerSkullScreenFX = skullFx.triggerSkullScreenFX || (() => {});
-    const triggerEnemyHitFX = skullFx.triggerEnemyHitFX || (() => {});
-    const triggerHeroHitFX = skullFx.triggerHeroHitFX || (() => {});
+    const triggerEnemyAttackFX = skullFx.triggerEnemyAttackFX || (() => {});
+    const triggerHeroAttackFX = skullFx.triggerHeroAttackFX || (() => {});
+    const triggerEnemyTakeDamageFX = skullFx.triggerEnemyTakeDamageFX || (() => {});
+    const triggerHeroTakeDamageFX = skullFx.triggerHeroTakeDamageFX || (() => {});
+    const spawnDamageBurstFX = skullFx.spawnDamageBurstFX || (() => {});
+    const animateHpBarsFX = skullFx.animateHpBarsFX || (async () => {});
   
     while (true) {
-const { groups, hit } = findGroupsToClear(state, state.board);
-if (!groups.length) break;
-
-triggerEnemyHitFX();
-  
+      const { groups, hit } = findGroupsToClear(state, state.board);
+      if (!groups.length) break;
+    
       const waveNumber = chainCount + 1;
       const skullHits = collectSkullsHitByBlast(state, hit);
-  
-      skullHits.forEach((i) => hit.add(i));
-  
-      if (waveNumber === 1) {
-        firstWaveGroupCount = groups.length;
-      }
-  
-      chainCount += 1;
-      totalGroups += groups.length;
-  
       const hadSkullHitThisWave = skullHits.length > 0;
-      if (hadSkullHitThisWave) {
-        hadAnySkullHit = true;
-        triggerSkullTilePunch();
-      }
+      skullHits.forEach((i) => hit.add(i));
+      const isPowerClearWave = waveNumber === 1 && groups.length >= 2;
+    
+      let enemyHpFromPct = null;
+      let enemyHpToPct = null;
+      let heroHpFromPct = null;
+      let heroHpToPct = null;
+
+const damageScale = hadSkullHitThisWave
+  ? 1
+  : isPowerClearWave
+  ? 1.5
+  : 1 + Math.max(0, waveNumber - 1) * 0.5;
+
+const enemyDamageAmount = Math.max(1, groups.length);
+const heroDamageAmount = Math.max(1, skullHits.length || 1);
+
+if (!hadSkullHitThisWave) {
+  const enemyHpMax = Math.max(1, Number(state.levelGoal) || 1);
+  enemyHpFromPct = Math.max(
+    0,
+    Math.min(100, ((enemyHpMax - state.levelScore) / enemyHpMax) * 100)
+  );
+}
+
+if (hadSkullHitThisWave) {
+  const heroHpMax = Math.max(1, state.maxLives || 1);
+  heroHpFromPct = Math.max(
+    0,
+    Math.min(100, (state.lives / heroHpMax) * 100)
+  );
+}
   
-      animateBlast(hit, { chainStep: waveNumber, groupCount: groups.length });
+if (waveNumber === 1) {
+  firstWaveGroupCount = groups.length;
+}
+
+chainCount += 1;
+totalGroups += groups.length;
+
+if (hadSkullHitThisWave) {
+  hadAnySkullHit = true;
+  triggerSkullTilePunch();
+}
+
+if (!hadSkullHitThisWave) {
+  const projectedLevelScore =
+    state.levelScore +
+    groups.reduce((sum, group, idx) => {
+      const powerBonus =
+        idx === 0 && groups.length >= 2 ? 15 * (groups.length - 1) : 0;
+      return sum + 10 + powerBonus;
+    }, 0);
+
+  const enemyHpMax = Math.max(1, Number(state.levelGoal) || 1);
+  enemyHpToPct = Math.max(
+    0,
+    Math.min(100, ((enemyHpMax - projectedLevelScore) / enemyHpMax) * 100)
+  );
+}
+
+animateBlast(hit, { chainStep: waveNumber, groupCount: groups.length });
+
+if (!hadSkullHitThisWave) {
+  sfx.playBlast(groups.length, waveNumber);
+}
+
+clearHitCells(state, hit);
   
-      if (!hadSkullHitThisWave) {
-        sfx.playBlast(groups.length, waveNumber);
-      }
+if (hadSkullHitThisWave) {
+  setTimeout(() => {
+    sfx.play("skull", {
+      volume: 1,
+      rate: 0.92 + Math.random() * 0.06,
+    });
+  }, 40);
+
+  damageLifeFromSkull(state);
+
+  const heroHpMax = Math.max(1, state.maxLives || 1);
+heroHpToPct = Math.max(
+  0,
+  Math.min(100, (state.lives / heroHpMax) * 100)
+);
+}
   
-      await wait(ROW_EXPLODE_MS + 80);
-  
-      clearHitCells(state, hit);
-  
-      if (hadSkullHitThisWave) {
-        setTimeout(() => {
-          sfx.play("skull", {
-            volume: 1,
-            rate: 0.92 + Math.random() * 0.06,
-          });
-        }, 40);
-  
-        damageLifeFromSkull(state);
-        triggerHeroHitFX();
-      }
-  
-      gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
-        el.classList.remove("nb-explode-source-hide");
-      });
-  
-      render();
-  
-      if (hadSkullHitThisWave) {
-        await wait(16);
-        triggerSkullScreenFX();
-        await wait(220);
-      }
-  
-      if (state.lives <= 0) {
-        if (typeof onGameOver === "function") {
-          await onGameOver({
-            reason: "out-of-lives",
-            score: state.totalScore,
-            wins: state.wins,
-          });
-        } else {
-          finish("lose", {
-            reason: "out-of-lives",
-            score: state.totalScore,
-            wins: state.wins,
-          });
-        }
-  
-        return {
-          totalGroups,
-          chainCount,
-          hadAnySkullHit,
-          firstWaveGroupCount,
-        };
-      }
-  
-      await wait(140);
-  
-      const moved = applyGravity(state);
-      render();
-  
-      if (moved.length) {
-        animateGravity(moved, { chainStep: waveNumber });
-        await wait(460);
-      }
+gridEl.querySelectorAll(".nb-tile.nb-explode-source-hide").forEach((el) => {
+  el.classList.remove("nb-explode-source-hide");
+});
+
+render(true, {}, { hud: false, hand: false, cleanup: false });
+
+let hpAnimPromise = null;
+
+if (!hadSkullHitThisWave && enemyHpFromPct != null && enemyHpToPct != null) {
+  await wait(16);
+  triggerHeroAttackFX();
+  triggerEnemyTakeDamageFX();
+  spawnDamageBurstFX({
+    side: "enemy",
+    amount: enemyDamageAmount,
+    scale: damageScale,
+    kind: "blast",
+  });
+
+  hpAnimPromise = animateHpBarsFX({
+    enemyFromPct: enemyHpFromPct,
+    enemyToPct: enemyHpToPct,
+    duration: 500,
+  });
+}
+
+if (hadSkullHitThisWave && heroHpFromPct != null && heroHpToPct != null) {
+  await wait(16);
+  triggerEnemyAttackFX();
+  triggerHeroTakeDamageFX();
+  spawnDamageBurstFX({
+    side: "hero",
+    amount: heroDamageAmount,
+    scale: damageScale,
+    kind: "skull",
+  });
+
+  hpAnimPromise = animateHpBarsFX({
+    heroFromPct: heroHpFromPct,
+    heroToPct: heroHpToPct,
+    duration: 500,
+  });
+}
+
+if (state.lives <= 0) {
+  if (hpAnimPromise) await hpAnimPromise;
+  await wait(1000);
+
+  if (typeof onGameOver === "function") {
+    await onGameOver({
+      reason: "out-of-lives",
+      score: state.totalScore,
+      wins: state.wins,
+    });
+  } else {
+    finish("lose", {
+      reason: "out-of-lives",
+      score: state.totalScore,
+      wins: state.wins,
+    });
+  }
+
+  return {
+    totalGroups,
+    chainCount,
+    hadAnySkullHit,
+    firstWaveGroupCount,
+  };
+}
+
+await wait(140);
+
+const moved = applyGravity(state);
+render(true, {}, { hud: false, hand: false, cleanup: false });
+
+if (moved.length) {
+  animateGravity(moved, { chainStep: waveNumber });
+}
+
+if (hpAnimPromise) {
+  await hpAnimPromise;
+}
+
+if (moved.length) {
+  await wait(460);
+}
+
+if (hadSkullHitThisWave) {
+  await wait(220);
+}
     }
   
     if (!hadAnySkullHit) {
@@ -1225,12 +1324,12 @@ triggerEnemyHitFX();
   
     if (!skipAutoSkullSpawn && findSkullIndex(state) === -1 && state.lives > 0) {
       const skullSpawn = spawnSkullAtTop(state);
-      render();
+      render(true, {}, { hud: false, hand: false, cleanup: false });
   
       if (skullSpawn && skullSpawn.moved && skullSpawn.moved.length) {
         animateGravity(skullSpawn.moved, { chainStep: 0 });
         await wait(460);
-        render();
+        render(true, {}, { hud: false, hand: false, cleanup: false });
       }
     }
   
@@ -1819,6 +1918,7 @@ const picked = pool[next];
           const mergedRules = {
             ...latestRules,
             ...(config.battleConfig || {}),
+            canUseLastChance: !!config.canUseLastChance,
           };
         
           state.rules = mergedRules;
@@ -1827,6 +1927,7 @@ const picked = pool[next];
           state.numberMax = mergedRules.numberMax ?? 9;
           state.targetSum = mergedRules.target ?? 10;
           state.levelGoal = mergedRules.pointsGoal ?? 120;
+          state.canUseLastChance = !!mergedRules.canUseLastChance;
         
           const opening = buildOpeningBoardState(state, OPENING_REMOVAL_COUNT);
           state.board = opening.board;
@@ -1878,30 +1979,226 @@ const picked = pool[next];
           restartClass(mount, "eq-shake");
         }
 
-        function triggerEnemyHitFX() {
-          const enemySprite = hud.querySelector(".nb-battle-hud-sprite--enemy");
-          if (!enemySprite) return;
-        
-          enemySprite.classList.remove("nb-enemy-hit");
-          void enemySprite.offsetWidth;
-          enemySprite.classList.add("nb-enemy-hit");
+        function restartAnimClass(el, className, removeAfter = 420) {
+          if (!el) return;
+          el.classList.remove(className);
+          void el.offsetWidth;
+          el.classList.add(className);
         
           setTimeout(() => {
-            enemySprite.classList.remove("nb-enemy-hit");
-          }, 220);
+            el.classList.remove(className);
+          }, removeAfter);
         }
         
-        function triggerHeroHitFX() {
-          const heroSprite = hud.querySelector(".nb-battle-hud-sprite--hero");
-          if (!heroSprite) return;
+        function restartCoreAnimClass(el, className, removeAfter = 520) {
+          if (!el) return;
+          el.classList.remove(className);
+          void el.offsetWidth;
+          el.classList.add(className);
+
+          setTimeout(() => {
+            el.classList.remove(className);
+          }, removeAfter);
+        }
+
+        function triggerEnemyAttackFX() {
+          const cpuCore = hud.querySelector('.nb-core[data-side="cpu"]');
+          restartCoreAnimClass(cpuCore, "nb-core-attack-pulse", 420);
+        }
+
+        function triggerHeroAttackFX() {
+          const playerCore = hud.querySelector('.nb-core[data-side="player"]');
+          restartCoreAnimClass(playerCore, "nb-core-attack-pulse", 420);
+        }
+
+        function triggerEnemyTakeDamageFX() {
+          const cpuCore = hud.querySelector('.nb-core[data-side="cpu"]');
+          restartCoreAnimClass(cpuCore, "nb-core-hit", 520);
+        }
+
+        function triggerHeroTakeDamageFX() {
+          const playerCore = hud.querySelector('.nb-core[data-side="player"]');
+          restartCoreAnimClass(playerCore, "nb-core-skull-hit", 520);
+        }
+
+        function spawnDamageBurst({
+          side = "enemy",
+          amount = 1,
+          scale = 1,
+          kind = "blast"
+        }) {
+          const sideEl = hud.querySelector(
+            side === "hero"
+              ? ".nb-core-wrap--player"
+              : ".nb-core-wrap--cpu"
+          );
+          if (!sideEl) return;
         
-          heroSprite.classList.remove("nb-hero-hit");
-          void heroSprite.offsetWidth;
-          heroSprite.classList.add("nb-hero-hit");
+          const burst = document.createElement("div");
+          burst.className = `nb-damage-burst nb-damage-burst--${kind}`;
+        
+          {
+            const comboLevel = Math.max(0, Math.round((scale - 1) / 0.5));
+            const starCount = 3 + comboLevel;
+            const sizeBoost = Math.pow(1.05, comboLevel);
+            const distanceBoost = Math.pow(1.10, comboLevel);
+          
+            const baseAngles = [-90, -28, 28]; // center up, up-left, up-right
+          
+            burst.innerHTML = `
+              <div class="nb-damage-stars">
+                ${Array.from({ length: starCount })
+                  .map((_, idx) => {
+                    const gradIndex = idx % 3;
+
+                    const gradName =
+                    gradIndex === 0
+                      ? "blue"
+                      : gradIndex === 1
+                        ? "green"
+                        : "orange";
+
+                    const lane = idx % 3;
+                    const baseSizes = [0.85, 1.0, 1.15];
+                    const starScale = (baseSizes[lane] * sizeBoost).toFixed(3);
+
+                    const angleJitter = lane === 0
+                      ? (Math.random() * 4 - 2)
+                      : (Math.random() * 8 - 4);
+
+                    const angle = baseAngles[lane] + angleJitter;
+
+                    const baseRadius = lane === 0 ? 48 : 40.8;
+                    const radius = baseRadius * distanceBoost;
+                    const driftX = (Math.cos((angle * Math.PI) / 180) * radius).toFixed(1);
+                    const driftY = (Math.sin((angle * Math.PI) / 180) * radius).toFixed(1);
+
+                    const driftRot =
+                      lane === 0
+                        ? ((Math.random() * 12) - 6).toFixed(1)
+                        : (lane === 1 ? (-16 - Math.random() * 10).toFixed(1) : (16 + Math.random() * 10).toFixed(1));
+
+                    const delay = lane * 24;
+                    const zIndex = 10 - idx;
+          
+                    return `
+                    <img
+                      src="images/puzzle/star.svg"
+                      alt=""
+                      class="nb-damage-star nb-damage-star--${gradName}"
+                      style="
+                        --star-scale:${starScale};
+                        --star-dx:${driftX}px;
+                        --star-dy:${driftY}px;
+                        --star-rot:${driftRot}deg;
+                        --star-delay:${delay}ms;
+                        --star-z:${zIndex};
+                      "
+                    />
+                  `;
+                  })
+                  .join("")}
+              </div>
+            `;
+          }
+        
+          sideEl.appendChild(burst);
+        
+          requestAnimationFrame(() => {
+            burst.classList.add("is-live");
+          });
         
           setTimeout(() => {
-            heroSprite.classList.remove("nb-hero-hit");
-          }, 240);
+            burst.remove();
+          }, 2000);
+        }
+
+        function animateCoreHpValue(coreEl, toValue) {
+          if (!coreEl) return Promise.resolve();
+
+          const valueEl = coreEl.querySelector(".nb-core-value");
+          const ringEl = coreEl.querySelector(".nb-core-ring-fill");
+          if (!valueEl || !ringEl) return Promise.resolve();
+
+          const fromValue = Number(coreEl.dataset.hp || valueEl.textContent || 0);
+          const nextValue = Math.max(0, Number(toValue) || 0);
+
+          const start = performance.now();
+          const duration = 420;
+
+          function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+          }
+
+          return new Promise((resolve) => {
+            function tick(now) {
+              const raw = Math.min(1, (now - start) / duration);
+              const eased = easeOutCubic(raw);
+              const current = Math.round(fromValue + (nextValue - fromValue) * eased);
+
+              valueEl.textContent = String(current);
+
+              if (raw < 1) {
+                requestAnimationFrame(tick);
+              } else {
+                valueEl.textContent = String(nextValue);
+                coreEl.dataset.hp = String(nextValue);
+                resolve();
+              }
+            }
+
+            requestAnimationFrame(tick);
+          });
+        }
+
+        function setCoreHpState(coreEl, hpNow, hpPct) {
+          if (!coreEl) return;
+
+          const ringEl = coreEl.querySelector(".nb-core-ring-fill");
+          if (ringEl) {
+            ringEl.style.setProperty("--core-fill", `${Math.max(0, Math.min(100, hpPct))}%`);
+          }
+
+          coreEl.dataset.hp = String(Math.max(0, hpNow));
+          coreEl.dataset.hpPct = String(Math.max(0, Math.min(100, hpPct)));
+
+          if (hpPct <= 30) {
+            coreEl.classList.add("is-low");
+          } else {
+            coreEl.classList.remove("is-low");
+          }
+        }
+
+        async function animateBattleHpBars({
+          enemyFromPct = null,
+          enemyToPct = null,
+          heroFromPct = null,
+          heroToPct = null,
+          duration = 500,
+        } = {}) {
+          const jobs = [];
+
+          const playerCore = hud.querySelector('.nb-core[data-side="player"]');
+          const cpuCore = hud.querySelector('.nb-core[data-side="cpu"]');
+
+          if (playerCore && heroToPct != null) {
+            const heroMax = Math.max(1, state.maxLives || 1);
+            const heroToValue = Math.round((heroToPct / 100) * heroMax);
+
+            setCoreHpState(playerCore, heroToValue, heroToPct);
+            jobs.push(animateCoreHpValue(playerCore, heroToValue));
+          }
+
+          if (cpuCore && enemyToPct != null) {
+            const enemyMax = Math.max(1, Number(state.levelGoal) || 1);
+            const enemyToValue = Math.round((enemyToPct / 100) * enemyMax);
+
+            setCoreHpState(cpuCore, enemyToValue, enemyToPct);
+            jobs.push(animateCoreHpValue(cpuCore, enemyToValue));
+          }
+
+          if (!jobs.length) return;
+          await Promise.all(jobs);
         }
         
         function triggerSkullTilePunch() {
@@ -1939,32 +2236,8 @@ const picked = pool[next];
           }, 320);
         }
 
-        function showComboText({ type, chainStep = 1 }) {
-          const comboEl = document.createElement("div");
-          comboEl.className = "nb-combo-text";
-        
-          let label = "Great Job";
-        
-          if (type === "no") {
-            label = "No";
-          }
-        
-          comboEl.innerHTML = `
-            <span class="nb-combo-line">
-              <span class="nb-combo-label">${label}</span>
-            </span>
-          `;
-        
-          document.querySelector(".nb-board-wrap")?.appendChild(comboEl);
-        
-          requestAnimationFrame(() => {
-            comboEl.classList.add("nb-combo-in");
-          });
-        
-          setTimeout(() => {
-            comboEl.classList.add("nb-combo-out");
-            setTimeout(() => comboEl.remove(), 320);
-          }, 1000);
+        function showComboText() {
+          return;
         }
 
         function formatElapsed(ms) {
@@ -2280,17 +2553,16 @@ const picked = pool[next];
         async function runGameOverSequence(extra = {}) {
           if (!state.hasUsedLastChance && state.canUseLastChance) {
             lockGameInput(true);
-            await wait(endMs(120));
+            await wait(1000);
             enterLastChanceMode();
             lockGameInput(false);
             return;
           }
         
           lockGameInput(true);
-
           wrap.classList.add("nb-last-chance-fail");
-          await wait(420);
-          
+          await wait(1000);
+        
           finish("retry_fail", {
             reason: extra.reason || "last-chance-failed",
             score: state.totalScore,
@@ -2310,20 +2582,19 @@ const picked = pool[next];
             </div>
           `;
         
-          let header = wrap.querySelector(".nb-last-chance-header-row");
+          const existingHeader = wrap.querySelector(".nb-last-chance-header-row");
+          if (existingHeader) existingHeader.remove();
         
-          if (!header) {
-            header = document.createElement("div");
-            header.className = "nb-last-chance-header-row";
-            wrap.insertBefore(header, boardWrap);
-          }
-        
-          header.innerHTML = `
+          const headerRow = document.createElement("div");
+          headerRow.className = "nb-last-chance-header-row";
+          headerRow.innerHTML = `
             <div class="nb-last-chance-header">
-              <div class="nb-last-chance-title">Last Chance</div>
-              <div class="nb-last-chance-copy">Find the move to clear all tiles and continue</div>
+              <h1 class="nb-last-chance-title">Last Chance</h1>
+              <p class="nb-last-chance-copy">Clear every tile in one move.</p>
             </div>
           `;
+        
+          wrap.insertBefore(headerRow, boardWrap);
         }
 
         function clearLastChanceUI() {
@@ -2385,8 +2656,12 @@ const picked = pool[next];
             {
               triggerSkullTilePunch,
               triggerSkullScreenFX,
-              triggerEnemyHitFX,
-              triggerHeroHitFX,
+              triggerEnemyAttackFX,
+              triggerHeroAttackFX,
+              triggerEnemyTakeDamageFX,
+              triggerHeroTakeDamageFX,
+              spawnDamageBurstFX: spawnDamageBurst,
+              animateHpBarsFX: animateBattleHpBars,
             },
             {
               skipAutoSkullSpawn: true,
@@ -2444,8 +2719,12 @@ const picked = pool[next];
             {
               triggerSkullTilePunch,
               triggerSkullScreenFX,
-              triggerEnemyHitFX,
-              triggerHeroHitFX,
+              triggerEnemyAttackFX,
+              triggerHeroAttackFX,
+              triggerEnemyTakeDamageFX,
+              triggerHeroTakeDamageFX,
+              spawnDamageBurstFX: spawnDamageBurst,
+              animateHpBarsFX: animateBattleHpBars,
             }
           );
           
@@ -2691,27 +2970,54 @@ const picked = pool[next];
           const enemyHpMax = Math.max(1, Number(state.levelGoal) || 1);
           const enemyHpNow = Math.max(0, enemyHpMax - state.levelScore);
           const enemyHpPct = Math.max(0, Math.min(100, (enemyHpNow / enemyHpMax) * 100));
+
+          const prevPlayerCore = hud.querySelector('.nb-core[data-side="player"]');
+          const prevCpuCore = hud.querySelector('.nb-core[data-side="cpu"]');
+
+          const prevPlayerHp = prevPlayerCore?.dataset.hp;
+          const prevCpuHp = prevCpuCore?.dataset.hp;
         
           hud.innerHTML = `
-          <div class="nb-battle-hud">
-            <div class="nb-battle-hud-side nb-battle-hud-side--hero">
-              <img class="nb-battle-hud-sprite nb-battle-hud-sprite--hero" src="${heroSprite}" alt="${heroName}" />
-              <div class="nb-battle-hud-name">${heroName}</div>
-              <div class="nb-battle-hp">
-                <div class="nb-battle-hp-fill" style="width:${heroHpPct}%"></div>
+          <div class="nb-battle-cores">
+            <div class="nb-core-wrap nb-core-wrap--player">
+              <div
+                class="nb-core nb-core--player${heroHpPct <= 30 ? " is-low" : ""}"
+                data-side="player"
+                data-hp="${prevPlayerHp ?? heroHpNow}"
+                data-hp-pct="${heroHpPct}"
+              >
+                <div class="nb-core-orbit nb-core-orbit--a"></div>
+                <div class="nb-core-orbit nb-core-orbit--b"></div>
+                <div class="nb-core-ring">
+                  <div class="nb-core-ring-fill" style="--core-fill:${heroHpPct}%"></div>
+                </div>
+                <div class="nb-core-center">
+                  <div class="nb-core-flash"></div>
+                  <div class="nb-core-value">${prevPlayerHp ?? heroHpNow}</div>
+                </div>
               </div>
             </div>
         
-            <div class="nb-battle-hud-side nb-battle-hud-side--enemy">
-              <img class="nb-battle-hud-sprite nb-battle-hud-sprite--enemy" src="${enemySprite}" alt="${enemyName}" />
-              <div class="nb-battle-hud-name">${enemyName}</div>
-              <div class="nb-battle-hp">
-                <div class="nb-battle-hp-fill" style="width:${enemyHpPct}%"></div>
+            <div class="nb-core-wrap nb-core-wrap--cpu">
+              <div
+                class="nb-core nb-core--cpu${enemyHpPct <= 30 ? " is-low" : ""}"
+                data-side="cpu"
+                data-hp="${enemyHpNow}"
+                data-hp-pct="${enemyHpPct}"
+              >
+                <div class="nb-core-orbit nb-core-orbit--a"></div>
+                <div class="nb-core-orbit nb-core-orbit--b"></div>
+                <div class="nb-core-ring">
+                  <div class="nb-core-ring-fill" style="--core-fill:${enemyHpPct}%"></div>
+                </div>
+                <div class="nb-core-center">
+                  <div class="nb-core-flash"></div>
+                  <div class="nb-core-value">${enemyHpNow}</div>
+                </div>
               </div>
             </div>
           </div>
         `;
-
         }
                   
         function renderGrid(showFilled = true) {
@@ -3022,14 +3328,24 @@ const picked = pool[next];
           }
         }
 
-        function render(showFilled = true, handOpts = {}) {
-          cleanupFns.forEach((fn) => {
-            try { fn(); } catch (e) {}
-          });
-          cleanupFns = [];
-          updateHud();
-          renderGrid(showFilled);
-          renderHand(handOpts);
+        function render(showFilled = true, handOpts = {}, opts = {}) {
+          const {
+            hud = true,
+            grid = true,
+            hand = true,
+            cleanup = true,
+          } = opts;
+        
+          if (cleanup) {
+            cleanupFns.forEach((fn) => {
+              try { fn(); } catch (e) {}
+            });
+            cleanupFns = [];
+          }
+        
+          if (hud) updateHud();
+          if (grid) renderGrid(showFilled);
+          if (hand) renderHand(handOpts);
         }
 
         async function runIntroSequence() {
@@ -3046,15 +3362,19 @@ const picked = pool[next];
           await delay(START_DELAY);
 
           hud.classList.add("nb-reveal");
-          await delay(STEP);
-
           boardWrap.classList.add("nb-reveal");
-          await delay(STEP);
 
-          handRail.classList.add("nb-reveal");
+          state.hudSpritesDroppedIn = true;
+          updateHud();
+
+          await delay(40);
 
           renderGrid(true);
           animateOpeningBoardDrop();
+
+          await delay(STEP);
+
+          handRail.classList.add("nb-reveal");
 
           for (let i = 0; i < 4; i++) {
             setTimeout(() => {
@@ -3068,6 +3388,10 @@ const picked = pool[next];
           await delay(OPENING_DROP_MS + 120);
 
           ensurePlayableHand(state, 24);
+
+          state.hudIntroPlayed = true;
+          state.hudSpritesDroppedIn = false;
+
           render(true);
 
           handEl.classList.add("nb-reveal");
@@ -3370,8 +3694,12 @@ const picked = pool[next];
             {
               triggerSkullTilePunch,
               triggerSkullScreenFX,
-              triggerEnemyHitFX,
-              triggerHeroHitFX,
+              triggerEnemyAttackFX,
+              triggerHeroAttackFX,
+              triggerEnemyTakeDamageFX,
+              triggerHeroTakeDamageFX,
+              spawnDamageBurstFX: spawnDamageBurst,
+              animateHpBarsFX: animateBattleHpBars,
             },
             {
               comboCarry,
@@ -3391,12 +3719,7 @@ const picked = pool[next];
           
           if (hasLevelWin(state)) {
             state.elapsedMs = Date.now() - state.levelStartedAt;
-
-            finish("win", {
-              reason: "level-complete",
-              score: state.totalScore,
-              wins: state.wins,
-            });
+            await runLevelCompleteSequence();
             return true;
           }
 
@@ -3463,8 +3786,12 @@ const picked = pool[next];
             {
               triggerSkullTilePunch,
               triggerSkullScreenFX,
-              triggerEnemyHitFX,
-              triggerHeroHitFX,
+              triggerEnemyAttackFX,
+              triggerHeroAttackFX,
+              triggerEnemyTakeDamageFX,
+              triggerHeroTakeDamageFX,
+              spawnDamageBurstFX: spawnDamageBurst,
+              animateHpBarsFX: animateBattleHpBars,
             },
             {
               comboCarry: 0,
@@ -3481,8 +3808,9 @@ const picked = pool[next];
         
           if (fullyCleared) {
             state.isLastChanceMode = false;
+          
             wrap.classList.add("nb-last-chance-win");
-            await wait(1600);
+            await wait(1000);
           
             finish("retry_success", {
               reason: "last-chance-cleared",
@@ -3493,7 +3821,7 @@ const picked = pool[next];
           }
           
           wrap.classList.add("nb-last-chance-wrong");
-          await wait(1600);
+          await wait(1000);
           
           await runGameOverSequence({
             reason: "last-chance-failed",
@@ -3510,6 +3838,37 @@ const picked = pool[next];
     }
 
     return { start, destroy };
+  }
+
+  function animateHpBarTo(fillEl, fromPct, toPct, duration = 520) {
+    if (!fillEl) return Promise.resolve();
+  
+    const start = performance.now();
+    const delta = toPct - fromPct;
+  
+    function easeOutBack(t) {
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    }
+  
+    return new Promise((resolve) => {
+      function tick(now) {
+        const raw = Math.min(1, (now - start) / duration);
+        const eased = raw < 1 ? easeOutBack(raw) : 1;
+        const next = fromPct + delta * eased;
+        fillEl.style.width = `${Math.max(0, Math.min(100, next))}%`;
+  
+        if (raw < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          fillEl.style.width = `${toPct}%`;
+          resolve();
+        }
+      }
+  
+      requestAnimationFrame(tick);
+    });
   }
 
   function getCoveredIndices(state, anchorIndex, piece) {
