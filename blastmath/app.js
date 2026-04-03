@@ -237,7 +237,7 @@
 
   function renderPiece(piece) {
     var scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
-    var cellSize = 36 * scale;
+    var cellSize = 38 * scale;
     var gap = 2 * scale;
     var width = (piece.width * cellSize) + ((piece.width - 1) * gap);
     var height = (piece.height * cellSize) + ((piece.height - 1) * gap);
@@ -280,13 +280,13 @@
         '</div>' +
       '</div>' +
       '<div class="bm-spacer" aria-hidden="true"></div>' +
-      '<div class="bm-score"><div class="bm-score__value">' + state.score + '</div></div>' +
+      '<div class="bm-score"><div class="bm-score__value" data-score-value>' + state.displayScore + '</div></div>' +
       '<div class="bm-spacer" aria-hidden="true"></div>' +
       '<div class="bm-board-wrap"><div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices) + '</div></div>' +
       '<div class="bm-spacer" aria-hidden="true"></div>' +
       '<div class="bm-hand">' + state.hand.map(function (piece) { return '<div class="bm-hand-slot">' + renderPiece(piece) + '</div>'; }).join('') + '</div>' +
     '</section>';
-  
+    syncScoreUi(root, state);
     state.animMap = null;
   }
 
@@ -350,7 +350,7 @@
         applyBlast(state.board, state.blastIndices);
         var clearedCount = state.blastIndices.length;
         var blastValue = comboStep === 1 ? 10 : 15;
-        addScore(state, clearedCount * blastValue * comboStep);
+        addScore(root, state, clearedCount * blastValue * comboStep);
   
         var moved = applyGravity(state.board, state.boardSize);
   
@@ -401,6 +401,9 @@
       ghost.style.position = 'fixed';
       ghost.style.pointerEvents = 'none';
       ghost.style.zIndex = 9999;
+      ghost.style.left = '0px';
+      ghost.style.top = '0px';
+      ghost.style.visibility = 'hidden';
       document.body.appendChild(ghost);
       return ghost;
     }
@@ -408,6 +411,11 @@
     function getPointer(e) {
       if (e.touches) return e.touches[0];
       return e;
+    }
+
+    function getGhostLift() {
+      var scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
+      return Math.round(28 * scale);
     }
   
     function onStart(e) {
@@ -434,6 +442,12 @@
       var rect = pieceEl.getBoundingClientRect();
       active.offsetX = p.clientX - rect.left;
       active.offsetY = p.clientY - rect.top;
+
+      active.ghost.style.visibility = 'visible';
+
+      var ghostLiftY = getGhostLift();
+      active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
+      active.ghost.style.top = (p.clientY - active.offsetY - ghostLiftY) + 'px';
   
       pieceEl.style.opacity = 0.3;
     }
@@ -520,8 +534,9 @@
   
       var p = getPointer(e);
   
+      var ghostLiftY = getGhostLift();
       active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
-      active.ghost.style.top = (p.clientY - active.offsetY) + 'px';
+      active.ghost.style.top = (p.clientY - active.offsetY - ghostLiftY) + 'px';
   
       var pos = getDropPosition(p.clientX, p.clientY);
       var piece = active.piece;
@@ -540,6 +555,10 @@
       var placedIndices = landed.map(function (cell) {
         return cell.y * state.boardSize + cell.x;
       });
+
+      var placementScore = landed.reduce(function (sum, cell) {
+        return sum + cell.value;
+      }, 0);
     
       landed.forEach(function (cell) {
         state.board[cell.y * state.boardSize + cell.x] = {
@@ -547,6 +566,8 @@
           tone: cell.tone
         };
       });
+
+      addScore(root, state, placementScore);
     
       state.hand[active.pieceIndex] = generatePiece();
     
@@ -582,17 +603,86 @@
     window.addEventListener('touchend', onEnd);
   }
 
+  function syncScoreUi(root, state) {
+    var scoreEl = root.querySelector('[data-score-value]');
+    if (!scoreEl) return;
+
+    scoreEl.textContent = state.displayScore;
+
+    if (state.displayScore < state.score) {
+      scoreEl.classList.add('is-scoring');
+    } else {
+      scoreEl.classList.remove('is-scoring');
+    }
+  }
+
+  function finishScorePulse(root, state) {
+    var scoreEl = root.querySelector('[data-score-value]');
+    if (!scoreEl) return;
+
+    scoreEl.classList.remove('is-scoring');
+    scoreEl.classList.remove('is-score-hit');
+
+    // restart final pop cleanly
+    void scoreEl.offsetWidth;
+    scoreEl.classList.add('is-score-hit');
+
+    if (state.scoreAnimDoneTimer) {
+      window.clearTimeout(state.scoreAnimDoneTimer);
+    }
+
+    state.scoreAnimDoneTimer = window.setTimeout(function () {
+      var liveEl = root.querySelector('[data-score-value]');
+      if (liveEl) liveEl.classList.remove('is-score-hit');
+      state.scoreAnimDoneTimer = null;
+    }, 220);
+  }
+
+  function animateScoreTo(root, state) {
+    if (state.scoreAnimFrame) return;
+
+    function tick() {
+      var remaining = state.score - state.displayScore;
+
+      if (remaining <= 0) {
+        state.scoreAnimFrame = null;
+        syncScoreUi(root, state);
+        finishScorePulse(root, state);
+        return;
+      }
+
+      var step = 1;
+
+      if (remaining > 80) step = 6;
+      else if (remaining > 40) step = 4;
+      else if (remaining > 15) step = 2;
+
+      state.displayScore = Math.min(state.score, state.displayScore + step);
+      syncScoreUi(root, state);
+      state.scoreAnimFrame = window.setTimeout(tick, 45);
+    }
+
+    tick();
+  }
+
   function writeHighScore(value) {
     try { localStorage.setItem(CONFIG.storageKey, String(value)); }
     catch (e) {}
   }
   
-  function addScore(state, amount) {
+  function addScore(root, state, amount) {
+    if (!amount) return;
+
     state.score += amount;
+
     if (state.score > state.highScore) {
       state.highScore = state.score;
       writeHighScore(state.highScore);
     }
+
+    // high score can change during score animation, so keep HUD fresh
+    renderGame(root, state);
+    animateScoreTo(root, state);
   }
 
   function createApp() {
@@ -604,6 +694,9 @@
       screen: 'home',
       highScore: readHighScore(),
       score: 0,
+      displayScore: 0,
+      scoreAnimFrame: null,
+      scoreAnimDoneTimer: null,
       comboStep: 0,
       lives: CONFIG.startingLives,
       boardSize: CONFIG.boardSize,
