@@ -67,11 +67,15 @@ html, body {
 }
 body { position: fixed; inset: 0; }
 #app {
-  position: fixed; inset: 0; display: grid; place-items: center; padding: 32px;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px;
 }
 .bm-stage {
-  width: min(var(--bm-stage-w), calc(100vw - 64px));
-  height: 100%;
+  width: min(var(--bm-stage-w), calc(100vw - 24px));
+  height: min(var(--bm-stage-h), calc(100dvh - 24px));
   background: var(--bm-bg);
   color: var(--bm-white);
   position: relative;
@@ -152,7 +156,11 @@ body { position: fixed; inset: 0; }
   height: calc(20px * var(--bm-ui-scale));
   display: block;
 }
-
+.bm-score,
+.bm-hud,
+.bm-hand {
+  width: 100%;
+}
 .bm-score {
   display: grid;
   place-items: center;
@@ -161,10 +169,12 @@ body { position: fixed; inset: 0; }
 .bm-board-wrap {
   display: grid;
   place-items: center;
+  width: 100%;
+  min-height: 0;
 }
-
 .bm-board {
   width: 100%;
+  max-width: 100%;
   aspect-ratio: 1 / 1;
   display: grid;
   grid-template-columns: repeat(6, 1fr);

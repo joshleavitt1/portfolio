@@ -31,9 +31,9 @@
 
   function syncUiScale() {
     var root = document.documentElement;
-    var GLOBAL_PADDING = 64; // 32px * 2 sides
-    var usableW = Math.max(320, window.innerWidth - GLOBAL_PADDING);
-    var usableH = Math.max(560, window.innerHeight - GLOBAL_PADDING);
+    var SHELL_PADDING = 24; // 12px * 2 sides
+    var usableW = Math.max(320, window.innerWidth - SHELL_PADDING);
+    var usableH = Math.max(560, window.innerHeight - SHELL_PADDING);
     var scale = Math.min(usableW / CONFIG.baseWidth, usableH / CONFIG.baseHeight, 1);
     root.style.setProperty("--bm-ui-scale", String(scale.toFixed(4)));
   }
