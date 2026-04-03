@@ -74,8 +74,10 @@ body { position: fixed; inset: 0; }
   padding: 12px;
 }
 .bm-stage {
-  width: min(var(--bm-stage-w), calc(100vw - 24px));
-  height: min(var(--bm-stage-h), calc(100dvh - 24px));
+  width: calc(100vw - 24px);
+  max-width: 390px;
+  height: calc(100dvh - 24px);
+  max-height: 844px;
   background: var(--bm-bg);
   color: var(--bm-white);
   position: relative;
@@ -118,10 +120,10 @@ body { position: fixed; inset: 0; }
 .bm-game {
   height: 100%;
   display: grid;
-  grid-template-rows: auto auto auto auto;
-  align-content: space-between;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  row-gap: calc(12px * var(--bm-ui-scale));
+  padding: calc(12px * var(--bm-ui-scale));
 }
-
 .bm-hud {
   display: flex;
   justify-content: space-between;
@@ -169,12 +171,13 @@ body { position: fixed; inset: 0; }
 .bm-board-wrap {
   display: grid;
   place-items: center;
+  align-self: stretch;
   width: 100%;
   min-height: 0;
 }
 .bm-board {
   width: 100%;
-  max-width: 100%;
+  max-height: 100%;
   aspect-ratio: 1 / 1;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
