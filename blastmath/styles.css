@@ -120,8 +120,15 @@ body { position: fixed; inset: 0; }
 .bm-game {
   height: 100%;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  row-gap: calc(12px * var(--bm-ui-scale));
+  grid-template-rows:
+    auto
+    minmax(0, 1fr)
+    auto
+    minmax(0, 1fr)
+    auto
+    minmax(0, 1fr)
+    auto;
+  row-gap: 0;
   padding: calc(12px * var(--bm-ui-scale));
 }
 .bm-hud {
@@ -166,13 +173,16 @@ body { position: fixed; inset: 0; }
 .bm-score {
   display: grid;
   place-items: center;
+  width: 100%;
 }
 .bm-score__value { font-size: calc(54px * var(--bm-ui-scale)); font-weight: 900; line-height: 1; }
 .bm-board-wrap {
   display: grid;
   place-items: center;
-  align-self: stretch;
   width: 100%;
+  min-height: 0;
+}
+.bm-spacer {
   min-height: 0;
 }
 .bm-board {

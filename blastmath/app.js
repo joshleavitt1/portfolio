@@ -268,21 +268,24 @@
 
   function renderGame(root, state) {
     root.innerHTML = '' +
-      '<section class="bm-screen bm-game" data-game>' +
-        '<div class="bm-hud">' +
-          '<div class="bm-hud-box bm-hud-score">' +
-            '<img src="images/crown.svg" class="bm-hud-icon" />' +
-            '<span>' + state.highScore + '</span>' +
-          '</div>' +
-          '<div class="bm-hud-box bm-hud-lives">' +
-            '<img src="images/heart.svg" class="bm-hud-icon" />' +
-            '<span>' + state.lives + '</span>' +
-          '</div>' +
+    '<section class="bm-screen bm-game" data-game>' +
+      '<div class="bm-hud">' +
+        '<div class="bm-hud-box bm-hud-score">' +
+          '<img src="images/crown.svg" class="bm-hud-icon" />' +
+          '<span>' + state.highScore + '</span>' +
         '</div>' +
-        '<div class="bm-score"><div class="bm-score__value">' + state.score + '</div></div>' +
-        '<div class="bm-board-wrap"><div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices) + '</div></div>' +
-        '<div class="bm-hand">' + state.hand.map(function (piece) { return '<div class="bm-hand-slot">' + renderPiece(piece) + '</div>'; }).join('') + '</div>' +
-      '</section>';
+        '<div class="bm-hud-box bm-hud-lives">' +
+          '<img src="images/heart.svg" class="bm-hud-icon" />' +
+          '<span>' + state.lives + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bm-spacer" aria-hidden="true"></div>' +
+      '<div class="bm-score"><div class="bm-score__value">' + state.score + '</div></div>' +
+      '<div class="bm-spacer" aria-hidden="true"></div>' +
+      '<div class="bm-board-wrap"><div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices) + '</div></div>' +
+      '<div class="bm-spacer" aria-hidden="true"></div>' +
+      '<div class="bm-hand">' + state.hand.map(function (piece) { return '<div class="bm-hand-slot">' + renderPiece(piece) + '</div>'; }).join('') + '</div>' +
+    '</section>';
   
     state.animMap = null;
   }
