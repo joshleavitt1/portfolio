@@ -282,7 +282,9 @@
       '<div class="bm-spacer" aria-hidden="true"></div>' +
       '<div class="bm-score"><div class="bm-score__value" data-score-value>' + state.displayScore + '</div></div>' +
       '<div class="bm-spacer" aria-hidden="true"></div>' +
-      '<div class="bm-board-wrap"><div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices) + '</div></div>' +
+      '<div class="bm-board-wrap">' +
+      '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices) + '</div>' +
+     '</div>' +
       '<div class="bm-spacer" aria-hidden="true"></div>' +
       '<div class="bm-hand">' + state.hand.map(function (piece) { return '<div class="bm-hand-slot">' + renderPiece(piece) + '</div>'; }).join('') + '</div>' +
     '</section>';
@@ -323,6 +325,74 @@
     }).join('');
   }
 
+  function spawnBlastFragments(root, state, blastIndices) {
+    var board = root.querySelector('.bm-board');
+    if (!board || !blastIndices || !blastIndices.length) return;
+
+    var cellEls = board.querySelectorAll('.bm-cell');
+
+    blastIndices.forEach(function (index) {
+      var cell = state.board[index];
+      if (!cell) return;
+
+      var cellEl = cellEls[index];
+      if (!cellEl) return;
+
+      var rect = cellEl.getBoundingClientRect();
+      var size = rect.width;
+
+      var pieces = 15;
+      for (var i = 0; i < pieces; i++) {
+        var frag = document.createElement('div');
+        var fragSize = Math.max(3, size * (0.09 + Math.random() * 0.04));
+
+        var startX = rect.left + (size * 0.16) + Math.random() * (size * 0.68);
+        var startY = rect.top + (size * 0.14) + Math.random() * (size * 0.48);
+
+        var driftX = (-size * 0.9) + Math.random() * (size * 1.8);
+        var fallY = (size * 1.1) + Math.random() * (size * 1.4);
+        var rot = (-28 + Math.random() * 56).toFixed(1);
+        var delay = Math.round(Math.random() * 80);
+        var duration = 380 + Math.round(Math.random() * 120);
+
+        frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone;
+        frag.style.position = 'fixed';
+        frag.style.left = Math.round(startX) + 'px';
+        frag.style.top = Math.round(startY) + 'px';
+        frag.style.width = Math.round(fragSize) + 'px';
+        frag.style.height = Math.round(fragSize) + 'px';
+        frag.style.zIndex = 9999;
+        frag.style.setProperty('--bm-frag-dx', Math.round(driftX) + 'px');
+        frag.style.setProperty('--bm-frag-dy', Math.round(fallY) + 'px');
+        frag.style.setProperty('--bm-frag-rot', rot + 'deg');
+        frag.style.setProperty('--bm-frag-delay', delay + 'ms');
+        frag.style.setProperty('--bm-frag-duration', duration + 'ms');
+
+        document.body.appendChild(frag);
+
+        (function (node) {
+          window.setTimeout(function () {
+            if (node.parentNode) node.parentNode.removeChild(node);
+          }, delay + duration + 80);
+        })(frag);
+      }
+    });
+  }
+
+  function triggerBlastShake(root) {
+    var wrap = root.querySelector('.bm-board-wrap');
+    if (!wrap) return;
+
+    wrap.classList.remove('is-blast-shaking');
+    void wrap.offsetWidth;
+    wrap.classList.add('is-blast-shaking');
+
+    window.setTimeout(function () {
+      var liveWrap = root.querySelector('.bm-board-wrap');
+      if (liveWrap) liveWrap.classList.remove('is-blast-shaking');
+    }, 190);
+  }
+
   function runBlastPhase(root, state, placedIndices, comboStep) {
     var boardEl = root.querySelector('.bm-board');
     comboStep = comboStep || 1;
@@ -347,12 +417,15 @@
   
     requestAnimationFrame(function () {
       window.setTimeout(function () {
+        triggerBlastShake(root);
+        spawnBlastFragments(root, state, state.blastIndices);
         applyBlast(state.board, state.blastIndices);
+
+        var moved = applyGravity(state.board, state.boardSize);
+
         var clearedCount = state.blastIndices.length;
         var blastValue = comboStep === 1 ? 10 : 15;
-        addScore(root, state, clearedCount * blastValue * comboStep);
-  
-        var moved = applyGravity(state.board, state.boardSize);
+        addScore(root, state, clearedCount * blastValue * comboStep, true);
   
         state.animMap = buildAnimMap(
           state.board,
@@ -372,12 +445,12 @@
         if (nextBlasts.length) {
           window.setTimeout(function () {
             runBlastPhase(root, state, [], comboStep + 1);
-          }, 450);
+          }, 320);
         } else {
           state.isResolving = false;
           state.comboStep = 0;
         }
-      }, 300);
+      }, 185);
     });
   }
 
@@ -642,12 +715,12 @@
       // 2) let place-pop actually show before resolve logic starts
       window.setTimeout(function () {
         runBlastPhase(root, state, [], 1);
-      }, 180);
+      }, 135);
 
       // 3) score update comes after the land animation has had time to breathe
       window.setTimeout(function () {
-        addScore(root, state, placementScore);
-      }, 180);
+        addScore(root, state, placementScore, true);
+      }, 135);
     
       return true;
     }
@@ -676,6 +749,14 @@
   
     window.addEventListener('mouseup', onEnd);
     window.addEventListener('touchend', onEnd);
+  }
+
+  function syncHudUi(root, state) {
+    var highScoreEl = root.querySelector('.bm-hud-score span');
+    var livesEl = root.querySelector('.bm-hud-lives span');
+
+    if (highScoreEl) highScoreEl.textContent = state.highScore;
+    if (livesEl) livesEl.textContent = state.lives;
   }
 
   function syncScoreUi(root, state) {
@@ -745,7 +826,7 @@
     catch (e) {}
   }
   
-  function addScore(root, state, amount) {
+  function addScore(root, state, amount, skipRender) {
     if (!amount) return;
 
     state.score += amount;
@@ -755,8 +836,12 @@
       writeHighScore(state.highScore);
     }
 
-    // high score can change during score animation, so keep HUD fresh
-    renderGame(root, state);
+    if (skipRender) {
+      syncHudUi(root, state);
+    } else {
+      renderGame(root, state);
+    }
+
     animateScoreTo(root, state);
   }
 
