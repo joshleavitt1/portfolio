@@ -244,7 +244,7 @@
     var cells = piece.cells.map(function (cell) {
       var left = Math.round(cell.x * (cellSize + gap));
       var top = Math.round(cell.y * (cellSize + gap));
-      return '<div class="bm-mini bm-mini--' + cell.tone + '" style="left:' + left + 'px; top:' + top + 'px;"><span class="bm-tile__label">' + cell.value + '</span></div>';
+      return '<div class="bm-mini bm-mini--' + cell.tone + '" style="left:' + left + 'px; top:' + top + 'px;">' + cell.value + '</div>';
     }).join('');
     return '<div class="bm-piece" data-piece>' +
     '<div class="bm-piece__shape" style="width:' + Math.round(width) + 'px; height:' + Math.round(height) + 'px;">' +
@@ -318,8 +318,8 @@
       }
   
       return '<div class="bm-cell">' +
-      '<div class="bm-tile bm-tile--' + cell.tone + extraClass + '"' + extraStyle + '><span class="bm-tile__label">' + cell.value + '</span></div>' +
-    '</div>';
+        '<div class="bm-tile bm-tile--' + cell.tone + extraClass + '"' + extraStyle + '>' + cell.value + '</div>' +
+      '</div>';
     }).join('');
   }
 
@@ -573,7 +573,7 @@
     
         var preview = document.createElement('div');
         preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
-        preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
+        preview.textContent = cell.value;
     
         cellEl.appendChild(preview);
       });
@@ -760,37 +760,6 @@
     animateScoreTo(root, state);
   }
 
-  function transitionScreen(root, drawNext) {
-    var current = root.querySelector('.bm-screen');
-
-    if (!current) {
-      drawNext();
-      var nextNow = root.querySelector('.bm-screen');
-      if (nextNow) {
-        nextNow.classList.add('is-screen-hidden');
-        requestAnimationFrame(function () {
-          nextNow.classList.remove('is-screen-hidden');
-        });
-      }
-      return;
-    }
-
-    current.classList.add('is-screen-hidden');
-
-    window.setTimeout(function () {
-      drawNext();
-
-      var next = root.querySelector('.bm-screen');
-      if (!next) return;
-
-      next.classList.add('is-screen-hidden');
-
-      requestAnimationFrame(function () {
-        next.classList.remove('is-screen-hidden');
-      });
-    }, 220);
-  }
-
   function createApp() {
     var mount = document.getElementById('app');
     if (!mount) throw new Error('Missing #app');
@@ -822,10 +791,8 @@
         var play = root.querySelector('[data-play]');
         if (play) {
           play.addEventListener('click', function () {
-            transitionScreen(root, function () {
-              state.screen = 'game';
-              render();
-            });
+            state.screen = 'game';
+            render();
           });
         }
       } else {
@@ -839,10 +806,8 @@
         var game = root.querySelector('[data-game]');
         if (game) {
           game.addEventListener('dblclick', function () {
-            transitionScreen(root, function () {
-              state.screen = 'home';
-              render();
-            });
+            state.screen = 'home';
+            render();
           });
         }
       }
