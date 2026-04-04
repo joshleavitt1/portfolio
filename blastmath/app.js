@@ -212,19 +212,14 @@
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  function generatePiece() {
-    var shapes = [
-      { width: 1, height: 1, coords: [{ x: 0, y: 0 }] },
-      { width: 1, height: 2, coords: [{ x: 0, y: 0 }, { x: 0, y: 1 }] },
-      { width: 2, height: 1, coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }] }
-    ];
-  
-    var shape = shapes[Math.floor(Math.random() * shapes.length)];
-  
+  function randomizeShapeValues(shapeDef) {
     return {
-      width: shape.width,
-      height: shape.height,
-      cells: shape.coords.map(function (coord) {
+      id: shapeDef.id,
+      group: shapeDef.group,
+      rank: shapeDef.rank,
+      width: shapeDef.width,
+      height: shapeDef.height,
+      cells: shapeDef.coords.map(function (coord) {
         var value = randInt(1, 9);
         return {
           x: coord.x,
@@ -234,6 +229,411 @@
         };
       })
     };
+  }
+
+  function getPieceCellAt(piece, x, y) {
+    for (var i = 0; i < piece.cells.length; i++) {
+      var cell = piece.cells[i];
+      if (cell.x === x && cell.y === y) return cell;
+    }
+    return null;
+  }
+
+  function pieceHasSelfBlast(piece) {
+    var x, y, k, sum, run, cell;
+
+    // horizontal runs inside piece only
+    for (y = 0; y < piece.height; y++) {
+      for (x = 0; x < piece.width; x++) {
+        sum = 0;
+        run = [];
+
+        for (k = x; k < piece.width; k++) {
+          cell = getPieceCellAt(piece, k, y);
+          if (!cell) break;
+
+          sum += cell.value;
+          run.push(cell);
+
+          if (sum === 10 && run.length > 0) return true;
+          if (sum >= 10) break;
+        }
+      }
+    }
+
+    // vertical runs inside piece only
+    for (x = 0; x < piece.width; x++) {
+      for (y = 0; y < piece.height; y++) {
+        sum = 0;
+        run = [];
+
+        for (k = y; k < piece.height; k++) {
+          cell = getPieceCellAt(piece, x, k);
+          if (!cell) break;
+
+          sum += cell.value;
+          run.push(cell);
+
+          if (sum === 10 && run.length > 0) return true;
+          if (sum >= 10) break;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  function getLegalPlacements(board, boardSize, piece) {
+    var legal = [];
+
+    for (var col = 0; col <= boardSize - piece.width; col++) {
+      var landed = getGravityDropForBoard(board, boardSize, piece, col);
+      if (landed && landed.length) {
+        legal.push({
+          col: col,
+          landed: landed
+        });
+      }
+    }
+
+    return legal;
+  }
+
+  function getGravityDropForBoard(board, boardSize, piece, col) {
+    var landed = [];
+    var occupied = board.slice();
+
+    var cells = piece.cells.slice().sort(function (a, b) {
+      return b.y - a.y;
+    });
+
+    for (var i = 0; i < cells.length; i++) {
+      var cell = cells[i];
+      var x = col + cell.x;
+
+      if (x < 0 || x >= boardSize) return null;
+
+      var finalY = null;
+
+      for (var y = boardSize - 1; y >= 0; y--) {
+        var index = y * boardSize + x;
+        if (occupied[index]) continue;
+
+        finalY = y;
+        break;
+      }
+
+      if (finalY === null) return null;
+
+      var placedCell = {
+        x: x,
+        y: finalY,
+        value: cell.value,
+        tone: cell.tone
+      };
+
+      landed.push(placedCell);
+      occupied[finalY * boardSize + x] = placedCell;
+    }
+
+    return landed;
+  }
+
+  function getBoardFillRatio(board) {
+    var filled = 0;
+    for (var i = 0; i < board.length; i++) {
+      if (board[i]) filled += 1;
+    }
+    return filled / board.length;
+  }
+
+  var PIECE_LIBRARY = {
+    simple: [
+      {
+        id: 'single',
+        rank: 1,
+        width: 1,
+        height: 1,
+        coords: [{ x: 0, y: 0 }]
+      },
+      {
+        id: 'h2',
+        rank: 2,
+        width: 2,
+        height: 1,
+        coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }]
+      },
+      {
+        id: 'v2',
+        rank: 2,
+        width: 1,
+        height: 2,
+        coords: [{ x: 0, y: 0 }, { x: 0, y: 1 }]
+      },
+      {
+        id: 'h3',
+        rank: 3,
+        width: 3,
+        height: 1,
+        coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }]
+      },
+      {
+        id: 'v3',
+        rank: 3,
+        width: 1,
+        height: 3,
+        coords: [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }]
+      }
+    ],
+
+    complex: [
+      {
+        id: 'l3',
+        rank: 4,
+        width: 2,
+        height: 2,
+        coords: [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]
+      },
+      {
+        id: 'j3',
+        rank: 4,
+        width: 2,
+        height: 2,
+        coords: [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]
+      },
+      {
+        id: 'square3',
+        rank: 4,
+        width: 2,
+        height: 2,
+        coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }]
+      },
+      {
+        id: 't4',
+        rank: 5,
+        width: 3,
+        height: 2,
+        coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 1, y: 1 }]
+      },
+      {
+        id: 'z4',
+        rank: 5,
+        width: 3,
+        height: 2,
+        coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 1 }]
+      },
+      {
+        id: 's4',
+        rank: 5,
+        width: 3,
+        height: 2,
+        coords: [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]
+      },
+      {
+        id: 'plus5',
+        rank: 6,
+        width: 3,
+        height: 3,
+        coords: [
+          { x: 1, y: 0 },
+          { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 },
+          { x: 1, y: 2 }
+        ]
+      }
+    ]
+  };
+
+  function getAllShapeDefs() {
+    var all = [];
+
+    Object.keys(PIECE_LIBRARY).forEach(function (group) {
+      PIECE_LIBRARY[group].forEach(function (shape) {
+        if (shape.width > 3 || shape.height > 3) return;
+
+        all.push({
+          id: shape.id,
+          group: group,
+          rank: shape.rank,
+          width: shape.width,
+          height: shape.height,
+          coords: shape.coords
+        });
+      });
+    });
+
+    return all;
+  }
+
+  function pickRandom(list) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function chance(percent) {
+    return Math.random() < (percent / 100);
+  }
+
+  function pickSlot12Rule() {
+    // Mostly singles, sometimes length-2.
+    // Never 3-length. Never complex.
+    if (chance(35)) {
+      return {
+        allowedIds: ['h2', 'v2'],
+        maxRank: 2
+      };
+    }
+
+    return {
+      allowedIds: ['single'],
+      maxRank: 1
+    };
+  }
+
+  function pickSlot3Rule(board) {
+    var fillRatio = getBoardFillRatio(board);
+
+    // crowded board: keep slot 3 friendlier
+    if (fillRatio >= 0.6) {
+      if (chance(10)) {
+        return {
+          allowedIds: ['l3', 'j3', 'square3'],
+          maxRank: 4
+        };
+      }
+
+      if (chance(45)) {
+        return {
+          allowedIds: ['h3', 'v3'],
+          maxRank: 3
+        };
+      }
+
+      return {
+        allowedIds: ['h2', 'v2'],
+        maxRank: 2
+      };
+    }
+
+    // normal/open board
+    if (chance(8)) {
+      return {
+        allowedIds: ['l3', 'j3', 'square3', 't4', 'z4', 's4', 'plus5'],
+        maxRank: 6
+      };
+    }
+
+    if (chance(45)) {
+      return {
+        allowedIds: ['h3', 'v3'],
+        maxRank: 3
+      };
+    }
+
+    return {
+      allowedIds: ['h2', 'v2'],
+      maxRank: 2
+    };
+  }
+
+  function generateHand(board, boardSize) {
+    var hand = [];
+    var slot1 = generatePiece(board, boardSize, pickSlot12Rule());
+    var slot2 = generatePiece(board, boardSize, pickSlot12Rule());
+    var slot3 = generatePiece(board, boardSize, pickSlot3Rule(board));
+
+    hand.push(slot1);
+    hand.push(slot2);
+    hand.push(slot3);
+
+    // Safety: ensure first two slots never contain 3-length or complex pieces
+    for (var i = 0; i < 2; i++) {
+      if (!hand[i]) {
+        hand[i] = generatePiece(board, boardSize, { allowedIds: ['single', 'h2', 'v2'], maxRank: 2 });
+        continue;
+      }
+
+      var cellCount = hand[i].cells.length;
+      if (cellCount > 2 || hand[i].rank > 2) {
+        hand[i] = generatePiece(board, boardSize, { allowedIds: ['single', 'h2', 'v2'], maxRank: 2 });
+      }
+    }
+
+    // Safety: slot 3 should usually be 2 or 3, only sometimes complex
+    if (!hand[2]) {
+      hand[2] = generatePiece(board, boardSize, { allowedIds: ['h2', 'v2', 'h3', 'v3'], maxRank: 3 });
+    }
+
+    var playableCount = hand.filter(function (piece) {
+      return piece && getLegalPlacements(board, boardSize, piece).length > 0;
+    }).length;
+
+    if (playableCount < 2) {
+      hand[0] = generatePiece(board, boardSize, { allowedIds: ['single', 'h2', 'v2'], maxRank: 2 });
+      hand[1] = generatePiece(board, boardSize, { allowedIds: ['single', 'h2', 'v2'], maxRank: 2 });
+    }
+
+    return hand;
+  }
+
+  function pieceFitsCatalogRules(piece) {
+    if (!piece) return false;
+    if (piece.width > 3 || piece.height > 3) return false;
+    return true;
+  }
+
+  function generatePiece(board, boardSize, rule) {
+    rule = rule || {};
+
+    var defs = getAllShapeDefs().filter(function (def) {
+      if (def.width > 3 || def.height > 3) return false;
+
+      if (rule.groups && rule.groups.indexOf(def.group) === -1) return false;
+      if (rule.maxRank && def.rank > rule.maxRank) return false;
+      if (rule.allowedIds && rule.allowedIds.indexOf(def.id) === -1) return false;
+      if (rule.maxCells && def.coords.length > rule.maxCells) return false;
+      if (rule.minCells && def.coords.length < rule.minCells) return false;
+
+      return true;
+    });
+
+    var candidates = [];
+
+    defs.forEach(function (def) {
+      for (var tries = 0; tries < 16; tries++) {
+        var piece = randomizeShapeValues(def);
+
+        if (!pieceFitsCatalogRules(piece)) continue;
+
+        if (pieceHasSelfBlast(piece)) continue;
+
+        if (board && boardSize) {
+          var legalPlacements = getLegalPlacements(board, boardSize, piece);
+          if (!legalPlacements.length) continue;
+        }
+
+        candidates.push(piece);
+      }
+    });
+
+    if (!candidates.length) {
+      var fallbackDefs = getAllShapeDefs().filter(function (def) {
+        return def.id === 'single' || def.id === 'h2' || def.id === 'v2';
+      });
+
+      for (var i = 0; i < fallbackDefs.length; i++) {
+        for (var n = 0; n < 16; n++) {
+          var fallback = randomizeShapeValues(fallbackDefs[i]);
+
+          if (pieceHasSelfBlast(fallback)) continue;
+          if (board && boardSize && !getLegalPlacements(board, boardSize, fallback).length) continue;
+
+          return fallback;
+        }
+      }
+
+      return null;
+    }
+
+    return pickRandom(candidates);
   }
 
   function renderPiece(piece) {
@@ -598,43 +998,7 @@
     }
   
     function getGravityDrop(piece, col) {
-      var landed = [];
-      var occupied = state.board.slice();
-    
-      var cells = piece.cells.slice().sort(function (a, b) {
-        return b.y - a.y;
-      });
-    
-      for (var i = 0; i < cells.length; i++) {
-        var cell = cells[i];
-        var x = col + cell.x;
-    
-        if (x < 0 || x >= state.boardSize) return null;
-    
-        var finalY = null;
-    
-        for (var y = state.boardSize - 1; y >= 0; y--) {
-          var index = y * state.boardSize + x;
-          if (occupied[index]) continue;
-    
-          finalY = y;
-          break;
-        }
-    
-        if (finalY === null) return null;
-    
-        var placedCell = {
-          x: x,
-          y: finalY,
-          value: cell.value,
-          tone: cell.tone
-        };
-    
-        landed.push(placedCell);
-        occupied[finalY * state.boardSize + x] = placedCell;
-      }
-    
-      return landed;
+      return getGravityDropForBoard(state.board, state.boardSize, piece, col);
     }
   
     function showPreview(piece, col) {
@@ -704,9 +1068,7 @@
 
       state.hand[active.pieceIndex] = null;
       if (state.hand.every(function (piece) { return !piece; })) {
-        state.hand = Array.from({ length: CONFIG.handSize }, function () {
-          return generatePiece();
-        });
+        state.hand = generateHand(state.board, state.boardSize);
       }
 
       state.isResolving = true;
@@ -901,9 +1263,7 @@
       comboStep: 0,
       lives: CONFIG.startingLives,
       boardSize: CONFIG.boardSize,
-      hand: HOME_HAND.map(function (p) {
-        return JSON.parse(JSON.stringify(p));
-      }),
+      hand: generateHand(createEmptyBoard(CONFIG.boardSize), CONFIG.boardSize),
       board: createEmptyBoard(CONFIG.boardSize),
       dragBound: false,
       animMap: null,
