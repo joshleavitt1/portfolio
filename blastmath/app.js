@@ -3,7 +3,9 @@
     baseWidth: 390,
     baseHeight: 844,
     boardSize: 6,
-    handSize: 4,
+    handSize: 3,
+    handTileSize: 44,
+    handTileGap: 4,
     startingLives: 3,
     storageKey: "blastmath.highscore"
   };
@@ -20,7 +22,6 @@
   var HOME_HAND = [
     { width: 1, height: 1, cells: [makeCellAt(0, 0, 2)] },
     { width: 1, height: 2, cells: [makeCellAt(0, 0, 1), makeCellAt(0, 1, 2)] },
-    { width: 1, height: 1, cells: [makeCellAt(0, 0, 1)] },
     { width: 2, height: 1, cells: [makeCellAt(0, 0, 2), makeCellAt(1, 0, 1)] }
   ];
 
@@ -237,8 +238,8 @@
 
   function renderPiece(piece) {
     var scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
-    var cellSize = 38 * scale;
-    var gap = 2 * scale;
+    var cellSize = CONFIG.handTileSize * scale;
+    var gap = CONFIG.handTileGap * scale;
     var width = (piece.width * cellSize) + ((piece.width - 1) * gap);
     var height = (piece.height * cellSize) + ((piece.height - 1) * gap);
     var cells = piece.cells.map(function (cell) {
@@ -286,7 +287,9 @@
       '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices) + '</div>' +
      '</div>' +
       '<div class="bm-spacer" aria-hidden="true"></div>' +
-      '<div class="bm-hand">' + state.hand.map(function (piece) { return '<div class="bm-hand-slot">' + renderPiece(piece) + '</div>'; }).join('') + '</div>' +
+      '<div class="bm-hand">' + state.hand.map(function (piece, index) {
+        return '<div class="bm-hand-slot" data-hand-slot-index="' + index + '">' + (piece ? renderPiece(piece) : '') + '</div>';
+      }).join('') + '</div>' +
     '</section>';
     syncScoreUi(root, state);
     state.animMap = null;
@@ -341,16 +344,16 @@
       var rect = cellEl.getBoundingClientRect();
       var size = rect.width;
 
-      var pieces = 15;
+      var pieces = 18;
       for (var i = 0; i < pieces; i++) {
         var frag = document.createElement('div');
-        var fragSize = Math.max(3, size * (0.09 + Math.random() * 0.04));
+        var fragSize = Math.max(3, size * (0.09 + Math.random() * 0.1));
 
         var startX = rect.left + (size * 0.16) + Math.random() * (size * 0.68);
         var startY = rect.top + (size * 0.14) + Math.random() * (size * 0.48);
 
-        var driftX = (-size * 0.9) + Math.random() * (size * 1.8);
-        var fallY = (size * 1.1) + Math.random() * (size * 1.4);
+        var driftX = (-size * 0.9) + Math.random() * (size * 2.8);
+        var fallY = (size * 1.1) + Math.random() * (size * 2.4);
         var rot = (-28 + Math.random() * 56).toFixed(1);
         var delay = Math.round(Math.random() * 80);
         var duration = 380 + Math.round(Math.random() * 120);
@@ -510,8 +513,8 @@
         var top = parseFloat(mini.style.top) || 0;
 
         var scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
-        var handCell = 38 * scale;
-        var handGap = 2 * scale;
+        var handCell = CONFIG.handTileSize * scale;
+        var handGap = CONFIG.handTileGap * scale;
         var handStep = handCell + handGap;
 
         var gridX = Math.round(left / handStep);
@@ -551,8 +554,9 @@
   
       var p = getPointer(e);
   
-      var pieces = Array.from(root.querySelectorAll('[data-piece]'));
-      var index = pieces.indexOf(pieceEl);
+      var slotEl = pieceEl.closest('[data-hand-slot-index]');
+      var index = slotEl ? Number(slotEl.getAttribute('data-hand-slot-index')) : -1;
+      if (index < 0 || !state.hand[index]) return;
       
       active = {
         el: pieceEl,
@@ -698,7 +702,13 @@
         };
       });
 
-      state.hand[active.pieceIndex] = generatePiece();
+      state.hand[active.pieceIndex] = null;
+      if (state.hand.every(function (piece) { return !piece; })) {
+        state.hand = Array.from({ length: CONFIG.handSize }, function () {
+          return generatePiece();
+        });
+      }
+
       state.isResolving = true;
 
       // 1) render placed tiles first, by themselves
