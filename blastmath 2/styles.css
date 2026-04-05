@@ -151,16 +151,7 @@ body { position: fixed; inset: 0; }
 .bm-logo__title span:last-child { font-size: calc(72px * var(--bm-ui-scale)); color: #67b8ff; }
 .bm-logo__title .is-accent { color: #ffbf00; }
 .bm-home__actions { display: grid; }
-.bm-btn,
-.bm-hand [data-piece] {
-  cursor: grab;
-}
 
-.bm-btn:active,
-.bm-hand [data-piece]:active,
-.bm-hand.is-grabbing [data-piece] {
-  cursor: grabbing;
-}
 .bm-btn {
   height: calc(76px * var(--bm-ui-scale));
   border: var(--bm-ui-block-border) solid rgba(255,255,255,.10);
@@ -365,7 +356,7 @@ body { position: fixed; inset: 0; }
   grid-template-columns: repeat(3, 1fr);
   align-items: center;
   gap: calc(12px * var(--bm-ui-scale));
-  height: calc(96px * var(--bm-ui-scale));
+  height: calc(144px * var(--bm-ui-scale));
 }
 .bm-hand-slot {
   display: grid;
