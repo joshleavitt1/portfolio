@@ -847,18 +847,88 @@ body {
   position: fixed;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-120%, -50%);
   z-index: 10001;
   pointer-events: none;
 
-  opacity: 0;
+  display: flex;
+  align-items: center;
+  gap: calc(16px * var(--bm-ui-scale));
+
   animation: bmMessageSlide 2.4s cubic-bezier(.2,.8,.2,1) forwards;
 }
 
-.bm-board-message__img {
-  width: calc(360px * var(--bm-ui-scale));
-  height: auto;
-  display: block;
+.bm-msg-word-wrap,
+.bm-msg-number-wrap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
+}
+
+.bm-msg-word-stroke,
+.bm-msg-word-fill {
+  font-family: "Open Sans", sans-serif;
+  font-weight: 900;
+  font-size: calc(80px * var(--bm-ui-scale));
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.bm-msg-word-stroke {
+  color: transparent;
+  -webkit-text-stroke: calc(16px * var(--bm-ui-scale)) #3457D7;
+
+  text-shadow: 
+  0 calc(5px * var(--bm-ui-scale)) 0 #001C42,
+  0 calc(10px * var(--bm-ui-scale)) calc(10px * var(--bm-ui-scale)) #001C42;
+}
+
+.bm-msg-word-fill {
+  font-weight: 900;
+  transform: translateZ(0); /* prevents edge artifacts */
+  color: white;
+}
+
+.bm-msg-word-fill,
+.bm-msg-number-fill {
+  position: absolute;
+}
+
+.bm-msg-number-stroke,
+.bm-msg-number-fill {
+  font-family: "Open Sans", sans-serif;
+  font-weight: 900;
+  font-size: calc(112px * var(--bm-ui-scale));
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.bm-msg-number-stroke {
+  color: transparent;
+  font-style: italic; /* 👈 THIS is the italic */
+  -webkit-text-stroke: calc(16px * var(--bm-ui-scale)) #ffffff;
+
+  text-shadow: 
+    0 calc(5px * var(--bm-ui-scale)) 0 #001C42,
+    0 calc(10px * var(--bm-ui-scale)) calc(10px * var(--bm-ui-scale)) #001C42;
+}
+
+.bm-msg-number-fill {
+  font-weight: 900;
+  color: #3457D7;
+  font-style: italic; /* 👈 THIS is the italic */
+}
+
+.bm-msg--combo .bm-msg-word-stroke {
+  -webkit-text-stroke: calc(16px * var(--bm-ui-scale)) #00CB00;
+  text-shadow: 
+    0 calc(5px * var(--bm-ui-scale)) 0 #001C42,
+    0 calc(10px * var(--bm-ui-scale)) calc(10px * var(--bm-ui-scale)) #001C42;
+}
+
+.bm-msg--combo .bm-msg-number-fill {
+  color: #00CB00;
 }
 
 @keyframes bmMessageSlide {
@@ -881,4 +951,151 @@ body {
     transform: translate(120%, -50%);
     opacity: 0;
   }
+}
+
+.bm-hud--intro {
+  justify-content: center;
+}
+
+.bm-btn--skip {
+  height: calc(52px * var(--bm-ui-scale));
+  padding: 0 calc(20px * var(--bm-ui-scale));
+  font-size: calc(24px * var(--bm-ui-scale));
+}
+
+.bm-score--intro {
+  display: grid;
+  place-items: center;
+}
+
+.bm-score__title {
+  font-size: calc(48px * var(--bm-ui-scale));
+  font-weight: 900;
+  line-height: 1.05;
+  text-align: center;
+  color: #fff;
+  text-shadow:
+    0 calc(2px * var(--bm-ui-scale)) 0 rgba(0,0,0,.22),
+    0 calc(6px * var(--bm-ui-scale)) calc(16px * var(--bm-ui-scale)) rgba(0,0,0,.28);
+}
+
+.bm-hand--intro {
+  grid-template-columns: 1fr;
+  place-items: center;
+}
+
+.bm-hand-slot--intro {
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.bm-intro-target-cell {
+  animation: bmIntroTargetPulse 1.15s ease-in-out infinite;
+}
+
+.bm-intro-pair-glow {
+  filter:
+    brightness(1.2)
+    saturate(1.15)
+    drop-shadow(0 0 calc(8px * var(--bm-ui-scale)) rgba(255,255,255,.34))
+    drop-shadow(0 0 calc(18px * var(--bm-ui-scale)) rgba(255,255,255,.16));
+}
+
+.bm-intro-pair-pulse::after {
+  content: "";
+  position: absolute;
+  inset: calc(-3px * var(--bm-ui-scale));
+  border-radius: calc(var(--bm-tile-radius) + (3px * var(--bm-ui-scale)));
+  border: calc(2px * var(--bm-ui-scale)) solid rgba(255,255,255,.95);
+  box-shadow:
+    0 0 calc(10px * var(--bm-ui-scale)) rgba(255,255,255,.34),
+    0 0 calc(20px * var(--bm-ui-scale)) rgba(255,255,255,.14);
+  opacity: .92;
+  pointer-events: none;
+}
+
+@keyframes bmIntroTargetPulse {
+  0%, 100% {
+    transform: scale(1);
+    background: rgba(255,255,255,.05);
+  }
+  50% {
+    transform: scale(1.02);
+    background: rgba(255,255,255,.2);
+  }
+}
+
+.bm-intro-pair-pulse {
+  overflow: visible;
+}
+
+.bm-intro-pair-pulse::after {
+  content: "";
+  position: absolute;
+  inset: calc(-3px * var(--bm-ui-scale));
+  border-radius: calc(var(--bm-tile-radius) + (3px * var(--bm-ui-scale)));
+  border: calc(2px * var(--bm-ui-scale)) solid rgba(255,255,255,.95);
+  box-shadow:
+    0 0 calc(10px * var(--bm-ui-scale)) rgba(255,255,255,.34),
+    0 0 calc(20px * var(--bm-ui-scale)) rgba(255,255,255,.14);
+  opacity: .92;
+  pointer-events: none;
+}
+
+.bm-intro-target-cell.bm-intro-link-active.bm-intro-link--horizontal::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(-100% - var(--bm-cell-gap));
+  width: calc(100% + var(--bm-cell-gap));
+  height: calc(20px * var(--bm-ui-scale));
+  transform: translateY(-50%);
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.22) 20%,
+    rgba(255,255,255,.35) 50%,
+    rgba(255,255,255,.22) 80%,
+    rgba(255,255,255,0) 100%
+  );
+  filter: blur(calc(3px * var(--bm-ui-scale)));
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bm-intro-target-cell.bm-intro-link-active.bm-intro-link--vertical::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(-100% - var(--bm-cell-gap));
+  width: calc(20px * var(--bm-ui-scale));
+  height: calc(100% + var(--bm-cell-gap));
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.22) 20%,
+    rgba(255,255,255,.35) 50%,
+    rgba(255,255,255,.22) 80%,
+    rgba(255,255,255,0) 100%
+  );
+  filter: blur(calc(3px * var(--bm-ui-scale)));
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bm-intro-link-active .is-preview-tile {
+  opacity: 1 !important;
+  filter: brightness(1) saturate(1) !important;
+  background:
+    linear-gradient(180deg, var(--bm-tile-gloss, rgba(255,255,255,.26)) 0%, rgba(255,255,255,0) 100%) top / 100% var(--bm-tile-gloss-h) no-repeat,
+    linear-gradient(180deg, var(--bm-tile-top) 0%, var(--bm-tile-mid) 30%, var(--bm-tile-bot) 100%) !important;
+  box-shadow:
+    0 var(--bm-tile-shadow-y) var(--bm-tile-shadow-blur) rgba(0,0,0,var(--bm-tile-shadow-alpha)),
+    inset 3px 3px 0 rgba(255,255,255,var(--bm-tile-bevel-light)),
+    inset -3px -3px 0 rgba(0,0,0,var(--bm-tile-bevel-dark)) !important;
+}
+.bm-intro-link-active .is-preview-tile::before {
+  opacity: 1 !important;
 }

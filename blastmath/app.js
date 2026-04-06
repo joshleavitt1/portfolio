@@ -10,6 +10,124 @@
     storageKey: "blastmath.highscore"
   };
 
+  var INTRO_QUERY_VALUE = "1";
+
+  function isIntroMode() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      return params.get("intro") === INTRO_QUERY_VALUE;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function makeSinglePiece(value) {
+    return {
+      id: "intro-single",
+      group: "intro",
+      rank: 1,
+      width: 1,
+      height: 1,
+      cells: [makeCellAt(0, 0, value)]
+    };
+  }
+
+  function resetStandardGameState(state) {
+    state.screen = "game";
+    state.score = 0;
+    state.displayScore = 0;
+    state.comboStep = 0;
+    state.lives = CONFIG.startingLives;
+    state.boardSize = CONFIG.boardSize;
+    state.board = createEmptyBoard(CONFIG.boardSize);
+    state.hand = generateHand(state.board, state.boardSize);
+    state.animMap = null;
+    state.blastIndices = [];
+    state.isResolving = false;
+    state.boardMessage = "";
+
+    state.intro = {
+      active: false,
+      step: 0,
+      title: "",
+      sourceIndex: null,
+      allowedTargetIndex: null,
+      hoveringValid: false,
+      completed: false,
+      direction: "horizontal"
+    };
+  }
+
+  function setupIntroStep(state, options) {
+    var board = createEmptyBoard(CONFIG.boardSize);
+
+    var sourceX = options.sourceX;
+    var sourceY = options.sourceY;
+    var targetX = options.targetX;
+    var targetY = options.targetY;
+
+    var sourceIndex = (sourceY * CONFIG.boardSize) + sourceX;
+    var targetIndex = (targetY * CONFIG.boardSize) + targetX;
+
+    board[sourceIndex] = makeCell(options.sourceValue || 5);
+
+    state.screen = "game";
+    state.score = 0;
+    state.displayScore = 0;
+    state.comboStep = 0;
+    state.lives = CONFIG.startingLives;
+    state.boardSize = CONFIG.boardSize;
+    state.board = board;
+    state.hand = [makeSinglePiece(options.handValue || 5)];
+    state.blastIndices = [];
+    state.isResolving = false;
+    state.boardMessage = "";
+    state.animMap = {};
+    state.animMap[sourceIndex] = {
+      type: "drop-land",
+      distance: 260
+    };
+
+    state.intro = {
+      active: true,
+      step: options.step,
+      title: options.title,
+      sourceIndex: sourceIndex,
+      allowedTargetIndex: targetIndex,
+      hoveringValid: false,
+      completed: false,
+      direction: options.direction
+    };
+  }
+
+  function setupIntroStep1(state) {
+    setupIntroStep(state, {
+      step: 1,
+      title: "Build 10",
+      sourceX: 2,
+      sourceY: 5,
+      targetX: 3,
+      targetY: 5,
+      sourceValue: 5,
+      handValue: 5,
+      direction: "horizontal"
+    });
+  }
+
+  function setupIntroStep2(state) {
+    setupIntroStep(state, {
+      step: 2,
+      title: "Build 10",
+      sourceX: 2,
+      sourceY: 5,
+      targetX: 2,
+      targetY: 4,
+      sourceValue: 5,
+      handValue: 5,
+      direction: "vertical"
+    });
+  }
+
   function makeCellAt(x, y, value) {
     return {
       x: x,
@@ -195,11 +313,10 @@
       message = 'Combo x' + comboStep;
       scoreValue = clearedCount * (12 + ((comboStep - 1) * 4));
     } else {
-      if (totalGroups <= 1) message = 'Blast';
-      else if (totalGroups === 2) message = 'Double Blast';
-      else if (totalGroups === 3) message = 'Triple Blast';
-      else message = 'Max Blast';
-
+      if (totalGroups <= 1) message = 'Nice!';
+      else if (totalGroups === 2) message = 'Wow!';
+      else message = 'Awesome!';
+    
       if (totalGroups <= 1) scoreValue = clearedCount * 10;
       else if (totalGroups === 2) scoreValue = clearedCount * 16;
       else if (totalGroups === 3) scoreValue = clearedCount * 20;
@@ -794,8 +911,15 @@
   }
 
   function renderGame(root, state) {
-    root.innerHTML = '' +
-      '<section class="bm-screen bm-game" data-game>' +
+    var isIntro = !!(state.intro && state.intro.active);
+
+    var hudHtml = isIntro
+      ? (
+        '<div class="bm-hud bm-hud--intro">' +
+          '<button class="bm-btn bm-btn--skip" type="button" data-skip-intro>Skip</button>' +
+        '</div>'
+      )
+      : (
         '<div class="bm-hud">' +
           '<div class="bm-hud-box bm-hud-score">' +
             '<img src="images/crown.svg" class="bm-hud-icon" />' +
@@ -805,35 +929,76 @@
             '<img src="images/heart.svg" class="bm-hud-icon" />' +
             '<span>' + state.lives + '</span>' +
           '</div>' +
-        '</div>' +
-        '<div class="bm-spacer" aria-hidden="true"></div>' +
-        '<div class="bm-score"><div class="bm-score__value" data-score-value>' + state.displayScore + '</div></div>' +
-        '<div class="bm-spacer" aria-hidden="true"></div>' +
-        '<div class="bm-board-wrap">' +
-          '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices) + '</div>' +
-        '</div>' +
-        '<div class="bm-spacer" aria-hidden="true"></div>' +
+        '</div>'
+      );
+
+    var scoreHtml = isIntro
+      ? (
+        '<div class="bm-score bm-score--intro">' +
+          '<div class="bm-score__title" data-score-title>' + state.intro.title + '</div>' +
+        '</div>'
+      )
+      : (
+        '<div class="bm-score">' +
+          '<div class="bm-score__value" data-score-value>' + state.displayScore + '</div>' +
+        '</div>'
+      );
+
+    var handHtml = isIntro
+      ? (
+        '<div class="bm-hand bm-hand--intro">' +
+          '<div class="bm-hand-slot bm-hand-slot--intro" data-hand-slot-index="0">' +
+            (state.hand[0] ? renderPiece(state.hand[0]) : '') +
+          '</div>' +
+        '</div>'
+      )
+      : (
         '<div class="bm-hand">' + state.hand.map(function (piece, index) {
           return '<div class="bm-hand-slot" data-hand-slot-index="' + index + '">' + (piece ? renderPiece(piece) : '') + '</div>';
-        }).join('') + '</div>' +
+        }).join('') + '</div>'
+      );
+
+    root.innerHTML = '' +
+      '<section class="bm-screen bm-game" data-game>' +
+        hudHtml +
+        '<div class="bm-spacer" aria-hidden="true"></div>' +
+        scoreHtml +
+        '<div class="bm-spacer" aria-hidden="true"></div>' +
+        '<div class="bm-board-wrap">' +
+          '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
+        '</div>' +
+        '<div class="bm-spacer" aria-hidden="true"></div>' +
+        handHtml +
       '</section>';
-  
+
     syncScoreUi(root, state);
     state.animMap = null;
   }
 
-  function renderBoard(boardSize, board, animMap, blastIndices) {
+  function renderBoard(boardSize, board, animMap, blastIndices, state) {
     animMap = animMap || {};
     blastIndices = blastIndices || [];
-  
+    state = state || {};
+
+    var intro = state.intro || {};
+    var isIntro = !!intro.active;
+
     return board.map(function (cell, index) {
-      if (!cell) return '<div class="bm-cell"></div>';
-  
-      var anim = animMap[index];
-      var isBlasting = blastIndices.indexOf(index) !== -1;
+      var cellClass = 'bm-cell';
       var extraClass = '';
       var extraStyle = '';
-  
+
+      if (isIntro && !cell && index === intro.allowedTargetIndex && !intro.completed) {
+        cellClass += ' bm-intro-target-cell';
+      }
+
+      if (!cell) {
+        return '<div class="' + cellClass + '" data-cell-index="' + index + '"></div>';
+      }
+
+      var anim = animMap[index];
+      var isBlasting = blastIndices.indexOf(index) !== -1;
+
       if (anim) {
         if (anim.type === 'place-pop') {
           extraClass = ' bm-place-pop';
@@ -848,10 +1013,10 @@
       if (isBlasting) {
         extraClass += ' bm-blast-pop';
       }
-  
-      return '<div class="bm-cell">' +
-      '<div class="bm-tile bm-tile--' + cell.tone + extraClass + '"' + extraStyle + '><span class="bm-tile__label">' + cell.value + '</span></div>' +
-    '</div>';
+
+      return '<div class="' + cellClass + '" data-cell-index="' + index + '">' +
+        '<div class="bm-tile bm-tile--' + cell.tone + extraClass + '"' + extraStyle + '><span class="bm-tile__label">' + cell.value + '</span></div>' +
+      '</div>';
     }).join('');
   }
 
@@ -985,6 +1150,20 @@
       } else {
         state.isResolving = false;
         state.comboStep = 0;
+
+        if (state.intro && state.intro.active) {
+          if (state.intro.step === 1) {
+            window.setTimeout(function () {
+              setupIntroStep2(state);
+              renderGame(root, state);
+            }, 700);
+          } else if (state.intro.step === 2) {
+            state.intro.completed = true;
+            state.intro.hoveringValid = false;
+            state.intro.title = "Nice!";
+            renderGame(root, state);
+          }
+        }
       }
     });
   }
@@ -1135,29 +1314,76 @@
   
     function showPreview(piece, col) {
       clearPreview();
-    
+
       var landed = getGravityDrop(piece, col);
-      if (!landed) return;
-    
+      if (!landed) {
+        setIntroHoverState(false);
+        return;
+      }
+
+      if (!isIntroTargetPlacement(landed)) {
+        setIntroHoverState(false);
+        return;
+      }
+
       landed.forEach(function (cell) {
         var index = cell.y * state.boardSize + cell.x;
-        var cellEl = root.querySelectorAll('.bm-cell')[index];
+        var cellEl = root.querySelector('[data-cell-index="' + index + '"]');
         if (!cellEl) return;
-    
+
         var preview = document.createElement('div');
         preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
         preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
-    
+
         cellEl.appendChild(preview);
       });
-    
+
       active.preview = landed;
+      setIntroHoverState(true);
+    }
+
+    function setIntroHoverState(isActive) {
+      if (!(state.intro && state.intro.active)) return;
+
+      state.intro.hoveringValid = !!isActive;
+
+      var sourceCell = root.querySelector('[data-cell-index="' + state.intro.sourceIndex + '"]');
+      var targetCell = root.querySelector('[data-cell-index="' + state.intro.allowedTargetIndex + '"]');
+
+      var sourceTile = sourceCell ? sourceCell.querySelector('.bm-tile') : null;
+      var previewTile = targetCell ? targetCell.querySelector('.is-preview-tile') : null;
+
+      if (sourceTile) {
+        sourceTile.classList.toggle('bm-intro-pair-glow', !!isActive);
+        sourceTile.classList.toggle('bm-intro-pair-pulse', !!isActive);
+      }
+
+      if (targetCell) {
+        targetCell.classList.toggle('bm-intro-link-active', !!isActive);
+        targetCell.classList.toggle('bm-intro-link--horizontal', !!isActive && state.intro.direction === 'horizontal');
+        targetCell.classList.toggle('bm-intro-link--vertical', !!isActive && state.intro.direction === 'vertical');
+      }
+
+      if (previewTile) {
+        previewTile.classList.toggle('bm-intro-pair-glow', !!isActive);
+        previewTile.classList.toggle('bm-intro-pair-pulse', !!isActive);
+      }
+    }
+
+    function isIntroTargetPlacement(landed) {
+      if (!(state.intro && state.intro.active)) return true;
+      if (!landed || landed.length !== 1) return false;
+
+      var introIndex = landed[0].y * state.boardSize + landed[0].x;
+      return introIndex === state.intro.allowedTargetIndex;
     }
   
     function clearPreview() {
       root.querySelectorAll('.is-preview-tile').forEach(function (el) {
         el.remove();
       });
+
+      setIntroHoverState(false);
     }
   
     function onMove(e) {
@@ -1199,8 +1425,11 @@
       });
 
       state.hand[active.pieceIndex] = null;
-      if (state.hand.every(function (piece) { return !piece; })) {
-        state.hand = generateHand(state.board, state.boardSize);
+
+      if (!(state.intro && state.intro.active)) {
+        if (state.hand.every(function (piece) { return !piece; })) {
+          state.hand = generateHand(state.board, state.boardSize);
+        }
       }
 
       state.isResolving = true;
@@ -1252,35 +1481,34 @@
     window.addEventListener('touchend', onEnd);
   }
 
-  function getBoardMessageAssetPath(message) {
-    if (!message) return '';
-  
-    if (message === 'Blast') return 'images/blast_1.svg';
-    if (message === 'Double Blast') return 'images/blast_2.svg';
-    if (message === 'Triple Blast') return 'images/blast_3.svg';
-    if (message === 'Max Blast') return 'images/blast_4.svg';
-  
-    if (message.indexOf('Combo x') === 0) {
-      var comboStep = parseInt(message.replace('Combo x', ''), 10) || 2;
-      var comboIndex = Math.max(1, comboStep - 1);
-      return 'images/combo_' + comboIndex + '.svg';
-    }
-  
-    return 'images/blast_1.svg';
-  }
-
   function showBoardMessage(root, state) {
     if (!state.boardMessage) return;
-  
-    var src = getBoardMessageAssetPath(state.boardMessage);
-    if (!src) return;
   
     var oldMsg = document.body.querySelector('.bm-board-message');
     if (oldMsg) oldMsg.remove();
   
     var msg = document.createElement('div');
     msg.className = 'bm-board-message';
-    msg.innerHTML = '<img src="' + src + '" class="bm-board-message__img" />';
+    
+    if (state.boardMessage.indexOf('Combo ') === 0) {
+      msg.classList.add('bm-msg--combo');
+    }
+  
+    var parts = state.boardMessage.split(' ');
+    var word = parts[0] || '';
+    var number = parts[1] || '';
+  
+    msg.innerHTML =
+      '<span class="bm-msg-word-wrap">' +
+        '<span class="bm-msg-word-stroke" aria-hidden="true">' + word + '</span>' +
+        '<span class="bm-msg-word-fill">' + word + '</span>' +
+      '</span>' +
+      (number
+        ? '<span class="bm-msg-number-wrap">' +
+            '<span class="bm-msg-number-stroke" aria-hidden="true">' + number + '</span>' +
+            '<span class="bm-msg-number-fill">' + number + '</span>' +
+          '</span>'
+        : '');
   
     document.body.appendChild(msg);
   
@@ -1442,8 +1670,21 @@
       blastIndices: [],
       isResolving: false,
       boardMessage: '',
-      boardMessageTimer: null
+      boardMessageTimer: null,
+      intro: {
+        active: false,
+        step: 0,
+        title: "",
+        sourceIndex: null,
+        allowedTargetIndex: null,
+        hoveringValid: false,
+        completed: false
+      }
     };
+    
+    if (isIntroMode()) {
+      setupIntroStep1(state);
+    }
 
     function render() {
       if (state.screen === 'home') {
@@ -1459,6 +1700,16 @@
         }
       } else {
         renderGame(root, state);
+
+        if (state.intro && state.intro.active) {
+          var skipBtn = root.querySelector('[data-skip-intro]');
+          if (skipBtn) {
+            skipBtn.addEventListener('click', function () {
+              resetStandardGameState(state);
+              render();
+            });
+          }
+        }
 
         if (!state.dragBound) {
           enableDrag(root, state);
