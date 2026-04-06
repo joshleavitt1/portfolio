@@ -681,6 +681,66 @@ body {
   );
 }
 
+.bm-blast-frag--mix-1 {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
+    linear-gradient(180deg, var(--bm-tile-top) 0%, var(--bm-tile-mid) 35%, var(--bm-tile-bot) 100%);
+}
+
+.bm-blast-frag--mix-1::before {
+  background: linear-gradient(
+    180deg,
+    var(--bm-tile-face-top) 0%,
+    var(--bm-tile-face-mid) 58%,
+    var(--bm-tile-face-bot) 100%
+  );
+}
+
+.bm-blast-frag--mix-2 {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
+    linear-gradient(180deg, var(--bm-tile-face-top) 0%, var(--bm-tile-top) 50%, var(--bm-tile-mid) 100%);
+}
+
+.bm-blast-frag--mix-2::before {
+  background: linear-gradient(
+    180deg,
+    var(--bm-tile-face-mid) 0%,
+    var(--bm-tile-face-bot) 52%,
+    var(--bm-tile-edge) 100%
+  );
+}
+
+.bm-blast-frag--mix-3 {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
+    linear-gradient(180deg, var(--bm-tile-mid) 0%, var(--bm-tile-bot) 48%, var(--bm-tile-edge) 100%);
+}
+
+.bm-blast-frag--mix-3::before {
+  background: linear-gradient(
+    180deg,
+    var(--bm-tile-face-top) 0%,
+    var(--bm-tile-face-mid) 38%,
+    var(--bm-tile-bot) 100%
+  );
+}
+
+.bm-blast-frag--mix-4 {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
+    linear-gradient(180deg, var(--bm-tile-edge) 0%, var(--bm-tile-mid) 42%, var(--bm-tile-face-mid) 100%);
+}
+
+.bm-blast-frag--mix-4::before {
+  background: linear-gradient(
+    180deg,
+    var(--bm-tile-top) 0%,
+    var(--bm-tile-face-top) 45%,
+    var(--bm-tile-face-bot) 100%
+  );
+}
+
 @keyframes bmBlastPopOutline {
   0% {
     transform: scale(1);
@@ -733,19 +793,39 @@ body {
 @keyframes bmBlastFragFall {
   0% {
     opacity: 0;
-    transform: translate3d(0, 0, 0) rotate(0deg) scale(.72);
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(.78);
   }
-  10% {
+  12% {
     opacity: 1;
-    transform: translate3d(calc(var(--bm-frag-dx) * .22), calc(var(--bm-frag-dy) * -.12), 0) rotate(calc(var(--bm-frag-rot) * .18)) scale(1);
+    transform: translate3d(
+      calc(var(--bm-frag-dx) * .18),
+      calc(var(--bm-frag-lift) * -0.95),
+      0
+    ) rotate(calc(var(--bm-frag-rot) * .2)) scale(1.06);
   }
-  65% {
+  38% {
     opacity: 1;
-    transform: translate3d(calc(var(--bm-frag-dx) * .78), calc(var(--bm-frag-dy) * .34), 0) rotate(calc(var(--bm-frag-rot) * .58)) scale(.98);
+    transform: translate3d(
+      calc(var(--bm-frag-dx) * .52),
+      calc(var(--bm-frag-lift) * -0.55),
+      0
+    ) rotate(calc(var(--bm-frag-rot) * .48)) scale(1.02);
+  }
+  72% {
+    opacity: 1;
+    transform: translate3d(
+      calc(var(--bm-frag-dx) * .82),
+      calc(var(--bm-frag-dy) * .42),
+      0
+    ) rotate(calc(var(--bm-frag-rot) * .74)) scale(.98);
   }
   100% {
     opacity: 0;
-    transform: translate3d(var(--bm-frag-dx), var(--bm-frag-dy), 0) rotate(var(--bm-frag-rot)) scale(.88);
+    transform: translate3d(
+      var(--bm-frag-dx),
+      var(--bm-frag-dy),
+      0
+    ) rotate(var(--bm-frag-rot)) scale(.9);
   }
 }
 
@@ -761,4 +841,44 @@ body {
   58%  { transform: rotate(-0.45deg) translateX(-1px); }
   78%  { transform: rotate(0.3deg) translateX(1px); }
   100% { transform: rotate(0deg) translateX(0); }
+}
+
+.bm-board-message {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10001;
+  pointer-events: none;
+
+  opacity: 0;
+  animation: bmMessageSlide 2.4s cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+.bm-board-message__img {
+  width: calc(360px * var(--bm-ui-scale));
+  height: auto;
+  display: block;
+}
+
+@keyframes bmMessageSlide {
+  0% {
+    transform: translate(-120%, -50%);
+    opacity: 0;
+  }
+
+  10% {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+
+  75% {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(120%, -50%);
+    opacity: 0;
+  }
 }

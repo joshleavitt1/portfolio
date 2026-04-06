@@ -92,6 +92,132 @@
   
     return Array.from(toClear);
   }
+
+  function findBlastGroups(board, size) {
+    var groups = [];
+
+    // horizontal groups
+    for (var y = 0; y < size; y++) {
+      for (var x = 0; x < size; x++) {
+        var sum = 0;
+        var cells = [];
+
+        for (var k = x; k < size; k++) {
+          var cell = board[y * size + k];
+          if (!cell) break;
+
+          sum += cell.value;
+          cells.push(y * size + k);
+
+          if (sum === 10) {
+            groups.push({
+              axis: 'h',
+              indices: cells.slice()
+            });
+          }
+
+          if (sum >= 10) break;
+        }
+      }
+    }
+
+    // vertical groups
+    for (var x = 0; x < size; x++) {
+      for (var y = 0; y < size; y++) {
+        var sum = 0;
+        var cells = [];
+
+        for (var k = y; k < size; k++) {
+          var cell = board[k * size + x];
+          if (!cell) break;
+
+          sum += cell.value;
+          cells.push(k * size + x);
+
+          if (sum === 10) {
+            groups.push({
+              axis: 'v',
+              indices: cells.slice()
+            });
+          }
+
+          if (sum >= 10) break;
+        }
+      }
+    }
+
+    return groups;
+  }
+
+  function classifyBlastPhase(board, size, comboStep) {
+    var groups = findBlastGroups(board, size);
+    var blastIndices = [];
+    var seen = new Set();
+    var horizontalGroups = 0;
+    var verticalGroups = 0;
+    var totalGroups = 0;
+    var i, j, index;
+
+    for (i = 0; i < groups.length; i++) {
+      if (groups[i].axis === 'h') horizontalGroups += 1;
+      if (groups[i].axis === 'v') verticalGroups += 1;
+
+      for (j = 0; j < groups[i].indices.length; j++) {
+        index = groups[i].indices[j];
+        if (!seen.has(index)) {
+          seen.add(index);
+          blastIndices.push(index);
+        }
+      }
+    }
+
+    totalGroups = horizontalGroups + verticalGroups;
+
+    if (!blastIndices.length) {
+      return {
+        hasBlast: false,
+        blastIndices: [],
+        clearedCount: 0,
+        horizontalGroups: 0,
+        verticalGroups: 0,
+        totalGroups: 0,
+        comboStep: comboStep,
+        message: '',
+        scoreValue: 0
+      };
+    }
+
+    var message = '';
+    var clearedCount = blastIndices.length;
+    var scoreValue = 0;
+
+    if (comboStep >= 2) {
+      message = 'Combo x' + comboStep;
+      scoreValue = clearedCount * (12 + ((comboStep - 1) * 4));
+    } else {
+      if (totalGroups <= 1) message = 'Blast';
+      else if (totalGroups === 2) message = 'Double Blast';
+      else if (totalGroups === 3) message = 'Triple Blast';
+      else message = 'Max Blast';
+
+      if (totalGroups <= 1) scoreValue = clearedCount * 10;
+      else if (totalGroups === 2) scoreValue = clearedCount * 16;
+      else if (totalGroups === 3) scoreValue = clearedCount * 20;
+      else scoreValue = clearedCount * 24;
+    }
+
+    return {
+      hasBlast: true,
+      blastIndices: blastIndices,
+      clearedCount: clearedCount,
+      horizontalGroups: horizontalGroups,
+      verticalGroups: verticalGroups,
+      totalGroups: totalGroups,
+      comboStep: comboStep,
+      message: message,
+      scoreValue: scoreValue
+    };
+  }
   
   function applyBlast(board, indices) {
     indices.forEach(function (i) {
@@ -657,9 +783,9 @@
     root.innerHTML = '' +
       '<section class="bm-screen bm-home">' +
         '<div class="bm-home__center">' +
-        '<div class="bm-logo" aria-label="Blast Math logo">' +
-          '<img src="images/logo.png" alt="Blast Math" class="bm-logo__img" />' +
-        '</div>' +
+          '<div class="bm-logo" aria-label="Blast Math logo">' +
+            '<img src="images/logo.png" alt="Blast Math" class="bm-logo__img" />' +
+          '</div>' +
         '</div>' +
         '<div class="bm-home__actions">' +
           '<button class="bm-btn" type="button" data-play>Play</button>' +
@@ -669,28 +795,29 @@
 
   function renderGame(root, state) {
     root.innerHTML = '' +
-    '<section class="bm-screen bm-game" data-game>' +
-      '<div class="bm-hud">' +
-        '<div class="bm-hud-box bm-hud-score">' +
-          '<img src="images/crown.svg" class="bm-hud-icon" />' +
-          '<span>' + state.highScore + '</span>' +
+      '<section class="bm-screen bm-game" data-game>' +
+        '<div class="bm-hud">' +
+          '<div class="bm-hud-box bm-hud-score">' +
+            '<img src="images/crown.svg" class="bm-hud-icon" />' +
+            '<span>' + state.highScore + '</span>' +
+          '</div>' +
+          '<div class="bm-hud-box bm-hud-lives">' +
+            '<img src="images/heart.svg" class="bm-hud-icon" />' +
+            '<span>' + state.lives + '</span>' +
+          '</div>' +
         '</div>' +
-        '<div class="bm-hud-box bm-hud-lives">' +
-          '<img src="images/heart.svg" class="bm-hud-icon" />' +
-          '<span>' + state.lives + '</span>' +
+        '<div class="bm-spacer" aria-hidden="true"></div>' +
+        '<div class="bm-score"><div class="bm-score__value" data-score-value>' + state.displayScore + '</div></div>' +
+        '<div class="bm-spacer" aria-hidden="true"></div>' +
+        '<div class="bm-board-wrap">' +
+          '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices) + '</div>' +
         '</div>' +
-      '</div>' +
-      '<div class="bm-spacer" aria-hidden="true"></div>' +
-      '<div class="bm-score"><div class="bm-score__value" data-score-value>' + state.displayScore + '</div></div>' +
-      '<div class="bm-spacer" aria-hidden="true"></div>' +
-      '<div class="bm-board-wrap">' +
-      '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices) + '</div>' +
-     '</div>' +
-      '<div class="bm-spacer" aria-hidden="true"></div>' +
-      '<div class="bm-hand">' + state.hand.map(function (piece, index) {
-        return '<div class="bm-hand-slot" data-hand-slot-index="' + index + '">' + (piece ? renderPiece(piece) : '') + '</div>';
-      }).join('') + '</div>' +
-    '</section>';
+        '<div class="bm-spacer" aria-hidden="true"></div>' +
+        '<div class="bm-hand">' + state.hand.map(function (piece, index) {
+          return '<div class="bm-hand-slot" data-hand-slot-index="' + index + '">' + (piece ? renderPiece(piece) : '') + '</div>';
+        }).join('') + '</div>' +
+      '</section>';
+  
     syncScoreUi(root, state);
     state.animMap = null;
   }
@@ -744,21 +871,23 @@
       var rect = cellEl.getBoundingClientRect();
       var size = rect.width;
 
-      var pieces = 18;
+      var pieces = 25;
       for (var i = 0; i < pieces; i++) {
         var frag = document.createElement('div');
-        var fragSize = Math.max(3, size * (0.09 + Math.random() * 0.1));
+        var fragSize = Math.max(4, size * (0.125 + Math.random() * 0.13));
 
-        var startX = rect.left + (size * 0.16) + Math.random() * (size * 0.68);
-        var startY = rect.top + (size * 0.14) + Math.random() * (size * 0.48);
+        var startX = rect.left + (size * 0.12) + Math.random() * (size * 0.76);
+        var startY = rect.top + (size * 0.10) + Math.random() * (size * 0.30);
 
-        var driftX = (-size * 0.9) + Math.random() * (size * 2.8);
-        var fallY = (size * 1.1) + Math.random() * (size * 2.4);
-        var rot = (-28 + Math.random() * 56).toFixed(1);
-        var delay = Math.round(Math.random() * 80);
-        var duration = 380 + Math.round(Math.random() * 120);
+        var driftX = (-size * 1.1) + Math.random() * (size * 2.2);
+        var liftY = (size * 0.82) + Math.random() * (size * 1.08);
+        var fallY = (size * 1.85) + Math.random() * (size * 2.15);
+        var rot = (-38 + Math.random() * 76).toFixed(1);
+        var delay = Math.round(Math.random() * 70);
+        var duration = 520 + Math.round(Math.random() * 160);
 
-        frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone;
+        var fragVariant = 1 + Math.floor(Math.random() * 4);
+        frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone + ' bm-blast-frag--mix-' + fragVariant;
         frag.style.position = 'fixed';
         frag.style.left = Math.round(startX) + 'px';
         frag.style.top = Math.round(startY) + 'px';
@@ -766,6 +895,7 @@
         frag.style.height = Math.round(fragSize) + 'px';
         frag.style.zIndex = 9999;
         frag.style.setProperty('--bm-frag-dx', Math.round(driftX) + 'px');
+        frag.style.setProperty('--bm-frag-lift', Math.round(liftY) + 'px');
         frag.style.setProperty('--bm-frag-dy', Math.round(fallY) + 'px');
         frag.style.setProperty('--bm-frag-rot', rot + 'deg');
         frag.style.setProperty('--bm-frag-delay', delay + 'ms');
@@ -798,8 +928,10 @@
 
   function runBlastPhase(root, state, placedIndices, comboStep) {
     var boardEl = root.querySelector('.bm-board');
+    var blastResult;
+
     comboStep = comboStep || 1;
-  
+
     state.animMap = buildAnimMap(
       state.board,
       state.boardSize,
@@ -807,53 +939,53 @@
       placedIndices || [],
       []
     );
-  
-    state.blastIndices = findBlasts(state.board, state.boardSize);
-  
-    renderGame(root, state);
-  
-    if (!state.blastIndices.length) {
+
+    blastResult = classifyBlastPhase(state.board, state.boardSize, comboStep);
+    state.blastIndices = blastResult.blastIndices;
+
+    if (!blastResult.hasBlast) {
+      renderGame(root, state);
       state.isResolving = false;
       state.comboStep = 0;
       return;
     }
-  
+    
+    state.boardMessage = blastResult.message;
+    renderGame(root, state);
+
     requestAnimationFrame(function () {
-      window.setTimeout(function () {
-        triggerBlastShake(root);
-        spawnBlastFragments(root, state, state.blastIndices);
-        applyBlast(state.board, state.blastIndices);
+      showBoardMessage(root, state);
+      triggerBlastShake(root);
+      spawnBlastFragments(root, state, blastResult.blastIndices);
+      applyBlast(state.board, blastResult.blastIndices);
 
-        var moved = applyGravity(state.board, state.boardSize);
+      var moved = applyGravity(state.board, state.boardSize);
 
-        var clearedCount = state.blastIndices.length;
-        var blastValue = comboStep === 1 ? 10 : 15;
-        addScore(root, state, clearedCount * blastValue * comboStep, true);
-  
-        state.animMap = buildAnimMap(
-          state.board,
-          state.boardSize,
-          root.querySelector('.bm-board'),
-          [],
-          moved
-        );
-  
-        state.blastIndices = [];
-        state.comboStep = comboStep;
-  
-        renderGame(root, state);
-  
-        var nextBlasts = findBlasts(state.board, state.boardSize);
-  
-        if (nextBlasts.length) {
-          window.setTimeout(function () {
-            runBlastPhase(root, state, [], comboStep + 1);
-          }, 320);
-        } else {
-          state.isResolving = false;
-          state.comboStep = 0;
-        }
-      }, 185);
+      addScore(root, state, blastResult.scoreValue, true);
+
+      state.animMap = buildAnimMap(
+        state.board,
+        state.boardSize,
+        root.querySelector('.bm-board'),
+        [],
+        moved
+      );
+
+      state.blastIndices = [];
+      state.comboStep = comboStep;
+
+      renderGame(root, state);
+
+      var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, comboStep + 1);
+
+      if (nextBlastResult.hasBlast) {
+        window.setTimeout(function () {
+          runBlastPhase(root, state, [], comboStep + 1);
+        }, 650);
+      } else {
+        state.isResolving = false;
+        state.comboStep = 0;
+      }
     });
   }
 
@@ -1073,7 +1205,6 @@
 
       state.isResolving = true;
 
-      // 1) render placed tiles first, by themselves
       state.animMap = buildAnimMap(
         state.board,
         state.boardSize,
@@ -1084,15 +1215,13 @@
       state.blastIndices = [];
       renderGame(root, state);
 
-      // 2) let place-pop actually show before resolve logic starts
       window.setTimeout(function () {
         runBlastPhase(root, state, [], 1);
-      }, 135);
-
-      // 3) score update comes after the land animation has had time to breathe
+      }, 240);
+      
       window.setTimeout(function () {
         addScore(root, state, placementScore, true);
-      }, 135);
+      }, 240);
     
       return true;
     }
@@ -1121,6 +1250,49 @@
   
     window.addEventListener('mouseup', onEnd);
     window.addEventListener('touchend', onEnd);
+  }
+
+  function getBoardMessageAssetPath(message) {
+    if (!message) return '';
+  
+    if (message === 'Blast') return 'images/blast_1.svg';
+    if (message === 'Double Blast') return 'images/blast_2.svg';
+    if (message === 'Triple Blast') return 'images/blast_3.svg';
+    if (message === 'Max Blast') return 'images/blast_4.svg';
+  
+    if (message.indexOf('Combo x') === 0) {
+      var comboStep = parseInt(message.replace('Combo x', ''), 10) || 2;
+      var comboIndex = Math.max(1, comboStep - 1);
+      return 'images/combo_' + comboIndex + '.svg';
+    }
+  
+    return 'images/blast_1.svg';
+  }
+
+  function showBoardMessage(root, state) {
+    if (!state.boardMessage) return;
+  
+    var src = getBoardMessageAssetPath(state.boardMessage);
+    if (!src) return;
+  
+    var oldMsg = document.body.querySelector('.bm-board-message');
+    if (oldMsg) oldMsg.remove();
+  
+    var msg = document.createElement('div');
+    msg.className = 'bm-board-message';
+    msg.innerHTML = '<img src="' + src + '" class="bm-board-message__img" />';
+  
+    document.body.appendChild(msg);
+  
+    if (state.boardMessageTimer) {
+      window.clearTimeout(state.boardMessageTimer);
+    }
+  
+    state.boardMessageTimer = window.setTimeout(function () {
+      if (msg.parentNode) msg.parentNode.removeChild(msg);
+      state.boardMessage = '';
+      state.boardMessageTimer = null;
+    }, 2400);
   }
 
   function syncHudUi(root, state) {
@@ -1268,7 +1440,9 @@
       dragBound: false,
       animMap: null,
       blastIndices: [],
-      isResolving: false
+      isResolving: false,
+      boardMessage: '',
+      boardMessageTimer: null
     };
 
     function render() {

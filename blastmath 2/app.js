@@ -92,6 +92,132 @@
   
     return Array.from(toClear);
   }
+
+  function findBlastGroups(board, size) {
+    var groups = [];
+
+    // horizontal groups
+    for (var y = 0; y < size; y++) {
+      for (var x = 0; x < size; x++) {
+        var sum = 0;
+        var cells = [];
+
+        for (var k = x; k < size; k++) {
+          var cell = board[y * size + k];
+          if (!cell) break;
+
+          sum += cell.value;
+          cells.push(y * size + k);
+
+          if (sum === 10) {
+            groups.push({
+              axis: 'h',
+              indices: cells.slice()
+            });
+          }
+
+          if (sum >= 10) break;
+        }
+      }
+    }
+
+    // vertical groups
+    for (var x = 0; x < size; x++) {
+      for (var y = 0; y < size; y++) {
+        var sum = 0;
+        var cells = [];
+
+        for (var k = y; k < size; k++) {
+          var cell = board[k * size + x];
+          if (!cell) break;
+
+          sum += cell.value;
+          cells.push(k * size + x);
+
+          if (sum === 10) {
+            groups.push({
+              axis: 'v',
+              indices: cells.slice()
+            });
+          }
+
+          if (sum >= 10) break;
+        }
+      }
+    }
+
+    return groups;
+  }
+
+  function classifyBlastPhase(board, size, comboStep) {
+    var groups = findBlastGroups(board, size);
+    var blastIndices = [];
+    var seen = new Set();
+    var horizontalGroups = 0;
+    var verticalGroups = 0;
+    var totalGroups = 0;
+    var i, j, index;
+
+    for (i = 0; i < groups.length; i++) {
+      if (groups[i].axis === 'h') horizontalGroups += 1;
+      if (groups[i].axis === 'v') verticalGroups += 1;
+
+      for (j = 0; j < groups[i].indices.length; j++) {
+        index = groups[i].indices[j];
+        if (!seen.has(index)) {
+          seen.add(index);
+          blastIndices.push(index);
+        }
+      }
+    }
+
+    totalGroups = horizontalGroups + verticalGroups;
+
+    if (!blastIndices.length) {
+      return {
+        hasBlast: false,
+        blastIndices: [],
+        clearedCount: 0,
+        horizontalGroups: 0,
+        verticalGroups: 0,
+        totalGroups: 0,
+        comboStep: comboStep,
+        message: '',
+        scoreValue: 0
+      };
+    }
+
+    var message = '';
+    var clearedCount = blastIndices.length;
+    var scoreValue = 0;
+
+    if (comboStep >= 2) {
+      message = 'Combo x' + comboStep;
+      scoreValue = clearedCount * (12 + ((comboStep - 1) * 4));
+    } else {
+      if (totalGroups <= 1) message = 'Blast';
+      else if (totalGroups === 2) message = 'Double Blast';
+      else if (totalGroups === 3) message = 'Triple Blast';
+      else message = 'Max Blast';
+
+      if (totalGroups <= 1) scoreValue = clearedCount * 10;
+      else if (totalGroups === 2) scoreValue = clearedCount * 16;
+      else if (totalGroups === 3) scoreValue = clearedCount * 20;
+      else scoreValue = clearedCount * 24;
+    }
+
+    return {
+      hasBlast: true,
+      blastIndices: blastIndices,
+      clearedCount: clearedCount,
+      horizontalGroups: horizontalGroups,
+      verticalGroups: verticalGroups,
+      totalGroups: totalGroups,
+      comboStep: comboStep,
+      message: message,
+      scoreValue: scoreValue
+    };
+  }
   
   function applyBlast(board, indices) {
     indices.forEach(function (i) {
@@ -685,6 +811,7 @@
       '<div class="bm-spacer" aria-hidden="true"></div>' +
       '<div class="bm-board-wrap">' +
       '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices) + '</div>' +
+      (state.boardMessage ? '<div class="bm-board-message">' + state.boardMessage + '</div>' : '') +
      '</div>' +
       '<div class="bm-spacer" aria-hidden="true"></div>' +
       '<div class="bm-hand">' + state.hand.map(function (piece, index) {
@@ -747,18 +874,20 @@
       var pieces = 18;
       for (var i = 0; i < pieces; i++) {
         var frag = document.createElement('div');
-        var fragSize = Math.max(3, size * (0.09 + Math.random() * 0.1));
+        var fragSize = Math.max(4, size * (0.11 + Math.random() * 0.12));
 
-        var startX = rect.left + (size * 0.16) + Math.random() * (size * 0.68);
-        var startY = rect.top + (size * 0.14) + Math.random() * (size * 0.48);
+        var startX = rect.left + (size * 0.12) + Math.random() * (size * 0.76);
+        var startY = rect.top + (size * 0.10) + Math.random() * (size * 0.30);
 
-        var driftX = (-size * 0.9) + Math.random() * (size * 2.8);
-        var fallY = (size * 1.1) + Math.random() * (size * 2.4);
-        var rot = (-28 + Math.random() * 56).toFixed(1);
-        var delay = Math.round(Math.random() * 80);
-        var duration = 380 + Math.round(Math.random() * 120);
+        var driftX = (-size * 0.95) + Math.random() * (size * 1.9);
+        var liftY = (size * 0.7) + Math.random() * (size * 0.95);
+        var fallY = (size * 1.65) + Math.random() * (size * 1.9);
+        var rot = (-38 + Math.random() * 76).toFixed(1);
+        var delay = Math.round(Math.random() * 70);
+        var duration = 460 + Math.round(Math.random() * 140);
 
-        frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone;
+        var fragVariant = 1 + Math.floor(Math.random() * 4);
+        frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone + ' bm-blast-frag--mix-' + fragVariant;
         frag.style.position = 'fixed';
         frag.style.left = Math.round(startX) + 'px';
         frag.style.top = Math.round(startY) + 'px';
@@ -766,6 +895,7 @@
         frag.style.height = Math.round(fragSize) + 'px';
         frag.style.zIndex = 9999;
         frag.style.setProperty('--bm-frag-dx', Math.round(driftX) + 'px');
+        frag.style.setProperty('--bm-frag-lift', Math.round(liftY) + 'px');
         frag.style.setProperty('--bm-frag-dy', Math.round(fallY) + 'px');
         frag.style.setProperty('--bm-frag-rot', rot + 'deg');
         frag.style.setProperty('--bm-frag-delay', delay + 'ms');
@@ -798,8 +928,10 @@
 
   function runBlastPhase(root, state, placedIndices, comboStep) {
     var boardEl = root.querySelector('.bm-board');
+    var blastResult;
+
     comboStep = comboStep || 1;
-  
+
     state.animMap = buildAnimMap(
       state.board,
       state.boardSize,
@@ -807,29 +939,30 @@
       placedIndices || [],
       []
     );
-  
-    state.blastIndices = findBlasts(state.board, state.boardSize);
-  
+
+    blastResult = classifyBlastPhase(state.board, state.boardSize, comboStep);
+    state.blastIndices = blastResult.blastIndices;
+
     renderGame(root, state);
-  
-    if (!state.blastIndices.length) {
+
+    if (!blastResult.hasBlast) {
       state.isResolving = false;
       state.comboStep = 0;
       return;
     }
-  
+
+    showBoardMessage(root, state, blastResult.message);
+
     requestAnimationFrame(function () {
       window.setTimeout(function () {
         triggerBlastShake(root);
-        spawnBlastFragments(root, state, state.blastIndices);
-        applyBlast(state.board, state.blastIndices);
+        spawnBlastFragments(root, state, blastResult.blastIndices);
+        applyBlast(state.board, blastResult.blastIndices);
 
         var moved = applyGravity(state.board, state.boardSize);
 
-        var clearedCount = state.blastIndices.length;
-        var blastValue = comboStep === 1 ? 10 : 15;
-        addScore(root, state, clearedCount * blastValue * comboStep, true);
-  
+        addScore(root, state, blastResult.scoreValue, true);
+
         state.animMap = buildAnimMap(
           state.board,
           state.boardSize,
@@ -837,15 +970,15 @@
           [],
           moved
         );
-  
+
         state.blastIndices = [];
         state.comboStep = comboStep;
-  
+
         renderGame(root, state);
-  
-        var nextBlasts = findBlasts(state.board, state.boardSize);
-  
-        if (nextBlasts.length) {
+
+        var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, comboStep + 1);
+
+        if (nextBlastResult.hasBlast) {
           window.setTimeout(function () {
             runBlastPhase(root, state, [], comboStep + 1);
           }, 320);
@@ -1123,6 +1256,23 @@
     window.addEventListener('touchend', onEnd);
   }
 
+  function showBoardMessage(root, state, message) {
+    if (!message) return;
+
+    state.boardMessage = message;
+    renderGame(root, state);
+
+    if (state.boardMessageTimer) {
+      window.clearTimeout(state.boardMessageTimer);
+    }
+
+    state.boardMessageTimer = window.setTimeout(function () {
+      state.boardMessage = '';
+      state.boardMessageTimer = null;
+      renderGame(root, state);
+    }, 700);
+  }
+
   function syncHudUi(root, state) {
     var highScoreEl = root.querySelector('.bm-hud-score span');
     var livesEl = root.querySelector('.bm-hud-lives span');
@@ -1268,7 +1418,9 @@
       dragBound: false,
       animMap: null,
       blastIndices: [],
-      isResolving: false
+      isResolving: false,
+      boardMessage: '',
+      boardMessageTimer: null
     };
 
     function render() {
