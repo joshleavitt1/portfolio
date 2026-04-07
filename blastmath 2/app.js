@@ -217,6 +217,12 @@
     };
   }
 
+  var HOME_HAND = [
+    { width: 1, height: 1, cells: [makeCellAt(0, 0, 2)] },
+    { width: 1, height: 2, cells: [makeCellAt(0, 0, 1), makeCellAt(0, 1, 2)] },
+    { width: 2, height: 1, cells: [makeCellAt(0, 0, 2), makeCellAt(1, 0, 1)] }
+  ];
+
   function readHighScore() {
     try { return Number(localStorage.getItem(CONFIG.storageKey) || 0) || 0; }
     catch (e) { return 0; }
@@ -233,6 +239,56 @@
 
   function createEmptyBoard(size) {
     return Array.from({ length: size * size }, function () { return null; });
+  }
+
+  function findBlasts(board, size) {
+    var toClear = new Set();
+  
+    // horizontal
+    for (var y = 0; y < size; y++) {
+      for (var x = 0; x < size; x++) {
+        var sum = 0;
+        var cells = [];
+  
+        for (var k = x; k < size; k++) {
+          var cell = board[y * size + k];
+          if (!cell) break;
+  
+          sum += cell.value;
+          cells.push(y * size + k);
+  
+          if (sum === 10) {
+            cells.forEach(i => toClear.add(i));
+          }
+  
+          if (sum >= 10) break;
+        }
+      }
+    }
+  
+    // vertical
+    for (var x = 0; x < size; x++) {
+      for (var y = 0; y < size; y++) {
+        var sum = 0;
+        var cells = [];
+  
+        for (var k = y; k < size; k++) {
+          var cell = board[k * size + x];
+          if (!cell) break;
+  
+          sum += cell.value;
+          cells.push(k * size + x);
+  
+          if (sum === 10) {
+            cells.forEach(i => toClear.add(i));
+          }
+  
+          if (sum >= 10) break;
+        }
+      }
+    }
+  
+    return Array.from(toClear);
   }
 
   function findBlastGroups(board, size) {
@@ -427,27 +483,41 @@
     return map;
   }
 
-  function buildPlacedDropAnimMap(boardSize, boardEl, placedIndices) {
-    var map = {};
-    if (!boardEl || !placedIndices || !placedIndices.length) return map;
-
-    var cellEl = boardEl.querySelector('.bm-cell');
-    if (!cellEl) return map;
-
-    var cellSize = cellEl.getBoundingClientRect().width;
-    var gap = parseFloat(getComputedStyle(boardEl).gap) || 0;
-    var step = cellSize + gap;
-
-    placedIndices.forEach(function (index) {
-      var y = Math.floor(index / boardSize);
-
-      map[index] = {
-        type: 'drop-land',
-        distance: Math.max(10, (y + 1) * step)
-      };
+  function resolveBoard(board, boardSize, boardEl, directPlaced) {
+    var allMoved = [];
+    var blastIndices = [];
+  
+    var movedA = applyGravity(board, boardSize);
+    allMoved = allMoved.concat(movedA);
+  
+    var movedToIndexA = new Set(
+      movedA.map(function (item) {
+        return item.toY * boardSize + item.x;
+      })
+    );
+  
+    var actualDirectPlaced = (directPlaced || []).filter(function (index) {
+      return !movedToIndexA.has(index);
     });
-
-    return map;
+  
+    while (true) {
+      var blasts = findBlasts(board, boardSize);
+      if (!blasts.length) break;
+  
+      blasts.forEach(function (index) {
+        if (blastIndices.indexOf(index) === -1) blastIndices.push(index);
+      });
+  
+      applyBlast(board, blasts);
+  
+      var moved = applyGravity(board, boardSize);
+      allMoved = allMoved.concat(moved);
+    }
+  
+    return {
+      animMap: buildAnimMap(board, boardSize, boardEl, actualDirectPlaced, allMoved),
+      blastIndices: blastIndices
+    };
   }
 
   function toneForValue(value) {
@@ -1125,18 +1195,18 @@
 
     comboStep = comboStep || 1;
 
+    state.animMap = buildAnimMap(
+      state.board,
+      state.boardSize,
+      boardEl,
+      placedIndices || [],
+      []
+    );
+
     blastResult = classifyBlastPhase(state.board, state.boardSize, comboStep);
     state.blastIndices = blastResult.blastIndices;
 
     if (!blastResult.hasBlast) {
-      state.animMap = buildAnimMap(
-        state.board,
-        state.boardSize,
-        boardEl,
-        placedIndices || [],
-        []
-      );
-
       renderGame(root, state);
       state.isResolving = false;
       state.comboStep = 0;
@@ -1474,22 +1544,23 @@
 
       state.isResolving = true;
 
-      state.animMap = buildPlacedDropAnimMap(
+      state.animMap = buildAnimMap(
+        state.board,
         state.boardSize,
         root.querySelector('.bm-board'),
-        placedIndices
+        placedIndices,
+        []
       );
-
       state.blastIndices = [];
       renderGame(root, state);
 
       window.setTimeout(function () {
-        runBlastPhase(root, state, placedIndices, 1);
-      }, 280);
-
+        runBlastPhase(root, state, [], 1);
+      }, 240);
+      
       window.setTimeout(function () {
         addScore(root, state, placementScore, true);
-      }, 280);
+      }, 240);
     
       return true;
     }

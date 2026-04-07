@@ -1,20 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@900&display=swap');
-
 :root {
-  --bm-font: "Open Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --bm-font: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
   --bm-ui-scale: 1;
   --bm-stage-base-w: 390px;
   --bm-stage-base-h: 844px;
+  --bm-stage-w: calc(var(--bm-stage-base-w) * var(--bm-ui-scale));
+  --bm-stage-h: calc(var(--bm-stage-base-h) * var(--bm-ui-scale));
   --bm-bg: #001b41;
+  --bm-panel: rgba(255,255,255,0.10);
+  --bm-panel-2: rgba(255,255,255,0.16);
 
   --bm-white: #ffffff;
 
-  --bm-blue-1: #00A6FF;
-  --bm-blue-2: #006AFF;
-
-  --bm-pink-1: #FF0084;
-  --bm-pink-2: #FF006F;
+  --bm-blue-1: #1aa9eb;   
+  --bm-blue-2: #1789f5;  
+  --bm-blue-3: #145fe0; 
+  
+  --bm-red-1: #f72688;   
+  --bm-red-2: #f01078;  
+  --bm-red-3: #e00063;  
 
   --bm-c1-1: #c9a6ff;
   --bm-c1-2: #865cff;
@@ -65,6 +69,9 @@
 
   --bm-tile-gloss-h: calc(10px * var(--bm-ui-scale));
   --bm-tile-border: calc(.5px * var(--bm-ui-scale));
+  --bm-tile-highlight: rgba(0, 0, 0, 0.5);
+  --bm-tile-highlight-soft: rgba(0, 0, 0, 0.25);
+  --bm-tile-shadow-dark: rgba(0,0,0,.25);
 
   --bm-cell-gap: 2px;
 
@@ -84,7 +91,6 @@
   box-sizing: border-box; 
   -webkit-tap-highlight-color: transparent;
 }
-
 html, body {
   margin: 0;
   width: 100%;
@@ -93,15 +99,6 @@ html, body {
   overscroll-behavior: none;
   background: var(--bm-bg);
   font-family: var(--bm-font);
-  font-weight: 900;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-  font-weight: 900;
 }
 
 body {
@@ -162,18 +159,45 @@ body {
   height: auto;
   display: block;
 }
-
+.bm-logo__title {
+  display: grid;
+  gap: calc(10px * var(--bm-ui-scale));
+  text-align: center;
+  font-weight: 900;
+  line-height: .92;
+  text-shadow: 0 4px 18px rgba(0,0,0,.28);
+}
+.bm-logo__title span:first-child { font-size: calc(64px * var(--bm-ui-scale)); color: #ffbf00; }
+.bm-logo__title span:last-child { font-size: calc(72px * var(--bm-ui-scale)); color: #67b8ff; }
+.bm-logo__title .is-accent { color: #ffbf00; }
 .bm-home__actions { display: grid; }
 
 .bm-btn {
-  height: calc(80px * var(--bm-ui-scale));
+  height: calc(76px * var(--bm-ui-scale));
+  border: var(--bm-ui-block-border) solid rgba(255,255,255,.10);
   border-radius: var(--bm-ui-block-radius);
-  background: linear-gradient(180deg, var(--bm-blue-1), var(--bm-blue-2));
+  background:
+  linear-gradient(
+    180deg,
+    rgba(255,255,255,var(--bm-ui-block-gloss-alpha)) 0%,
+    rgba(255,255,255,0) 100%
+  ) top / 100% var(--bm-ui-block-gloss-h) no-repeat,
+  linear-gradient(
+    180deg,
+    var(--bm-blue-1) 0%,
+    var(--bm-blue-2) 50%,
+    var(--bm-blue-3) 100%
+  );
   color: var(--bm-white);
   font-weight: 900;
   font-size: calc(28px * var(--bm-ui-scale));
-  padding: 0px;
-  border: none;
+  text-shadow:
+    0 calc(1px * var(--bm-ui-scale)) 0 rgba(0,0,0,.18),
+    0 calc(2px * var(--bm-ui-scale)) calc(2px * var(--bm-ui-scale)) rgba(0,0,0,.28);
+  box-shadow:
+    0 var(--bm-ui-block-shadow-y) var(--bm-ui-block-shadow-blur) rgba(0,0,0,var(--bm-ui-block-shadow-alpha)),
+    inset 0 var(--bm-ui-block-inset) 0 rgba(255,255,255,.18),
+    inset 0 calc(var(--bm-ui-block-inset) * -1) 0 rgba(0,0,0,.14);
 }
 
 .bm-btn:hover {
@@ -182,6 +206,10 @@ body {
 
 .bm-btn:active {
   transform: translateY(calc(2px * var(--bm-ui-scale)));
+  box-shadow:
+    0 calc(4px * var(--bm-ui-scale)) calc(10px * var(--bm-ui-scale)) rgba(0,0,0,.24),
+    inset 0 var(--bm-ui-block-inset) 0 rgba(255,255,255,.14),
+    inset 0 calc(var(--bm-ui-block-inset) * -1) 0 rgba(0,0,0,.18);
 }
 
 .bm-game {
@@ -209,7 +237,7 @@ body {
   align-items: center;
   gap: calc(8px * var(--bm-ui-scale));
   padding: calc(12px * var(--bm-ui-scale)) calc(16px * var(--bm-ui-scale));
-  border: none;
+  border: var(--bm-ui-block-border) solid rgba(255,255,255,.10);
   border-radius: var(--bm-ui-block-radius);
   font-size: calc(28px * var(--bm-ui-scale));
   font-weight: 900;
@@ -220,19 +248,45 @@ body {
   width: fit-content;
   position: relative;
   overflow: hidden;
+  box-shadow:
+    0 var(--bm-ui-block-shadow-y) var(--bm-ui-block-shadow-blur) rgba(0,0,0,var(--bm-ui-block-shadow-alpha)),
+    inset 0 var(--bm-ui-block-inset) 0 rgba(255,255,255,.18),
+    inset 0 calc(var(--bm-ui-block-inset) * -1) 0 rgba(0,0,0,.14);
 }
 
 .bm-hud-score {
-  background: linear-gradient(180deg, var(--bm-blue-1), var(--bm-blue-2));
+  background:
+  linear-gradient(
+    180deg,
+    rgba(255,255,255,var(--bm-ui-block-gloss-alpha)) 0%,
+    rgba(255,255,255,0) 100%
+  ) top / 100% var(--bm-ui-block-gloss-h) no-repeat,
+  linear-gradient(
+    180deg,
+    var(--bm-blue-1) 0%,
+    var(--bm-blue-2) 50%,
+    var(--bm-blue-3) 100%
+  );
 }
 
 .bm-hud-lives {
-  background: linear-gradient(180deg, var(--bm-pink-1), var(--bm-pink-2));
+  background:
+  linear-gradient(
+    180deg,
+    rgba(255,255,255,var(--bm-ui-block-gloss-alpha)) 0%,
+    rgba(255,255,255,0) 100%
+  ) top / 100% var(--bm-ui-block-gloss-h) no-repeat,
+  linear-gradient(
+    180deg,
+    var(--bm-red-1) 0%,
+    var(--bm-red-2) 50%,
+    var(--bm-red-3) 100%
+  );
 }
 
 .bm-hud-icon {
-  width: calc(24px * var(--bm-ui-scale));
-  height: calc(24px * var(--bm-ui-scale));
+  width: calc(20px * var(--bm-ui-scale));
+  height: calc(20px * var(--bm-ui-scale));
   display: block;
   filter: drop-shadow(0 calc(1px * var(--bm-ui-scale)) calc(1px * var(--bm-ui-scale)) rgba(0,0,0,.18));
 }
@@ -345,6 +399,7 @@ body {
   text-shadow:
     0 calc(1px * var(--bm-ui-scale)) 0 rgba(0,0,0,.25),
     0 calc(2px * var(--bm-ui-scale)) calc(2px * var(--bm-ui-scale)) rgba(0,0,0,.35);
+  position: absolute;
   overflow: hidden;
   border: var(--bm-tile-border) solid var(--bm-tile-edge, rgba(255,255,255,.18));
   background:
@@ -355,7 +410,9 @@ body {
     inset 3px 3px 0 rgba(255,255,255,var(--bm-tile-bevel-light)),
     inset -3px -3px 0 rgba(0,0,0,var(--bm-tile-bevel-dark));
 }
-
+.bm-cell.is-preview {
+  background: rgba(255,255,255,0.25);
+}
 .bm-piece--ghost {
   opacity: 1;
   transform: none;
@@ -383,6 +440,7 @@ body {
     linear-gradient(180deg, var(--bm-tile-gloss, rgba(255,255,255,.26)) 0%, rgba(255,255,255,0) 100%) top / 100% var(--bm-tile-gloss-h) no-repeat,
     linear-gradient(180deg, var(--bm-tile-top) 0%, var(--bm-tile-mid) 30%, var(--bm-tile-bot) 100%);
   box-shadow:
+    0 var(--bm-tile-shadow-y) var(--bm-tile-shadow-blur) rgba(0,0,0,var(--bm-tile-shadow-alpha)),
     inset 3px 3px 0 rgba(255,255,255,var(--bm-tile-bevel-light)),
     inset -3px -3px 0 rgba(0,0,0,var(--bm-tile-bevel-dark));
 }
@@ -426,7 +484,7 @@ body {
 }
 
 .bm-tile.bm-drop-land {
-  animation: bmDropLand 260ms cubic-bezier(.16,.86,.2,1);
+  animation: bmDropLand 190ms cubic-bezier(.16,.86,.2,1);
   transform-origin: 50% 50%;
   z-index: 1;
 }
@@ -812,14 +870,14 @@ body {
 .bm-msg-word-fill {
   font-family: "Open Sans", sans-serif;
   font-weight: 900;
-  font-size: calc(72px * var(--bm-ui-scale));
+  font-size: calc(80px * var(--bm-ui-scale));
   white-space: nowrap;
   line-height: 1;
 }
 
 .bm-msg-word-stroke {
   color: transparent;
-  -webkit-text-stroke: calc(12px * var(--bm-ui-scale)) #3457D7;
+  -webkit-text-stroke: calc(16px * var(--bm-ui-scale)) #3457D7;
 
   text-shadow: 
   0 calc(5px * var(--bm-ui-scale)) 0 #001C42,
@@ -841,7 +899,7 @@ body {
 .bm-msg-number-fill {
   font-family: "Open Sans", sans-serif;
   font-weight: 900;
-  font-size: calc(96px * var(--bm-ui-scale));
+  font-size: calc(112px * var(--bm-ui-scale));
   white-space: nowrap;
   line-height: 1;
 }
@@ -849,7 +907,7 @@ body {
 .bm-msg-number-stroke {
   color: transparent;
   font-style: italic; /* 👈 THIS is the italic */
-  -webkit-text-stroke: calc(12px * var(--bm-ui-scale)) #ffffff;
+  -webkit-text-stroke: calc(16px * var(--bm-ui-scale)) #ffffff;
 
   text-shadow: 
     0 calc(5px * var(--bm-ui-scale)) 0 #001C42,
@@ -863,7 +921,7 @@ body {
 }
 
 .bm-msg--combo .bm-msg-word-stroke {
-  -webkit-text-stroke: calc(12px * var(--bm-ui-scale)) #00CB00;
+  -webkit-text-stroke: calc(16px * var(--bm-ui-scale)) #00CB00;
   text-shadow: 
     0 calc(5px * var(--bm-ui-scale)) 0 #001C42,
     0 calc(10px * var(--bm-ui-scale)) calc(10px * var(--bm-ui-scale)) #001C42;
@@ -929,6 +987,10 @@ body {
   width: 100%;
 }
 
+.bm-hand--intro-count-1 {
+  gap: 0;
+}
+
 .bm-hand-slot--intro {
   width: auto;
   min-width: 0;
@@ -956,7 +1018,7 @@ body {
 @keyframes bmIntroTargetPulse {
   0%, 100% {
     transform: scale(1);
-    background: rgba(255,255,255,.08);
+    background: rgba(255,255,255,.05);
   }
   50% {
     transform: scale(1.02);
