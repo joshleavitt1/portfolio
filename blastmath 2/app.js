@@ -77,31 +77,58 @@
   var INTRO_STEPS = {
     1: {
       step: 1,
-      title: "Blast 10",
+      title: "Build 10 to Blast",
+    
       boardCells: [
-        { x: 2, y: 5, value: 5 }
+        // center piece
+        { x: 2, y: 5, value: 1 },
+    
+        // LEFT cluster
+        { x: 0, y: 4, kind: "neutral" },
+        { x: 0, y: 5, kind: "neutral" },
+        { x: 1, y: 4, kind: "neutral" },
+        { x: 1, y: 5, kind: "neutral" },
+    
+        // RIGHT cluster
+        { x: 4, y: 4, kind: "neutral" },
+        { x: 4, y: 5, kind: "neutral" },
+        { x: 5, y: 4, kind: "neutral" },
+        { x: 5, y: 5, kind: "neutral" },
+    
+        // upper right single (like your screenshot)
+        { x: 4, y: 3, kind: "neutral" }
       ],
-      handValues: [5],
+    
+      handValues: [9],
+    
       targets: [
         { x: 3, y: 5, direction: "horizontal" }
       ]
     },
-
+  
     2: {
       step: 2,
-      title: "Blast 10",
+      title: "Build 10 to Blast",
       boardCells: [
-        { x: 2, y: 5, value: 1 }
+        { x: 2, y: 5, value: 1 },
+        { x: 0, y: 4, kind: "neutral" },
+        { x: 0, y: 5, kind: "neutral" },
+        { x: 1, y: 4, kind: "neutral" },
+        { x: 1, y: 5, kind: "neutral" },
+        { x: 4, y: 3, kind: "neutral" },
+        { x: 4, y: 4, kind: "neutral" },
+        { x: 5, y: 4, kind: "neutral" },
+        { x: 5, y: 5, kind: "neutral" }
       ],
       handValues: [9],
       targets: [
-        { x: 2, y: 4, direction: "vertical" }
+        { x: 3, y: 5, direction: "horizontal" }
       ]
     },
-
+  
     3: {
       step: 3,
-      title: "Make 10 in a Row",
+      title: "Build 10 to Blast",
       boardCells: [
         { x: 2, y: 5, value: 2 }
       ],
@@ -116,10 +143,10 @@
         { x: 4, y: 5, direction: "horizontal" }
       ]
     },
-    
+  
     4: {
       step: 4,
-      title: "Make 10 Up and Down",
+      title: "Build 10 to Blast",
       boardCells: [
         { x: 2, y: 5, value: 3 }
       ],
@@ -133,7 +160,7 @@
         { x: 2, y: 4, direction: "vertical" },
         { x: 2, y: 3, direction: "vertical" }
       ]
-    },
+    }
   };
 
   function setupIntroStepByNumber(state, stepNumber) {
@@ -147,7 +174,12 @@
     for (i = 0; i < def.boardCells.length; i++) {
       var bc = def.boardCells[i];
       var index = (bc.y * CONFIG.boardSize) + bc.x;
-      board[index] = makeCell(bc.value);
+    
+      if (bc.kind === "neutral") {
+        board[index] = makeNeutralCell();
+      } else {
+        board[index] = makeCell(bc.value);
+      }
     }
 
     if (def.targets.length) {
@@ -217,12 +249,6 @@
     };
   }
 
-  var HOME_HAND = [
-    { width: 1, height: 1, cells: [makeCellAt(0, 0, 2)] },
-    { width: 1, height: 2, cells: [makeCellAt(0, 0, 1), makeCellAt(0, 1, 2)] },
-    { width: 2, height: 1, cells: [makeCellAt(0, 0, 2), makeCellAt(1, 0, 1)] }
-  ];
-
   function readHighScore() {
     try { return Number(localStorage.getItem(CONFIG.storageKey) || 0) || 0; }
     catch (e) { return 0; }
@@ -239,56 +265,6 @@
 
   function createEmptyBoard(size) {
     return Array.from({ length: size * size }, function () { return null; });
-  }
-
-  function findBlasts(board, size) {
-    var toClear = new Set();
-  
-    // horizontal
-    for (var y = 0; y < size; y++) {
-      for (var x = 0; x < size; x++) {
-        var sum = 0;
-        var cells = [];
-  
-        for (var k = x; k < size; k++) {
-          var cell = board[y * size + k];
-          if (!cell) break;
-  
-          sum += cell.value;
-          cells.push(y * size + k);
-  
-          if (sum === 10) {
-            cells.forEach(i => toClear.add(i));
-          }
-  
-          if (sum >= 10) break;
-        }
-      }
-    }
-  
-    // vertical
-    for (var x = 0; x < size; x++) {
-      for (var y = 0; y < size; y++) {
-        var sum = 0;
-        var cells = [];
-  
-        for (var k = y; k < size; k++) {
-          var cell = board[k * size + x];
-          if (!cell) break;
-  
-          sum += cell.value;
-          cells.push(k * size + x);
-  
-          if (sum === 10) {
-            cells.forEach(i => toClear.add(i));
-          }
-  
-          if (sum >= 10) break;
-        }
-      }
-    }
-  
-    return Array.from(toClear);
   }
 
   function findBlastGroups(board, size) {
@@ -347,6 +323,39 @@
     return groups;
   }
 
+  function getOrthoNeighborIndices(index, size) {
+    var x = index % size;
+    var y = Math.floor(index / size);
+    var out = [];
+  
+    if (x > 0) out.push(index - 1);
+    if (x < size - 1) out.push(index + 1);
+    if (y > 0) out.push(index - size);
+    if (y < size - 1) out.push(index + size);
+  
+    return out;
+  }
+  
+  function collectNeutralBlastIndices(board, size, seedIndices) {
+    var seen = new Set();
+    var out = [];
+  
+    seedIndices.forEach(function (seed) {
+      var neighbors = getOrthoNeighborIndices(seed, size);
+  
+      neighbors.forEach(function (neighborIndex) {
+        var cell = board[neighborIndex];
+        if (!isNeutralCell(cell)) return;
+        if (seen.has(neighborIndex)) return;
+  
+        seen.add(neighborIndex);
+        out.push(neighborIndex);
+      });
+    });
+  
+    return out;
+  }
+
   function classifyBlastPhase(board, size, comboStep) {
     var groups = findBlastGroups(board, size);
     var blastIndices = [];
@@ -355,11 +364,11 @@
     var verticalGroups = 0;
     var totalGroups = 0;
     var i, j, index;
-
+  
     for (i = 0; i < groups.length; i++) {
       if (groups[i].axis === 'h') horizontalGroups += 1;
       if (groups[i].axis === 'v') verticalGroups += 1;
-
+  
       for (j = 0; j < groups[i].indices.length; j++) {
         index = groups[i].indices[j];
         if (!seen.has(index)) {
@@ -368,13 +377,14 @@
         }
       }
     }
-
+  
     totalGroups = horizontalGroups + verticalGroups;
-
+  
     if (!blastIndices.length) {
       return {
         hasBlast: false,
         blastIndices: [],
+        neutralBlastIndices: [],
         clearedCount: 0,
         horizontalGroups: 0,
         verticalGroups: 0,
@@ -384,28 +394,38 @@
         scoreValue: 0
       };
     }
-
+  
+    var neutralBlastIndices = collectNeutralBlastIndices(board, size, blastIndices);
+  
+    neutralBlastIndices.forEach(function (neutralIndex) {
+      if (!seen.has(neutralIndex)) {
+        seen.add(neutralIndex);
+        blastIndices.push(neutralIndex);
+      }
+    });
+  
     var message = '';
     var clearedCount = blastIndices.length;
     var scoreValue = 0;
-
+  
     if (comboStep >= 2) {
-      message = 'Combo x' + comboStep;
+      message = 'Combo ' + comboStep;
       scoreValue = clearedCount * (12 + ((comboStep - 1) * 4));
     } else {
       if (totalGroups <= 1) message = 'Nice!';
       else if (totalGroups === 2) message = 'Wow!';
       else message = 'Awesome!';
-    
+  
       if (totalGroups <= 1) scoreValue = clearedCount * 10;
       else if (totalGroups === 2) scoreValue = clearedCount * 16;
       else if (totalGroups === 3) scoreValue = clearedCount * 20;
       else scoreValue = clearedCount * 24;
     }
-
+  
     return {
       hasBlast: true,
       blastIndices: blastIndices,
+      neutralBlastIndices: neutralBlastIndices,
       clearedCount: clearedCount,
       horizontalGroups: horizontalGroups,
       verticalGroups: verticalGroups,
@@ -457,9 +477,9 @@
     return moved;
   }
 
-  function buildAnimMap(board, boardSize, boardEl, placedIndices, moved) {
+  function buildPlacedDropAnimMap(boardSize, boardEl, placedIndices) {
     var map = {};
-    if (!boardEl) return map;
+    if (!boardEl || !placedIndices || !placedIndices.length) return map;
   
     var cellEl = boardEl.querySelector('.bm-cell');
     if (!cellEl) return map;
@@ -468,56 +488,15 @@
     var gap = parseFloat(getComputedStyle(boardEl).gap) || 0;
     var step = cellSize + gap;
   
-    (placedIndices || []).forEach(function (index) {
-      map[index] = { type: 'place-pop' };
-    });
-  
-    (moved || []).forEach(function (item) {
-      var toIndex = item.toY * boardSize + item.x;
-      map[toIndex] = {
+    placedIndices.forEach(function (index) {
+      map[index] = {
         type: 'drop-land',
-        distance: Math.max(10, (item.fromY - item.toY) * step)
+        distance: step * 5.5,
+        duration: 420
       };
     });
   
     return map;
-  }
-
-  function resolveBoard(board, boardSize, boardEl, directPlaced) {
-    var allMoved = [];
-    var blastIndices = [];
-  
-    var movedA = applyGravity(board, boardSize);
-    allMoved = allMoved.concat(movedA);
-  
-    var movedToIndexA = new Set(
-      movedA.map(function (item) {
-        return item.toY * boardSize + item.x;
-      })
-    );
-  
-    var actualDirectPlaced = (directPlaced || []).filter(function (index) {
-      return !movedToIndexA.has(index);
-    });
-  
-    while (true) {
-      var blasts = findBlasts(board, boardSize);
-      if (!blasts.length) break;
-  
-      blasts.forEach(function (index) {
-        if (blastIndices.indexOf(index) === -1) blastIndices.push(index);
-      });
-  
-      applyBlast(board, blasts);
-  
-      var moved = applyGravity(board, boardSize);
-      allMoved = allMoved.concat(moved);
-    }
-  
-    return {
-      animMap: buildAnimMap(board, boardSize, boardEl, actualDirectPlaced, allMoved),
-      blastIndices: blastIndices
-    };
   }
 
   function toneForValue(value) {
@@ -526,9 +505,21 @@
   
   function makeCell(value) {
     return {
+      kind: 'number',
       value: value,
       tone: toneForValue(value)
     };
+  }
+  
+  function makeNeutralCell() {
+    return {
+      kind: 'neutral',
+      tone: 'neutral'
+    };
+  }
+  
+  function isNeutralCell(cell) {
+    return !!(cell && cell.kind === 'neutral');
   }
   
   function randInt(min, max) {
@@ -1065,18 +1056,18 @@
     animMap = animMap || {};
     blastIndices = blastIndices || [];
     state = state || {};
-
+  
     var intro = state.intro || {};
     var isIntro = !!intro.active;
-
+  
     return board.map(function (cell, index) {
       var cellClass = 'bm-cell';
       var extraClass = '';
       var extraStyle = '';
-
+  
       if (isIntro && !cell && !intro.completed) {
         var isVisibleIntroTarget = false;
-
+  
         if (intro.targetQueue && intro.targetQueue.length) {
           isVisibleIntroTarget = intro.targetQueue.some(function (target) {
             return target.index === index;
@@ -1084,73 +1075,197 @@
         } else {
           isVisibleIntroTarget = index === intro.allowedTargetIndex;
         }
-
+  
         if (isVisibleIntroTarget) {
           cellClass += ' bm-intro-target-cell';
         }
       }
-
+  
       if (!cell) {
         return '<div class="' + cellClass + '" data-cell-index="' + index + '"></div>';
       }
-
+  
       var anim = animMap[index];
       var isBlasting = blastIndices.indexOf(index) !== -1;
-
+  
       if (anim) {
         if (anim.type === 'place-pop') {
           extraClass = ' bm-place-pop';
         } else if (anim.type === 'drop-land') {
           extraClass = ' bm-drop-land';
-          extraStyle = ' style="--bm-drop-distance:' + anim.distance + 'px;"';
+          extraStyle =
+          ' style="--bm-drop-distance:' + anim.distance + 'px;' +
+          '--bm-drop-duration:' + (anim.duration || 320) + 'ms;"';
         } else if (anim.type === 'blast-pop') {
           extraClass = ' bm-blast-pop';
         }
       }
-
+  
       if (isBlasting) {
         extraClass += ' bm-blast-pop';
       }
-
+  
+      if (isNeutralCell(cell)) {
+        return '<div class="' + cellClass + '" data-cell-index="' + index + '">' +
+          '<div class="bm-neutral-block' + extraClass + '"' + extraStyle + '></div>' +
+        '</div>';
+      }
+  
       return '<div class="' + cellClass + '" data-cell-index="' + index + '">' +
         '<div class="bm-tile bm-tile--' + cell.tone + extraClass + '"' + extraStyle + '><span class="bm-tile__label">' + cell.value + '</span></div>' +
       '</div>';
     }).join('');
   }
 
+  function getBoardCellRects(boardEl) {
+    var rects = {};
+    if (!boardEl) return rects;
+  
+    var cellEls = boardEl.querySelectorAll('.bm-cell');
+    cellEls.forEach(function (cellEl, index) {
+      rects[index] = cellEl.getBoundingClientRect();
+    });
+  
+    return rects;
+  }
+  
+  function getCellContentEl(cellEl) {
+    if (!cellEl) return null;
+    return cellEl.querySelector('.bm-tile, .bm-neutral-block');
+  }
+
+  function hideBoardCells(root, indices) {
+  var boardEl = root.querySelector('.bm-board');
+  if (!boardEl || !indices || !indices.length) return;
+
+  indices.forEach(function (index) {
+    var cellEl = boardEl.querySelector('[data-cell-index="' + index + '"]');
+    var contentEl = getCellContentEl(cellEl);
+    if (contentEl) contentEl.style.visibility = 'hidden';
+  });
+}
+  
+  function renderBoardMarkupOnly(root, state) {
+    var boardEl = root.querySelector('.bm-board');
+    if (!boardEl) return null;
+  
+    boardEl.innerHTML = renderBoard(
+      state.boardSize,
+      state.board,
+      null,
+      state.blastIndices,
+      state
+    );
+  
+    return boardEl;
+  }
+  
+  function animateGravityFall(root, state, moved) {
+    var boardEl = root.querySelector('.bm-board');
+    if (!boardEl || !moved || !moved.length) return Promise.resolve();
+  
+    var beforeRects = getBoardCellRects(boardEl);
+  
+    boardEl = renderBoardMarkupOnly(root, state);
+    var afterRects = getBoardCellRects(boardEl);
+    var cellEls = boardEl.querySelectorAll('.bm-cell');
+    var clones = [];
+    var duration = 380;
+  
+    moved.forEach(function (item) {
+      var fromIndex = (item.fromY * state.boardSize) + item.x;
+      var toIndex = (item.toY * state.boardSize) + item.x;
+  
+      var fromRect = beforeRects[fromIndex];
+      var toRect = afterRects[toIndex];
+      if (!fromRect || !toRect) return;
+  
+      var toCellEl = cellEls[toIndex];
+      var toContentEl = getCellContentEl(toCellEl);
+      if (!toContentEl) return;
+  
+      var clone = toContentEl.cloneNode(true);
+      clone.classList.remove('bm-drop-land', 'bm-place-pop', 'bm-blast-pop');
+      clone.style.position = 'fixed';
+      clone.style.left = Math.round(fromRect.left) + 'px';
+      clone.style.top = Math.round(fromRect.top) + 'px';
+      clone.style.width = Math.round(fromRect.width) + 'px';
+      clone.style.height = Math.round(fromRect.height) + 'px';
+      clone.style.margin = '0';
+      clone.style.zIndex = '30';
+      clone.style.pointerEvents = 'none';
+      clone.style.willChange = 'transform';
+      clone.style.transform = 'translate3d(0,0,0)';
+  
+      toContentEl.style.visibility = 'hidden';
+  
+      document.body.appendChild(clone);
+      clones.push({ clone: clone, target: toContentEl });
+  
+      var dx = Math.round(toRect.left - fromRect.left);
+      var dy = Math.round(toRect.top - fromRect.top);
+  
+      requestAnimationFrame(function () {
+        clone.style.transition = 'transform ' + duration + 'ms cubic-bezier(.22,.61,.36,1)';
+        clone.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
+      });
+    });
+  
+    return new Promise(function (resolve) {
+      window.setTimeout(function () {
+        clones.forEach(function (entry) {
+          if (entry.clone && entry.clone.parentNode) {
+            entry.clone.parentNode.removeChild(entry.clone);
+          }
+          if (entry.target) {
+            entry.target.style.visibility = '';
+          }
+        });
+        resolve();
+      }, duration + 30);
+    });
+  }
+
   function spawnBlastFragments(root, state, blastIndices) {
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
-
+  
     var cellEls = board.querySelectorAll('.bm-cell');
-
+  
     blastIndices.forEach(function (index) {
       var cell = state.board[index];
       if (!cell) return;
-
+  
       var cellEl = cellEls[index];
       if (!cellEl) return;
-
+  
       var rect = cellEl.getBoundingClientRect();
       var size = rect.width;
-
-      var pieces = 25;
+  
+      var pieces = isNeutralCell(cell) ? 28 : 25;
+  
       for (var i = 0; i < pieces; i++) {
         var frag = document.createElement('div');
         var fragSize = Math.max(4, size * (0.125 + Math.random() * 0.13));
-
+  
         var startX = rect.left + (size * 0.12) + Math.random() * (size * 0.76);
         var startY = rect.top + (size * 0.10) + Math.random() * (size * 0.30);
-
+  
         var driftX = (-size * 1.1) + Math.random() * (size * 2.2);
         var liftY = (size * 0.82) + Math.random() * (size * 1.08);
         var fallY = (size * 1.85) + Math.random() * (size * 2.15);
         var rot = (-38 + Math.random() * 76).toFixed(1);
-        var delay = Math.round(Math.random() * 70);
-        var duration = 520 + Math.round(Math.random() * 160);
-
+        var delay = Math.round(Math.random() * 90);
+        var duration = 760 + Math.round(Math.random() * 180);
+  
         var fragVariant = 1 + Math.floor(Math.random() * 4);
-        frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone + ' bm-blast-frag--mix-' + fragVariant;
+  
+        if (isNeutralCell(cell)) {
+          frag.className = 'bm-blast-frag bm-blast-frag--neutral bm-blast-frag--neutral-mix-' + fragVariant;
+        } else {
+          frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone + ' bm-blast-frag--mix-' + fragVariant;
+        }
+  
         frag.style.position = 'fixed';
         frag.style.left = Math.round(startX) + 'px';
         frag.style.top = Math.round(startY) + 'px';
@@ -1163,9 +1278,9 @@
         frag.style.setProperty('--bm-frag-rot', rot + 'deg');
         frag.style.setProperty('--bm-frag-delay', delay + 'ms');
         frag.style.setProperty('--bm-frag-duration', duration + 'ms');
-
+  
         document.body.appendChild(frag);
-
+  
         (function (node) {
           window.setTimeout(function () {
             if (node.parentNode) node.parentNode.removeChild(node);
@@ -1190,81 +1305,64 @@
   }
 
   function runBlastPhase(root, state, placedIndices, comboStep) {
-    var boardEl = root.querySelector('.bm-board');
     var blastResult;
-
+  
     comboStep = comboStep || 1;
-
-    state.animMap = buildAnimMap(
-      state.board,
-      state.boardSize,
-      boardEl,
-      placedIndices || [],
-      []
-    );
-
+  
     blastResult = classifyBlastPhase(state.board, state.boardSize, comboStep);
     state.blastIndices = blastResult.blastIndices;
-
+  
     if (!blastResult.hasBlast) {
+      state.blastIndices = [];
       renderGame(root, state);
       state.isResolving = false;
       state.comboStep = 0;
       return;
     }
-    
+  
     state.boardMessage = blastResult.message;
-    renderGame(root, state);
 
-    requestAnimationFrame(function () {
-      showBoardMessage(root, state);
-      triggerBlastShake(root);
-      spawnBlastFragments(root, state, blastResult.blastIndices);
-      applyBlast(state.board, blastResult.blastIndices);
-
-      var moved = applyGravity(state.board, state.boardSize);
-
-      addScore(root, state, blastResult.scoreValue, true);
-
-      state.animMap = buildAnimMap(
-        state.board,
-        state.boardSize,
-        root.querySelector('.bm-board'),
-        [],
-        moved
-      );
-
-      state.blastIndices = [];
-      state.comboStep = comboStep;
-
-      renderGame(root, state);
-
-      var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, comboStep + 1);
-
-      if (nextBlastResult.hasBlast) {
-        window.setTimeout(function () {
-          runBlastPhase(root, state, [], comboStep + 1);
-        }, 650);
-      } else {
-        state.isResolving = false;
-        state.comboStep = 0;
-
-        if (state.intro && state.intro.active) {
-          var nextStep = state.intro.step + 1;
-
-          state.intro.completed = true;
-          state.intro.hoveringValid = false;
-          renderGame(root, state);
-
-          if (INTRO_STEPS[nextStep]) {
-            window.setTimeout(function () {
-              setupIntroStepByNumber(state, nextStep);
-              renderGame(root, state);
-            }, 2600);
+    showBoardMessage(root, state);
+    triggerBlastShake(root);
+    spawnBlastFragments(root, state, blastResult.blastIndices);
+    
+    applyBlast(state.board, blastResult.blastIndices);
+    hideBoardCells(root, blastResult.blastIndices);
+    
+    addScore(root, state, blastResult.scoreValue, true);
+    
+    var moved = applyGravity(state.board, state.boardSize);
+    
+    state.blastIndices = [];
+    state.comboStep = comboStep;
+  
+      animateGravityFall(root, state, moved).then(function () {
+        var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, comboStep + 1);
+  
+        if (nextBlastResult.hasBlast) {
+          window.setTimeout(function () {
+            runBlastPhase(root, state, [], comboStep + 1);
+          }, 650);
+        } else {
+          state.isResolving = false;
+          state.comboStep = 0;
+  
+          if (state.intro && state.intro.active) {
+            var nextStep = state.intro.step + 1;
+  
+            state.intro.completed = true;
+            state.intro.hoveringValid = false;
+            renderGame(root, state);
+  
+            if (INTRO_STEPS[nextStep]) {
+              window.setTimeout(function () {
+                setupIntroStepByNumber(state, nextStep);
+                renderGame(root, state);
+              }, 2600);
+            }
           }
         }
-      }
-    });
+      });
   }
 
   function enableDrag(root, state) {
@@ -1273,6 +1371,20 @@
     function getBoardRect() {
       var board = root.querySelector('.bm-board');
       return board.getBoundingClientRect();
+    }
+
+    function isPointerOverHand(clientX, clientY) {
+      var hand = root.querySelector('.bm-hand');
+      if (!hand) return false;
+
+      var rect = hand.getBoundingClientRect();
+
+      return (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      );
     }
 
     function getBoardMetrics() {
@@ -1347,7 +1459,8 @@
     }
   
     function getPointer(e) {
-      if (e.touches) return e.touches[0];
+      if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0];
+      if (e.touches && e.touches.length) return e.touches[0];
       return e;
     }
 
@@ -1487,20 +1600,39 @@
   
     function onMove(e) {
       if (!active) return;
-  
+    
       var p = getPointer(e);
-  
+      var overHand = isPointerOverHand(p.clientX, p.clientY);
+    
       var ghostLiftY = getGhostLift();
       active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
       active.ghost.style.top = (p.clientY - active.offsetY - ghostLiftY) + 'px';
-  
+    
+      // keep floating dragged piece visible at all times
+      active.ghost.style.opacity = 1;
+      active.ghost.style.transform = '';
+    
+      // optional hand hover polish
+      var handEl = root.querySelector('.bm-hand');
+      if (handEl) {
+        handEl.classList.toggle('is-hover', overHand);
+      }
+    
+      // when back over hand, remove only the board preview
+      if (overHand) {
+        clearPreview();
+        active.preview = null;
+        return;
+      }
+    
       var pos = getDropPosition(p.clientX, p.clientY);
       var piece = active.piece;
-  
+    
       if (pos.x >= 0 && pos.x < state.boardSize) {
         showPreview(piece, pos.x);
       } else {
         clearPreview();
+        active.preview = null;
       }
     }
   
@@ -1544,38 +1676,48 @@
 
       state.isResolving = true;
 
-      state.animMap = buildAnimMap(
-        state.board,
+      state.animMap = buildPlacedDropAnimMap(
         state.boardSize,
         root.querySelector('.bm-board'),
-        placedIndices,
-        []
+        placedIndices
       );
+
       state.blastIndices = [];
       renderGame(root, state);
 
       window.setTimeout(function () {
-        runBlastPhase(root, state, [], 1);
-      }, 240);
-      
+        runBlastPhase(root, state, placedIndices, 1);
+      }, 280);
+
       window.setTimeout(function () {
         addScore(root, state, placementScore, true);
-      }, 240);
+      }, 280);
     
       return true;
     }
   
-    function onEnd() {
+    function onEnd(e) {
       if (!active) return;
-  
-      var placed = commitPlacement();
-  
+
+      var p = getPointer(e);
+      var releasedOverHand = isPointerOverHand(p.clientX, p.clientY);
+      var placed = false;
+
+      if (!releasedOverHand) {
+        placed = commitPlacement();
+      }
+
       active.el.style.opacity = 1;
       active.ghost.remove();
       clearPreview();
-  
+
+      var handEl = root.querySelector('.bm-hand');
+      if (handEl) {
+        handEl.classList.remove('is-hover');
+      }
+
       active = null;
-  
+
       if (placed && !state.isResolving) {
         renderGame(root, state);
       }
