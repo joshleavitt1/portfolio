@@ -334,7 +334,7 @@
     var scoreValue = 0;
 
     if (comboStep >= 2) {
-      message = 'Combo x' + comboStep;
+      message = 'Combo ' + comboStep;
       scoreValue = clearedCount * (12 + ((comboStep - 1) * 4));
     } else {
       if (totalGroups <= 1) message = 'Nice!';
@@ -1205,6 +1205,20 @@
       return board.getBoundingClientRect();
     }
 
+    function isPointerOverHand(clientX, clientY) {
+      var hand = root.querySelector('.bm-hand');
+      if (!hand) return false;
+
+      var rect = hand.getBoundingClientRect();
+
+      return (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      );
+    }
+
     function getBoardMetrics() {
       var board = root.querySelector('.bm-board');
       var cellEl = board ? board.querySelector('.bm-cell') : null;
@@ -1277,7 +1291,8 @@
     }
   
     function getPointer(e) {
-      if (e.touches) return e.touches[0];
+      if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0];
+      if (e.touches && e.touches.length) return e.touches[0];
       return e;
     }
 
@@ -1417,20 +1432,39 @@
   
     function onMove(e) {
       if (!active) return;
-  
+    
       var p = getPointer(e);
-  
+      var overHand = isPointerOverHand(p.clientX, p.clientY);
+    
       var ghostLiftY = getGhostLift();
       active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
       active.ghost.style.top = (p.clientY - active.offsetY - ghostLiftY) + 'px';
-  
+    
+      // keep floating dragged piece visible at all times
+      active.ghost.style.opacity = 1;
+      active.ghost.style.transform = '';
+    
+      // optional hand hover polish
+      var handEl = root.querySelector('.bm-hand');
+      if (handEl) {
+        handEl.classList.toggle('is-hover', overHand);
+      }
+    
+      // when back over hand, remove only the board preview
+      if (overHand) {
+        clearPreview();
+        active.preview = null;
+        return;
+      }
+    
       var pos = getDropPosition(p.clientX, p.clientY);
       var piece = active.piece;
-  
+    
       if (pos.x >= 0 && pos.x < state.boardSize) {
         showPreview(piece, pos.x);
       } else {
         clearPreview();
+        active.preview = null;
       }
     }
   
@@ -1494,17 +1528,28 @@
       return true;
     }
   
-    function onEnd() {
+    function onEnd(e) {
       if (!active) return;
-  
-      var placed = commitPlacement();
-  
+
+      var p = getPointer(e);
+      var releasedOverHand = isPointerOverHand(p.clientX, p.clientY);
+      var placed = false;
+
+      if (!releasedOverHand) {
+        placed = commitPlacement();
+      }
+
       active.el.style.opacity = 1;
       active.ghost.remove();
       clearPreview();
-  
+
+      var handEl = root.querySelector('.bm-hand');
+      if (handEl) {
+        handEl.classList.remove('is-hover');
+      }
+
       active = null;
-  
+
       if (placed && !state.isResolving) {
         renderGame(root, state);
       }
