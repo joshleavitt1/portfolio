@@ -164,7 +164,6 @@
   };
 
   function setupIntroStepByNumber(state, stepNumber) {
-    if (state.introLocked) return;
   
     var def = INTRO_STEPS[stepNumber];
     var board = createEmptyBoard(CONFIG.boardSize);
@@ -249,6 +248,18 @@
       value: value,
       tone: toneForValue(value)
     };
+  }
+
+  var INTRO_SEEN_KEY = "blastmath.introSeen";
+
+  function hasSeenIntro() {
+    try { return localStorage.getItem(INTRO_SEEN_KEY) === "1"; }
+    catch (e) { return false; }
+  }
+
+  function markIntroSeen() {
+    try { localStorage.setItem(INTRO_SEEN_KEY, "1"); }
+    catch (e) {}
   }
 
   function readHighScore() {
@@ -443,41 +454,69 @@
       board[i] = null;
     });
   }
-  
+
   function applyGravity(board, size) {
     var moved = [];
+    var movedAny = true;
   
-    for (var x = 0; x < size; x++) {
-      var writeY = size - 1;
+    while (movedAny) {
+      movedAny = false;
   
-      for (var y = size - 1; y >= 0; y--) {
-        var index = y * size + x;
-        var cell = board[index];
+      for (var y = size - 2; y >= 0; y--) {
+        for (var x = 0; x < size; x++) {
+          var fromIndex = (y * size) + x;
+          var toIndex = ((y + 1) * size) + x;
   
-        if (!cell) continue;
+          if (!board[fromIndex]) continue;
+          if (board[toIndex]) continue;
   
-        if (y !== writeY) {
-          board[writeY * size + x] = cell;
-          board[index] = null;
+          board[toIndex] = board[fromIndex];
+          board[fromIndex] = null;
   
           moved.push({
             x: x,
             fromY: y,
-            toY: writeY
+            toY: y + 1
           });
+  
+          movedAny = true;
         }
-  
-        writeY -= 1;
-      }
-  
-      while (writeY >= 0) {
-        board[writeY * size + x] = null;
-        writeY -= 1;
       }
     }
   
-    return moved;
+    return collapseGravityMoves(moved);
   }
+  
+  function collapseGravityMoves(moves) {
+    var collapsed = [];
+  
+    moves.forEach(function (move) {
+      var existing = null;
+  
+      for (var i = 0; i < collapsed.length; i++) {
+        if (
+          collapsed[i].x === move.x &&
+          collapsed[i].toY === move.fromY
+        ) {
+          existing = collapsed[i];
+          break;
+        }
+      }
+  
+      if (existing) {
+        existing.toY = move.toY;
+      } else {
+        collapsed.push({
+          x: move.x,
+          fromY: move.fromY,
+          toY: move.toY
+        });
+      }
+    });
+  
+    return collapsed;
+  }
+  
 
   function buildPlacedDropAnimMap(boardSize, boardEl, placedIndices) {
     var map = {};
@@ -495,6 +534,45 @@
         type: 'drop-land',
         distance: step * 5.5,
         duration: 300
+      };
+    });
+  
+    return map;
+  }
+
+  function buildGravityAnimMap(root, state, moved, placedIndices) {
+    var map = {};
+    var boardEl = root.querySelector('.bm-board');
+    if (!boardEl) return map;
+  
+    var cellEl = boardEl.querySelector('.bm-cell');
+    if (!cellEl) return map;
+  
+    var cellSize = cellEl.getBoundingClientRect().width;
+    var gap = parseFloat(getComputedStyle(boardEl).gap) || 0;
+    var step = cellSize + gap;
+  
+    var placedSet = new Set(placedIndices || []);
+  
+    moved.forEach(function (move) {
+      var toIndex = (move.toY * state.boardSize) + move.x;
+  
+      map[toIndex] = {
+        type: 'drop-land',
+        distance: (move.toY + 1.25) * step,
+        duration: 360
+      };
+    });
+  
+    placedSet.forEach(function (index) {
+      if (map[index]) return;
+  
+      var y = Math.floor(index / state.boardSize);
+  
+      map[index] = {
+        type: 'drop-land',
+        distance: (y + 1.25) * step,
+        duration: 360
       };
     });
   
@@ -616,43 +694,65 @@
   }
 
   function getGravityDropForBoard(board, boardSize, piece, col) {
-    var landed = [];
-    var occupied = board.slice();
-
-    var cells = piece.cells.slice().sort(function (a, b) {
-      return b.y - a.y;
-    });
-
+    var baseRow;
+    var cells = piece.cells;
+  
+    // horizontal bounds check
     for (var i = 0; i < cells.length; i++) {
-      var cell = cells[i];
-      var x = col + cell.x;
-
-      if (x < 0 || x >= boardSize) return null;
-
-      var finalY = null;
-
-      for (var y = boardSize - 1; y >= 0; y--) {
-        var index = y * boardSize + x;
-        if (occupied[index]) continue;
-
-        finalY = y;
-        break;
-      }
-
-      if (finalY === null) return null;
-
-      var placedCell = {
-        x: x,
-        y: finalY,
-        value: cell.value,
-        tone: cell.tone
-      };
-
-      landed.push(placedCell);
-      occupied[finalY * boardSize + x] = placedCell;
+      var testX = col + cells[i].x;
+      if (testX < 0 || testX >= boardSize) return null;
     }
-
-    return landed;
+  
+    // start above board and move down until collision
+    for (baseRow = -piece.height; baseRow <= boardSize; baseRow++) {
+      var collided = false;
+  
+      for (var j = 0; j < cells.length; j++) {
+        var cell = cells[j];
+        var x = col + cell.x;
+        var y = baseRow + cell.y;
+  
+        // below board = collision
+        if (y >= boardSize) {
+          collided = true;
+          break;
+        }
+  
+        // ignore cells still above top
+        if (y < 0) continue;
+  
+        // hit occupied board cell = collision
+        if (board[(y * boardSize) + x]) {
+          collided = true;
+          break;
+        }
+      }
+  
+      if (collided) {
+        var landedBaseRow = baseRow - 1;
+        var landed = [];
+  
+        for (var k = 0; k < cells.length; k++) {
+          var landedCell = cells[k];
+          var landedX = col + landedCell.x;
+          var landedY = landedBaseRow + landedCell.y;
+  
+          // if any part never fully enters board, invalid
+          if (landedY < 0) return null;
+  
+          landed.push({
+            x: landedX,
+            y: landedY,
+            value: landedCell.value,
+            tone: landedCell.tone
+          });
+        }
+  
+        return landed;
+      }
+    }
+  
+    return null;
   }
 
   function getBoardFillRatio(board) {
@@ -1179,7 +1279,7 @@
     var afterRects = getBoardCellRects(boardEl);
     var cellEls = boardEl.querySelectorAll('.bm-cell');
     var clones = [];
-    var duration = 240;
+    var duration = 300;
   
     moved.forEach(function (item) {
       var fromIndex = (item.fromY * state.boardSize) + item.x;
@@ -1196,10 +1296,10 @@
       var clone = toContentEl.cloneNode(true);
       clone.classList.remove('bm-drop-land', 'bm-place-pop', 'bm-blast-pop');
       clone.style.position = 'fixed';
-      clone.style.left = Math.round(fromRect.left) + 'px';
-      clone.style.top = Math.round(fromRect.top) + 'px';
-      clone.style.width = Math.round(fromRect.width) + 'px';
-      clone.style.height = Math.round(fromRect.height) + 'px';
+      clone.style.left = fromRect.left + 'px';
+      clone.style.top = fromRect.top + 'px';
+      clone.style.width = fromRect.width + 'px';
+      clone.style.height = fromRect.height + 'px';
       clone.style.margin = '0';
       clone.style.zIndex = '30';
       clone.style.pointerEvents = 'none';
@@ -1211,12 +1311,14 @@
       document.body.appendChild(clone);
       clones.push({ clone: clone, target: toContentEl });
   
-      var dx = Math.round(toRect.left - fromRect.left);
-      var dy = Math.round(toRect.top - fromRect.top);
+      var dx = toRect.left - fromRect.left;
+      var dy = toRect.top - fromRect.top;
   
       requestAnimationFrame(function () {
-        clone.style.transition = 'transform ' + duration + 'ms cubic-bezier(.22,.61,.36,1)';
-        clone.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
+        requestAnimationFrame(function () {
+          clone.style.transition = 'transform ' + duration + 'ms cubic-bezier(.22,.61,.36,1)';
+          clone.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
+        });
       });
     });
   
@@ -1254,9 +1356,9 @@
   
       var pieces = isNeutralCell(cell) ? 28 : 25;
 
-if (comboStep >= 2) {
-  pieces = Math.max(8, Math.round(pieces * 0.45));
-}
+      if (comboStep >= 2) {
+        pieces = Math.max(8, Math.round(pieces * 0.45));
+      }
   
       for (var i = 0; i < pieces; i++) {
         var frag = document.createElement('div');
@@ -1377,7 +1479,7 @@ if (comboStep >= 2) {
               }, 2600);
             } else {
               window.setTimeout(function () {
-                state.introLocked = true;
+                markIntroSeen();
                 resetStandardGameState(state);
                 renderGame(root, state);
               }, 2600);
@@ -1533,12 +1635,21 @@ if (comboStep >= 2) {
     }
   
     function getDropPosition(clientX, clientY) {
-      var boardRect = getBoardRect();
-      var cellSize = getCellSize();
-  
-      var x = Math.floor((clientX - boardRect.left) / cellSize);
-      var y = Math.floor((clientY - boardRect.top) / cellSize);
-  
+      var board = root.querySelector('.bm-board');
+      var boardRect = board.getBoundingClientRect();
+      var firstCell = board.querySelector('.bm-cell');
+      if (!firstCell) return { x: -1, y: -1 };
+    
+      var cellRect = firstCell.getBoundingClientRect();
+      var gap = parseFloat(getComputedStyle(board).gap) || 0;
+      var step = cellRect.width + gap;
+    
+      var localX = clientX - boardRect.left - 4;
+      var localY = clientY - boardRect.top - 4;
+    
+      var x = Math.floor(localX / step);
+      var y = Math.floor(localY / step);
+    
       return { x: x, y: y };
     }
   
@@ -1548,30 +1659,28 @@ if (comboStep >= 2) {
   
     function showPreview(piece, col) {
       clearPreview();
-
+    
       var landed = getGravityDrop(piece, col);
       if (!landed) {
-        setIntroHoverState(false);
         return;
       }
-
+    
       if (!isIntroTargetPlacement(landed)) {
-        setIntroHoverState(false);
         return;
       }
-
+    
       landed.forEach(function (cell) {
         var index = cell.y * state.boardSize + cell.x;
         var cellEl = root.querySelector('[data-cell-index="' + index + '"]');
         if (!cellEl) return;
-
+    
         var preview = document.createElement('div');
         preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
         preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
-
+    
         cellEl.appendChild(preview);
       });
-
+    
       active.preview = landed;
       setIntroHoverState(true);
     }
@@ -1616,7 +1725,11 @@ if (comboStep >= 2) {
       root.querySelectorAll('.is-preview-tile').forEach(function (el) {
         el.remove();
       });
-
+    
+      if (active) {
+        active.preview = null;
+      }
+    
       setIntroHoverState(false);
     }
   
@@ -1643,7 +1756,6 @@ if (comboStep >= 2) {
       // when back over hand, remove only the board preview
       if (overHand) {
         clearPreview();
-        active.preview = null;
         return;
       }
     
@@ -1654,7 +1766,6 @@ if (comboStep >= 2) {
         showPreview(piece, pos.x);
       } else {
         clearPreview();
-        active.preview = null;
       }
     }
   
@@ -1698,13 +1809,25 @@ if (comboStep >= 2) {
 
       state.isResolving = true;
 
-      state.animMap = buildPlacedDropAnimMap(
-        state.boardSize,
-        root.querySelector('.bm-board'),
+      var placementMoved = applyGravity(state.board, state.boardSize);
+
+      state.animMap = buildGravityAnimMap(
+        root,
+        state,
+        placementMoved,
         placedIndices
       );
 
       state.blastIndices = [];
+
+      active.el.classList.remove('is-held');
+
+      if (active.ghost && active.ghost.parentNode) {
+        active.ghost.parentNode.removeChild(active.ghost);
+      }
+
+      clearPreview();
+
       renderGame(root, state);
 
       window.setTimeout(function () {
@@ -1720,26 +1843,30 @@ if (comboStep >= 2) {
   
     function onEnd(e) {
       if (!active) return;
-
+    
       var p = getPointer(e);
       var releasedOverHand = isPointerOverHand(p.clientX, p.clientY);
       var placed = false;
-
-      if (!releasedOverHand) {
+    
+      if (!releasedOverHand && active.preview) {
         placed = commitPlacement();
+      } else {
+        active.el.classList.remove('is-held');
+    
+        if (active.ghost && active.ghost.parentNode) {
+          active.ghost.parentNode.removeChild(active.ghost);
+        }
+    
+        clearPreview();
       }
-
-      active.el.classList.remove('is-held');
-      active.ghost.remove();
-      clearPreview();
-
+    
       var handEl = root.querySelector('.bm-hand');
       if (handEl) {
         handEl.classList.remove('is-hover');
       }
-
+    
       active = null;
-
+    
       if (placed && !state.isResolving) {
         renderGame(root, state);
       }
@@ -1945,7 +2072,6 @@ if (comboStep >= 2) {
       isResolving: false,
       boardMessage: '',
       boardMessageTimer: null,
-      introLocked: false,
       intro: {
         active: false,
         step: 0,
@@ -1959,12 +2085,6 @@ if (comboStep >= 2) {
         targetCursor: 0
       }
     };
-    
-    resetStandardGameState(state);
-
-    if (isIntroMode() && !state.introLocked) {
-      setupIntroStepByNumber(state, 1);
-    }
 
     function render() {
       if (state.screen === 'home') {
@@ -1973,6 +2093,14 @@ if (comboStep >= 2) {
         if (play) {
           play.addEventListener('click', function () {
             transitionScreen(root, function () {
+              if (isIntroMode()) {
+                setupIntroStepByNumber(state, 1);
+              } else if (!hasSeenIntro()) {
+                setupIntroStepByNumber(state, 1);
+              } else {
+                resetStandardGameState(state);
+              }
+          
               state.screen = 'game';
               render();
             });
@@ -1998,8 +2126,8 @@ if (comboStep >= 2) {
               var oldMsg = document.body.querySelector('.bm-board-message');
               if (oldMsg) oldMsg.remove();
 
-              state.introLocked = true;
-        
+              markIntroSeen
+              /*markIntroSeen();*/
               resetStandardGameState(state);
               render();
             };

@@ -164,11 +164,13 @@
   };
 
   function setupIntroStepByNumber(state, stepNumber) {
+    if (state.introLocked) return;
+  
     var def = INTRO_STEPS[stepNumber];
     var board = createEmptyBoard(CONFIG.boardSize);
     var i;
     var sourceCell = null;
-
+  
     if (!def) return;
 
     for (i = 0; i < def.boardCells.length; i++) {
@@ -247,6 +249,18 @@
       value: value,
       tone: toneForValue(value)
     };
+  }
+
+  var INTRO_SEEN_KEY = "blastmath.introSeen";
+
+  function hasSeenIntro() {
+    try { return localStorage.getItem(INTRO_SEEN_KEY) === "1"; }
+    catch (e) { return false; }
+  }
+
+  function markIntroSeen() {
+    try { localStorage.setItem(INTRO_SEEN_KEY, "1"); }
+    catch (e) {}
   }
 
   function readHighScore() {
@@ -444,37 +458,85 @@
   
   function applyGravity(board, size) {
     var moved = [];
+    var movedAny = true;
   
-    for (var x = 0; x < size; x++) {
-      var writeY = size - 1;
+    while (movedAny) {
+      movedAny = false;
   
-      for (var y = size - 1; y >= 0; y--) {
-        var index = y * size + x;
-        var cell = board[index];
+      // snapshot for this tick so decisions are based on one stable frame
+      var nextBoard = board.slice();
+      var occupiedThisTick = new Set();
   
-        if (!cell) continue;
+      // walk bottom-up so lower cells claim spaces first
+      for (var y = size - 2; y >= 0; y--) {
+        for (var x = 0; x < size; x++) {
+          var fromIndex = (y * size) + x;
+          var toIndex = ((y + 1) * size) + x;
+          var cell = board[fromIndex];
   
-        if (y !== writeY) {
-          board[writeY * size + x] = cell;
-          board[index] = null;
+          if (!cell) continue;
+  
+          // already moved this tick or destination blocked in current frame
+          if (occupiedThisTick.has(fromIndex)) continue;
+          if (board[toIndex]) continue;
+  
+          // destination already claimed by another falling tile this tick
+          if (nextBoard[toIndex]) continue;
+  
+          nextBoard[toIndex] = cell;
+          nextBoard[fromIndex] = null;
+          occupiedThisTick.add(toIndex);
   
           moved.push({
             x: x,
             fromY: y,
-            toY: writeY
+            toY: y + 1
           });
-        }
   
-        writeY -= 1;
+          movedAny = true;
+        }
       }
   
-      while (writeY >= 0) {
-        board[writeY * size + x] = null;
-        writeY -= 1;
+      if (movedAny) {
+        for (var i = 0; i < board.length; i++) {
+          board[i] = nextBoard[i];
+        }
       }
     }
   
-    return moved;
+    return collapseMovedSteps(moved);
+  }
+
+  function collapseMovedSteps(moves) {
+    var byColumnAndStart = {};
+    var collapsed = [];
+  
+    moves.forEach(function (move) {
+      var key = move.x + ":" + move.toY;
+  
+      // stitch chained 1-cell drops into one longer move
+      var linked = null;
+  
+      for (var i = 0; i < collapsed.length; i++) {
+        var existing = collapsed[i];
+        if (existing.x === move.x && existing.toY === move.fromY) {
+          linked = existing;
+          break;
+        }
+      }
+  
+      if (linked) {
+        linked.toY = move.toY;
+      } else {
+        collapsed.push({
+          x: move.x,
+          fromY: move.fromY,
+          toY: move.toY
+        });
+      }
+    });
+  
+    return collapsed;
   }
 
   function buildPlacedDropAnimMap(boardSize, boardEl, placedIndices) {
@@ -614,43 +676,65 @@
   }
 
   function getGravityDropForBoard(board, boardSize, piece, col) {
-    var landed = [];
-    var occupied = board.slice();
-
-    var cells = piece.cells.slice().sort(function (a, b) {
-      return b.y - a.y;
-    });
-
+    var baseRow;
+    var cells = piece.cells;
+  
+    // horizontal bounds check
     for (var i = 0; i < cells.length; i++) {
-      var cell = cells[i];
-      var x = col + cell.x;
-
-      if (x < 0 || x >= boardSize) return null;
-
-      var finalY = null;
-
-      for (var y = boardSize - 1; y >= 0; y--) {
-        var index = y * boardSize + x;
-        if (occupied[index]) continue;
-
-        finalY = y;
-        break;
-      }
-
-      if (finalY === null) return null;
-
-      var placedCell = {
-        x: x,
-        y: finalY,
-        value: cell.value,
-        tone: cell.tone
-      };
-
-      landed.push(placedCell);
-      occupied[finalY * boardSize + x] = placedCell;
+      var testX = col + cells[i].x;
+      if (testX < 0 || testX >= boardSize) return null;
     }
-
-    return landed;
+  
+    // start above board and move down until collision
+    for (baseRow = -piece.height; baseRow <= boardSize; baseRow++) {
+      var collided = false;
+  
+      for (var j = 0; j < cells.length; j++) {
+        var cell = cells[j];
+        var x = col + cell.x;
+        var y = baseRow + cell.y;
+  
+        // below board = collision
+        if (y >= boardSize) {
+          collided = true;
+          break;
+        }
+  
+        // ignore cells still above top
+        if (y < 0) continue;
+  
+        // hit occupied board cell = collision
+        if (board[(y * boardSize) + x]) {
+          collided = true;
+          break;
+        }
+      }
+  
+      if (collided) {
+        var landedBaseRow = baseRow - 1;
+        var landed = [];
+  
+        for (var k = 0; k < cells.length; k++) {
+          var landedCell = cells[k];
+          var landedX = col + landedCell.x;
+          var landedY = landedBaseRow + landedCell.y;
+  
+          // if any part never fully enters board, invalid
+          if (landedY < 0) return null;
+  
+          landed.push({
+            x: landedX,
+            y: landedY,
+            value: landedCell.value,
+            tone: landedCell.tone
+          });
+        }
+  
+        return landed;
+      }
+    }
+  
+    return null;
   }
 
   function getBoardFillRatio(board) {
@@ -1177,7 +1261,7 @@
     var afterRects = getBoardCellRects(boardEl);
     var cellEls = boardEl.querySelectorAll('.bm-cell');
     var clones = [];
-    var duration = 240;
+    var duration = 300;
   
     moved.forEach(function (item) {
       var fromIndex = (item.fromY * state.boardSize) + item.x;
@@ -1194,10 +1278,10 @@
       var clone = toContentEl.cloneNode(true);
       clone.classList.remove('bm-drop-land', 'bm-place-pop', 'bm-blast-pop');
       clone.style.position = 'fixed';
-      clone.style.left = Math.round(fromRect.left) + 'px';
-      clone.style.top = Math.round(fromRect.top) + 'px';
-      clone.style.width = Math.round(fromRect.width) + 'px';
-      clone.style.height = Math.round(fromRect.height) + 'px';
+      clone.style.left = fromRect.left + 'px';
+      clone.style.top = fromRect.top + 'px';
+      clone.style.width = fromRect.width + 'px';
+      clone.style.height = fromRect.height + 'px';
       clone.style.margin = '0';
       clone.style.zIndex = '30';
       clone.style.pointerEvents = 'none';
@@ -1209,12 +1293,14 @@
       document.body.appendChild(clone);
       clones.push({ clone: clone, target: toContentEl });
   
-      var dx = Math.round(toRect.left - fromRect.left);
-      var dy = Math.round(toRect.top - fromRect.top);
+      var dx = toRect.left - fromRect.left;
+      var dy = toRect.top - fromRect.top;
   
       requestAnimationFrame(function () {
-        clone.style.transition = 'transform ' + duration + 'ms cubic-bezier(.22,.61,.36,1)';
-        clone.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
+        requestAnimationFrame(function () {
+          clone.style.transition = 'transform ' + duration + 'ms cubic-bezier(.22,.61,.36,1)';
+          clone.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
+        });
       });
     });
   
@@ -1233,7 +1319,8 @@
     });
   }
 
-  function spawnBlastFragments(root, state, blastIndices) {
+  function spawnBlastFragments(root, state, blastIndices, comboStep) {
+    comboStep = comboStep || 1;
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
   
@@ -1250,6 +1337,10 @@
       var size = rect.width;
   
       var pieces = isNeutralCell(cell) ? 28 : 25;
+
+      if (comboStep >= 2) {
+        pieces = Math.max(8, Math.round(pieces * 0.45));
+      }
   
       for (var i = 0; i < pieces; i++) {
         var frag = document.createElement('div');
@@ -1262,8 +1353,8 @@
         var liftY = (size * 0.82) + Math.random() * (size * 1.08);
         var fallY = (size * 1.85) + Math.random() * (size * 2.15);
         var rot = (-38 + Math.random() * 76).toFixed(1);
-        var delay = Math.round(Math.random() * 90);
-        var duration = 760 + Math.round(Math.random() * 180);
+        var delay = Math.round(Math.random() * 24);
+        var duration = 880 + Math.round(Math.random() * 60);
   
         var fragVariant = 1 + Math.floor(Math.random() * 4);
   
@@ -1330,8 +1421,12 @@
     state.boardMessage = blastResult.message;
 
     showBoardMessage(root, state);
-    triggerBlastShake(root);
-    spawnBlastFragments(root, state, blastResult.blastIndices);
+
+    if (comboStep === 1) {
+      triggerBlastShake(root);
+    }
+    
+    spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
     
     applyBlast(state.board, blastResult.blastIndices);
     hideBoardCells(root, blastResult.blastIndices);
@@ -1347,23 +1442,27 @@
         var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, comboStep + 1);
   
         if (nextBlastResult.hasBlast) {
-          window.setTimeout(function () {
-            runBlastPhase(root, state, [], comboStep + 1);
-          }, 100);
+          runBlastPhase(root, state, [], comboStep + 1);
         } else {
           state.isResolving = false;
           state.comboStep = 0;
   
           if (state.intro && state.intro.active) {
             var nextStep = state.intro.step + 1;
-  
+          
             state.intro.completed = true;
             state.intro.hoveringValid = false;
             renderGame(root, state);
-  
+          
             if (INTRO_STEPS[nextStep]) {
               window.setTimeout(function () {
                 setupIntroStepByNumber(state, nextStep);
+                renderGame(root, state);
+              }, 2600);
+            } else {
+              window.setTimeout(function () {
+                markIntroSeen();
+                resetStandardGameState(state);
                 renderGame(root, state);
               }, 2600);
             }
@@ -1518,12 +1617,21 @@
     }
   
     function getDropPosition(clientX, clientY) {
-      var boardRect = getBoardRect();
-      var cellSize = getCellSize();
-  
-      var x = Math.floor((clientX - boardRect.left) / cellSize);
-      var y = Math.floor((clientY - boardRect.top) / cellSize);
-  
+      var board = root.querySelector('.bm-board');
+      var boardRect = board.getBoundingClientRect();
+      var firstCell = board.querySelector('.bm-cell');
+      if (!firstCell) return { x: -1, y: -1 };
+    
+      var cellRect = firstCell.getBoundingClientRect();
+      var gap = parseFloat(getComputedStyle(board).gap) || 0;
+      var step = cellRect.width + gap;
+    
+      var localX = clientX - boardRect.left - 4;
+      var localY = clientY - boardRect.top - 4;
+    
+      var x = Math.floor(localX / step);
+      var y = Math.floor(localY / step);
+    
       return { x: x, y: y };
     }
   
@@ -1533,30 +1641,28 @@
   
     function showPreview(piece, col) {
       clearPreview();
-
+    
       var landed = getGravityDrop(piece, col);
       if (!landed) {
-        setIntroHoverState(false);
         return;
       }
-
+    
       if (!isIntroTargetPlacement(landed)) {
-        setIntroHoverState(false);
         return;
       }
-
+    
       landed.forEach(function (cell) {
         var index = cell.y * state.boardSize + cell.x;
         var cellEl = root.querySelector('[data-cell-index="' + index + '"]');
         if (!cellEl) return;
-
+    
         var preview = document.createElement('div');
         preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
         preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
-
+    
         cellEl.appendChild(preview);
       });
-
+    
       active.preview = landed;
       setIntroHoverState(true);
     }
@@ -1601,7 +1707,11 @@
       root.querySelectorAll('.is-preview-tile').forEach(function (el) {
         el.remove();
       });
-
+    
+      if (active) {
+        active.preview = null;
+      }
+    
       setIntroHoverState(false);
     }
   
@@ -1628,7 +1738,6 @@
       // when back over hand, remove only the board preview
       if (overHand) {
         clearPreview();
-        active.preview = null;
         return;
       }
     
@@ -1639,7 +1748,6 @@
         showPreview(piece, pos.x);
       } else {
         clearPreview();
-        active.preview = null;
       }
     }
   
@@ -1689,7 +1797,49 @@
         placedIndices
       );
 
+      function buildGravityAnimMap(root, state, moved) {
+        var map = {};
+        var boardEl = root.querySelector('.bm-board');
+        if (!boardEl || !moved || !moved.length) return map;
+      
+        var cellEl = boardEl.querySelector('.bm-cell');
+        if (!cellEl) return map;
+      
+        var cellSize = cellEl.getBoundingClientRect().width;
+        var gap = parseFloat(getComputedStyle(boardEl).gap) || 0;
+        var step = cellSize + gap;
+      
+        moved.forEach(function (move) {
+          var toIndex = (move.toY * state.boardSize) + move.x;
+          map[toIndex] = {
+            type: 'drop-land',
+            distance: (move.toY - move.fromY) * step,
+            duration: 300
+          };
+        });
+      
+        return map;
+      }
+
+      var placementMoved = applyGravity(state.board, state.boardSize);
+      state.animMap = placementMoved.length
+        ? buildGravityAnimMap(root, state, placementMoved)
+        : buildPlacedDropAnimMap(
+      state.boardSize,
+      root.querySelector('.bm-board'),
+      placedIndices
+     );
+
       state.blastIndices = [];
+
+      active.el.classList.remove('is-held');
+
+      if (active.ghost && active.ghost.parentNode) {
+        active.ghost.parentNode.removeChild(active.ghost);
+      }
+
+      clearPreview();
+
       renderGame(root, state);
 
       window.setTimeout(function () {
@@ -1705,26 +1855,30 @@
   
     function onEnd(e) {
       if (!active) return;
-
+    
       var p = getPointer(e);
       var releasedOverHand = isPointerOverHand(p.clientX, p.clientY);
       var placed = false;
-
-      if (!releasedOverHand) {
+    
+      if (!releasedOverHand && active.preview) {
         placed = commitPlacement();
+      } else {
+        active.el.classList.remove('is-held');
+    
+        if (active.ghost && active.ghost.parentNode) {
+          active.ghost.parentNode.removeChild(active.ghost);
+        }
+    
+        clearPreview();
       }
-
-      active.el.classList.remove('is-held');
-      active.ghost.remove();
-      clearPreview();
-
+    
       var handEl = root.querySelector('.bm-hand');
       if (handEl) {
         handEl.classList.remove('is-hover');
       }
-
+    
       active = null;
-
+    
       if (placed && !state.isResolving) {
         renderGame(root, state);
       }
@@ -1930,6 +2084,7 @@
       isResolving: false,
       boardMessage: '',
       boardMessageTimer: null,
+      introLocked: false,
       intro: {
         active: false,
         step: 0,
@@ -1943,10 +2098,6 @@
         targetCursor: 0
       }
     };
-    
-    if (isIntroMode()) {
-      setupIntroStepByNumber(state, 1);
-    }
 
     function render() {
       if (state.screen === 'home') {
@@ -1955,6 +2106,14 @@
         if (play) {
           play.addEventListener('click', function () {
             transitionScreen(root, function () {
+              if (isIntroMode()) {
+                setupIntroStepByNumber(state, 1);
+              } else if (!hasSeenIntro()) {
+                setupIntroStepByNumber(state, 1);
+              } else {
+                resetStandardGameState(state);
+              }
+          
               state.screen = 'game';
               render();
             });
@@ -1979,7 +2138,9 @@
         
               var oldMsg = document.body.querySelector('.bm-board-message');
               if (oldMsg) oldMsg.remove();
-        
+
+              markIntroSeen
+              /*markIntroSeen();*/
               resetStandardGameState(state);
               render();
             };
