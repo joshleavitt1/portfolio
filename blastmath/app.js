@@ -78,7 +78,7 @@
     1: {
       step: 1,
       title: "Make 10",
-      subtitle: "Drag the 9 \u2192 next to 1",
+      subtitle: "Drag the 9 \u2192 next to the 1",
     
       boardCells: [
         { x: 0, y: 4, kind: "neutral" },
