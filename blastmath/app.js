@@ -164,11 +164,13 @@
   };
 
   function setupIntroStepByNumber(state, stepNumber) {
+    if (state.introLocked) return;
+  
     var def = INTRO_STEPS[stepNumber];
     var board = createEmptyBoard(CONFIG.boardSize);
     var i;
     var sourceCell = null;
-
+  
     if (!def) return;
 
     for (i = 0; i < def.boardCells.length; i++) {
@@ -492,7 +494,7 @@
       map[index] = {
         type: 'drop-land',
         distance: step * 5.5,
-        duration: 420
+        duration: 300
       };
     });
   
@@ -985,23 +987,30 @@
     var isIntro = !!(state.intro && state.intro.active);
 
     var hudHtml = isIntro
-      ? (
-        '<div class="bm-hud bm-hud--intro">' +
-          '<button class="bm-btn bm-btn--skip" type="button" data-skip-intro>Skip</button>' +
-        '</div>'
-      )
-      : (
-        '<div class="bm-hud">' +
-          '<div class="bm-hud-box bm-hud-score">' +
-            '<img src="images/crown.svg" class="bm-hud-icon" />' +
-            '<span>' + state.highScore + '</span>' +
+    ? (
+      '<div class="bm-hud bm-hud--intro">' +
+        '<button class="bm-btn bm-btn--skip" type="button" data-skip-intro>Skip</button>' +
+      '</div>'
+    )
+    : (
+      '<div class="bm-hud">' +
+        '<div class="bm-hud-side bm-hud-side--left">' +
+          '<div class="bm-hud-stat bm-hud-stat--score">' +
+            '<img src="images/crown.svg" class="bm-hud-icon" alt="" />' +
+            '<span class="bm-hud-value bm-hud-score-value">' + state.highScore + '</span>' +
           '</div>' +
-          '<div class="bm-hud-box bm-hud-lives">' +
-            '<img src="images/heart.svg" class="bm-hud-icon" />' +
-            '<span>' + state.lives + '</span>' +
+        '</div>' +
+        '<div class="bm-hud-side bm-hud-side--right">' +
+          '<div class="bm-hud-stat bm-hud-stat--lives">' +
+            '<img src="images/heart.svg" class="bm-hud-icon" alt="" />' +
+            '<span class="bm-hud-value bm-hud-lives-value">' + state.lives + '</span>' +
           '</div>' +
-        '</div>'
-      );
+          '<button class="bm-hud-settings" type="button" aria-label="Settings">' +
+            '<img src="images/gear.svg" class="bm-hud-cog" alt="" />' +
+          '</button>' +
+        '</div>' +
+      '</div>'
+    );
 
     var scoreHtml = isIntro
       ? (
@@ -1170,7 +1179,7 @@
     var afterRects = getBoardCellRects(boardEl);
     var cellEls = boardEl.querySelectorAll('.bm-cell');
     var clones = [];
-    var duration = 380;
+    var duration = 240;
   
     moved.forEach(function (item) {
       var fromIndex = (item.fromY * state.boardSize) + item.x;
@@ -1226,7 +1235,8 @@
     });
   }
 
-  function spawnBlastFragments(root, state, blastIndices) {
+  function spawnBlastFragments(root, state, blastIndices, comboStep) {
+    comboStep = comboStep || 1;
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
   
@@ -1243,6 +1253,10 @@
       var size = rect.width;
   
       var pieces = isNeutralCell(cell) ? 28 : 25;
+
+if (comboStep >= 2) {
+  pieces = Math.max(8, Math.round(pieces * 0.45));
+}
   
       for (var i = 0; i < pieces; i++) {
         var frag = document.createElement('div');
@@ -1255,8 +1269,8 @@
         var liftY = (size * 0.82) + Math.random() * (size * 1.08);
         var fallY = (size * 1.85) + Math.random() * (size * 2.15);
         var rot = (-38 + Math.random() * 76).toFixed(1);
-        var delay = Math.round(Math.random() * 90);
-        var duration = 760 + Math.round(Math.random() * 180);
+        var delay = Math.round(Math.random() * 24);
+        var duration = 880 + Math.round(Math.random() * 60);
   
         var fragVariant = 1 + Math.floor(Math.random() * 4);
   
@@ -1323,8 +1337,12 @@
     state.boardMessage = blastResult.message;
 
     showBoardMessage(root, state);
-    triggerBlastShake(root);
-    spawnBlastFragments(root, state, blastResult.blastIndices);
+
+    if (comboStep === 1) {
+      triggerBlastShake(root);
+    }
+    
+    spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
     
     applyBlast(state.board, blastResult.blastIndices);
     hideBoardCells(root, blastResult.blastIndices);
@@ -1340,23 +1358,27 @@
         var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, comboStep + 1);
   
         if (nextBlastResult.hasBlast) {
-          window.setTimeout(function () {
-            runBlastPhase(root, state, [], comboStep + 1);
-          }, 650);
+          runBlastPhase(root, state, [], comboStep + 1);
         } else {
           state.isResolving = false;
           state.comboStep = 0;
   
           if (state.intro && state.intro.active) {
             var nextStep = state.intro.step + 1;
-  
+          
             state.intro.completed = true;
             state.intro.hoveringValid = false;
             renderGame(root, state);
-  
+          
             if (INTRO_STEPS[nextStep]) {
               window.setTimeout(function () {
                 setupIntroStepByNumber(state, nextStep);
+                renderGame(root, state);
+              }, 2600);
+            } else {
+              window.setTimeout(function () {
+                state.introLocked = true;
+                resetStandardGameState(state);
                 renderGame(root, state);
               }, 2600);
             }
@@ -1507,7 +1529,7 @@
       active.ghost.style.top = (p.clientY - active.offsetY - ghostLiftY) + 'px';
       active.ghost.style.visibility = 'visible';
   
-      pieceEl.style.opacity = 0;
+      pieceEl.classList.add('is-held');
     }
   
     function getDropPosition(clientX, clientY) {
@@ -1707,7 +1729,7 @@
         placed = commitPlacement();
       }
 
-      active.el.style.opacity = 1;
+      active.el.classList.remove('is-held');
       active.ghost.remove();
       clearPreview();
 
@@ -1776,9 +1798,9 @@
   }
 
   function syncHudUi(root, state) {
-    var highScoreEl = root.querySelector('.bm-hud-score span');
-    var livesEl = root.querySelector('.bm-hud-lives span');
-
+    var highScoreEl = root.querySelector('.bm-hud-score-value');
+    var livesEl = root.querySelector('.bm-hud-lives-value');
+  
     if (highScoreEl) highScoreEl.textContent = state.highScore;
     if (livesEl) livesEl.textContent = state.lives;
   }
@@ -1923,6 +1945,7 @@
       isResolving: false,
       boardMessage: '',
       boardMessageTimer: null,
+      introLocked: false,
       intro: {
         active: false,
         step: 0,
@@ -1937,7 +1960,9 @@
       }
     };
     
-    if (isIntroMode()) {
+    resetStandardGameState(state);
+
+    if (isIntroMode() && !state.introLocked) {
       setupIntroStepByNumber(state, 1);
     }
 
@@ -1972,6 +1997,8 @@
         
               var oldMsg = document.body.querySelector('.bm-board-message');
               if (oldMsg) oldMsg.remove();
+
+              state.introLocked = true;
         
               resetStandardGameState(state);
               render();

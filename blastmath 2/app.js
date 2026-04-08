@@ -492,7 +492,7 @@
       map[index] = {
         type: 'drop-land',
         distance: step * 5.5,
-        duration: 420
+        duration: 300
       };
     });
   
@@ -985,23 +985,30 @@
     var isIntro = !!(state.intro && state.intro.active);
 
     var hudHtml = isIntro
-      ? (
-        '<div class="bm-hud bm-hud--intro">' +
-          '<button class="bm-btn bm-btn--skip" type="button" data-skip-intro>Skip</button>' +
-        '</div>'
-      )
-      : (
-        '<div class="bm-hud">' +
-          '<div class="bm-hud-box bm-hud-score">' +
-            '<img src="images/crown.svg" class="bm-hud-icon" />' +
-            '<span>' + state.highScore + '</span>' +
+    ? (
+      '<div class="bm-hud bm-hud--intro">' +
+        '<button class="bm-btn bm-btn--skip" type="button" data-skip-intro>Skip</button>' +
+      '</div>'
+    )
+    : (
+      '<div class="bm-hud">' +
+        '<div class="bm-hud-side bm-hud-side--left">' +
+          '<div class="bm-hud-stat bm-hud-stat--score">' +
+            '<img src="images/crown.svg" class="bm-hud-icon" alt="" />' +
+            '<span class="bm-hud-value bm-hud-score-value">' + state.highScore + '</span>' +
           '</div>' +
-          '<div class="bm-hud-box bm-hud-lives">' +
-            '<img src="images/heart.svg" class="bm-hud-icon" />' +
-            '<span>' + state.lives + '</span>' +
+        '</div>' +
+        '<div class="bm-hud-side bm-hud-side--right">' +
+          '<div class="bm-hud-stat bm-hud-stat--lives">' +
+            '<img src="images/heart.svg" class="bm-hud-icon" alt="" />' +
+            '<span class="bm-hud-value bm-hud-lives-value">' + state.lives + '</span>' +
           '</div>' +
-        '</div>'
-      );
+          '<button class="bm-hud-settings" type="button" aria-label="Settings">' +
+            '<img src="images/gear.svg" class="bm-hud-cog" alt="" />' +
+          '</button>' +
+        '</div>' +
+      '</div>'
+    );
 
     var scoreHtml = isIntro
       ? (
@@ -1170,7 +1177,7 @@
     var afterRects = getBoardCellRects(boardEl);
     var cellEls = boardEl.querySelectorAll('.bm-cell');
     var clones = [];
-    var duration = 380;
+    var duration = 240;
   
     moved.forEach(function (item) {
       var fromIndex = (item.fromY * state.boardSize) + item.x;
@@ -1342,7 +1349,7 @@
         if (nextBlastResult.hasBlast) {
           window.setTimeout(function () {
             runBlastPhase(root, state, [], comboStep + 1);
-          }, 650);
+          }, 100);
         } else {
           state.isResolving = false;
           state.comboStep = 0;
@@ -1507,7 +1514,7 @@
       active.ghost.style.top = (p.clientY - active.offsetY - ghostLiftY) + 'px';
       active.ghost.style.visibility = 'visible';
   
-      pieceEl.style.opacity = 0;
+      pieceEl.classList.add('is-held');
     }
   
     function getDropPosition(clientX, clientY) {
@@ -1707,7 +1714,7 @@
         placed = commitPlacement();
       }
 
-      active.el.style.opacity = 1;
+      active.el.classList.remove('is-held');
       active.ghost.remove();
       clearPreview();
 
@@ -1776,9 +1783,9 @@
   }
 
   function syncHudUi(root, state) {
-    var highScoreEl = root.querySelector('.bm-hud-score span');
-    var livesEl = root.querySelector('.bm-hud-lives span');
-
+    var highScoreEl = root.querySelector('.bm-hud-score-value');
+    var livesEl = root.querySelector('.bm-hud-lives-value');
+  
     if (highScoreEl) highScoreEl.textContent = state.highScore;
     if (livesEl) livesEl.textContent = state.lives;
   }
