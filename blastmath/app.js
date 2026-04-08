@@ -420,19 +420,25 @@
     var message = '';
     var clearedCount = blastIndices.length;
     var scoreValue = 0;
-  
+    
     if (comboStep >= 2) {
-      message = 'Combo ' + comboStep;
+      var comboDisplay = Math.min(comboStep, 4);
+      message = 'Combo!\n' + comboDisplay + 'x';
       scoreValue = clearedCount * (12 + ((comboStep - 1) * 4));
     } else {
-      if (totalGroups <= 1) message = 'Nice!';
-      else if (totalGroups === 2) message = 'Wow!';
-      else message = 'Awesome!';
-  
-      if (totalGroups <= 1) scoreValue = clearedCount * 10;
-      else if (totalGroups === 2) scoreValue = clearedCount * 16;
-      else if (totalGroups === 3) scoreValue = clearedCount * 20;
-      else scoreValue = clearedCount * 24;
+      if (totalGroups <= 1) {
+        message = 'Single\nBlast!';
+        scoreValue = clearedCount * 10;
+      } else if (totalGroups === 2) {
+        message = 'Double\nBlast!';
+        scoreValue = clearedCount * 16;
+      } else if (totalGroups === 3) {
+        message = 'Triple\nBlast!';
+        scoreValue = clearedCount * 20;
+      } else {
+        message = 'Max\nBlast!';
+        scoreValue = clearedCount * 24;
+      }
     }
   
     return {
@@ -1120,6 +1126,7 @@
       )
       : (
         '<div class="bm-score">' +
+          '<div class="bm-score__burst" data-score-burst></div>' +
           '<div class="bm-score__value" data-score-value>' + state.displayScore + '</div>' +
         '</div>'
       );
@@ -1362,7 +1369,7 @@
   
       for (var i = 0; i < pieces; i++) {
         var frag = document.createElement('div');
-        var fragSize = Math.max(4, size * (0.125 + Math.random() * 0.13));
+        var fragSize = Math.max(5, size * (0.16 + Math.random() * 0.16));
   
         var startX = rect.left + (size * 0.12) + Math.random() * (size * 0.76);
         var startY = rect.top + (size * 0.10) + Math.random() * (size * 0.30);
@@ -1406,18 +1413,44 @@
     });
   }
 
-  function triggerBlastShake(root) {
-    var wrap = root.querySelector('.bm-board-wrap');
-    if (!wrap) return;
-
-    wrap.classList.remove('is-blast-shaking');
-    void wrap.offsetWidth;
-    wrap.classList.add('is-blast-shaking');
-
+  function spawnScoreStars(root) {
+    var burst = root.querySelector('[data-score-burst]');
+    if (!burst) return;
+  
+    burst.innerHTML = '';
+  
+    var starCount = 12;
+  
+    for (var i = 0; i < starCount; i++) {
+      var star = document.createElement('img');
+      var size = 12 + Math.round(Math.random() * 14);
+      var x = -78 + Math.round(Math.random() * 156);
+      var y = -26 + Math.round(Math.random() * 52);
+      var rot = -55 + Math.round(Math.random() * 110);
+      var delay = Math.round(Math.random() * 70);
+  
+      star.src = 'images/star.svg';
+      star.className = 'bm-score-star';
+      star.style.width = size + 'px';
+      star.style.height = size + 'px';
+      star.style.left = '50%';
+      star.style.top = '50%';
+      star.style.setProperty('--bm-star-x', x + 'px');
+      star.style.setProperty('--bm-star-y', y + 'px');
+      star.style.setProperty('--bm-star-rot', rot + 'deg');
+      star.style.setProperty('--bm-star-delay', delay + 'ms');
+  
+      burst.appendChild(star);
+    }
+  
+    burst.classList.remove('is-score-bursting');
+    void burst.offsetWidth;
+    burst.classList.add('is-score-bursting');
+  
     window.setTimeout(function () {
-      var liveWrap = root.querySelector('.bm-board-wrap');
-      if (liveWrap) liveWrap.classList.remove('is-blast-shaking');
-    }, 190);
+      burst.classList.remove('is-score-bursting');
+      burst.innerHTML = '';
+    }, 1000);
   }
 
   function runBlastPhase(root, state, placedIndices, comboStep) {
@@ -1439,16 +1472,13 @@
     state.boardMessage = blastResult.message;
 
     showBoardMessage(root, state);
-
-    if (comboStep === 1) {
-      triggerBlastShake(root);
-    }
     
     spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
     
     applyBlast(state.board, blastResult.blastIndices);
     hideBoardCells(root, blastResult.blastIndices);
     
+    spawnScoreStars(root);
     addScore(root, state, blastResult.scoreValue, true);
     
     var moved = applyGravity(state.board, state.boardSize);
@@ -1533,7 +1563,7 @@
       ghost.style.zIndex = 9999;
       ghost.style.left = '0px';
       ghost.style.top = '0px';
-      ghost.style.visibility = 'hidden';
+      ghost.style.visibility = 'visible';
       document.body.appendChild(ghost);
       return ghost;
     }
@@ -1589,7 +1619,7 @@
     }
 
     function getGhostLift() {
-      return 80;
+      return 0;
     }
   
     function onStart(e) {
@@ -1605,6 +1635,10 @@
       var index = slotEl ? Number(slotEl.getAttribute('data-hand-slot-index')) : -1;
       if (index < 0 || !state.hand[index]) return;
       
+      document.querySelectorAll('.bm-piece--ghost').forEach(function (el) {
+        el.remove();
+      });
+
       active = {
         el: pieceEl,
         ghost: createGhost(pieceEl),
@@ -1614,22 +1648,18 @@
         piece: state.hand[index]
       };
 
-      sizeGhostToBoard(active.ghost);
-  
       var rect = pieceEl.getBoundingClientRect();
-      var ghostShape = active.ghost.querySelector('.bm-piece__shape');
-      var ghostRect = ghostShape.getBoundingClientRect();
 
-      var grabRatioX = rect.width ? ((p.clientX - rect.left) / rect.width) : 0.5;
-      var grabRatioY = rect.height ? ((p.clientY - rect.top) / rect.height) : 0.5;
-
-      active.offsetX = ghostRect.width * grabRatioX;
-      active.offsetY = ghostRect.height * grabRatioY;
-
-      var ghostLiftY = getGhostLift();
+      active.offsetX = p.clientX - rect.left;
+      active.offsetY = p.clientY - rect.top;
+      
+      active.ghost.style.left = rect.left + 'px';
+      active.ghost.style.top = rect.top + 'px';
+      
+      sizeGhostToBoard(active.ghost);
+      
       active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
-      active.ghost.style.top = (p.clientY - active.offsetY - ghostLiftY) + 'px';
-      active.ghost.style.visibility = 'visible';
+      active.ghost.style.top = (p.clientY - active.offsetY) + 'px';
   
       pieceEl.classList.add('is-held');
     }
@@ -1738,10 +1768,10 @@
     
       var p = getPointer(e);
       var overHand = isPointerOverHand(p.clientX, p.clientY);
-    
-      var ghostLiftY = getGhostLift();
+
+      active.ghost.style.visibility = 'visible';
       active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
-      active.ghost.style.top = (p.clientY - active.offsetY - ghostLiftY) + 'px';
+      active.ghost.style.top = (p.clientY - active.offsetY) + 'px';
     
       // keep floating dragged piece visible at all times
       active.ghost.style.opacity = 1;
@@ -1890,26 +1920,27 @@
   
     var msg = document.createElement('div');
     msg.className = 'bm-board-message';
-    
-    if (state.boardMessage.indexOf('Combo ') === 0) {
+  
+    if (state.boardMessage.indexOf('Combo!') === 0) {
       msg.classList.add('bm-msg--combo');
     }
   
-    var parts = state.boardMessage.split(' ');
-    var word = parts[0] || '';
-    var number = parts[1] || '';
+    var lines = String(state.boardMessage).split('\n');
   
-    msg.innerHTML =
-      '<span class="bm-msg-word-wrap">' +
-        '<span class="bm-msg-word-stroke" aria-hidden="true">' + word + '</span>' +
-        '<span class="bm-msg-word-fill">' + word + '</span>' +
-      '</span>' +
-      (number
-        ? '<span class="bm-msg-number-wrap">' +
-            '<span class="bm-msg-number-stroke" aria-hidden="true">' + number + '</span>' +
-            '<span class="bm-msg-number-fill">' + number + '</span>' +
-          '</span>'
-        : '');
+    msg.innerHTML = lines.map(function (line, index) {
+      var isTop = index === 0;
+      var sizeClass = isTop ? 'bm-board-message__svg--top' : 'bm-board-message__svg--bottom';
+      var viewW = isTop ? 760 : 920;
+      var x = viewW / 2;
+    
+      return [
+        '<svg class="bm-board-message__svg ' + sizeClass + '" viewBox="0 0 ' + viewW + ' 220" aria-hidden="true">',
+          '<text class="bm-board-message__text" x="' + x + '" y="108" text-anchor="middle" dominant-baseline="middle">',
+            line,
+          '</text>',
+        '</svg>'
+      ].join('');
+    }).join('');
   
     document.body.appendChild(msg);
   
