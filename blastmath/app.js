@@ -77,26 +77,23 @@
   var INTRO_STEPS = {
     1: {
       step: 1,
-      title: "Build 10 to Blast",
+      title: "Make 10",
+      subtitle: "Drag the 9 \u2192 next to 1",
     
       boardCells: [
-        // center piece
-        { x: 2, y: 5, value: 1 },
-    
-        // LEFT cluster
         { x: 0, y: 4, kind: "neutral" },
-        { x: 0, y: 5, kind: "neutral" },
         { x: 1, y: 4, kind: "neutral" },
+        { x: 2, y: 4, kind: "neutral" },
+      
+        { x: 0, y: 5, kind: "neutral" },
         { x: 1, y: 5, kind: "neutral" },
-    
-        // RIGHT cluster
+        { x: 2, y: 5, value: 1 },
+      
+        { x: 4, y: 3, kind: "neutral" },
         { x: 4, y: 4, kind: "neutral" },
-        { x: 4, y: 5, kind: "neutral" },
         { x: 5, y: 4, kind: "neutral" },
-        { x: 5, y: 5, kind: "neutral" },
-    
-        // upper right single (like your screenshot)
-        { x: 4, y: 3, kind: "neutral" }
+        { x: 4, y: 5, kind: "neutral" },
+        { x: 5, y: 5, kind: "neutral" }
       ],
     
       handValues: [9],
@@ -222,6 +219,7 @@
       active: true,
       step: def.step,
       title: def.title,
+      subtitle: def.subtitle || "",
       sourceIndex: sourceIndex,
       allowedTargetIndex: def.targets.length
         ? ((def.targets[0].y * CONFIG.boardSize) + def.targets[0].x)
@@ -1122,6 +1120,9 @@
       ? (
         '<div class="bm-score bm-score--intro">' +
           '<div class="bm-score__title" data-score-title>' + state.intro.title + '</div>' +
+          (state.intro.subtitle
+            ? '<div class="bm-score__subtitle">' + state.intro.subtitle + '</div>'
+            : '') +
         '</div>'
       )
       : (
@@ -1158,6 +1159,7 @@
         scoreHtml +
         '<div class="bm-spacer" aria-hidden="true"></div>' +
         '<div class="bm-board-wrap">' +
+          renderIntroEquation(state) +
           '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
         '</div>' +
         '<div class="bm-spacer" aria-hidden="true"></div>' +
@@ -1469,9 +1471,12 @@
       return;
     }
   
-    state.boardMessage = blastResult.message;
-
-    showBoardMessage(root, state);
+    if (state.intro && state.intro.active) {
+      state.boardMessage = '';
+    } else {
+      state.boardMessage = blastResult.message;
+      showBoardMessage(root, state);
+    }
     
     spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
     
@@ -1593,8 +1598,8 @@
         var handGap = CONFIG.handTileGap * scale;
         var handStep = handCell + handGap;
 
-        var gridX = Math.round(left / handStep);
-        var gridY = Math.round(top / handStep);
+        var gridX = Math.floor((left + handStep * 0.5) / handStep);
+        var gridY = Math.floor((top + handStep * 0.5) / handStep);
 
         mini.style.width = cellSize + 'px';
         mini.style.height = cellSize + 'px';
@@ -1656,8 +1661,12 @@
       active.ghost.style.left = rect.left + 'px';
       active.ghost.style.top = rect.top + 'px';
       
+      // force layout BEFORE resizing
+      active.ghost.getBoundingClientRect();
+      
       sizeGhostToBoard(active.ghost);
       
+      // NOW position to pointer
       active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
       active.ghost.style.top = (p.clientY - active.offsetY) + 'px';
   
@@ -1910,6 +1919,32 @@
   
     window.addEventListener('mouseup', onEnd);
     window.addEventListener('touchend', onEnd);
+  }
+
+  function renderIntroEquation(state) {
+    if (!(state.intro && state.intro.active)) return '';
+    if (!state.intro.completed) return '';
+  
+    var math = '';
+  
+    if (state.intro.step === 1 || state.intro.step === 2) {
+      math = '1+9=10';
+    } else if (state.intro.step === 3) {
+      math = '2+7+1=10';
+    } else if (state.intro.step === 4) {
+      math = '3+4+3=10';
+    } else {
+      return '';
+    }
+  
+    return '' +
+      '<div class="bm-intro-equation" aria-hidden="true">' +
+        '<img class="bm-intro-equation__check" src="images/check.svg" alt="" />' +
+        '<svg class="bm-intro-equation__svg" viewBox="0 0 760 220" preserveAspectRatio="xMidYMid meet">' +
+          '<text class="bm-intro-equation__text bm-intro-equation__text--stroke" x="380" y="108">' + math + '</text>' +
+          '<text class="bm-intro-equation__text bm-intro-equation__text--fill" x="380" y="108">' + math + '</text>' +
+        '</svg>' +
+      '</div>';
   }
 
   function showBoardMessage(root, state) {
