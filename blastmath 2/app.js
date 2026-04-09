@@ -11,6 +11,8 @@
   };
 
   var INTRO_QUERY_VALUE = "1";
+  var INTRO_BLAST_TO_MESSAGE_DELAY = 2000;
+  var INTRO_MESSAGE_TO_NEXT_STEP_DELAY = 250;
 
   function isIntroMode() {
     try {
@@ -77,23 +79,11 @@
   var INTRO_STEPS = {
     1: {
       step: 1,
-      title: "Always Make 10",
-      subtitle: "Drag the 9 \u2192 next to the 1",
+      title: "Learn to Blast",
+      subtitle: "Tiles that add up to 10 explode!",
     
       boardCells: [
-        { x: 0, y: 4, kind: "neutral" },
-        { x: 1, y: 4, kind: "neutral" },
-        { x: 2, y: 4, kind: "neutral" },
-      
-        { x: 0, y: 5, kind: "neutral" },
-        { x: 1, y: 5, kind: "neutral" },
-        { x: 2, y: 5, value: 1 },
-      
-        { x: 4, y: 3, kind: "neutral" },
-        { x: 4, y: 4, kind: "neutral" },
-        { x: 5, y: 4, kind: "neutral" },
-        { x: 4, y: 5, kind: "neutral" },
-        { x: 5, y: 5, kind: "neutral" }
+        { x: 2, y: 5, value: 1 }
       ],
     
       handValues: [9],
@@ -105,57 +95,33 @@
   
     2: {
       step: 2,
-      title: "Build 10 to Blast",
+      title: "Learn to Blast",
+      subtitle: "Works up and down too!",
+  
       boardCells: [
-        { x: 2, y: 5, value: 1 },
-        { x: 0, y: 4, kind: "neutral" },
-        { x: 0, y: 5, kind: "neutral" },
-        { x: 1, y: 4, kind: "neutral" },
-        { x: 1, y: 5, kind: "neutral" },
-        { x: 4, y: 3, kind: "neutral" },
-        { x: 4, y: 4, kind: "neutral" },
-        { x: 5, y: 4, kind: "neutral" },
-        { x: 5, y: 5, kind: "neutral" }
+        { x: 2, y: 5, value: 2 }
       ],
-      handValues: [9],
+  
+      handValues: [8],
+  
       targets: [
-        { x: 3, y: 5, direction: "horizontal" }
+        { x: 2, y: 4, direction: "vertical" }
       ]
     },
   
     3: {
       step: 3,
-      title: "Build 10 to Blast",
-      boardCells: [
-        { x: 2, y: 5, value: 2 }
-      ],
-      handPieces: [
-        [
-          { x: 0, y: 0, value: 7 },
-          { x: 1, y: 0, value: 1 }
-        ]
-      ],
-      targets: [
-        { x: 3, y: 5, direction: "horizontal" },
-        { x: 4, y: 5, direction: "horizontal" }
-      ]
-    },
+      title: "Learn to Blast",
+      subtitle: "Gravity pulls down tiles!",
   
-    4: {
-      step: 4,
-      title: "Build 10 to Blast",
       boardCells: [
         { x: 2, y: 5, value: 3 }
       ],
-      handPieces: [
-        [
-          { x: 0, y: 0, value: 4 },
-          { x: 0, y: 1, value: 3 }
-        ]
-      ],
+  
+      handValues: [7],
+  
       targets: [
-        { x: 2, y: 4, direction: "vertical" },
-        { x: 2, y: 3, direction: "vertical" }
+        { x: 2, y: 0, direction: "vertical" }
       ]
     }
   };
@@ -231,6 +197,7 @@
         : null,
       hoveringValid: false,
       completed: false,
+      equationAnchor: null,
       direction: def.targets.length ? def.targets[0].direction : "horizontal",
       targetQueue: def.targets.map(function (t) {
         return {
@@ -525,31 +492,8 @@
   
     return collapsed;
   }
-  
 
-  function buildPlacedDropAnimMap(boardSize, boardEl, placedIndices) {
-    var map = {};
-    if (!boardEl || !placedIndices || !placedIndices.length) return map;
-  
-    var cellEl = boardEl.querySelector('.bm-cell');
-    if (!cellEl) return map;
-  
-    var cellSize = cellEl.getBoundingClientRect().width;
-    var gap = parseFloat(getComputedStyle(boardEl).gap) || 0;
-    var step = cellSize + gap;
-  
-    placedIndices.forEach(function (index) {
-      map[index] = {
-        type: 'drop-land',
-        distance: step * 5.5,
-        duration: 300
-      };
-    });
-  
-    return map;
-  }
-
-  function buildGravityAnimMap(root, state, moved, placedIndices) {
+  function buildPlacementAnimMap(root, state, moved, placedIndices) {
     var map = {};
     var boardEl = root.querySelector('.bm-board');
     if (!boardEl) return map;
@@ -561,27 +505,24 @@
     var gap = parseFloat(getComputedStyle(boardEl).gap) || 0;
     var step = cellSize + gap;
   
-    var placedSet = new Set(placedIndices || []);
+    var movedToSet = new Set();
   
     moved.forEach(function (move) {
       var toIndex = (move.toY * state.boardSize) + move.x;
+      movedToSet.add(toIndex);
   
       map[toIndex] = {
         type: 'drop-land',
-        distance: (move.toY + 1.25) * step,
+        distance: (move.toY - move.fromY) * step,
         duration: 360
       };
     });
   
-    placedSet.forEach(function (index) {
-      if (map[index]) return;
-  
-      var y = Math.floor(index / state.boardSize);
+    (placedIndices || []).forEach(function (index) {
+      if (movedToSet.has(index)) return;
   
       map[index] = {
-        type: 'drop-land',
-        distance: (y + 1.25) * step,
-        duration: 360
+        type: 'place-pop'
       };
     });
   
@@ -686,82 +627,54 @@
     return false;
   }
 
+  function getPlacementCells(board, boardSize, piece, anchorX, anchorY) {
+    if (!piece) return null;
+  
+    var placed = [];
+  
+    for (var i = 0; i < piece.cells.length; i++) {
+      var cell = piece.cells[i];
+      var x = anchorX + cell.x;
+      var y = anchorY + cell.y;
+  
+      if (x < 0 || x >= boardSize || y < 0 || y >= boardSize) {
+        return null;
+      }
+  
+      if (board[(y * boardSize) + x]) {
+        return null;
+      }
+  
+      placed.push({
+        x: x,
+        y: y,
+        value: cell.value,
+        tone: cell.tone
+      });
+    }
+  
+    return placed;
+  }
+  
   function getLegalPlacements(board, boardSize, piece) {
     var legal = [];
-
-    for (var col = 0; col <= boardSize - piece.width; col++) {
-      var landed = getGravityDropForBoard(board, boardSize, piece, col);
-      if (landed && landed.length) {
+    var maxX = boardSize - piece.width;
+    var maxY = boardSize - piece.height;
+  
+    for (var y = 0; y <= maxY; y++) {
+      for (var x = 0; x <= maxX; x++) {
+        var placed = getPlacementCells(board, boardSize, piece, x, y);
+        if (!placed) continue;
+  
         legal.push({
-          col: col,
-          landed: landed
+          x: x,
+          y: y,
+          placed: placed
         });
       }
     }
-
+  
     return legal;
-  }
-
-  function getGravityDropForBoard(board, boardSize, piece, col) {
-    var baseRow;
-    var cells = piece.cells;
-  
-    // horizontal bounds check
-    for (var i = 0; i < cells.length; i++) {
-      var testX = col + cells[i].x;
-      if (testX < 0 || testX >= boardSize) return null;
-    }
-  
-    // start above board and move down until collision
-    for (baseRow = -piece.height; baseRow <= boardSize; baseRow++) {
-      var collided = false;
-  
-      for (var j = 0; j < cells.length; j++) {
-        var cell = cells[j];
-        var x = col + cell.x;
-        var y = baseRow + cell.y;
-  
-        // below board = collision
-        if (y >= boardSize) {
-          collided = true;
-          break;
-        }
-  
-        // ignore cells still above top
-        if (y < 0) continue;
-  
-        // hit occupied board cell = collision
-        if (board[(y * boardSize) + x]) {
-          collided = true;
-          break;
-        }
-      }
-  
-      if (collided) {
-        var landedBaseRow = baseRow - 1;
-        var landed = [];
-  
-        for (var k = 0; k < cells.length; k++) {
-          var landedCell = cells[k];
-          var landedX = col + landedCell.x;
-          var landedY = landedBaseRow + landedCell.y;
-  
-          // if any part never fully enters board, invalid
-          if (landedY < 0) return null;
-  
-          landed.push({
-            x: landedX,
-            y: landedY,
-            value: landedCell.value,
-            tone: landedCell.tone
-          });
-        }
-  
-        return landed;
-      }
-    }
-  
-    return null;
   }
 
   function getBoardFillRatio(board) {
@@ -1164,7 +1077,6 @@
         scoreHtml +
         '<div class="bm-spacer" aria-hidden="true"></div>' +
         '<div class="bm-board-wrap">' +
-          renderIntroEquation(state) +
           '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
         '</div>' +
         '<div class="bm-spacer" aria-hidden="true"></div>' +
@@ -1188,18 +1100,8 @@
       var extraClass = '';
       var extraStyle = '';
   
-      if (isIntro && !cell && !intro.completed) {
-        var isVisibleIntroTarget = false;
-  
-        if (intro.targetQueue && intro.targetQueue.length) {
-          isVisibleIntroTarget = intro.targetQueue.some(function (target) {
-            return target.index === index;
-          });
-        } else {
-          isVisibleIntroTarget = index === intro.allowedTargetIndex;
-        }
-  
-        if (isVisibleIntroTarget) {
+      if (isIntro && !cell && !intro.completed && intro.allowedTargetIndex != null) {
+        if (index === intro.allowedTargetIndex) {
           cellClass += ' bm-intro-target-cell';
         }
       }
@@ -1238,6 +1140,36 @@
         '<div class="bm-tile bm-tile--' + cell.tone + extraClass + '"' + extraStyle + '><span class="bm-tile__label">' + cell.value + '</span></div>' +
       '</div>';
     }).join('');
+  }
+
+  function getIntroEquationAnchor(root, blastIndices) {
+    var boardWrap = root.querySelector('.bm-board-wrap');
+    var board = root.querySelector('.bm-board');
+    if (!boardWrap || !board || !blastIndices || !blastIndices.length) return null;
+  
+    var wrapRect = boardWrap.getBoundingClientRect();
+    var minLeft = Infinity;
+    var maxRight = -Infinity;
+    var minTop = Infinity;
+    var maxBottom = -Infinity;
+  
+    blastIndices.forEach(function (index) {
+      var cellEl = board.querySelector('[data-cell-index="' + index + '"]');
+      if (!cellEl) return;
+  
+      var rect = cellEl.getBoundingClientRect();
+      minLeft = Math.min(minLeft, rect.left);
+      maxRight = Math.max(maxRight, rect.right);
+      minTop = Math.min(minTop, rect.top);
+      maxBottom = Math.max(maxBottom, rect.bottom);
+    });
+  
+    if (!isFinite(minLeft)) return null;
+  
+    return {
+      left: ((minLeft + maxRight) * 0.5) - wrapRect.left,
+      top: ((minTop + maxBottom) * 0.5) - wrapRect.top
+    };
   }
 
   function getBoardCellRects(boardEl) {
@@ -1420,6 +1352,28 @@
     });
   }
 
+  function spawnIntroThumbPops(root, blastIndices) {
+    var board = root.querySelector('.bm-board');
+    if (!board || !blastIndices || !blastIndices.length) return;
+  
+    blastIndices.forEach(function (index, order) {
+      var cellEl = board.querySelector('[data-cell-index="' + index + '"]');
+      if (!cellEl) return;
+  
+      var thumb = document.createElement('img');
+      thumb.src = 'images/thumb.svg';
+      thumb.alt = '';
+      thumb.className = 'bm-intro-thumb-pop';
+      thumb.style.setProperty('--bm-thumb-delay', (order * 60) + 'ms');
+  
+      cellEl.appendChild(thumb);
+  
+      window.setTimeout(function () {
+        if (thumb.parentNode) thumb.parentNode.removeChild(thumb);
+      }, 2000 + (order * 60));
+    });
+  }
+
   function spawnScoreStars(root) {
     var burst = root.querySelector('[data-score-burst]');
     if (!burst) return;
@@ -1482,11 +1436,23 @@
       state.boardMessage = blastResult.message;
       showBoardMessage(root, state);
     }
+
+    var isIntroBlast = !!(state.intro && state.intro.active);
+
+    if (isIntroBlast) {
+      state.intro.equationAnchor = getIntroEquationAnchor(root, blastResult.blastIndices);
+    }
     
     spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
     
     applyBlast(state.board, blastResult.blastIndices);
     hideBoardCells(root, blastResult.blastIndices);
+
+    if (isIntroBlast) {
+      window.setTimeout(function () {
+        spawnIntroThumbPops(root, blastResult.blastIndices);
+      }, 500);
+    }
     
     spawnScoreStars(root);
     addScore(root, state, blastResult.scoreValue, true);
@@ -1507,22 +1473,25 @@
   
           if (state.intro && state.intro.active) {
             var nextStep = state.intro.step + 1;
+            var introMessageDelay = INTRO_BLAST_TO_MESSAGE_DELAY;
           
-            state.intro.completed = true;
-            state.intro.hoveringValid = false;
-            renderGame(root, state);
+            window.setTimeout(function () {
+              state.intro.completed = true;
+              state.intro.hoveringValid = false;
+              renderGame(root, state);
+            }, introMessageDelay);
           
             if (INTRO_STEPS[nextStep]) {
               window.setTimeout(function () {
                 setupIntroStepByNumber(state, nextStep);
                 renderGame(root, state);
-              }, 2600);
+              }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             } else {
               window.setTimeout(function () {
                 markIntroSeen();
                 resetStandardGameState(state);
                 renderGame(root, state);
-              }, 2600);
+              }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             }
           }
         }
@@ -1530,39 +1499,31 @@
   }
 
   function enableDrag(root, state) {
-    var active = null;
+    var drag = null;
   
-    function getBoardRect() {
-      var board = root.querySelector('.bm-board');
-      return board.getBoundingClientRect();
-    }
-
-    function isPointerOverHand(clientX, clientY) {
-      var hand = root.querySelector('.bm-hand');
-      if (!hand) return false;
-
-      var rect = hand.getBoundingClientRect();
-
-      return (
-        clientX >= rect.left &&
-        clientX <= rect.right &&
-        clientY >= rect.top &&
-        clientY <= rect.bottom
-      );
-    }
-
     function getBoardMetrics() {
       var board = root.querySelector('.bm-board');
       var cellEl = board ? board.querySelector('.bm-cell') : null;
-      var gap = board ? (parseFloat(getComputedStyle(board).gap) || 0) : 0;
-      var cellSize = cellEl ? cellEl.getBoundingClientRect().width : getCellSize();
-      return { cellSize: cellSize, gap: gap };
-    }
+      if (!board || !cellEl) return null;
   
-    function getCellSize() {
-      var board = root.querySelector('.bm-board');
-      var rect = board.getBoundingClientRect();
-      return rect.width / state.boardSize;
+      var boardRect = board.getBoundingClientRect();
+      var cellRect = cellEl.getBoundingClientRect();
+      var gap = parseFloat(getComputedStyle(board).gap) || 0;
+      var padding = 4;
+      var step = cellRect.width + gap;
+  
+      return {
+        board: board,
+        boardRect: boardRect,
+        cellSize: cellRect.width,
+        gap: gap,
+        padding: padding,
+        step: step,
+        innerLeft: boardRect.left + padding,
+        innerTop: boardRect.top + padding,
+        innerWidth: (step * state.boardSize) - gap,
+        innerHeight: (step * state.boardSize) - gap
+      };
     }
   
     function createGhost(el) {
@@ -1577,35 +1538,37 @@
       document.body.appendChild(ghost);
       return ghost;
     }
-
+  
     function sizeGhostToBoard(ghost) {
       var metrics = getBoardMetrics();
+      if (!metrics) return;
+  
       var cellSize = metrics.cellSize;
       var gap = metrics.gap;
       var uiScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
       var boardFontSize = 24 * uiScale;
-
+  
       var shape = ghost.querySelector('.bm-piece__shape');
       if (!shape) return;
-
+  
       var minis = ghost.querySelectorAll('.bm-mini');
       if (!minis.length) return;
-
+  
+      var scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
+      var handCell = CONFIG.handTileSize * scale;
+      var handGap = CONFIG.handTileGap * scale;
+      var handStep = handCell + handGap;
+  
       var maxX = 0;
       var maxY = 0;
-
+  
       minis.forEach(function (mini) {
         var left = parseFloat(mini.style.left) || 0;
         var top = parseFloat(mini.style.top) || 0;
-
-        var scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
-        var handCell = CONFIG.handTileSize * scale;
-        var handGap = CONFIG.handTileGap * scale;
-        var handStep = handCell + handGap;
-
+  
         var gridX = Math.floor((left + handStep * 0.5) / handStep);
         var gridY = Math.floor((top + handStep * 0.5) / handStep);
-
+  
         mini.style.width = cellSize + 'px';
         mini.style.height = cellSize + 'px';
         mini.style.left = Math.round(gridX * (cellSize + gap)) + 'px';
@@ -1613,423 +1576,293 @@
         mini.style.fontSize = boardFontSize + 'px';
         mini.style.lineHeight = cellSize + 'px';
         mini.style.textShadow = '0 2px 2px rgba(0,0,0,0.5)';
-
+  
         maxX = Math.max(maxX, gridX);
         maxY = Math.max(maxY, gridY);
       });
-
+  
       shape.style.width = Math.round((maxX + 1) * cellSize + maxX * gap) + 'px';
       shape.style.height = Math.round((maxY + 1) * cellSize + maxY * gap) + 'px';
     }
-
-    function getDropColumnFromGhost(piece, ghostEl) {
-      var board = root.querySelector('.bm-board');
-      if (!board || !piece || !ghostEl) {
-        return { col: -1, overBoard: false };
-      }
-    
-      var boardRect = board.getBoundingClientRect();
-      var firstCell = board.querySelector('.bm-cell');
-      if (!firstCell) {
-        return { col: -1, overBoard: false };
-      }
-    
-      var cellRect = firstCell.getBoundingClientRect();
-      var gap = parseFloat(getComputedStyle(board).gap) || 0;
-      var step = cellRect.width + gap;
-      var boardPadding = 4;
-    
-      var ghostRect = ghostEl.getBoundingClientRect();
-    
-      var boardInnerLeft = boardRect.left + boardPadding;
-      var boardInnerTop = boardRect.top + boardPadding;
-      var boardInnerSize = (step * state.boardSize) - gap;
-    
-      var overBoard =
-        ghostRect.right > boardInnerLeft &&
-        ghostRect.left < (boardInnerLeft + boardInnerSize) &&
-        ghostRect.bottom > boardInnerTop &&
-        ghostRect.top < (boardInnerTop + boardInnerSize);
-    
-      if (!overBoard) {
-        return { col: -1, overBoard: false };
-      }
-    
-      var localLeft = ghostRect.left - boardInnerLeft;
-      var col = Math.round(localLeft / step);
-    
-      if (col < 0) col = 0;
-      if (col > state.boardSize - piece.width) col = state.boardSize - piece.width;
-    
-      return { col: col, overBoard: true };
-    }
   
-    function getPointer(e) {
-      if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0];
-      if (e.touches && e.touches.length) return e.touches[0];
-      return e;
-    }
-
-    function getGhostLift() {
-      return 0;
-    }
-
-    function cleanupActiveDrag() {
-      var handEl = root.querySelector('.bm-hand');
-    
-      if (handEl) {
-        handEl.classList.remove('is-hover');
-      }
-    
-      clearPreview();
-    
-      if (!active) return;
-    
-      if (active.el) {
-        active.el.classList.remove('is-held');
-      }
-    
-      if (active.ghost && active.ghost.parentNode) {
-        active.ghost.parentNode.removeChild(active.ghost);
-      }
-    
-      active = null;
-    }
-  
-    function onStart(e) {
-      if (state.isResolving) return;
-      var pieceEl = e.target.closest('[data-piece]');
-      if (!pieceEl) return;
-  
-      e.preventDefault();
-  
-      var p = getPointer(e);
-  
-      var slotEl = pieceEl.closest('[data-hand-slot-index]');
-      var index = slotEl ? Number(slotEl.getAttribute('data-hand-slot-index')) : -1;
-      if (index < 0 || !state.hand[index]) return;
-      
-      document.querySelectorAll('.bm-piece--ghost').forEach(function (el) {
-        el.remove();
-      });
-
-      active = {
-        el: pieceEl,
-        ghost: createGhost(pieceEl),
-        offsetX: 0,
-        offsetY: 0,
-        pieceIndex: index,
-        piece: state.hand[index]
-      };
-
-      var rect = pieceEl.getBoundingClientRect();
-
-      active.offsetX = p.clientX - rect.left;
-      active.offsetY = p.clientY - rect.top;
-      
-      active.ghost.style.left = rect.left + 'px';
-      active.ghost.style.top = rect.top + 'px';
-      
-      // force layout BEFORE resizing
-      active.ghost.getBoundingClientRect();
-      
-      sizeGhostToBoard(active.ghost);
-      
-      // NOW position to pointer
-      active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
-      active.ghost.style.top = (p.clientY - active.offsetY) + 'px';
-  
-      pieceEl.classList.add('is-held');
-    }
-  
-    function getDropPositionFromGhost(piece, ghostEl) {
-      var board = root.querySelector('.bm-board');
-      if (!board || !piece || !ghostEl) return { x: -1, y: -1, overBoard: false };
-    
-      var boardRect = board.getBoundingClientRect();
-      var firstCell = board.querySelector('.bm-cell');
-      if (!firstCell) return { x: -1, y: -1, overBoard: false };
-    
-      var cellRect = firstCell.getBoundingClientRect();
-      var gap = parseFloat(getComputedStyle(board).gap) || 0;
-      var step = cellRect.width + gap;
-      var boardPadding = 4;
-    
-      var ghostRect = ghostEl.getBoundingClientRect();
-    
-      var localLeft = ghostRect.left - boardRect.left - boardPadding;
-      var localRight = ghostRect.right - boardRect.left - boardPadding;
-      var localTop = ghostRect.top - boardRect.top - boardPadding;
-      var localBottom = ghostRect.bottom - boardRect.top - boardPadding;
-    
-      var overBoard =
-        localRight > 0 &&
-        localLeft < (step * state.boardSize) &&
-        localBottom > 0 &&
-        localTop < (step * state.boardSize);
-    
-      var col = Math.round(localLeft / step);
-    
-      return {
-        x: col,
-        y: Math.floor(localTop / step),
-        overBoard: overBoard
-      };
-    }
-  
-    function getGravityDrop(piece, col) {
-      return getGravityDropForBoard(state.board, state.boardSize, piece, col);
-    }
-  
-    function showPreview(piece, col) {
-      clearPreview();
-    
-      if (!piece) return;
-      if (col < 0) return;
-      if (col > state.boardSize - piece.width) return;
-    
-      var landed = getGravityDrop(piece, col);
-      if (!landed) {
-        return;
-      }
-    
-      if (!isIntroTargetPlacement(landed)) {
-        return;
-      }
-    
-      landed.forEach(function (cell) {
-        var index = cell.y * state.boardSize + cell.x;
-        var cellEl = root.querySelector('[data-cell-index="' + index + '"]');
-        if (!cellEl) return;
-    
-        var preview = document.createElement('div');
-        preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
-        preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
-    
-        cellEl.appendChild(preview);
-      });
-    
-      active.preview = landed;
-      setIntroHoverState(true);
-    }
-
     function setIntroHoverState(isActive) {
       if (!(state.intro && state.intro.active)) return;
-
+  
       state.intro.hoveringValid = !!isActive;
-
+  
       var sourceCell = root.querySelector('[data-cell-index="' + state.intro.sourceIndex + '"]');
       var targetCell = root.querySelector('[data-cell-index="' + state.intro.allowedTargetIndex + '"]');
-
-      var sourceTile = sourceCell ? sourceCell.querySelector('.bm-tile') : null;
-      var previewTile = targetCell ? targetCell.querySelector('.is-preview-tile') : null;
-
-      if (sourceTile) {
-        sourceTile.classList.toggle('bm-intro-pair-glow', !!isActive);
-        sourceTile.classList.toggle('bm-intro-pair-pulse', !!isActive);
-      }
-
-      if (targetCell) {
-        targetCell.classList.toggle('bm-intro-link-active', !!isActive);
-        targetCell.classList.toggle('bm-intro-link--horizontal', !!isActive && state.intro.direction === 'horizontal');
-        targetCell.classList.toggle('bm-intro-link--vertical', !!isActive && state.intro.direction === 'vertical');
-      }
-
-      if (previewTile) {
-        previewTile.classList.toggle('bm-intro-pair-glow', !!isActive);
-        previewTile.classList.toggle('bm-intro-pair-pulse', !!isActive);
-      }
+  
+      root.querySelectorAll('.bm-intro-source-cell').forEach(function (el) {
+        el.classList.remove('bm-intro-source-cell');
+      });
+  
+      root.querySelectorAll('.bm-intro-target-cell').forEach(function (el) {
+        el.classList.remove('is-hovered');
+      });
+  
+      if (sourceCell) sourceCell.classList.add('bm-intro-source-cell');
+      if (targetCell && isActive) targetCell.classList.add('is-hovered');
     }
-
-    function isIntroTargetPlacement(landed) {
+  
+    function isIntroTargetPlacement(cells) {
       if (!(state.intro && state.intro.active)) return true;
-      if (!landed || landed.length !== 1) return false;
-
-      var introIndex = landed[0].y * state.boardSize + landed[0].x;
-      return introIndex === state.intro.allowedTargetIndex;
+      if (!cells || !cells.length) return false;
+  
+      if (cells.length === 1) {
+        var onlyIndex = cells[0].y * state.boardSize + cells[0].x;
+        return onlyIndex === state.intro.allowedTargetIndex;
+      }
+  
+      return cells.every(function (cell) {
+        var index = cell.y * state.boardSize + cell.x;
+        return state.intro.targetQueue.some(function (target) {
+          return target.index === index;
+        });
+      });
     }
   
     function clearPreview() {
       root.querySelectorAll('.is-preview-tile').forEach(function (el) {
         el.remove();
       });
-    
-      if (active) {
-        active.preview = null;
-      }
-    
+  
+      if (drag) drag.previewCells = null;
       setIntroHoverState(false);
     }
   
-    function onMove(e) {
-      if (!active) return;
-    
-      var p = getPointer(e);
-      var overHand = isPointerOverHand(p.clientX, p.clientY);
-    
-      active.ghost.style.visibility = 'visible';
-      active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
-      active.ghost.style.top = (p.clientY - active.offsetY) + 'px';
-      active.ghost.style.opacity = 1;
-      active.ghost.style.transform = '';
-    
-      var handEl = root.querySelector('.bm-hand');
-      if (handEl) {
-        handEl.classList.toggle('is-hover', overHand);
+    function getAnchorFromPointer(piece, clientX, clientY) {
+      var metrics = getBoardMetrics();
+      if (!metrics || !piece) return null;
+  
+      if (
+        clientX < metrics.innerLeft ||
+        clientY < metrics.innerTop ||
+        clientX > metrics.innerLeft + metrics.innerWidth ||
+        clientY > metrics.innerTop + metrics.innerHeight
+      ) {
+        return null;
       }
-    
-      if (overHand) {
-        clearPreview();
-        return;
-      }
-    
-      var drop = getDropColumnFromGhost(active.piece, active.ghost);
-    
-      if (!drop.overBoard) {
-        clearPreview();
-        return;
-      }
-    
-      showPreview(active.piece, drop.col);
+  
+      var localX = clientX - metrics.innerLeft;
+      var localY = clientY - metrics.innerTop;
+  
+      var piecePixelWidth = (piece.width * metrics.cellSize) + ((piece.width - 1) * metrics.gap);
+      var piecePixelHeight = (piece.height * metrics.cellSize) + ((piece.height - 1) * metrics.gap);
+  
+      var left = localX - (piecePixelWidth / 2);
+      var top = localY - (piecePixelHeight / 2);
+  
+      var anchorX = Math.round(left / metrics.step);
+      var anchorY = Math.round(top / metrics.step);
+  
+      anchorX = Math.max(0, Math.min(state.boardSize - piece.width, anchorX));
+      anchorY = Math.max(0, Math.min(state.boardSize - piece.height, anchorY));
+  
+      return { x: anchorX, y: anchorY };
     }
   
-    function commitPlacement() {
-      if (!active.preview) return false;
-    
-      var landed = active.preview;
-      var placedIndices = landed.map(function (cell) {
+    function showPreview(piece, cells) {
+      clearPreview();
+  
+      if (!piece || !cells || !cells.length) return;
+      if (!isIntroTargetPlacement(cells)) return;
+  
+      cells.forEach(function (cell) {
+        var index = cell.y * state.boardSize + cell.x;
+        var cellEl = root.querySelector('[data-cell-index="' + index + '"]');
+        if (!cellEl) return;
+  
+        var preview = document.createElement('div');
+        preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
+        preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
+        cellEl.appendChild(preview);
+      });
+  
+      drag.previewCells = cells;
+      setIntroHoverState(true);
+    }
+  
+    function cleanupDrag() {
+      clearPreview();
+  
+      if (!drag) return;
+  
+      if (drag.pieceEl) {
+        drag.pieceEl.classList.remove('is-held');
+      }
+  
+      if (drag.ghost && drag.ghost.parentNode) {
+        drag.ghost.parentNode.removeChild(drag.ghost);
+      }
+  
+      drag = null;
+    }
+  
+    function commitPlacementFromPreview() {
+      if (!drag || !drag.previewCells || !drag.previewCells.length) return false;
+  
+      var placedCells = drag.previewCells;
+      var placedIndices = placedCells.map(function (cell) {
         return cell.y * state.boardSize + cell.x;
       });
-
-      var placementScore = landed.reduce(function (sum, cell) {
+  
+      var placementScore = placedCells.reduce(function (sum, cell) {
         return sum + cell.value;
       }, 0);
-    
-      landed.forEach(function (cell) {
+  
+      placedCells.forEach(function (cell) {
         state.board[cell.y * state.boardSize + cell.x] = {
+          kind: 'number',
           value: cell.value,
           tone: cell.tone
         };
       });
-
-      state.hand[active.pieceIndex] = null;
-
+  
+      state.hand[drag.pieceIndex] = null;
+  
       if (state.intro && state.intro.active) {
         state.intro.targetCursor += 1;
-
-        if (state.intro.targetQueue[state.intro.targetCursor]) {
-          var nextTarget = state.intro.targetQueue[state.intro.targetCursor];
-          state.intro.allowedTargetIndex = nextTarget.index;
-          state.intro.direction = nextTarget.direction;
-          state.intro.sourceIndex = placedIndices[0];
-        }
+        state.intro.allowedTargetIndex = null;
+        state.intro.hoveringValid = false;
       }
-
+  
       if (!(state.intro && state.intro.active)) {
         if (state.hand.every(function (piece) { return !piece; })) {
           state.hand = generateHand(state.board, state.boardSize);
         }
       }
-
+  
       state.isResolving = true;
-
-      var placementMoved = applyGravity(state.board, state.boardSize);
-
-      state.animMap = buildGravityAnimMap(
-        root,
-        state,
-        placementMoved,
-        placedIndices
-      );
-
+  
+      var moved = applyGravity(state.board, state.boardSize);
+      state.animMap = buildPlacementAnimMap(root, state, moved, placedIndices);
       state.blastIndices = [];
-
-      active.el.classList.remove('is-held');
-
-      if (active.ghost && active.ghost.parentNode) {
-        active.ghost.parentNode.removeChild(active.ghost);
+  
+      if (drag.pieceEl) {
+        drag.pieceEl.classList.remove('is-held');
       }
-
+  
+      if (drag.ghost && drag.ghost.parentNode) {
+        drag.ghost.parentNode.removeChild(drag.ghost);
+      }
+  
       clearPreview();
-
+      drag = null;
+  
       renderGame(root, state);
-
+  
       window.setTimeout(function () {
         runBlastPhase(root, state, placedIndices, 1);
       }, 280);
-
+  
       window.setTimeout(function () {
         addScore(root, state, placementScore, true);
       }, 280);
-    
+  
       return true;
     }
   
-    function onEnd(e) {
-      if (!active) return;
-    
-      var p = getPointer(e);
-      var releasedOverHand = isPointerOverHand(p.clientX, p.clientY);
-      var placed = false;
-    
-      if (!releasedOverHand && active.preview) {
-        placed = commitPlacement();
+    function beginDrag(e) {
+      if (state.isResolving) return;
+      if (e.button !== undefined && e.button !== 0) return;
+  
+      var pieceEl = e.target.closest('[data-piece]');
+      if (!pieceEl) return;
+  
+      var slotEl = pieceEl.closest('[data-hand-slot-index]');
+      var pieceIndex = slotEl ? Number(slotEl.getAttribute('data-hand-slot-index')) : -1;
+      if (pieceIndex < 0 || !state.hand[pieceIndex]) return;
+  
+      e.preventDefault();
+  
+      if (pieceEl.setPointerCapture) {
+        pieceEl.setPointerCapture(e.pointerId);
       }
-    
-      if (!placed) {
-        cleanupActiveDrag();
+  
+      document.querySelectorAll('.bm-piece--ghost').forEach(function (el) {
+        el.remove();
+      });
+  
+      var ghost = createGhost(pieceEl);
+      sizeGhostToBoard(ghost);
+  
+      var rect = pieceEl.getBoundingClientRect();
+  
+      drag = {
+        pointerId: e.pointerId,
+        pieceIndex: pieceIndex,
+        pieceEl: pieceEl,
+        ghost: ghost,
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+        previewCells: null
+      };
+  
+      pieceEl.classList.add('is-held');
+  
+      ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+      ghost.style.top = (e.clientY - drag.offsetY) + 'px';
+    }
+  
+    function moveDrag(e) {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+  
+      e.preventDefault();
+  
+      var piece = state.hand[drag.pieceIndex];
+      if (!piece) {
+        cleanupDrag();
         return;
       }
-    
-      var handEl = root.querySelector('.bm-hand');
-      if (handEl) {
-        handEl.classList.remove('is-hover');
+  
+      drag.ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+      drag.ghost.style.top = (e.clientY - drag.offsetY) + 'px';
+  
+      var anchor = getAnchorFromPointer(piece, e.clientX, e.clientY);
+      if (!anchor) {
+        drag.ghost.style.opacity = 1;
+        clearPreview();
+        return;
       }
-    
-      active = null;
+  
+      var previewCells = getPlacementCells(
+        state.board,
+        state.boardSize,
+        piece,
+        anchor.x,
+        anchor.y
+      );
+  
+      if (!previewCells || !previewCells.length) {
+        drag.ghost.style.opacity = 1;
+        clearPreview();
+        return;
+      }
+  
+      drag.ghost.style.opacity = 0.14;
+      showPreview(piece, previewCells);
     }
   
-    root.addEventListener('mousedown', onStart);
-    root.addEventListener('touchstart', onStart, { passive: false });
+    function endDrag(e) {
+      if (!drag || e.pointerId !== drag.pointerId) return;
   
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('touchmove', onMove, { passive: false });
+      e.preventDefault();
   
-    window.addEventListener('mouseup', onEnd);
-    window.addEventListener('touchend', onEnd);
-
-    window.addEventListener('touchcancel', cleanupActiveDrag);
-    window.addEventListener('blur', cleanupActiveDrag);
-
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) cleanupActiveDrag();
-    });
-  }
-
-  function renderIntroEquation(state) {
-    if (!(state.intro && state.intro.active)) return '';
-    if (!state.intro.completed) return '';
-  
-    var math = '';
-  
-    if (state.intro.step === 1 || state.intro.step === 2) {
-      math = '1+9=10';
-    } else if (state.intro.step === 3) {
-      math = '2+7+1=10';
-    } else if (state.intro.step === 4) {
-      math = '3+4+3=10';
-    } else {
-      return '';
+      if (commitPlacementFromPreview()) return;
+      cleanupDrag();
     }
   
-    return '' +
-      '<div class="bm-intro-equation" aria-hidden="true">' +
-        '<img class="bm-intro-equation__check" src="images/check.svg" alt="" />' +
-        '<svg class="bm-intro-equation__svg" viewBox="0 0 760 220" preserveAspectRatio="xMidYMid meet">' +
-          '<text class="bm-intro-equation__text bm-intro-equation__text--stroke" x="380" y="108">' + math + '</text>' +
-          '<text class="bm-intro-equation__text bm-intro-equation__text--fill" x="380" y="108">' + math + '</text>' +
-        '</svg>' +
-      '</div>';
+    function cancelDrag(e) {
+      if (!drag) return;
+      if (e && e.pointerId !== undefined && e.pointerId !== drag.pointerId) return;
+      cleanupDrag();
+    }
+  
+    root.addEventListener('pointerdown', beginDrag);
+    root.addEventListener('pointermove', moveDrag);
+    root.addEventListener('pointerup', endDrag);
+    root.addEventListener('pointercancel', cancelDrag);
   }
 
   function showBoardMessage(root, state) {
@@ -2277,7 +2110,6 @@
               var oldMsg = document.body.querySelector('.bm-board-message');
               if (oldMsg) oldMsg.remove();
 
-              markIntroSeen
               /*markIntroSeen();*/
               resetStandardGameState(state);
               render();

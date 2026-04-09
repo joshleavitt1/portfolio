@@ -1661,6 +1661,17 @@
   
       return { x: anchorX, y: anchorY };
     }
+
+    function getGhostCenter() {
+      if (!drag || !drag.ghost) return null;
+    
+      var ghostRect = drag.ghost.getBoundingClientRect();
+    
+      return {
+        x: ghostRect.left + (ghostRect.width * 0.5),
+        y: ghostRect.top + (ghostRect.height * 0.5)
+      };
+    }
   
     function showPreview(piece, cells) {
       clearPreview();
@@ -1796,13 +1807,14 @@
         ghost: ghost,
         offsetX: e.clientX - rect.left,
         offsetY: e.clientY - rect.top,
+        liftY: 100,
         previewCells: null
       };
   
       pieceEl.classList.add('is-held');
   
       ghost.style.left = (e.clientX - drag.offsetX) + 'px';
-      ghost.style.top = (e.clientY - drag.offsetY) + 'px';
+      ghost.style.top = (e.clientY - drag.offsetY - drag.liftY) + 'px';
     }
   
     function moveDrag(e) {
@@ -1817,9 +1829,13 @@
       }
   
       drag.ghost.style.left = (e.clientX - drag.offsetX) + 'px';
-      drag.ghost.style.top = (e.clientY - drag.offsetY) + 'px';
+      drag.ghost.style.top = (e.clientY - drag.offsetY - drag.liftY) + 'px';
   
-      var anchor = getAnchorFromPointer(piece, e.clientX, e.clientY);
+      var ghostCenter = getGhostCenter();
+      var anchor = ghostCenter
+        ? getAnchorFromPointer(piece, ghostCenter.x, ghostCenter.y)
+        : null;
+      
       if (!anchor) {
         drag.ghost.style.opacity = 1;
         clearPreview();
