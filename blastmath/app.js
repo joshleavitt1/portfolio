@@ -5,15 +5,17 @@
     boardSize: 6,
     handSize: 3,
     handTileSize: 52,
-    handTileGap: 4,
+    handTileGap: 2,
     startingLives: 3,
     storageKey: "blastmath.highscore"
   };
 
   var INTRO_QUERY_VALUE = "1";
-  var INTRO_BLAST_TO_MESSAGE_DELAY = 2000;
   var INTRO_MESSAGE_TO_NEXT_STEP_DELAY = 250;
   var CHAIN_NEXT_BLAST_DELAY = 500;
+  var INTRO_THUMB_POP_DELAY = 500;
+  var INTRO_THUMB_POP_DURATION = 2500;
+  var INTRO_BLAST_TO_MESSAGE_DELAY = INTRO_THUMB_POP_DELAY + INTRO_THUMB_POP_DURATION;
 
   function isIntroMode() {
     try {
@@ -784,74 +786,56 @@
         coords: [{ x: 0, y: 0 }, { x: 0, y: 1 }]
       },
       {
-        id: 'h3',
-        rank: 3,
-        width: 3,
-        height: 1,
-        coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }]
+        id: 'd2-up',
+        rank: 2,
+        width: 2,
+        height: 2,
+        coords: [{ x: 0, y: 1 }, { x: 1, y: 0 }]
       },
       {
-        id: 'v3',
-        rank: 3,
-        width: 1,
-        height: 3,
-        coords: [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }]
+        id: 'd2-down',
+        rank: 2,
+        width: 2,
+        height: 2,
+        coords: [{ x: 0, y: 0 }, { x: 1, y: 1 }]
       }
     ],
-
+  
     complex: [
       {
         id: 'l3',
-        rank: 4,
+        rank: 3,
         width: 2,
         height: 2,
-        coords: [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]
+        coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }]
       },
       {
         id: 'j3',
-        rank: 4,
-        width: 2,
-        height: 2,
-        coords: [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]
-      },
-      {
-        id: 'square3',
-        rank: 4,
+        rank: 3,
         width: 2,
         height: 2,
         coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }]
       },
       {
-        id: 't4',
-        rank: 5,
-        width: 3,
+        id: 'l3-tall',
+        rank: 3,
+        width: 2,
         height: 2,
-        coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 1, y: 1 }]
+        coords: [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]
       },
       {
-        id: 'z4',
-        rank: 5,
-        width: 3,
+        id: 'j3-tall',
+        rank: 3,
+        width: 2,
         height: 2,
-        coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 1 }]
+        coords: [{ x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]
       },
       {
-        id: 's4',
-        rank: 5,
-        width: 3,
+        id: 'square4',
+        rank: 4,
+        width: 2,
         height: 2,
-        coords: [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]
-      },
-      {
-        id: 'plus5',
-        rank: 6,
-        width: 3,
-        height: 3,
-        coords: [
-          { x: 1, y: 0 },
-          { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 },
-          { x: 1, y: 2 }
-        ]
+        coords: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }]
       }
     ]
   };
@@ -886,65 +870,60 @@
   }
 
   function pickSlot12Rule() {
-    // Mostly singles, sometimes length-2.
-    // Never 3-length. Never complex.
-    if (chance(35)) {
-      return {
-        allowedIds: ['h2', 'v2'],
-        maxRank: 2
-      };
+    var roll = Math.random() * 100;
+  
+    if (roll < 42) {
+      return { allowedIds: ['single'], maxRank: 1 };
     }
-
-    return {
-      allowedIds: ['single'],
-      maxRank: 1
-    };
+  
+    if (roll < 72) {
+      return { allowedIds: ['h2', 'v2'], maxRank: 2 };
+    }
+  
+    if (roll < 84) {
+      return { allowedIds: ['d2-up', 'd2-down'], maxRank: 2 };
+    }
+  
+    if (roll < 94) {
+      return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
+    }
+  
+    return { allowedIds: ['square4'], maxRank: 4 };
   }
 
   function pickSlot3Rule(board) {
     var fillRatio = getBoardFillRatio(board);
-
-    // crowded board: keep slot 3 friendlier
+    var roll = Math.random() * 100;
+  
     if (fillRatio >= 0.6) {
-      if (chance(10)) {
-        return {
-          allowedIds: ['l3', 'j3', 'square3'],
-          maxRank: 4
-        };
+      if (roll < 28) {
+        return { allowedIds: ['single'], maxRank: 1 };
       }
-
-      if (chance(45)) {
-        return {
-          allowedIds: ['h3', 'v3'],
-          maxRank: 3
-        };
+      if (roll < 56) {
+        return { allowedIds: ['h2', 'v2'], maxRank: 2 };
       }
-
-      return {
-        allowedIds: ['h2', 'v2'],
-        maxRank: 2
-      };
+      if (roll < 74) {
+        return { allowedIds: ['d2-up', 'd2-down'], maxRank: 2 };
+      }
+      if (roll < 94) {
+        return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
+      }
+      return { allowedIds: ['square4'], maxRank: 4 };
     }
-
-    // normal/open board
-    if (chance(8)) {
-      return {
-        allowedIds: ['l3', 'j3', 'square3', 't4', 'z4', 's4', 'plus5'],
-        maxRank: 6
-      };
+  
+    if (roll < 18) {
+      return { allowedIds: ['single'], maxRank: 1 };
     }
-
-    if (chance(45)) {
-      return {
-        allowedIds: ['h3', 'v3'],
-        maxRank: 3
-      };
+    if (roll < 42) {
+      return { allowedIds: ['h2', 'v2'], maxRank: 2 };
     }
-
-    return {
-      allowedIds: ['h2', 'v2'],
-      maxRank: 2
-    };
+    if (roll < 60) {
+      return { allowedIds: ['d2-up', 'd2-down'], maxRank: 2 };
+    }
+    if (roll < 88) {
+      return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
+    }
+    return { allowedIds: ['square4'], maxRank: 4 };
   }
 
   function generateHand(board, boardSize) {
@@ -957,32 +936,46 @@
     hand.push(slot2);
     hand.push(slot3);
 
-    // Safety: ensure first two slots never contain 3-length or complex pieces
-    for (var i = 0; i < 2; i++) {
-      if (!hand[i]) {
-        hand[i] = generatePiece(board, boardSize, { allowedIds: ['single', 'h2', 'v2'], maxRank: 2 });
-        continue;
-      }
+        // Safety: first two slots stay in the easy half of the catalog
+        for (var i = 0; i < 2; i++) {
+          if (!hand[i]) {
+            hand[i] = generatePiece(board, boardSize, {
+              allowedIds: ['single', 'h2', 'v2', 'd2-up', 'd2-down'],
+              maxRank: 2
+            });
+            continue;
+          }
+    
+          if (hand[i].rank > 2) {
+            hand[i] = generatePiece(board, boardSize, {
+              allowedIds: ['single', 'h2', 'v2', 'd2-up', 'd2-down'],
+              maxRank: 2
+            });
+          }
+        }
+    
+        // Safety: slot 3 can pull from the full new catalog
+        if (!hand[2]) {
+          hand[2] = generatePiece(board, boardSize, {
+            allowedIds: ['h2', 'v2', 'd2-up', 'd2-down', 'l3', 'j3', 'l3-tall', 'j3-tall', 'square4'],
+            maxRank: 4
+          });
+        }
 
-      var cellCount = hand[i].cells.length;
-      if (cellCount > 2 || hand[i].rank > 2) {
-        hand[i] = generatePiece(board, boardSize, { allowedIds: ['single', 'h2', 'v2'], maxRank: 2 });
-      }
-    }
-
-    // Safety: slot 3 should usually be 2 or 3, only sometimes complex
-    if (!hand[2]) {
-      hand[2] = generatePiece(board, boardSize, { allowedIds: ['h2', 'v2', 'h3', 'v3'], maxRank: 3 });
-    }
-
-    var playableCount = hand.filter(function (piece) {
-      return piece && getLegalPlacements(board, boardSize, piece).length > 0;
-    }).length;
-
-    if (playableCount < 2) {
-      hand[0] = generatePiece(board, boardSize, { allowedIds: ['single', 'h2', 'v2'], maxRank: 2 });
-      hand[1] = generatePiece(board, boardSize, { allowedIds: ['single', 'h2', 'v2'], maxRank: 2 });
-    }
+        var playableCount = hand.filter(function (piece) {
+          return piece && getLegalPlacements(board, boardSize, piece).length > 0;
+        }).length;
+    
+        if (playableCount < 2) {
+          hand[0] = generatePiece(board, boardSize, {
+            allowedIds: ['single', 'h2', 'v2', 'd2-up', 'd2-down'],
+            maxRank: 2
+          });
+          hand[1] = generatePiece(board, boardSize, {
+            allowedIds: ['single', 'h2', 'v2', 'd2-up', 'd2-down'],
+            maxRank: 2
+          });
+        }
 
     return hand;
   }
@@ -1029,7 +1022,13 @@
 
     if (!candidates.length) {
       var fallbackDefs = getAllShapeDefs().filter(function (def) {
-        return def.id === 'single' || def.id === 'h2' || def.id === 'v2';
+        return (
+          def.id === 'single' ||
+          def.id === 'h2' ||
+          def.id === 'v2' ||
+          def.id === 'd2-up' ||
+          def.id === 'd2-down'
+        );
       });
 
       for (var i = 0; i < fallbackDefs.length; i++) {
@@ -1425,7 +1424,7 @@
     });
   }
 
-  function spawnIntroThumbPops(root, blastIndices) {
+  function spawnBlastThumbPops(root, blastIndices) {
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
   
@@ -1436,14 +1435,14 @@
       var thumb = document.createElement('img');
       thumb.src = 'images/thumb.svg';
       thumb.alt = '';
-      thumb.className = 'bm-intro-thumb-pop';
+      thumb.className = 'bm-blast-thumb-pop';
       thumb.style.setProperty('--bm-thumb-delay', (order * 60) + 'ms');
   
       cellEl.appendChild(thumb);
   
       window.setTimeout(function () {
         if (thumb.parentNode) thumb.parentNode.removeChild(thumb);
-      }, 2000 + (order * 60));
+      }, INTRO_THUMB_POP_DURATION + (order * 60) + 80);
     });
   }
 
@@ -1515,11 +1514,9 @@
     applyBlast(state.board, blastResult.blastIndices);
     hideBoardCells(root, blastResult.blastIndices);
     
-    if (isIntroBlast) {
-      window.setTimeout(function () {
-        spawnIntroThumbPops(root, blastResult.blastIndices);
-      }, 500);
-    }
+    window.setTimeout(function () {
+      spawnBlastThumbPops(root, blastResult.blastIndices);
+    }, INTRO_THUMB_POP_DELAY);
     
     if (blastResult.blastLabel) {
       window.setTimeout(function () {

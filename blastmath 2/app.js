@@ -5,15 +5,17 @@
     boardSize: 6,
     handSize: 3,
     handTileSize: 52,
-    handTileGap: 4,
+    handTileGap: 2,
     startingLives: 3,
     storageKey: "blastmath.highscore"
   };
 
   var INTRO_QUERY_VALUE = "1";
-  var INTRO_BLAST_TO_MESSAGE_DELAY = 2000;
   var INTRO_MESSAGE_TO_NEXT_STEP_DELAY = 250;
   var CHAIN_NEXT_BLAST_DELAY = 500;
+  var INTRO_THUMB_POP_DELAY = 500;
+  var INTRO_THUMB_POP_DURATION = 2500;
+  var INTRO_BLAST_TO_MESSAGE_DELAY = INTRO_THUMB_POP_DELAY + INTRO_THUMB_POP_DURATION;
 
   function isIntroMode() {
     try {
@@ -1425,7 +1427,7 @@
     });
   }
 
-  function spawnIntroThumbPops(root, blastIndices) {
+  function spawnBlastThumbPops(root, blastIndices) {
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
   
@@ -1436,14 +1438,14 @@
       var thumb = document.createElement('img');
       thumb.src = 'images/thumb.svg';
       thumb.alt = '';
-      thumb.className = 'bm-intro-thumb-pop';
+      thumb.className = 'bm-blast-thumb-pop';
       thumb.style.setProperty('--bm-thumb-delay', (order * 60) + 'ms');
   
       cellEl.appendChild(thumb);
   
       window.setTimeout(function () {
         if (thumb.parentNode) thumb.parentNode.removeChild(thumb);
-      }, 2000 + (order * 60));
+      }, INTRO_THUMB_POP_DURATION + (order * 60) + 80);
     });
   }
 
@@ -1515,11 +1517,9 @@
     applyBlast(state.board, blastResult.blastIndices);
     hideBoardCells(root, blastResult.blastIndices);
     
-    if (isIntroBlast) {
-      window.setTimeout(function () {
-        spawnIntroThumbPops(root, blastResult.blastIndices);
-      }, 500);
-    }
+    window.setTimeout(function () {
+      spawnBlastThumbPops(root, blastResult.blastIndices);
+    }, INTRO_THUMB_POP_DELAY);
     
     if (blastResult.blastLabel) {
       window.setTimeout(function () {
@@ -1972,18 +1972,29 @@
   
     var msg = document.createElement('div');
     msg.className = 'bm-board-message';
-    msg.textContent = text;
   
     var left = window.innerWidth * 0.5;
     var top = window.innerHeight * 0.5;
+    var scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale')) || 1;
+    var textLen = String(text).length;
   
     if (anchor) {
       left = anchor.left;
-      top = anchor.top - (28 * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale')) || 1));
+      top = anchor.top - (22 * scale);
     }
+  
+    var viewW = Math.max(320, Math.round(textLen * 54));
+    var x = viewW / 2;
   
     msg.style.left = Math.round(left) + 'px';
     msg.style.top = Math.round(top) + 'px';
+  
+    msg.innerHTML =
+      '<svg class="bm-board-message__svg" viewBox="0 0 ' + viewW + ' 120" aria-hidden="true">' +
+        '<text class="bm-board-message__text" x="' + x + '" y="60" text-anchor="middle" dominant-baseline="middle">' +
+          text +
+        '</text>' +
+      '</svg>';
   
     document.body.appendChild(msg);
   
