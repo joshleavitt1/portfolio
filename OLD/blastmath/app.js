@@ -1,4 +1,5 @@
 (function () {
+  var BUILD_STAMP = 'drag-fix-v1';
   var CONFIG = {
     baseWidth: 390,
     baseHeight: 844,
@@ -1530,39 +1531,30 @@
   }
 
   function enableDrag(root, state) {
-    var active = null;
+    var drag = null;
   
-    function getBoardRect() {
-      var board = root.querySelector('.bm-board');
-      return board.getBoundingClientRect();
-    }
-
-    function isPointerOverHand(clientX, clientY) {
-      var hand = root.querySelector('.bm-hand');
-      if (!hand) return false;
-
-      var rect = hand.getBoundingClientRect();
-
-      return (
-        clientX >= rect.left &&
-        clientX <= rect.right &&
-        clientY >= rect.top &&
-        clientY <= rect.bottom
-      );
-    }
-
     function getBoardMetrics() {
       var board = root.querySelector('.bm-board');
       var cellEl = board ? board.querySelector('.bm-cell') : null;
-      var gap = board ? (parseFloat(getComputedStyle(board).gap) || 0) : 0;
-      var cellSize = cellEl ? cellEl.getBoundingClientRect().width : getCellSize();
-      return { cellSize: cellSize, gap: gap };
-    }
+      if (!board || !cellEl) return null;
   
-    function getCellSize() {
-      var board = root.querySelector('.bm-board');
-      var rect = board.getBoundingClientRect();
-      return rect.width / state.boardSize;
+      var boardRect = board.getBoundingClientRect();
+      var cellRect = cellEl.getBoundingClientRect();
+      var gap = parseFloat(getComputedStyle(board).gap) || 0;
+      var padding = 4;
+      var step = cellRect.width + gap;
+  
+      return {
+        board: board,
+        boardRect: boardRect,
+        cellSize: cellRect.width,
+        gap: gap,
+        padding: padding,
+        step: step,
+        innerLeft: boardRect.left + padding,
+        innerTop: boardRect.top + padding,
+        innerSize: (step * state.boardSize) - gap
+      };
     }
   
     function createGhost(el) {
@@ -1577,35 +1569,37 @@
       document.body.appendChild(ghost);
       return ghost;
     }
-
+  
     function sizeGhostToBoard(ghost) {
       var metrics = getBoardMetrics();
+      if (!metrics) return;
+  
       var cellSize = metrics.cellSize;
       var gap = metrics.gap;
       var uiScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
       var boardFontSize = 24 * uiScale;
-
+  
       var shape = ghost.querySelector('.bm-piece__shape');
       if (!shape) return;
-
+  
       var minis = ghost.querySelectorAll('.bm-mini');
       if (!minis.length) return;
-
+  
       var maxX = 0;
       var maxY = 0;
-
+  
       minis.forEach(function (mini) {
         var left = parseFloat(mini.style.left) || 0;
         var top = parseFloat(mini.style.top) || 0;
-
+  
         var scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
         var handCell = CONFIG.handTileSize * scale;
         var handGap = CONFIG.handTileGap * scale;
         var handStep = handCell + handGap;
-
+  
         var gridX = Math.floor((left + handStep * 0.5) / handStep);
         var gridY = Math.floor((top + handStep * 0.5) / handStep);
-
+  
         mini.style.width = cellSize + 'px';
         mini.style.height = cellSize + 'px';
         mini.style.left = Math.round(gridX * (cellSize + gap)) + 'px';
@@ -1613,191 +1607,132 @@
         mini.style.fontSize = boardFontSize + 'px';
         mini.style.lineHeight = cellSize + 'px';
         mini.style.textShadow = '0 2px 2px rgba(0,0,0,0.5)';
-
+  
         maxX = Math.max(maxX, gridX);
         maxY = Math.max(maxY, gridY);
       });
-
+  
       shape.style.width = Math.round((maxX + 1) * cellSize + maxX * gap) + 'px';
       shape.style.height = Math.round((maxY + 1) * cellSize + maxY * gap) + 'px';
     }
-
-    function getDropColumnFromGhost(piece, ghostEl) {
-      var board = root.querySelector('.bm-board');
-      if (!board || !piece || !ghostEl) {
-        return { col: -1, overBoard: false };
+  
+    function setIntroHoverState(isActive) {
+      if (!(state.intro && state.intro.active)) return;
+  
+      state.intro.hoveringValid = !!isActive;
+  
+      var sourceCell = root.querySelector('[data-cell-index="' + state.intro.sourceIndex + '"]');
+      var targetCell = root.querySelector('[data-cell-index="' + state.intro.allowedTargetIndex + '"]');
+  
+      root.querySelectorAll('.bm-intro-source-cell').forEach(function (el) {
+        el.classList.remove('bm-intro-source-cell');
+      });
+      root.querySelectorAll('.bm-intro-target-cell').forEach(function (el) {
+        el.classList.remove('bm-intro-target-cell');
+        el.classList.remove('is-hovered');
+      });
+  
+      if (sourceCell) sourceCell.classList.add('bm-intro-source-cell');
+      if (targetCell) {
+        targetCell.classList.add('bm-intro-target-cell');
+        if (isActive) targetCell.classList.add('is-hovered');
       }
-    
-      var boardRect = board.getBoundingClientRect();
-      var firstCell = board.querySelector('.bm-cell');
-      if (!firstCell) {
-        return { col: -1, overBoard: false };
-      }
-    
-      var cellRect = firstCell.getBoundingClientRect();
-      var gap = parseFloat(getComputedStyle(board).gap) || 0;
-      var step = cellRect.width + gap;
-      var boardPadding = 4;
-    
-      var ghostRect = ghostEl.getBoundingClientRect();
-    
-      var boardInnerLeft = boardRect.left + boardPadding;
-      var boardInnerTop = boardRect.top + boardPadding;
-      var boardInnerSize = (step * state.boardSize) - gap;
-    
-      var overBoard =
-        ghostRect.right > boardInnerLeft &&
-        ghostRect.left < (boardInnerLeft + boardInnerSize) &&
-        ghostRect.bottom > boardInnerTop &&
-        ghostRect.top < (boardInnerTop + boardInnerSize);
-    
-      if (!overBoard) {
-        return { col: -1, overBoard: false };
-      }
-    
-      var localLeft = ghostRect.left - boardInnerLeft;
-      var col = Math.round(localLeft / step);
-    
-      if (col < 0) col = 0;
-      if (col > state.boardSize - piece.width) col = state.boardSize - piece.width;
-    
-      return { col: col, overBoard: true };
     }
   
-    function getPointer(e) {
-      if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0];
-      if (e.touches && e.touches.length) return e.touches[0];
-      return e;
-    }
-
-    function getGhostLift() {
-      return 0;
-    }
-
-    function cleanupActiveDrag() {
-      var handEl = root.querySelector('.bm-hand');
-    
-      if (handEl) {
-        handEl.classList.remove('is-hover');
+    function isIntroTargetPlacement(landed) {
+      if (!(state.intro && state.intro.active)) return true;
+      if (!landed || !landed.length) return false;
+  
+      if (landed.length === 1) {
+        var introIndex = landed[0].y * state.boardSize + landed[0].x;
+        return introIndex === state.intro.allowedTargetIndex;
       }
-    
-      clearPreview();
-    
-      if (!active) return;
-    
-      if (active.el) {
-        active.el.classList.remove('is-held');
-      }
-    
-      if (active.ghost && active.ghost.parentNode) {
-        active.ghost.parentNode.removeChild(active.ghost);
-      }
-    
-      active = null;
+  
+      return landed.every(function (cell) {
+        var introIndex = cell.y * state.boardSize + cell.x;
+        return state.intro.targetQueue.some(function (target) {
+          return target.index === introIndex;
+        });
+      });
     }
   
-    function onStart(e) {
-      if (state.isResolving) return;
-      var pieceEl = e.target.closest('[data-piece]');
-      if (!pieceEl) return;
-  
-      e.preventDefault();
-  
-      var p = getPointer(e);
-  
-      var slotEl = pieceEl.closest('[data-hand-slot-index]');
-      var index = slotEl ? Number(slotEl.getAttribute('data-hand-slot-index')) : -1;
-      if (index < 0 || !state.hand[index]) return;
-      
-      document.querySelectorAll('.bm-piece--ghost').forEach(function (el) {
+    function clearPreview() {
+      root.querySelectorAll('.is-preview-tile').forEach(function (el) {
         el.remove();
       });
-
-      active = {
-        el: pieceEl,
-        ghost: createGhost(pieceEl),
-        offsetX: 0,
-        offsetY: 0,
-        pieceIndex: index,
-        piece: state.hand[index]
-      };
-
-      var rect = pieceEl.getBoundingClientRect();
-
-      active.offsetX = p.clientX - rect.left;
-      active.offsetY = p.clientY - rect.top;
-      
-      active.ghost.style.left = rect.left + 'px';
-      active.ghost.style.top = rect.top + 'px';
-      
-      // force layout BEFORE resizing
-      active.ghost.getBoundingClientRect();
-      
-      sizeGhostToBoard(active.ghost);
-      
-      // NOW position to pointer
-      active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
-      active.ghost.style.top = (p.clientY - active.offsetY) + 'px';
   
-      pieceEl.classList.add('is-held');
+      if (drag) {
+        drag.previewCells = null;
+      }
+  
+      setIntroHoverState(false);
     }
   
-    function getDropPositionFromGhost(piece, ghostEl) {
-      var board = root.querySelector('.bm-board');
-      if (!board || !piece || !ghostEl) return { x: -1, y: -1, overBoard: false };
-    
-      var boardRect = board.getBoundingClientRect();
-      var firstCell = board.querySelector('.bm-cell');
-      if (!firstCell) return { x: -1, y: -1, overBoard: false };
-    
-      var cellRect = firstCell.getBoundingClientRect();
-      var gap = parseFloat(getComputedStyle(board).gap) || 0;
-      var step = cellRect.width + gap;
-      var boardPadding = 4;
-    
-      var ghostRect = ghostEl.getBoundingClientRect();
-    
-      var localLeft = ghostRect.left - boardRect.left - boardPadding;
-      var localRight = ghostRect.right - boardRect.left - boardPadding;
-      var localTop = ghostRect.top - boardRect.top - boardPadding;
-      var localBottom = ghostRect.bottom - boardRect.top - boardPadding;
-    
-      var overBoard =
-        localRight > 0 &&
-        localLeft < (step * state.boardSize) &&
-        localBottom > 0 &&
-        localTop < (step * state.boardSize);
-    
-      var col = Math.round(localLeft / step);
-    
-      return {
-        x: col,
-        y: Math.floor(localTop / step),
-        overBoard: overBoard
-      };
+    function cloneBoard(board) {
+      return board.map(function (cell) {
+        return cell ? Object.assign({}, cell) : null;
+      });
     }
   
-    function getGravityDrop(piece, col) {
-      return getGravityDropForBoard(state.board, state.boardSize, piece, col);
+    function getColumnFromGhost(piece, ghost) {
+      var metrics = getBoardMetrics();
+      if (!metrics || !piece || !ghost) return null;
+    
+      var ghostRect = ghost.getBoundingClientRect();
+    
+      var centerX = (ghostRect.left + ghostRect.right) / 2;
+      var centerY = (ghostRect.top + ghostRect.bottom) / 2;
+    
+      var boardLeft = metrics.innerLeft;
+      var boardRight = metrics.innerLeft + metrics.innerSize;
+      var boardTop = metrics.innerTop;
+      var boardBottom = metrics.innerTop + metrics.innerSize;
+    
+      if (
+        centerX < boardLeft ||
+        centerX > boardRight ||
+        centerY < boardTop ||
+        centerY > boardBottom
+      ) {
+        return null;
+      }
+    
+      var shapeWidth = (piece.width * metrics.cellSize) + ((piece.width - 1) * metrics.gap);
+      var desiredLeft = (centerX - boardLeft) - (shapeWidth / 2);
+      var col = Math.round(desiredLeft / metrics.step);
+    
+      col = Math.max(0, Math.min(state.boardSize - piece.width, col));
+      return col;
+    }
+  
+    function getPreviewCells(piece, col) {
+      if (!piece) return null;
+      if (col < 0 || col > state.boardSize - piece.width) return null;
+    
+      var initial = getGravityDropForBoard(state.board, state.boardSize, piece, col);
+      if (!initial) return null;
+    
+      return initial;
     }
   
     function showPreview(piece, col) {
       clearPreview();
     
       if (!piece) return;
-      if (col < 0) return;
-      if (col > state.boardSize - piece.width) return;
     
-      var landed = getGravityDrop(piece, col);
-      if (!landed) {
-        return;
+      var previewCells = getPreviewCells(piece, col);
+      if (!previewCells) return;
+      if (!isIntroTargetPlacement(previewCells)) return;
+    
+      if (previewCells.length !== piece.cells.length) {
+        console.warn('Preview/piece mismatch', {
+          pieceCells: piece.cells,
+          previewCells: previewCells,
+          col: col
+        });
       }
     
-      if (!isIntroTargetPlacement(landed)) {
-        return;
-      }
-    
-      landed.forEach(function (cell) {
+      previewCells.forEach(function (cell) {
         var index = cell.y * state.boardSize + cell.x;
         var cellEl = root.querySelector('[data-cell-index="' + index + '"]');
         if (!cellEl) return;
@@ -1805,118 +1740,55 @@
         var preview = document.createElement('div');
         preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
         preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
-    
         cellEl.appendChild(preview);
       });
     
-      active.preview = landed;
+      drag.previewCells = previewCells;
       setIntroHoverState(true);
     }
-
-    function setIntroHoverState(isActive) {
-      if (!(state.intro && state.intro.active)) return;
-
-      state.intro.hoveringValid = !!isActive;
-
-      var sourceCell = root.querySelector('[data-cell-index="' + state.intro.sourceIndex + '"]');
-      var targetCell = root.querySelector('[data-cell-index="' + state.intro.allowedTargetIndex + '"]');
-
-      var sourceTile = sourceCell ? sourceCell.querySelector('.bm-tile') : null;
-      var previewTile = targetCell ? targetCell.querySelector('.is-preview-tile') : null;
-
-      if (sourceTile) {
-        sourceTile.classList.toggle('bm-intro-pair-glow', !!isActive);
-        sourceTile.classList.toggle('bm-intro-pair-pulse', !!isActive);
+  
+    function cleanupDrag() {
+      clearPreview();
+  
+      if (!drag) return;
+  
+      if (drag.pieceEl) {
+        drag.pieceEl.classList.remove('is-held');
       }
-
-      if (targetCell) {
-        targetCell.classList.toggle('bm-intro-link-active', !!isActive);
-        targetCell.classList.toggle('bm-intro-link--horizontal', !!isActive && state.intro.direction === 'horizontal');
-        targetCell.classList.toggle('bm-intro-link--vertical', !!isActive && state.intro.direction === 'vertical');
+  
+      if (drag.ghost && drag.ghost.parentNode) {
+        drag.ghost.parentNode.removeChild(drag.ghost);
       }
-
-      if (previewTile) {
-        previewTile.classList.toggle('bm-intro-pair-glow', !!isActive);
-        previewTile.classList.toggle('bm-intro-pair-pulse', !!isActive);
-      }
-    }
-
-    function isIntroTargetPlacement(landed) {
-      if (!(state.intro && state.intro.active)) return true;
-      if (!landed || landed.length !== 1) return false;
-
-      var introIndex = landed[0].y * state.boardSize + landed[0].x;
-      return introIndex === state.intro.allowedTargetIndex;
+  
+      drag = null;
     }
   
-    function clearPreview() {
-      root.querySelectorAll('.is-preview-tile').forEach(function (el) {
-        el.remove();
-      });
-    
-      if (active) {
-        active.preview = null;
-      }
-    
-      setIntroHoverState(false);
-    }
+    function commitPlacementFromPreview() {
+      console.log('commit preview cells:', drag.previewCells);
+      if (!drag || !drag.previewCells || !drag.previewCells.length) return false;
   
-    function onMove(e) {
-      if (!active) return;
-    
-      var p = getPointer(e);
-      var overHand = isPointerOverHand(p.clientX, p.clientY);
-    
-      active.ghost.style.visibility = 'visible';
-      active.ghost.style.left = (p.clientX - active.offsetX) + 'px';
-      active.ghost.style.top = (p.clientY - active.offsetY) + 'px';
-      active.ghost.style.opacity = 1;
-      active.ghost.style.transform = '';
-    
-      var handEl = root.querySelector('.bm-hand');
-      if (handEl) {
-        handEl.classList.toggle('is-hover', overHand);
-      }
-    
-      if (overHand) {
-        clearPreview();
-        return;
-      }
-    
-      var drop = getDropColumnFromGhost(active.piece, active.ghost);
-    
-      if (!drop.overBoard) {
-        clearPreview();
-        return;
-      }
-    
-      showPreview(active.piece, drop.col);
-    }
-  
-    function commitPlacement() {
-      if (!active.preview) return false;
-    
-      var landed = active.preview;
+      var landed = drag.previewCells;
       var placedIndices = landed.map(function (cell) {
         return cell.y * state.boardSize + cell.x;
       });
-
+  
       var placementScore = landed.reduce(function (sum, cell) {
         return sum + cell.value;
       }, 0);
-    
+  
       landed.forEach(function (cell) {
         state.board[cell.y * state.boardSize + cell.x] = {
+          kind: 'number',
           value: cell.value,
           tone: cell.tone
         };
       });
-
-      state.hand[active.pieceIndex] = null;
-
+  
+      state.hand[drag.pieceIndex] = null;
+  
       if (state.intro && state.intro.active) {
         state.intro.targetCursor += 1;
-
+  
         if (state.intro.targetQueue[state.intro.targetCursor]) {
           var nextTarget = state.intro.targetQueue[state.intro.targetCursor];
           state.intro.allowedTargetIndex = nextTarget.index;
@@ -1924,86 +1796,158 @@
           state.intro.sourceIndex = placedIndices[0];
         }
       }
-
+  
       if (!(state.intro && state.intro.active)) {
         if (state.hand.every(function (piece) { return !piece; })) {
           state.hand = generateHand(state.board, state.boardSize);
         }
       }
-
+  
       state.isResolving = true;
-
+  
       var placementMoved = applyGravity(state.board, state.boardSize);
-
+  
       state.animMap = buildGravityAnimMap(
         root,
         state,
         placementMoved,
         placedIndices
       );
-
+  
       state.blastIndices = [];
-
-      active.el.classList.remove('is-held');
-
-      if (active.ghost && active.ghost.parentNode) {
-        active.ghost.parentNode.removeChild(active.ghost);
+  
+      if (drag.pieceEl) {
+        drag.pieceEl.classList.remove('is-held');
       }
-
+  
+      if (drag.ghost && drag.ghost.parentNode) {
+        drag.ghost.parentNode.removeChild(drag.ghost);
+      }
+  
       clearPreview();
-
+      drag = null;
+  
       renderGame(root, state);
-
+  
       window.setTimeout(function () {
         runBlastPhase(root, state, placedIndices, 1);
       }, 280);
-
+  
       window.setTimeout(function () {
         addScore(root, state, placementScore, true);
       }, 280);
-    
+  
       return true;
     }
   
-    function onEnd(e) {
-      if (!active) return;
-    
-      var p = getPointer(e);
-      var releasedOverHand = isPointerOverHand(p.clientX, p.clientY);
-      var placed = false;
-    
-      if (!releasedOverHand && active.preview) {
-        placed = commitPlacement();
+    function beginDrag(e) {
+      if (state.isResolving) return;
+      if (e.button !== undefined && e.button !== 0) return;
+  
+      var pieceEl = e.target.closest('[data-piece]');
+      if (!pieceEl) return;
+  
+      var slotEl = pieceEl.closest('[data-hand-slot-index]');
+      var pieceIndex = slotEl ? Number(slotEl.getAttribute('data-hand-slot-index')) : -1;
+      if (pieceIndex < 0 || !state.hand[pieceIndex]) return;
+  
+      e.preventDefault();
+  
+      if (pieceEl.setPointerCapture) {
+        pieceEl.setPointerCapture(e.pointerId);
       }
+  
+      document.querySelectorAll('.bm-piece--ghost').forEach(function (el) {
+        el.remove();
+      });
+  
+      var ghost = createGhost(pieceEl);
+      sizeGhostToBoard(ghost);
+  
+      var rect = pieceEl.getBoundingClientRect();
+  
+      drag = {
+        pointerId: e.pointerId,
+        pieceIndex: pieceIndex,
+        pieceEl: pieceEl,
+        ghost: ghost,
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+        previewCells: null
+      };
+  
+      pieceEl.classList.add('is-held');
+  
+      ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+      ghost.style.top = (e.clientY - drag.offsetY) + 'px';
+    }
+  
+    function moveDrag(e) {
+      if (!drag || e.pointerId !== drag.pointerId) return;
     
-      if (!placed) {
-        cleanupActiveDrag();
+      e.preventDefault();
+    
+      var livePiece = state.hand[drag.pieceIndex];
+      if (!livePiece) {
+        cleanupDrag();
         return;
       }
     
-      var handEl = root.querySelector('.bm-hand');
-      if (handEl) {
-        handEl.classList.remove('is-hover');
+      drag.ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+      drag.ghost.style.top = (e.clientY - drag.offsetY) + 'px';
+      drag.ghost.style.transform = '';
+    
+      var col = getColumnFromGhost(livePiece, drag.ghost);
+    
+      if (col === null) {
+        drag.ghost.style.opacity = 1;
+        clearPreview();
+        return;
       }
     
-      active = null;
+      var previewCells = getPreviewCells(livePiece, col);
+    
+      console.log('moveDrag', {
+        pieceIndex: drag.pieceIndex,
+        cellCount: livePiece.cells.length,
+        values: livePiece.cells.map(function (c) { return c.value; }),
+        col: col,
+        previewCount: previewCells ? previewCells.length : 0,
+        previewCells: previewCells
+      });
+    
+      if (!previewCells || !previewCells.length) {
+        drag.ghost.style.opacity = 1;
+        clearPreview();
+        return;
+      }
+    
+      drag.ghost.style.opacity = 0.12;
+      showPreview(livePiece, col);
     }
   
-    root.addEventListener('mousedown', onStart);
-    root.addEventListener('touchstart', onStart, { passive: false });
+    function endDrag(e) {
+      if (!drag || e.pointerId !== drag.pointerId) return;
   
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('touchmove', onMove, { passive: false });
+      e.preventDefault();
   
-    window.addEventListener('mouseup', onEnd);
-    window.addEventListener('touchend', onEnd);
-
-    window.addEventListener('touchcancel', cleanupActiveDrag);
-    window.addEventListener('blur', cleanupActiveDrag);
-
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) cleanupActiveDrag();
-    });
+      if (commitPlacementFromPreview()) {
+        return;
+      }
+  
+      cleanupDrag();
+    }
+  
+    function cancelDrag(e) {
+      if (!drag) return;
+      if (e && e.pointerId !== undefined && e.pointerId !== drag.pointerId) return;
+      cleanupDrag();
+    }
+  
+    root.addEventListener('pointerdown', beginDrag);
+    root.addEventListener('pointermove', moveDrag);
+    root.addEventListener('pointerup', endDrag);
+    root.addEventListener('pointercancel', cancelDrag);
   }
 
   function renderIntroEquation(state) {
@@ -2277,7 +2221,6 @@
               var oldMsg = document.body.querySelector('.bm-board-message');
               if (oldMsg) oldMsg.remove();
 
-              markIntroSeen
               /*markIntroSeen();*/
               resetStandardGameState(state);
               render();
@@ -2316,6 +2259,7 @@
     syncUiScale();
     window.addEventListener('resize', syncUiScale);
     window.addEventListener('orientationchange', syncUiScale);
+    console.log('BUILD_STAMP:', BUILD_STAMP);
     var app = createApp();
     app.render();
   });
