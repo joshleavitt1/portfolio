@@ -4,7 +4,7 @@
     baseHeight: 844,
     boardSize: 6,
     handSize: 3,
-    handTileSize: 44,
+    handTileSize: 52,
     handTileGap: 4,
     startingLives: 3,
     storageKey: "blastmath.highscore"
@@ -13,13 +13,46 @@
   var INTRO_QUERY_VALUE = "1";
   var INTRO_BLAST_TO_MESSAGE_DELAY = 2000;
   var INTRO_MESSAGE_TO_NEXT_STEP_DELAY = 250;
+  var CHAIN_NEXT_BLAST_DELAY = 500;
 
   function isIntroMode() {
     try {
       var params = new URLSearchParams(window.location.search);
-      return params.get("intro") === INTRO_QUERY_VALUE;
+      if (params.get("intro") === INTRO_QUERY_VALUE) return true;
+      if (params.has("intro-step")) return true;
+  
+      for (var i = 1; i <= 20; i++) {
+        if (params.has("intro-step-" + i)) return true;
+      }
+  
+      return false;
     } catch (e) {
       return false;
+    }
+  }
+
+  function getIntroStartStep() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+  
+      var explicitStep = params.get("intro-step");
+      if (explicitStep != null) {
+        var parsedExplicit = Number(explicitStep);
+        if (INTRO_STEPS[parsedExplicit]) return parsedExplicit;
+      }
+  
+      var dashedStep = params.get("intro-step-5");
+      if (dashedStep != null) return 5;
+  
+      for (var i = 1; i <= 20; i++) {
+        if (params.has("intro-step-" + i)) {
+          if (INTRO_STEPS[i]) return i;
+        }
+      }
+  
+      return 1;
+    } catch (e) {
+      return 1;
     }
   }
 
@@ -123,6 +156,45 @@
       targets: [
         { x: 2, y: 0, direction: "vertical" }
       ]
+    },
+
+    4: {
+      step: 4,
+      title: "Learn to Blast",
+      subtitle: "You can even combo!",
+      introMode: "combo",
+    
+      boardCells: [
+        { x: 2, y: 5, kind: "number", value: 4 },
+        { x: 3, y: 5, kind: "number", value: 5 },
+        { x: 3, y: 4, kind: "number", value: 6 }
+      ],
+    
+      handValues: [5],
+    
+      targets: [{ x: 4, y: 5, direction: "horizontal" }]
+    },
+
+    5: {
+      step: 5,
+      title: "Learn to Blast",
+      subtitle: "Blast through walls!",
+      introMode: "neutral",
+    
+      boardCells: [
+        { x: 3, y: 2, kind: "number", value: 8 },
+        { x: 3, y: 3, kind: "number", value: 9 },
+    
+        { x: 2, y: 4, kind: "neutral" },
+        { x: 3, y: 4, kind: "neutral" },
+    
+        { x: 2, y: 5, kind: "neutral" },
+        { x: 3, y: 5, kind: "number", value: 2 }
+      ],
+    
+      handValues: [1],
+    
+      targets: [{ x: 2, y: 3 }]
     }
   };
 
@@ -373,7 +445,8 @@
         verticalGroups: 0,
         totalGroups: 0,
         comboStep: comboStep,
-        message: '',
+        blastLabel: '',
+        comboLabel: '',
         scoreValue: 0
       };
     }
@@ -387,26 +460,27 @@
       }
     });
   
-    var message = '';
     var clearedCount = blastIndices.length;
     var scoreValue = 0;
-    
+    var blastLabel = '';
+    var comboLabel = '';
+
     if (comboStep >= 2) {
       var comboDisplay = Math.min(comboStep, 4);
-      message = 'Combo!\n' + comboDisplay + 'x';
+      comboLabel = 'Combo ' + comboDisplay + 'x';
       scoreValue = clearedCount * (12 + ((comboStep - 1) * 4));
     } else {
       if (totalGroups <= 1) {
-        message = 'Single\nBlast!';
+        blastLabel = '';
         scoreValue = clearedCount * 10;
       } else if (totalGroups === 2) {
-        message = 'Double\nBlast!';
+        blastLabel = 'Blast 2x';
         scoreValue = clearedCount * 16;
       } else if (totalGroups === 3) {
-        message = 'Triple\nBlast!';
+        blastLabel = 'Blast 3x';
         scoreValue = clearedCount * 20;
       } else {
-        message = 'Max\nBlast!';
+        blastLabel = 'Max Blast';
         scoreValue = clearedCount * 24;
       }
     }
@@ -420,7 +494,8 @@
       verticalGroups: verticalGroups,
       totalGroups: totalGroups,
       comboStep: comboStep,
-      message: message,
+      blastLabel: blastLabel,
+      comboLabel: comboLabel,
       scoreValue: scoreValue
     };
   }
@@ -1142,12 +1217,10 @@
     }).join('');
   }
 
-  function getIntroEquationAnchor(root, blastIndices) {
-    var boardWrap = root.querySelector('.bm-board-wrap');
+  function getBlastAnchor(root, blastIndices) {
     var board = root.querySelector('.bm-board');
-    if (!boardWrap || !board || !blastIndices || !blastIndices.length) return null;
+    if (!board || !blastIndices || !blastIndices.length) return null;
   
-    var wrapRect = boardWrap.getBoundingClientRect();
     var minLeft = Infinity;
     var maxRight = -Infinity;
     var minTop = Infinity;
@@ -1167,8 +1240,8 @@
     if (!isFinite(minLeft)) return null;
   
     return {
-      left: ((minLeft + maxRight) * 0.5) - wrapRect.left,
-      top: ((minTop + maxBottom) * 0.5) - wrapRect.top
+      left: (minLeft + maxRight) * 0.5,
+      top: (minTop + maxBottom) * 0.5
     };
   }
 
@@ -1430,28 +1503,28 @@
       return;
     }
   
-    if (state.intro && state.intro.active) {
-      state.boardMessage = '';
-    } else {
-      state.boardMessage = blastResult.message;
-      showBoardMessage(root, state);
-    }
-
     var isIntroBlast = !!(state.intro && state.intro.active);
-
+    var blastAnchor = getBlastAnchor(root, blastResult.blastIndices);
+    
     if (isIntroBlast) {
-      state.intro.equationAnchor = getIntroEquationAnchor(root, blastResult.blastIndices);
+      state.intro.equationAnchor = blastAnchor;
     }
     
     spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
-    
+
     applyBlast(state.board, blastResult.blastIndices);
     hideBoardCells(root, blastResult.blastIndices);
-
+    
     if (isIntroBlast) {
       window.setTimeout(function () {
         spawnIntroThumbPops(root, blastResult.blastIndices);
       }, 500);
+    }
+    
+    if (blastResult.blastLabel) {
+      window.setTimeout(function () {
+        showBoardMessage(root, blastResult.blastLabel, blastAnchor);
+      }, 560);
     }
     
     spawnScoreStars(root);
@@ -1466,8 +1539,18 @@
         var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, comboStep + 1);
   
         if (nextBlastResult.hasBlast) {
-          runBlastPhase(root, state, [], comboStep + 1);
+          window.setTimeout(function () {
+            runBlastPhase(root, state, [], comboStep + 1);
+          }, CHAIN_NEXT_BLAST_DELAY);
         } else {
+          if (comboStep >= 2) {
+            var finalComboLabel = 'Combo ' + Math.min(comboStep, 4) + 'x';
+            var finalComboAnchor = blastAnchor;
+            window.setTimeout(function () {
+              showBoardMessage(root, finalComboLabel, finalComboAnchor);
+            }, 220);
+          }
+        
           state.isResolving = false;
           state.comboStep = 0;
   
@@ -1881,8 +1964,8 @@
     root.addEventListener('pointercancel', cancelDrag);
   }
 
-  function showBoardMessage(root, state) {
-    if (!state.boardMessage) return;
+  function showBoardMessage(root, text, anchor) {
+    if (!text) return;
   
     var oldMsg = document.body.querySelector('.bm-board-message');
     if (oldMsg) oldMsg.remove();
@@ -1890,38 +1973,34 @@
     var msg = document.createElement('div');
     msg.className = 'bm-board-message';
   
-    if (state.boardMessage.indexOf('Combo!') === 0) {
-      msg.classList.add('bm-msg--combo');
+    var left = window.innerWidth * 0.5;
+    var top = window.innerHeight * 0.5;
+    var scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale')) || 1;
+    var textLen = String(text).length;
+  
+    if (anchor) {
+      left = anchor.left;
+      top = anchor.top - (22 * scale);
     }
   
-    var lines = String(state.boardMessage).split('\n');
+    var viewW = Math.max(320, Math.round(textLen * 54));
+    var x = viewW / 2;
   
-    msg.innerHTML = lines.map(function (line, index) {
-      var isTop = index === 0;
-      var sizeClass = isTop ? 'bm-board-message__svg--top' : 'bm-board-message__svg--bottom';
-      var viewW = isTop ? 760 : 920;
-      var x = viewW / 2;
-    
-      return [
-        '<svg class="bm-board-message__svg ' + sizeClass + '" viewBox="0 0 ' + viewW + ' 220" aria-hidden="true">',
-          '<text class="bm-board-message__text" x="' + x + '" y="108" text-anchor="middle" dominant-baseline="middle">',
-            line,
-          '</text>',
-        '</svg>'
-      ].join('');
-    }).join('');
+    msg.style.left = Math.round(left) + 'px';
+    msg.style.top = Math.round(top) + 'px';
+  
+    msg.innerHTML =
+      '<svg class="bm-board-message__svg" viewBox="0 0 ' + viewW + ' 120" aria-hidden="true">' +
+        '<text class="bm-board-message__text" x="' + x + '" y="60" text-anchor="middle" dominant-baseline="middle">' +
+          text +
+        '</text>' +
+      '</svg>';
   
     document.body.appendChild(msg);
   
-    if (state.boardMessageTimer) {
-      window.clearTimeout(state.boardMessageTimer);
-    }
-  
-    state.boardMessageTimer = window.setTimeout(function () {
+    window.setTimeout(function () {
       if (msg.parentNode) msg.parentNode.removeChild(msg);
-      state.boardMessage = '';
-      state.boardMessageTimer = null;
-    }, 2400);
+    }, 1400);
   }
 
   function syncHudUi(root, state) {
@@ -2094,7 +2173,7 @@
           play.addEventListener('click', function () {
             transitionScreen(root, function () {
               if (isIntroMode()) {
-                setupIntroStepByNumber(state, 1);
+                setupIntroStepByNumber(state, getIntroStartStep());
               } else if (!hasSeenIntro()) {
                 setupIntroStepByNumber(state, 1);
               } else {
