@@ -124,6 +124,7 @@
     state.board = createEmptyBoard(CONFIG.boardSize);
     state.currentLevel = LEVELS[0];
     state.levelId = 1;
+    state.level2BombInjected = false;
     seedBoardForCurrentLevel(state);
     state.hand = generateHand(state.board, state.boardSize, state);
     state.animMap = null;
@@ -174,8 +175,7 @@
   var INTRO_STEPS = {
     1: {
       step: 1,
-      title: "Learn to Blast",
-      subtitle: "Tiles that add up to 10 explode!",
+      title: "Tiles that add up to 10 explode!",
     
       boardCells: [
         { x: 2, y: 5, value: 1 }
@@ -190,8 +190,7 @@
   
     2: {
       step: 2,
-      title: "Learn to Blast",
-      subtitle: "Works up and down too!",
+      title: "Explosions trigger up and down too!",
   
       boardCells: [
         { x: 2, y: 5, value: 2 }
@@ -206,8 +205,7 @@
   
     3: {
       step: 3,
-      title: "Learn to Blast",
-      subtitle: "Gravity pulls down tiles!",
+      title: "Gravity pulls down tiles!",
   
       boardCells: [
         { x: 2, y: 5, value: 3 }
@@ -222,8 +220,7 @@
 
     4: {
       step: 4,
-      title: "Learn to Blast",
-      subtitle: "You can even combo!",
+      title: "You can even combo!",
       introMode: "combo",
     
       boardCells: [
@@ -239,8 +236,7 @@
 
     5: {
       step: 5,
-      title: "Learn to Blast",
-      subtitle: "Blast through walls!",
+      title: "Blast through walls!",
       introMode: "neutral",
     
       boardCells: [
@@ -324,7 +320,6 @@
       active: true,
       step: def.step,
       title: def.title,
-      subtitle: def.subtitle || "",
       sourceIndex: sourceIndex,
       allowedTargetIndex: def.targets.length
         ? ((def.targets[0].y * CONFIG.boardSize) + def.targets[0].x)
@@ -376,7 +371,7 @@
     var SHELL_PADDING = 24; // 12px * 2 sides
     var usableW = Math.max(320, window.innerWidth - SHELL_PADDING);
     var usableH = Math.max(560, window.innerHeight - SHELL_PADDING);
-    var scale = Math.min(usableW / CONFIG.baseWidth, usableH / CONFIG.baseHeight, 1);
+    var scale = Math.min(usableW / CONFIG.baseWidth, usableH / CONFIG.baseHeight, 1.22);
     root.style.setProperty("--bm-ui-scale", String(scale.toFixed(4)));
   }
 
@@ -630,6 +625,31 @@
     return collapsed;
   }
 
+  function buildSpawnAnimMap(root, state, spawns) {
+    var map = {};
+    if (!spawns || !spawns.length) return map;
+  
+    var boardEl = root.querySelector('.bm-board');
+    var cellEl = boardEl ? boardEl.querySelector('.bm-cell') : null;
+    if (!boardEl || !cellEl) return map;
+  
+    var cellSize = cellEl.getBoundingClientRect().width;
+    var gap = parseFloat(getComputedStyle(boardEl).gap) || 0;
+    var step = cellSize + gap;
+  
+    spawns.forEach(function (spawn) {
+      if (!spawn) return;
+  
+      map[spawn.index] = {
+        type: 'drop-land',
+        distance: (spawn.toRow - spawn.fromRow) * step,
+        duration: 360
+      };
+    });
+  
+    return map;
+  }
+
   function buildPlacementAnimMap(root, state, moved, placedIndices) {
     var map = {};
     var boardEl = root.querySelector('.bm-board');
@@ -735,14 +755,40 @@
   
     return out;
   }
+
+  function getDropLandingRow(board, size, column) {
+    for (var y = size - 1; y >= 0; y--) {
+      var index = (y * size) + column;
+      if (!board[index]) return y;
+    }
+    return -1;
+  }
   
   function dropRandomNeutralTile(state) {
-    var emptyIndices = getEmptyBoardIndices(state.board);
-    if (!emptyIndices.length) return false;
+    var availableColumns = [];
   
-    var index = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-    state.board[index] = makeNeutralCell();
-    return true;
+    for (var x = 0; x < state.boardSize; x++) {
+      if (getDropLandingRow(state.board, state.boardSize, x) >= 0) {
+        availableColumns.push(x);
+      }
+    }
+  
+    if (!availableColumns.length) {
+      return null;
+    }
+  
+    var column = availableColumns[Math.floor(Math.random() * availableColumns.length)];
+    var landingRow = getDropLandingRow(state.board, state.boardSize, column);
+    var landingIndex = (landingRow * state.boardSize) + column;
+  
+    state.board[landingIndex] = makeNeutralCell();
+  
+    return {
+      index: landingIndex,
+      fromRow: -1,
+      toRow: landingRow,
+      column: column
+    };
   }
   
   function maybeDropWall(state) {
@@ -755,16 +801,32 @@
   }
 
   function dropRandomSpecialTile(state, kind) {
-    var emptyIndices = getEmptyBoardIndices(state.board);
-    if (!emptyIndices.length) return false;
+    var availableColumns = [];
   
-    var index = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    for (var x = 0; x < state.boardSize; x++) {
+      if (getDropLandingRow(state.board, state.boardSize, x) >= 0) {
+        availableColumns.push(x);
+      }
+    }
   
-    if (kind === 'skull') state.board[index] = makeSkullCell();
-    else if (kind === 'heart') state.board[index] = makeHeartCell();
-    else return false;
+    if (!availableColumns.length) {
+      return null;
+    }
   
-    return true;
+    var column = availableColumns[Math.floor(Math.random() * availableColumns.length)];
+    var landingRow = getDropLandingRow(state.board, state.boardSize, column);
+    var landingIndex = (landingRow * state.boardSize) + column;
+  
+    if (kind === 'skull') state.board[landingIndex] = makeSkullCell();
+    else if (kind === 'heart') state.board[landingIndex] = makeHeartCell();
+    else return null;
+  
+    return {
+      index: landingIndex,
+      fromRow: -1,
+      toRow: landingRow,
+      column: column
+    };
   }
   
   function maybeDropSpecialTile(state) {
@@ -782,6 +844,23 @@
     }
   
     return false;
+  }
+
+  function runPostResolveDrops(root, state) {
+    if (!state || (state.intro && state.intro.active)) return;
+  
+    var wallSpawn = maybeDropWall(state);
+    var specialSpawn = maybeDropSpecialTile(state);
+  
+    var spawns = [];
+  
+    if (wallSpawn) spawns.push(wallSpawn);
+    if (specialSpawn) spawns.push(specialSpawn);
+  
+    if (!spawns.length) return;
+  
+    state.animMap = buildSpawnAnimMap(root, state, spawns);
+    renderGame(root, state);
   }
 
   function getBombBlastIndices(index, size) {
@@ -1310,61 +1389,71 @@
   function generateHand(board, boardSize, state) {
     var hand = [];
     var pieceBias = state && state.currentLevel ? state.currentLevel.pieceBias : null;
-    
+    var shouldForceLevel2Bomb = !!(
+      state &&
+      state.currentLevel &&
+      state.currentLevel.id === 2 &&
+      !state.level2BombInjected
+    );
+  
     var slot1 = generatePiece(board, boardSize, pickSlot12Rule(pieceBias));
     var slot2 = generatePiece(board, boardSize, pickSlot12Rule(pieceBias));
     var slot3 = generatePiece(board, boardSize, pickSlot3Rule(board, pieceBias));
-    
-    var bombPiece = maybeMakeBombPiece(state);
+  
+    var bombPiece = shouldForceLevel2Bomb ? makeBombPiece() : maybeMakeBombPiece(state);
     if (bombPiece) {
       slot3 = bombPiece;
     }
-
+  
     hand.push(slot1);
     hand.push(slot2);
     hand.push(slot3);
-
-        // Safety: first two slots stay in the easy half of the catalog
-        for (var i = 0; i < 2; i++) {
-          if (!hand[i]) {
-            hand[i] = generatePiece(board, boardSize, {
-              allowedIds: ['single', 'h2', 'v2'],
-              maxRank: 2
-            });
-            continue;
-          }
-    
-          if (hand[i].rank > 2) {
-            hand[i] = generatePiece(board, boardSize, {
-              allowedIds: ['single', 'h2', 'v2'],
-              maxRank: 2
-            });
-          }
-        }
-    
-        // Safety: slot 3 can pull from the full new catalog
-        if (!hand[2]) {
-          hand[2] = generatePiece(board, boardSize, {
-            allowedIds: ['h2', 'v2','l3', 'j3', 'l3-tall', 'j3-tall', 'square4'],
-            maxRank: 4
-          });
-        }
-
-        var playableCount = hand.filter(function (piece) {
-          return piece && getLegalPlacements(board, boardSize, piece).length > 0;
-        }).length;
-    
-        if (playableCount < 2) {
-          hand[0] = generatePiece(board, boardSize, {
-            allowedIds: ['single', 'h2', 'v2'],
-            maxRank: 2
-          });
-          hand[1] = generatePiece(board, boardSize, {
-            allowedIds: ['single', 'h2', 'v2'],
-            maxRank: 2
-          });
-        }
-
+  
+    // Safety: first two slots stay in the easy half of the catalog
+    for (var i = 0; i < 2; i++) {
+      if (!hand[i]) {
+        hand[i] = generatePiece(board, boardSize, {
+          allowedIds: ['single', 'h2', 'v2'],
+          maxRank: 2
+        });
+        continue;
+      }
+  
+      if (hand[i].rank > 2) {
+        hand[i] = generatePiece(board, boardSize, {
+          allowedIds: ['single', 'h2', 'v2'],
+          maxRank: 2
+        });
+      }
+    }
+  
+    // Safety: slot 3 can pull from the full new catalog
+    if (!hand[2]) {
+      hand[2] = generatePiece(board, boardSize, {
+        allowedIds: ['h2', 'v2', 'l3', 'j3', 'l3-tall', 'j3-tall', 'square4'],
+        maxRank: 4
+      });
+    }
+  
+    var playableCount = hand.filter(function (piece) {
+      return piece && getLegalPlacements(board, boardSize, piece).length > 0;
+    }).length;
+  
+    if (playableCount < 2) {
+      hand[0] = generatePiece(board, boardSize, {
+        allowedIds: ['single', 'h2', 'v2'],
+        maxRank: 2
+      });
+      hand[1] = generatePiece(board, boardSize, {
+        allowedIds: ['single', 'h2', 'v2'],
+        maxRank: 2
+      });
+    }
+  
+    if (shouldForceLevel2Bomb && hand[2] && hand[2].kind === 'bomb') {
+      state.level2BombInjected = true;
+    }
+  
     return hand;
   }
 
@@ -1506,9 +1595,6 @@
       ? (
         '<div class="bm-score bm-score--intro">' +
           '<div class="bm-score__title" data-score-title>' + state.intro.title + '</div>' +
-          (state.intro.subtitle
-            ? '<div class="bm-score__subtitle">' + state.intro.subtitle + '</div>'
-            : '') +
         '</div>'
       )
       : (
@@ -1909,6 +1995,12 @@
       renderGame(root, state);
       state.isResolving = false;
       state.comboStep = 0;
+    
+      if (!(state.intro && state.intro.active)) {
+        runPostResolveDrops(root, state);
+        checkPostMoveState(root, state);
+      }
+    
       return;
     }
   
@@ -1963,8 +2055,9 @@
         
           state.isResolving = false;
           state.comboStep = 0;
-
+          
           if (!(state.intro && state.intro.active)) {
+            runPostResolveDrops(root, state);
             checkPostMoveState(root, state);
           }
   
@@ -2039,6 +2132,7 @@
         }, CHAIN_NEXT_BLAST_DELAY);
       } else {
         state.isResolving = false;
+        runPostResolveDrops(root, state);
         checkPostMoveState(root, state);
       }
     });
@@ -2092,7 +2186,11 @@
       var cellSize = metrics.cellSize;
       var gap = metrics.gap;
       var uiScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
-      var boardFontSize = 24 * uiScale;
+
+      var boardSampleTile = document.querySelector('.bm-board .bm-tile');
+      var boardFontSize = boardSampleTile
+        ? parseFloat(getComputedStyle(boardSampleTile).fontSize)
+        : (32 * uiScale);
   
       var shape = ghost.querySelector('.bm-piece__shape');
       if (!shape) return;
@@ -2297,9 +2395,6 @@
         if (state.hand.every(function (piece) { return !piece; })) {
           state.hand = generateHand(state.board, state.boardSize, state);
         }
-      
-        maybeDropWall(state);
-        maybeDropSpecialTile(state);
       }
   
       state.isResolving = true;
@@ -2589,7 +2684,14 @@
     if (state.levelId === nextLevel.id) return;
   
     state.levelId = nextLevel.id;
-    state.lives = CONFIG.startingLives;
+    if (nextLevel.id !== 2) {
+      state.level2BombInjected = false;
+    }
+    
+    if (nextLevel.id === 2) {
+      state.hand = generateHand(state.board, state.boardSize, state);
+      renderGame(root, state);
+    }
   
     syncHudUi(root, state);
     showBoardMessage(root, 'Level ' + nextLevel.id);
