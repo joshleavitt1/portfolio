@@ -145,9 +145,9 @@ body {
 
 .bm-stage {
   width: calc(100vw - 24px);
-  max-width: 390px;
+  max-width: 520px;
   height: calc(100dvh - 24px);
-  max-height: 844px;
+  max-height: 980px;
   color: var(--bm-white);
   position: relative;
   overflow: hidden;
@@ -210,7 +210,7 @@ body {
 
 .bm-game {
   width: 100%;
-  max-width: 350px;
+  max-width: 400px;
   margin: 0 auto;
   height: 100%;
   display: grid;
@@ -490,7 +490,7 @@ body {
   border-radius: var(--bm-tile-radius);
   color: #fff;
   font-weight: 900;
-  font-size: calc(22px * var(--bm-ui-scale));
+  font-size: calc(28px * var(--bm-ui-scale));
   line-height: 1;
   text-shadow: var(--bm-text-shadow);
   overflow: hidden;
@@ -538,7 +538,7 @@ body {
   border-radius: var(--bm-tile-radius);
   border: var(--bm-tile-border) solid var(--bm-tile-edge, rgba(255,255,255,.18));
   font-weight: 900;
-  font-size: calc(28px * var(--bm-ui-scale));
+  font-size: calc(32px * var(--bm-ui-scale));
   line-height: 1;
   color: #fff;
   text-shadow: var(--bm-text-shadow);
@@ -1156,20 +1156,9 @@ body {
 }
 
 .bm-score__title {
-  font-size: calc(42px * var(--bm-ui-scale));
+  font-size: calc(36px * var(--bm-ui-scale));
   font-weight: 900;
-  line-height: 1;
-  text-align: center;
-  color: #fff;
-  text-shadow:
-    0 calc(4px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.28);
-}
-
-.bm-score__subtitle {
-  font-size: calc(22px * var(--bm-ui-scale));
-  line-height: 1;
-  font-style: italic;
-  font-weight: 500;
+  line-height: 1.15;
   text-align: center;
   color: #fff;
   text-shadow:

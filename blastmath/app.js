@@ -174,8 +174,7 @@
   var INTRO_STEPS = {
     1: {
       step: 1,
-      title: "Learn to Blast",
-      subtitle: "Tiles that add up to 10 explode!",
+      title: "Tiles that add up to 10 explode!",
     
       boardCells: [
         { x: 2, y: 5, value: 1 }
@@ -190,8 +189,7 @@
   
     2: {
       step: 2,
-      title: "Learn to Blast",
-      subtitle: "Works up and down too!",
+      title: "Explosions trigger up and down too!",
   
       boardCells: [
         { x: 2, y: 5, value: 2 }
@@ -206,8 +204,7 @@
   
     3: {
       step: 3,
-      title: "Learn to Blast",
-      subtitle: "Gravity pulls down tiles!",
+      title: "Gravity pulls down tiles!",
   
       boardCells: [
         { x: 2, y: 5, value: 3 }
@@ -222,8 +219,7 @@
 
     4: {
       step: 4,
-      title: "Learn to Blast",
-      subtitle: "You can even combo!",
+      title: "You can even combo!",
       introMode: "combo",
     
       boardCells: [
@@ -239,8 +235,7 @@
 
     5: {
       step: 5,
-      title: "Learn to Blast",
-      subtitle: "Blast through walls!",
+      title: "Blast through walls!",
       introMode: "neutral",
     
       boardCells: [
@@ -324,7 +319,6 @@
       active: true,
       step: def.step,
       title: def.title,
-      subtitle: def.subtitle || "",
       sourceIndex: sourceIndex,
       allowedTargetIndex: def.targets.length
         ? ((def.targets[0].y * CONFIG.boardSize) + def.targets[0].x)
@@ -376,7 +370,7 @@
     var SHELL_PADDING = 24; // 12px * 2 sides
     var usableW = Math.max(320, window.innerWidth - SHELL_PADDING);
     var usableH = Math.max(560, window.innerHeight - SHELL_PADDING);
-    var scale = Math.min(usableW / CONFIG.baseWidth, usableH / CONFIG.baseHeight, 1);
+    var scale = Math.min(usableW / CONFIG.baseWidth, usableH / CONFIG.baseHeight, 1.22);
     root.style.setProperty("--bm-ui-scale", String(scale.toFixed(4)));
   }
 
@@ -1506,9 +1500,6 @@
       ? (
         '<div class="bm-score bm-score--intro">' +
           '<div class="bm-score__title" data-score-title>' + state.intro.title + '</div>' +
-          (state.intro.subtitle
-            ? '<div class="bm-score__subtitle">' + state.intro.subtitle + '</div>'
-            : '') +
         '</div>'
       )
       : (
@@ -2092,7 +2083,11 @@
       var cellSize = metrics.cellSize;
       var gap = metrics.gap;
       var uiScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1);
-      var boardFontSize = 24 * uiScale;
+
+      var boardSampleTile = document.querySelector('.bm-board .bm-tile');
+      var boardFontSize = boardSampleTile
+        ? parseFloat(getComputedStyle(boardSampleTile).fontSize)
+        : (32 * uiScale);
   
       var shape = ghost.querySelector('.bm-piece__shape');
       if (!shape) return;
