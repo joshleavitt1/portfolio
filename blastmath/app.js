@@ -124,6 +124,7 @@
     state.board = createEmptyBoard(CONFIG.boardSize);
     state.currentLevel = LEVELS[0];
     state.levelId = 1;
+    state.level2BombInjected = false;
     seedBoardForCurrentLevel(state);
     state.hand = generateHand(state.board, state.boardSize, state);
     state.animMap = null;
@@ -1388,61 +1389,71 @@
   function generateHand(board, boardSize, state) {
     var hand = [];
     var pieceBias = state && state.currentLevel ? state.currentLevel.pieceBias : null;
-    
+    var shouldForceLevel2Bomb = !!(
+      state &&
+      state.currentLevel &&
+      state.currentLevel.id === 2 &&
+      !state.level2BombInjected
+    );
+  
     var slot1 = generatePiece(board, boardSize, pickSlot12Rule(pieceBias));
     var slot2 = generatePiece(board, boardSize, pickSlot12Rule(pieceBias));
     var slot3 = generatePiece(board, boardSize, pickSlot3Rule(board, pieceBias));
-    
-    var bombPiece = maybeMakeBombPiece(state);
+  
+    var bombPiece = shouldForceLevel2Bomb ? makeBombPiece() : maybeMakeBombPiece(state);
     if (bombPiece) {
       slot3 = bombPiece;
     }
-
+  
     hand.push(slot1);
     hand.push(slot2);
     hand.push(slot3);
-
-        // Safety: first two slots stay in the easy half of the catalog
-        for (var i = 0; i < 2; i++) {
-          if (!hand[i]) {
-            hand[i] = generatePiece(board, boardSize, {
-              allowedIds: ['single', 'h2', 'v2'],
-              maxRank: 2
-            });
-            continue;
-          }
-    
-          if (hand[i].rank > 2) {
-            hand[i] = generatePiece(board, boardSize, {
-              allowedIds: ['single', 'h2', 'v2'],
-              maxRank: 2
-            });
-          }
-        }
-    
-        // Safety: slot 3 can pull from the full new catalog
-        if (!hand[2]) {
-          hand[2] = generatePiece(board, boardSize, {
-            allowedIds: ['h2', 'v2','l3', 'j3', 'l3-tall', 'j3-tall', 'square4'],
-            maxRank: 4
-          });
-        }
-
-        var playableCount = hand.filter(function (piece) {
-          return piece && getLegalPlacements(board, boardSize, piece).length > 0;
-        }).length;
-    
-        if (playableCount < 2) {
-          hand[0] = generatePiece(board, boardSize, {
-            allowedIds: ['single', 'h2', 'v2'],
-            maxRank: 2
-          });
-          hand[1] = generatePiece(board, boardSize, {
-            allowedIds: ['single', 'h2', 'v2'],
-            maxRank: 2
-          });
-        }
-
+  
+    // Safety: first two slots stay in the easy half of the catalog
+    for (var i = 0; i < 2; i++) {
+      if (!hand[i]) {
+        hand[i] = generatePiece(board, boardSize, {
+          allowedIds: ['single', 'h2', 'v2'],
+          maxRank: 2
+        });
+        continue;
+      }
+  
+      if (hand[i].rank > 2) {
+        hand[i] = generatePiece(board, boardSize, {
+          allowedIds: ['single', 'h2', 'v2'],
+          maxRank: 2
+        });
+      }
+    }
+  
+    // Safety: slot 3 can pull from the full new catalog
+    if (!hand[2]) {
+      hand[2] = generatePiece(board, boardSize, {
+        allowedIds: ['h2', 'v2', 'l3', 'j3', 'l3-tall', 'j3-tall', 'square4'],
+        maxRank: 4
+      });
+    }
+  
+    var playableCount = hand.filter(function (piece) {
+      return piece && getLegalPlacements(board, boardSize, piece).length > 0;
+    }).length;
+  
+    if (playableCount < 2) {
+      hand[0] = generatePiece(board, boardSize, {
+        allowedIds: ['single', 'h2', 'v2'],
+        maxRank: 2
+      });
+      hand[1] = generatePiece(board, boardSize, {
+        allowedIds: ['single', 'h2', 'v2'],
+        maxRank: 2
+      });
+    }
+  
+    if (shouldForceLevel2Bomb && hand[2] && hand[2].kind === 'bomb') {
+      state.level2BombInjected = true;
+    }
+  
     return hand;
   }
 
@@ -2673,7 +2684,14 @@
     if (state.levelId === nextLevel.id) return;
   
     state.levelId = nextLevel.id;
-    state.lives = CONFIG.startingLives;
+    if (nextLevel.id !== 2) {
+      state.level2BombInjected = false;
+    }
+    
+    if (nextLevel.id === 2) {
+      state.hand = generateHand(state.board, state.boardSize, state);
+      renderGame(root, state);
+    }
   
     syncHudUi(root, state);
     showBoardMessage(root, 'Level ' + nextLevel.id);
