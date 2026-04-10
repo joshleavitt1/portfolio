@@ -624,6 +624,31 @@
     return collapsed;
   }
 
+  function buildSpawnAnimMap(root, state, spawns) {
+    var map = {};
+    if (!spawns || !spawns.length) return map;
+  
+    var boardEl = root.querySelector('.bm-board');
+    var cellEl = boardEl ? boardEl.querySelector('.bm-cell') : null;
+    if (!boardEl || !cellEl) return map;
+  
+    var cellSize = cellEl.getBoundingClientRect().width;
+    var gap = parseFloat(getComputedStyle(boardEl).gap) || 0;
+    var step = cellSize + gap;
+  
+    spawns.forEach(function (spawn) {
+      if (!spawn) return;
+  
+      map[spawn.index] = {
+        type: 'drop-land',
+        distance: (spawn.toRow - spawn.fromRow) * step,
+        duration: 360
+      };
+    });
+  
+    return map;
+  }
+
   function buildPlacementAnimMap(root, state, moved, placedIndices) {
     var map = {};
     var boardEl = root.querySelector('.bm-board');
@@ -729,14 +754,40 @@
   
     return out;
   }
+
+  function getDropLandingRow(board, size, column) {
+    for (var y = size - 1; y >= 0; y--) {
+      var index = (y * size) + column;
+      if (!board[index]) return y;
+    }
+    return -1;
+  }
   
   function dropRandomNeutralTile(state) {
-    var emptyIndices = getEmptyBoardIndices(state.board);
-    if (!emptyIndices.length) return false;
+    var availableColumns = [];
   
-    var index = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-    state.board[index] = makeNeutralCell();
-    return true;
+    for (var x = 0; x < state.boardSize; x++) {
+      if (getDropLandingRow(state.board, state.boardSize, x) >= 0) {
+        availableColumns.push(x);
+      }
+    }
+  
+    if (!availableColumns.length) {
+      return null;
+    }
+  
+    var column = availableColumns[Math.floor(Math.random() * availableColumns.length)];
+    var landingRow = getDropLandingRow(state.board, state.boardSize, column);
+    var landingIndex = (landingRow * state.boardSize) + column;
+  
+    state.board[landingIndex] = makeNeutralCell();
+  
+    return {
+      index: landingIndex,
+      fromRow: -1,
+      toRow: landingRow,
+      column: column
+    };
   }
   
   function maybeDropWall(state) {
@@ -749,16 +800,32 @@
   }
 
   function dropRandomSpecialTile(state, kind) {
-    var emptyIndices = getEmptyBoardIndices(state.board);
-    if (!emptyIndices.length) return false;
+    var availableColumns = [];
   
-    var index = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    for (var x = 0; x < state.boardSize; x++) {
+      if (getDropLandingRow(state.board, state.boardSize, x) >= 0) {
+        availableColumns.push(x);
+      }
+    }
   
-    if (kind === 'skull') state.board[index] = makeSkullCell();
-    else if (kind === 'heart') state.board[index] = makeHeartCell();
-    else return false;
+    if (!availableColumns.length) {
+      return null;
+    }
   
-    return true;
+    var column = availableColumns[Math.floor(Math.random() * availableColumns.length)];
+    var landingRow = getDropLandingRow(state.board, state.boardSize, column);
+    var landingIndex = (landingRow * state.boardSize) + column;
+  
+    if (kind === 'skull') state.board[landingIndex] = makeSkullCell();
+    else if (kind === 'heart') state.board[landingIndex] = makeHeartCell();
+    else return null;
+  
+    return {
+      index: landingIndex,
+      fromRow: -1,
+      toRow: landingRow,
+      column: column
+    };
   }
   
   function maybeDropSpecialTile(state) {
@@ -776,6 +843,23 @@
     }
   
     return false;
+  }
+
+  function runPostResolveDrops(root, state) {
+    if (!state || (state.intro && state.intro.active)) return;
+  
+    var wallSpawn = maybeDropWall(state);
+    var specialSpawn = maybeDropSpecialTile(state);
+  
+    var spawns = [];
+  
+    if (wallSpawn) spawns.push(wallSpawn);
+    if (specialSpawn) spawns.push(specialSpawn);
+  
+    if (!spawns.length) return;
+  
+    state.animMap = buildSpawnAnimMap(root, state, spawns);
+    renderGame(root, state);
   }
 
   function getBombBlastIndices(index, size) {
@@ -1900,6 +1984,12 @@
       renderGame(root, state);
       state.isResolving = false;
       state.comboStep = 0;
+    
+      if (!(state.intro && state.intro.active)) {
+        runPostResolveDrops(root, state);
+        checkPostMoveState(root, state);
+      }
+    
       return;
     }
   
@@ -1954,8 +2044,9 @@
         
           state.isResolving = false;
           state.comboStep = 0;
-
+          
           if (!(state.intro && state.intro.active)) {
+            runPostResolveDrops(root, state);
             checkPostMoveState(root, state);
           }
   
@@ -2030,6 +2121,7 @@
         }, CHAIN_NEXT_BLAST_DELAY);
       } else {
         state.isResolving = false;
+        runPostResolveDrops(root, state);
         checkPostMoveState(root, state);
       }
     });
@@ -2292,9 +2384,6 @@
         if (state.hand.every(function (piece) { return !piece; })) {
           state.hand = generateHand(state.board, state.boardSize, state);
         }
-      
-        maybeDropWall(state);
-        maybeDropSpecialTile(state);
       }
   
       state.isResolving = true;
