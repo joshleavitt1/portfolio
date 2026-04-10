@@ -17,6 +17,62 @@
   var INTRO_THUMB_POP_DURATION = 2500;
   var INTRO_BLAST_TO_MESSAGE_DELAY = INTRO_THUMB_POP_DELAY + INTRO_THUMB_POP_DURATION;
 
+  var LEVELS = [
+    {
+      id: 1,
+      minScore: 0,
+      maxScore: 1000,
+      wallDropRate: 4,
+      pieceBias: 'easy',
+      features: {
+        bombs: false,
+        skulls: false,
+        hearts: false
+      }
+    },
+    {
+      id: 2,
+      minScore: 1000,
+      maxScore: 3000,
+      wallDropRate: 3,
+      pieceBias: 'double',
+      features: {
+        bombs: true,
+        bombChance: 0.05,
+        skulls: false,
+        hearts: false
+      }
+    },
+    {
+      id: 3,
+      minScore: 3000,
+      maxScore: 4000,
+      wallDropRate: 3,
+      pieceBias: 'mixed',
+      features: {
+        bombs: true,
+        bombChance: 0.05,
+        skulls: true,
+        skullChance: 0.10,
+        hearts: true,
+        heartChance: 0.05
+      }
+    }
+  ];
+  
+  function getCurrentLevel(state) {
+    var score = state && typeof state.score === 'number' ? state.score : 0;
+  
+    for (var i = 0; i < LEVELS.length; i++) {
+      var level = LEVELS[i];
+      if (score >= level.minScore && score < level.maxScore) {
+        return level;
+      }
+    }
+  
+    return LEVELS[LEVELS.length - 1];
+  }
+
   function isIntroMode() {
     try {
       var params = new URLSearchParams(window.location.search);
@@ -66,11 +122,15 @@
     state.lives = CONFIG.startingLives;
     state.boardSize = CONFIG.boardSize;
     state.board = createEmptyBoard(CONFIG.boardSize);
-    state.hand = generateHand(state.board, state.boardSize);
+    state.currentLevel = LEVELS[0];
+    state.levelId = 1;
+    seedBoardForCurrentLevel(state);
+    state.hand = generateHand(state.board, state.boardSize, state);
     state.animMap = null;
     state.blastIndices = [];
     state.isResolving = false;
     state.boardMessage = "";
+    state.moveCount = 0;
 
     state.intro = {
       active: false,
@@ -624,9 +684,308 @@
       tone: 'neutral'
     };
   }
+
+  function makeBombCell() {
+    return {
+      kind: 'bomb',
+      tone: 'special'
+    };
+  }
+  
+  function makeSkullCell() {
+    return {
+      kind: 'skull',
+      tone: 'special'
+    };
+  }
+  
+  function makeHeartCell() {
+    return {
+      kind: 'heart',
+      tone: 'special'
+    };
+  }
+  
+  function isBombCell(cell) {
+    return !!(cell && cell.kind === 'bomb');
+  }
+  
+  function isSkullCell(cell) {
+    return !!(cell && cell.kind === 'skull');
+  }
+  
+  function isHeartCell(cell) {
+    return !!(cell && cell.kind === 'heart');
+  }
+  
+  function isSpecialIconCell(cell) {
+    return isBombCell(cell) || isSkullCell(cell) || isHeartCell(cell);
+  }
   
   function isNeutralCell(cell) {
     return !!(cell && cell.kind === 'neutral');
+  }
+
+  function getEmptyBoardIndices(board) {
+    var out = [];
+  
+    for (var i = 0; i < board.length; i++) {
+      if (!board[i]) out.push(i);
+    }
+  
+    return out;
+  }
+  
+  function dropRandomNeutralTile(state) {
+    var emptyIndices = getEmptyBoardIndices(state.board);
+    if (!emptyIndices.length) return false;
+  
+    var index = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    state.board[index] = makeNeutralCell();
+    return true;
+  }
+  
+  function maybeDropWall(state) {
+    if (!state || !state.currentLevel) return false;
+    if (!state.currentLevel.wallDropRate) return false;
+    if (state.moveCount <= 0) return false;
+    if (state.moveCount % state.currentLevel.wallDropRate !== 0) return false;
+  
+    return dropRandomNeutralTile(state);
+  }
+
+  function dropRandomSpecialTile(state, kind) {
+    var emptyIndices = getEmptyBoardIndices(state.board);
+    if (!emptyIndices.length) return false;
+  
+    var index = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+  
+    if (kind === 'skull') state.board[index] = makeSkullCell();
+    else if (kind === 'heart') state.board[index] = makeHeartCell();
+    else return false;
+  
+    return true;
+  }
+  
+  function maybeDropSpecialTile(state) {
+    if (!state || !state.currentLevel || !state.currentLevel.features) return false;
+  
+    var features = state.currentLevel.features;
+    var roll = Math.random();
+  
+    if (features.skulls && roll < (features.skullChance || 0)) {
+      return dropRandomSpecialTile(state, 'skull');
+    }
+  
+    if (features.hearts && roll < ((features.skullChance || 0) + (features.heartChance || 0))) {
+      return dropRandomSpecialTile(state, 'heart');
+    }
+  
+    return false;
+  }
+
+  function getBombBlastIndices(index, size) {
+    var x = index % size;
+    var y = Math.floor(index / size);
+    var out = [];
+    var seen = new Set();
+    var i;
+    var idx;
+  
+    for (i = 0; i < size; i++) {
+      idx = (y * size) + i;
+      if (!seen.has(idx)) {
+        seen.add(idx);
+        out.push(idx);
+      }
+    }
+  
+    for (i = 0; i < size; i++) {
+      idx = (i * size) + x;
+      if (!seen.has(idx)) {
+        seen.add(idx);
+        out.push(idx);
+      }
+    }
+  
+    return out;
+  }
+  
+  function classifyBombBlast(board, size, bombIndices) {
+    var blastIndices = [];
+    var seen = new Set();
+  
+    bombIndices.forEach(function (bombIndex) {
+      getBombBlastIndices(bombIndex, size).forEach(function (index) {
+        if (!board[index]) return;
+        if (seen.has(index)) return;
+        seen.add(index);
+        blastIndices.push(index);
+      });
+    });
+  
+    var neutralBlastIndices = collectNeutralBlastIndices(board, size, blastIndices);
+  
+    neutralBlastIndices.forEach(function (index) {
+      if (seen.has(index)) return;
+      seen.add(index);
+      blastIndices.push(index);
+    });
+  
+    return {
+      hasBlast: blastIndices.length > 0,
+      blastIndices: blastIndices,
+      neutralBlastIndices: neutralBlastIndices,
+      clearedCount: blastIndices.length,
+      blastLabel: 'Bomb',
+      scoreValue: 0
+    };
+  }
+  
+  function applySpecialBlastEffects(state, blastIndices) {
+    var lifeDelta = 0;
+  
+    blastIndices.forEach(function (index) {
+      var cell = state.board[index];
+      if (isSkullCell(cell)) lifeDelta -= 1;
+      if (isHeartCell(cell)) lifeDelta += 1;
+    });
+  
+    if (lifeDelta !== 0) {
+      state.lives = Math.max(0, Math.min(CONFIG.startingLives, state.lives + lifeDelta));
+    }
+  
+    return lifeDelta;
+  }
+  
+  function hasAnyPlayableHand(state) {
+    if (!state || !state.hand) return false;
+  
+    for (var i = 0; i < state.hand.length; i++) {
+      var piece = state.hand[i];
+      if (!piece) continue;
+  
+      if (getLegalPlacements(state.board, state.boardSize, piece).length > 0) {
+        return true;
+      }
+    }
+  
+    return false;
+  }
+  
+  function getAllOccupiedIndices(board) {
+    var out = [];
+    for (var i = 0; i < board.length; i++) {
+      if (board[i]) out.push(i);
+    }
+    return out;
+  }
+  
+  function seedLevelOneOpeningWalls(state) {
+    state.board = createEmptyBoard(state.boardSize);
+  
+    var preset = [
+      { x: 1, y: 4 },
+      { x: 1, y: 5 },
+      { x: 4, y: 4 },
+      { x: 4, y: 5 }
+    ];
+  
+    preset.forEach(function (cell) {
+      state.board[(cell.y * state.boardSize) + cell.x] = makeNeutralCell();
+    });
+  }
+  
+  function seedBoardForCurrentLevel(state) {
+    if (state.currentLevel && state.currentLevel.id === 1) {
+      seedLevelOneOpeningWalls(state);
+      return;
+    }
+  
+    state.board = createEmptyBoard(state.boardSize);
+  
+    var wallCount = 6;
+    for (var i = 0; i < wallCount; i++) {
+      dropRandomNeutralTile(state);
+    }
+  }
+  
+  function resetBoardAfterLifeLoss(state) {
+    state.moveCount = 0;
+    seedBoardForCurrentLevel(state);
+    state.hand = generateHand(state.board, state.boardSize, state);
+    state.animMap = null;
+    state.blastIndices = [];
+    state.isResolving = false;
+    state.comboStep = 0;
+  }
+  
+  function runDeathReset(root, state) {
+    var blastIndices = getAllOccupiedIndices(state.board);
+    var blastAnchor = getBlastAnchor(root, blastIndices);
+  
+    if (blastIndices.length) {
+      spawnBlastFragments(root, state, blastIndices, 1);
+      hideBoardCells(root, blastIndices);
+    }
+  
+    state.board = createEmptyBoard(state.boardSize);
+    state.blastIndices = [];
+  
+    window.setTimeout(function () {
+      state.lives = Math.max(0, state.lives - 1);
+      syncHudUi(root, state);
+  
+      if (state.lives <= 0) {
+        transitionScreen(root, function () {
+          state.screen = 'home';
+          resetStandardGameState(state);
+          renderHome(root);
+        });
+        return;
+      }
+  
+      showBoardMessage(root, 'Try Again', blastAnchor);
+      resetBoardAfterLifeLoss(state);
+      renderGame(root, state);
+    }, 320);
+  }
+  
+  function runGameOverToHome(root, state) {
+    var blastIndices = getAllOccupiedIndices(state.board);
+  
+    if (blastIndices.length) {
+      spawnBlastFragments(root, state, blastIndices, 1);
+      hideBoardCells(root, blastIndices);
+    }
+  
+    state.board = createEmptyBoard(state.boardSize);
+    state.blastIndices = [];
+  
+    window.setTimeout(function () {
+      transitionScreen(root, function () {
+        state.screen = 'home';
+        resetStandardGameState(state);
+        renderHome(root);
+      });
+    }, 320);
+  }
+  
+  function checkPostMoveState(root, state) {
+    if (state.intro && state.intro.active) return;
+  
+    if (state.lives <= 0) {
+      runGameOverToHome(root, state);
+      return;
+    }
+  
+    if (hasAnyPlayableHand(state)) return;
+  
+    if (state.lives > 1) {
+      runDeathReset(root, state);
+    } else {
+      runGameOverToHome(root, state);
+    }
   }
   
   function randInt(min, max) {
@@ -650,6 +1009,35 @@
         };
       })
     };
+  }
+
+  function makeBombPiece() {
+    return {
+      id: 'bomb-' + Date.now() + '-' + Math.floor(Math.random() * 100000),
+      group: 'special',
+      rank: 1,
+      width: 1,
+      height: 1,
+      kind: 'bomb',
+      cells: [
+        {
+          x: 0,
+          y: 0,
+          value: 0,
+          tone: 'bomb'
+        }
+      ]
+    };
+  }
+  
+  function maybeMakeBombPiece(state) {
+    if (!state || !state.currentLevel || !state.currentLevel.features) return null;
+    if (!state.currentLevel.features.bombs) return null;
+  
+    var chanceValue = state.currentLevel.features.bombChance || 0;
+    if (Math.random() >= chanceValue) return null;
+  
+    return makeBombPiece();
   }
 
   function getPieceCellAt(piece, x, y) {
@@ -784,20 +1172,6 @@
         width: 1,
         height: 2,
         coords: [{ x: 0, y: 0 }, { x: 0, y: 1 }]
-      },
-      {
-        id: 'd2-up',
-        rank: 2,
-        width: 2,
-        height: 2,
-        coords: [{ x: 0, y: 1 }, { x: 1, y: 0 }]
-      },
-      {
-        id: 'd2-down',
-        rank: 2,
-        width: 2,
-        height: 2,
-        coords: [{ x: 0, y: 0 }, { x: 1, y: 1 }]
       }
     ],
   
@@ -869,68 +1243,82 @@
     return Math.random() < (percent / 100);
   }
 
-  function pickSlot12Rule() {
+  function pickSlot12Rule(pieceBias) {
     var roll = Math.random() * 100;
-  
-    if (roll < 42) {
-      return { allowedIds: ['single'], maxRank: 1 };
+
+    if (pieceBias === 'easy') {
+      if (roll < 55) return { allowedIds: ['single'], maxRank: 1 };
+      if (roll < 88) return { allowedIds: ['h2', 'v2'], maxRank: 2 };
     }
   
-    if (roll < 72) {
-      return { allowedIds: ['h2', 'v2'], maxRank: 2 };
-    }
-  
-    if (roll < 84) {
-      return { allowedIds: ['d2-up', 'd2-down'], maxRank: 2 };
-    }
-  
-    if (roll < 94) {
+    if (pieceBias === 'double') {
+      if (roll < 18) return { allowedIds: ['single'], maxRank: 1 };
+      if (roll < 58) return { allowedIds: ['h2', 'v2'], maxRank: 2 };
       return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
     }
   
-    return { allowedIds: ['square4'], maxRank: 4 };
-  }
-
-  function pickSlot3Rule(board) {
-    var fillRatio = getBoardFillRatio(board);
-    var roll = Math.random() * 100;
-  
-    if (fillRatio >= 0.6) {
-      if (roll < 28) {
-        return { allowedIds: ['single'], maxRank: 1 };
-      }
-      if (roll < 56) {
-        return { allowedIds: ['h2', 'v2'], maxRank: 2 };
-      }
-      if (roll < 74) {
-        return { allowedIds: ['d2-up', 'd2-down'], maxRank: 2 };
-      }
-      if (roll < 94) {
-        return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
-      }
+    if (pieceBias === 'mixed') {
+      if (roll < 20) return { allowedIds: ['single'], maxRank: 1 };
+      if (roll < 48) return { allowedIds: ['h2', 'v2'], maxRank: 2 };
+      if (roll < 90) return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
       return { allowedIds: ['square4'], maxRank: 4 };
     }
   
-    if (roll < 18) {
-      return { allowedIds: ['single'], maxRank: 1 };
-    }
-    if (roll < 42) {
-      return { allowedIds: ['h2', 'v2'], maxRank: 2 };
-    }
-    if (roll < 60) {
-      return { allowedIds: ['d2-up', 'd2-down'], maxRank: 2 };
-    }
-    if (roll < 88) {
-      return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
-    }
+    if (roll < 42) return { allowedIds: ['single'], maxRank: 1 };
+    if (roll < 72) return { allowedIds: ['h2', 'v2'], maxRank: 2 };
+    if (roll < 94) return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
     return { allowedIds: ['square4'], maxRank: 4 };
   }
 
-  function generateHand(board, boardSize) {
+  function pickSlot3Rule(board, pieceBias) {
+    var fillRatio = getBoardFillRatio(board);
+    var roll = Math.random() * 100;
+  
+    if (pieceBias === 'easy') {
+      if (roll < 36) return { allowedIds: ['single'], maxRank: 1 };
+      if (roll < 70) return { allowedIds: ['h2', 'v2'], maxRank: 2 };
+      return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
+    }
+  
+    if (pieceBias === 'double') {
+      if (roll < 16) return { allowedIds: ['single'], maxRank: 1 };
+      if (roll < 40) return { allowedIds: ['h2', 'v2'], maxRank: 2 };
+      if (roll < 90) return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
+      return { allowedIds: ['square4'], maxRank: 4 };
+    }
+  
+    if (pieceBias === 'mixed') {
+      if (roll < 12) return { allowedIds: ['single'], maxRank: 1 };
+      if (roll < 34) return { allowedIds: ['h2', 'v2'], maxRank: 2 };
+      if (roll < 82) return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
+      return { allowedIds: ['square4'], maxRank: 4 };
+    }
+  
+    if (fillRatio >= 0.6) {
+      if (roll < 28) return { allowedIds: ['single'], maxRank: 1 };
+      if (roll < 56) return { allowedIds: ['h2', 'v2'], maxRank: 2 };
+      if (roll < 94) return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
+      return { allowedIds: ['square4'], maxRank: 4 };
+    }
+  
+    if (roll < 18) return { allowedIds: ['single'], maxRank: 1 };
+    if (roll < 42) return { allowedIds: ['h2', 'v2'], maxRank: 2 };
+    if (roll < 88) return { allowedIds: ['l3', 'j3', 'l3-tall', 'j3-tall'], maxRank: 3 };
+    return { allowedIds: ['square4'], maxRank: 4 };
+  }
+
+  function generateHand(board, boardSize, state) {
     var hand = [];
-    var slot1 = generatePiece(board, boardSize, pickSlot12Rule());
-    var slot2 = generatePiece(board, boardSize, pickSlot12Rule());
-    var slot3 = generatePiece(board, boardSize, pickSlot3Rule(board));
+    var pieceBias = state && state.currentLevel ? state.currentLevel.pieceBias : null;
+    
+    var slot1 = generatePiece(board, boardSize, pickSlot12Rule(pieceBias));
+    var slot2 = generatePiece(board, boardSize, pickSlot12Rule(pieceBias));
+    var slot3 = generatePiece(board, boardSize, pickSlot3Rule(board, pieceBias));
+    
+    var bombPiece = maybeMakeBombPiece(state);
+    if (bombPiece) {
+      slot3 = bombPiece;
+    }
 
     hand.push(slot1);
     hand.push(slot2);
@@ -940,7 +1328,7 @@
         for (var i = 0; i < 2; i++) {
           if (!hand[i]) {
             hand[i] = generatePiece(board, boardSize, {
-              allowedIds: ['single', 'h2', 'v2', 'd2-up', 'd2-down'],
+              allowedIds: ['single', 'h2', 'v2'],
               maxRank: 2
             });
             continue;
@@ -948,7 +1336,7 @@
     
           if (hand[i].rank > 2) {
             hand[i] = generatePiece(board, boardSize, {
-              allowedIds: ['single', 'h2', 'v2', 'd2-up', 'd2-down'],
+              allowedIds: ['single', 'h2', 'v2'],
               maxRank: 2
             });
           }
@@ -957,7 +1345,7 @@
         // Safety: slot 3 can pull from the full new catalog
         if (!hand[2]) {
           hand[2] = generatePiece(board, boardSize, {
-            allowedIds: ['h2', 'v2', 'd2-up', 'd2-down', 'l3', 'j3', 'l3-tall', 'j3-tall', 'square4'],
+            allowedIds: ['h2', 'v2','l3', 'j3', 'l3-tall', 'j3-tall', 'square4'],
             maxRank: 4
           });
         }
@@ -968,11 +1356,11 @@
     
         if (playableCount < 2) {
           hand[0] = generatePiece(board, boardSize, {
-            allowedIds: ['single', 'h2', 'v2', 'd2-up', 'd2-down'],
+            allowedIds: ['single', 'h2', 'v2'],
             maxRank: 2
           });
           hand[1] = generatePiece(board, boardSize, {
-            allowedIds: ['single', 'h2', 'v2', 'd2-up', 'd2-down'],
+            allowedIds: ['single', 'h2', 'v2'],
             maxRank: 2
           });
         }
@@ -1025,9 +1413,7 @@
         return (
           def.id === 'single' ||
           def.id === 'h2' ||
-          def.id === 'v2' ||
-          def.id === 'd2-up' ||
-          def.id === 'd2-down'
+          def.id === 'v2'
         );
       });
 
@@ -1057,7 +1443,15 @@
     var cells = piece.cells.map(function (cell) {
       var left = Math.round(cell.x * (cellSize + gap));
       var top = Math.round(cell.y * (cellSize + gap));
-      return '<div class="bm-mini bm-mini--' + cell.tone + '" style="left:' + left + 'px; top:' + top + 'px;"><span class="bm-tile__label">' + cell.value + '</span></div>';
+      var className = 'bm-mini bm-mini--' + cell.tone;
+
+      if (piece.kind === 'bomb') {
+        return '<div class="' + className + ' bm-mini--special" style="left:' + left + 'px; top:' + top + 'px;">' +
+          '<img class="bm-mini__icon" src="images/tiles/bomb.svg" alt="" />' +
+        '</div>';
+      }
+    
+      return '<div class="' + className + '" style="left:' + left + 'px; top:' + top + 'px;"><span class="bm-tile__label">' + cell.value + '</span></div>';
     }).join('');
     return '<div class="bm-piece" data-piece>' +
     '<div class="bm-piece__shape" style="width:' + Math.round(width) + 'px; height:' + Math.round(height) + 'px;">' +
@@ -1070,7 +1464,7 @@
       '<section class="bm-screen bm-home">' +
         '<div class="bm-home__center">' +
           '<div class="bm-logo" aria-label="Blast Math logo">' +
-            '<img src="images/logo.png" alt="Blast Math" class="bm-logo__img" />' +
+            '<img src="images/brand/logo.png" alt="Blast Math" class="bm-logo__img" />' +
           '</div>' +
         '</div>' +
         '<div class="bm-home__actions">' +
@@ -1092,17 +1486,17 @@
       '<div class="bm-hud">' +
         '<div class="bm-hud-side bm-hud-side--left">' +
           '<div class="bm-hud-stat bm-hud-stat--score">' +
-            '<img src="images/crown.svg" class="bm-hud-icon" alt="" />' +
+            '<img src="images/hud/crown.svg" class="bm-hud-icon" alt="" />' +
             '<span class="bm-hud-value bm-hud-score-value">' + state.highScore + '</span>' +
           '</div>' +
         '</div>' +
         '<div class="bm-hud-side bm-hud-side--right">' +
           '<div class="bm-hud-stat bm-hud-stat--lives">' +
-            '<img src="images/heart.svg" class="bm-hud-icon" alt="" />' +
+            '<img src="images/hud/heart.svg" class="bm-hud-icon" alt="" />' +
             '<span class="bm-hud-value bm-hud-lives-value">' + state.lives + '</span>' +
           '</div>' +
           '<button class="bm-hud-settings" type="button" aria-label="Settings">' +
-            '<img src="images/gear.svg" class="bm-hud-cog" alt="" />' +
+            '<img src="images/hud/gear.svg" class="bm-hud-cog" alt="" />' +
           '</button>' +
         '</div>' +
       '</div>'
@@ -1209,6 +1603,20 @@
           '<div class="bm-neutral-block' + extraClass + '"' + extraStyle + '></div>' +
         '</div>';
       }
+
+      if (isSpecialIconCell(cell)) {
+        var iconName = isBombCell(cell)
+          ? 'bomb'
+          : isSkullCell(cell)
+            ? 'skull'
+            : 'heart';
+
+        return '<div class="' + cellClass + '" data-cell-index="' + index + '">' +
+          '<div class="bm-special-tile' + extraClass + '"' + extraStyle + '>' +
+            '<img class="bm-special-tile__icon" src="images/tiles/' + iconName + '.svg" alt="" />' +
+          '</div>' +
+        '</div>';
+      }
   
       return '<div class="' + cellClass + '" data-cell-index="' + index + '">' +
         '<div class="bm-tile bm-tile--' + cell.tone + extraClass + '"' + extraStyle + '><span class="bm-tile__label">' + cell.value + '</span></div>' +
@@ -1258,7 +1666,7 @@
   
   function getCellContentEl(cellEl) {
     if (!cellEl) return null;
-    return cellEl.querySelector('.bm-tile, .bm-neutral-block');
+    return cellEl.querySelector('.bm-tile, .bm-neutral-block, .bm-special-tile');
   }
 
   function hideBoardCells(root, indices) {
@@ -1424,16 +1832,18 @@
     });
   }
 
-  function spawnBlastThumbPops(root, blastIndices) {
+  function spawnBlastThumbPops(root, state, blastIndices) {
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
   
     blastIndices.forEach(function (index, order) {
+      if (state.board[index]) return;
+  
       var cellEl = board.querySelector('[data-cell-index="' + index + '"]');
       if (!cellEl) return;
   
       var thumb = document.createElement('img');
-      thumb.src = 'images/thumb.svg';
+      thumb.src = 'images/tiles/thumb.svg';
       thumb.alt = '';
       thumb.className = 'bm-blast-thumb-pop';
       thumb.style.setProperty('--bm-thumb-delay', (order * 60) + 'ms');
@@ -1462,7 +1872,7 @@
       var rot = -55 + Math.round(Math.random() * 110);
       var delay = Math.round(Math.random() * 70);
   
-      star.src = 'images/star.svg';
+      star.src = 'images/hud/star.svg';
       star.className = 'bm-score-star';
       star.style.width = size + 'px';
       star.style.height = size + 'px';
@@ -1511,11 +1921,14 @@
     
     spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
 
+    applySpecialBlastEffects(state, blastResult.blastIndices);
+    syncHudUi(root, state);
+
     applyBlast(state.board, blastResult.blastIndices);
     hideBoardCells(root, blastResult.blastIndices);
     
     window.setTimeout(function () {
-      spawnBlastThumbPops(root, blastResult.blastIndices);
+      spawnBlastThumbPops(root, state, blastResult.blastIndices);
     }, INTRO_THUMB_POP_DELAY);
     
     if (blastResult.blastLabel) {
@@ -1550,6 +1963,10 @@
         
           state.isResolving = false;
           state.comboStep = 0;
+
+          if (!(state.intro && state.intro.active)) {
+            checkPostMoveState(root, state);
+          }
   
           if (state.intro && state.intro.active) {
             var nextStep = state.intro.step + 1;
@@ -1576,6 +1993,55 @@
           }
         }
       });
+  }
+
+  function runBombBlastPhase(root, state, bombIndices) {
+    var blastResult = classifyBombBlast(state.board, state.boardSize, bombIndices);
+    state.blastIndices = blastResult.blastIndices;
+  
+    if (!blastResult.hasBlast) {
+      state.blastIndices = [];
+      renderGame(root, state);
+      state.isResolving = false;
+      state.comboStep = 0;
+
+      if (!(state.intro && state.intro.active)) {
+        checkPostMoveState(root, state);
+      }
+      return;
+    }
+  
+    var blastAnchor = getBlastAnchor(root, blastResult.blastIndices);
+  
+    spawnBlastFragments(root, state, blastResult.blastIndices, 1);
+
+    applySpecialBlastEffects(state, blastResult.blastIndices);
+    syncHudUi(root, state);
+
+    applyBlast(state.board, blastResult.blastIndices);
+    hideBoardCells(root, blastResult.blastIndices);
+  
+    window.setTimeout(function () {
+      showBoardMessage(root, blastResult.blastLabel, blastAnchor);
+    }, 120);
+  
+    var moved = applyGravity(state.board, state.boardSize);
+  
+    state.blastIndices = [];
+    state.comboStep = 0;
+  
+    animateGravityFall(root, state, moved).then(function () {
+      var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, 1);
+  
+      if (nextBlastResult.hasBlast) {
+        window.setTimeout(function () {
+          runBlastPhase(root, state, [], 1);
+        }, CHAIN_NEXT_BLAST_DELAY);
+      } else {
+        state.isResolving = false;
+        checkPostMoveState(root, state);
+      }
+    });
   }
 
   function enableDrag(root, state) {
@@ -1802,15 +2268,24 @@
         return sum + cell.value;
       }, 0);
   
+      var draggedPiece = state.hand[drag.pieceIndex];
+      var isBombPlacement = !!(draggedPiece && draggedPiece.kind === 'bomb');
+
       placedCells.forEach(function (cell) {
-        state.board[cell.y * state.boardSize + cell.x] = {
-          kind: 'number',
-          value: cell.value,
-          tone: cell.tone
-        };
+        state.board[cell.y * state.boardSize + cell.x] = isBombPlacement
+          ? makeBombCell()
+          : {
+              kind: 'number',
+              value: cell.value,
+              tone: cell.tone
+            };
       });
   
       state.hand[drag.pieceIndex] = null;
+
+      if (!(state.intro && state.intro.active)) {
+        state.moveCount += 1;
+      }
   
       if (state.intro && state.intro.active) {
         state.intro.targetCursor += 1;
@@ -1820,8 +2295,11 @@
   
       if (!(state.intro && state.intro.active)) {
         if (state.hand.every(function (piece) { return !piece; })) {
-          state.hand = generateHand(state.board, state.boardSize);
+          state.hand = generateHand(state.board, state.boardSize, state);
         }
+      
+        maybeDropWall(state);
+        maybeDropSpecialTile(state);
       }
   
       state.isResolving = true;
@@ -1844,12 +2322,18 @@
       renderGame(root, state);
   
       window.setTimeout(function () {
-        runBlastPhase(root, state, placedIndices, 1);
+        if (isBombPlacement) {
+          runBombBlastPhase(root, state, placedIndices);
+        } else {
+          runBlastPhase(root, state, placedIndices, 1);
+        }
       }, 280);
   
-      window.setTimeout(function () {
-        addScore(root, state, placementScore, true);
-      }, 280);
+      if (!isBombPlacement) {
+        window.setTimeout(function () {
+          addScore(root, state, placementScore, true);
+        }, 280);
+      }
   
       return true;
     }
@@ -2085,6 +2569,8 @@
       writeHighScore(state.highScore);
     }
 
+    syncLevelProgression(root, state);
+
     if (skipRender) {
       syncHudUi(root, state);
     } else {
@@ -2092,6 +2578,21 @@
     }
 
     animateScoreTo(root, state);
+  }
+
+  function syncLevelProgression(root, state) {
+    if (!state || (state.intro && state.intro.active)) return;
+  
+    var nextLevel = getCurrentLevel(state);
+    state.currentLevel = nextLevel;
+  
+    if (state.levelId === nextLevel.id) return;
+  
+    state.levelId = nextLevel.id;
+    state.lives = CONFIG.startingLives;
+  
+    syncHudUi(root, state);
+    showBoardMessage(root, 'Level ' + nextLevel.id);
   }
 
   function transitionScreen(root, drawNext) {
@@ -2140,7 +2641,10 @@
       comboStep: 0,
       lives: CONFIG.startingLives,
       boardSize: CONFIG.boardSize,
-      hand: generateHand(createEmptyBoard(CONFIG.boardSize), CONFIG.boardSize),
+      moveCount: 0,
+      levelId: 1,
+      currentLevel: LEVELS[0],
+      hand: generateHand(createEmptyBoard(CONFIG.boardSize), CONFIG.boardSize, null),
       board: createEmptyBoard(CONFIG.boardSize),
       dragBound: false,
       animMap: null,
