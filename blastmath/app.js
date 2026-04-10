@@ -99,9 +99,6 @@
         if (INTRO_STEPS[parsedExplicit]) return parsedExplicit;
       }
   
-      var dashedStep = params.get("intro-step-5");
-      if (dashedStep != null) return 5;
-  
       for (var i = 1; i <= 20; i++) {
         if (params.has("intro-step-" + i)) {
           if (INTRO_STEPS[i]) return i;
@@ -175,7 +172,7 @@
   var INTRO_STEPS = {
     1: {
       step: 1,
-      title: "Tiles that add up to 10 explode!",
+      title: "Make 10 in a row to blast!",
     
       boardCells: [
         { x: 2, y: 5, value: 1 }
@@ -190,7 +187,7 @@
   
     2: {
       step: 2,
-      title: "Explosions trigger up and down too!",
+      title: "Blast up and down too!",
   
       boardCells: [
         { x: 2, y: 5, value: 2 }
@@ -205,7 +202,26 @@
   
     3: {
       step: 3,
-      title: "Gravity pulls down tiles!",
+      title: "Use more tiles to blast!",
+  
+      boardCells: [
+        { x: 2, y: 5, value: 3 }
+      ],
+  
+      handPieces: [[
+        { x: 0, y: 0, value: 2 },
+        { x: 1, y: 0, value: 5 }
+      ]],
+  
+      targets: [
+        { x: 3, y: 5, direction: "horizontal" },
+        { x: 4, y: 5, direction: "horizontal" }
+      ]
+    },
+
+    4: {
+      step: 4,
+      title: "Tiles fall down!",
   
       boardCells: [
         { x: 2, y: 5, value: 3 }
@@ -218,9 +234,9 @@
       ]
     },
 
-    4: {
-      step: 4,
-      title: "You can even combo!",
+    5: {
+      step: 5,
+      title: "Chain blasts to combo!",
       introMode: "combo",
     
       boardCells: [
@@ -234,8 +250,8 @@
       targets: [{ x: 4, y: 5, direction: "horizontal" }]
     },
 
-    5: {
-      step: 5,
+    6: {
+      step: 6,
       title: "Blast through walls!",
       introMode: "neutral",
     
@@ -1548,6 +1564,34 @@
     '</div></div>';
   }
 
+  function bindIntroSkip(root, state) {
+    if (!(state.intro && state.intro.active)) return;
+  
+    var skipBtn = root.querySelector('[data-skip-intro]');
+    if (!skipBtn) return;
+  
+    var skipIntro = function (e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+  
+      clearIntroTimers(state);
+  
+      if (state.boardMessageTimer) {
+        window.clearTimeout(state.boardMessageTimer);
+        state.boardMessageTimer = null;
+      }
+  
+      var oldMsg = document.body.querySelector('.bm-board-message');
+      if (oldMsg) oldMsg.remove();
+  
+      runIntroExitToFreshBoard(root, state);
+    };
+  
+    skipBtn.addEventListener('pointerdown', skipIntro);
+  }
+
   function renderHome(root) {
     root.innerHTML = '' +
       '<section class="bm-screen bm-home">' +
@@ -1637,8 +1681,9 @@
         handHtml +
       '</section>';
 
-    syncScoreUi(root, state);
-    state.animMap = null;
+      syncScoreUi(root, state);
+      bindIntroSkip(root, state);
+      state.animMap = null;
   }
 
   function renderBoard(boardSize, board, animMap, blastIndices, state) {
@@ -1654,8 +1699,12 @@
       var extraClass = '';
       var extraStyle = '';
   
-      if (isIntro && !cell && !intro.completed && intro.allowedTargetIndex != null) {
-        if (index === intro.allowedTargetIndex) {
+      if (isIntro && !cell && !intro.completed) {
+        var isQueuedTarget = intro.targetQueue && intro.targetQueue.some(function (target) {
+          return target.index === index;
+        });
+      
+        if (isQueuedTarget) {
           cellClass += ' bm-intro-target-cell';
         }
       }
@@ -1982,6 +2031,56 @@
     }, 1000);
   }
 
+  function clearIntroTimers(state) {
+    if (!state || !state.introTimers) return;
+  
+    state.introTimers.forEach(function (timerId) {
+      window.clearTimeout(timerId);
+    });
+  
+    state.introTimers = [];
+  }
+
+  function queueIntroTimer(state, fn, delay) {
+    if (!state.introTimers) state.introTimers = [];
+  
+    var timerId = window.setTimeout(function () {
+      state.introTimers = state.introTimers.filter(function (id) {
+        return id !== timerId;
+      });
+      fn();
+    }, delay);
+  
+    state.introTimers.push(timerId);
+    return timerId;
+  }
+
+  function runIntroExitToFreshBoard(root, state) {
+    clearIntroTimers(state);
+  
+    var oldMsg = document.body.querySelector('.bm-board-message');
+    if (oldMsg) oldMsg.remove();
+  
+    var blastIndices = getAllOccupiedIndices(state.board);
+  
+    if (blastIndices.length) {
+      spawnBlastFragments(root, state, blastIndices, 1);
+      hideBoardCells(root, blastIndices);
+    }
+  
+    state.board = createEmptyBoard(state.boardSize);
+    state.blastIndices = [];
+    state.isResolving = true;
+  
+    window.setTimeout(function () {
+      markIntroSeen();
+      resetStandardGameState(state);
+      transitionScreen(root, function () {
+        renderGame(root, state);
+      });
+    }, 320);
+  }
+
   function runBlastPhase(root, state, placedIndices, comboStep) {
     var blastResult;
   
@@ -2065,22 +2164,22 @@
             var nextStep = state.intro.step + 1;
             var introMessageDelay = INTRO_BLAST_TO_MESSAGE_DELAY;
           
-            window.setTimeout(function () {
+            clearIntroTimers(state);
+          
+            queueIntroTimer(state, function () {
               state.intro.completed = true;
               state.intro.hoveringValid = false;
               renderGame(root, state);
             }, introMessageDelay);
           
             if (INTRO_STEPS[nextStep]) {
-              window.setTimeout(function () {
+              queueIntroTimer(state, function () {
                 setupIntroStepByNumber(state, nextStep);
                 renderGame(root, state);
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             } else {
-              window.setTimeout(function () {
-                markIntroSeen();
-                resetStandardGameState(state);
-                renderGame(root, state);
+              queueIntroTimer(state, function () {
+                runIntroExitToFreshBoard(root, state);
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             }
           }
@@ -2235,18 +2334,25 @@
       state.intro.hoveringValid = !!isActive;
   
       var sourceCell = root.querySelector('[data-cell-index="' + state.intro.sourceIndex + '"]');
-      var targetCell = root.querySelector('[data-cell-index="' + state.intro.allowedTargetIndex + '"]');
-  
+      var targetCells = (state.intro.targetQueue || []).map(function (target) {
+        return root.querySelector('[data-cell-index="' + target.index + '"]');
+      }).filter(Boolean);
+      
       root.querySelectorAll('.bm-intro-source-cell').forEach(function (el) {
         el.classList.remove('bm-intro-source-cell');
       });
-  
+      
       root.querySelectorAll('.bm-intro-target-cell').forEach(function (el) {
         el.classList.remove('is-hovered');
       });
-  
+      
       if (sourceCell) sourceCell.classList.add('bm-intro-source-cell');
-      if (targetCell && isActive) targetCell.classList.add('is-hovered');
+      
+      if (isActive) {
+        targetCells.forEach(function (targetCell) {
+          targetCell.classList.add('is-hovered');
+        });
+      }
     }
   
     function isIntroTargetPlacement(cells) {
@@ -2757,6 +2863,7 @@
       isResolving: false,
       boardMessage: '',
       boardMessageTimer: null,
+      introTimers: [],
       intro: {
         active: false,
         step: 0,
@@ -2793,37 +2900,6 @@
         }
       } else {
         renderGame(root, state);
-
-        if (state.intro && state.intro.active) {
-          var skipBtn = root.querySelector('[data-skip-intro]');
-          if (skipBtn) {
-            var skipIntro = function (e) {
-              if (e) {
-                e.preventDefault();
-                e.stopPropagation();
-              }
-        
-              if (state.boardMessageTimer) {
-                window.clearTimeout(state.boardMessageTimer);
-                state.boardMessageTimer = null;
-              }
-        
-              var oldMsg = document.body.querySelector('.bm-board-message');
-              if (oldMsg) oldMsg.remove();
-
-              /*markIntroSeen();*/
-              resetStandardGameState(state);
-              render();
-            };
-        
-            skipBtn.onclick = skipIntro;
-            skipBtn.ontouchend = skipIntro;
-            skipBtn.onmousedown = function (e) {
-              e.preventDefault();
-              e.stopPropagation();
-            };
-          }
-        }
 
         if (!state.dragBound) {
           enableDrag(root, state);

@@ -589,7 +589,8 @@ body {
 }
 
 .bm-tile.bm-drop-land,
-.bm-neutral-block.bm-drop-land {
+.bm-neutral-block.bm-drop-land,
+.bm-special-tile.bm-drop-land {
   animation: bmDropLand var(--bm-drop-duration, 320ms) cubic-bezier(.22,.61,.36,1);
   transform-origin: 50% 50%;
   z-index: 1;
@@ -742,25 +743,6 @@ body {
   --bm-tile-face-mid: #3d3d49;
   --bm-tile-face-bot: #1d1d26;
   --bm-tile-edge: #09090d;
-}
-
-.bm-special-tile,
-.bm-mini--special {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--bm-tile-radius);
-  border: none;
-  background: rgba(255,255,255,.15);
-  box-shadow: none;
-}
-
-.bm-special-tile::before,
-.bm-mini--special::before {
-  display: none;
 }
 
 .bm-special-tile__icon,
@@ -1048,7 +1030,28 @@ body {
     inset -3px -3px 0 rgba(0,0,0,.14);
 }
 
-.bm-neutral-block::before {
+.bm-neutral-block,
+.bm-special-tile,
+.bm-mini--special {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--bm-tile-radius);
+  border: var(--bm-tile-border) solid var(--bm-neutral-edge);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 100%) top / 100% var(--bm-tile-gloss-h) no-repeat,
+    linear-gradient(180deg, var(--bm-neutral-top) 0%, var(--bm-neutral-mid) 34%, var(--bm-neutral-bot) 100%);
+  box-shadow:
+    inset 3px 3px 0 rgba(255,255,255,.18),
+    inset -3px -3px 0 rgba(0,0,0,.14);
+}
+
+.bm-neutral-block::before,
+.bm-special-tile::before,
+.bm-mini--special::before {
   content: "";
   position: absolute;
   inset: var(--bm-tile-face-inset);
