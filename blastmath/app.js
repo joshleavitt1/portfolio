@@ -2457,23 +2457,26 @@
       var ghost = createGhost(pieceEl);
       sizeGhostToBoard(ghost);
   
-      var rect = pieceEl.getBoundingClientRect();
-  
+      var ghostRect = ghost.getBoundingClientRect();
+      var uiScale = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--bm-ui-scale') || 1
+      );
+      
       drag = {
         pointerId: e.pointerId,
         pieceIndex: pieceIndex,
         pieceEl: pieceEl,
         ghost: ghost,
-        offsetX: e.clientX - rect.left,
-        offsetY: e.clientY - rect.top,
-        liftY: 100,
+        ghostHalfW: ghostRect.width * 0.5,
+        ghostHalfH: ghostRect.height * 0.5,
+        liftY: 96 * uiScale,
         previewCells: null
       };
-  
+      
       pieceEl.classList.add('is-held');
-  
-      ghost.style.left = (e.clientX - drag.offsetX) + 'px';
-      ghost.style.top = (e.clientY - drag.offsetY - drag.liftY) + 'px';
+      
+      ghost.style.left = (e.clientX - drag.ghostHalfW) + 'px';
+      ghost.style.top = (e.clientY - drag.ghostHalfH - drag.liftY) + 'px';
     }
   
     function moveDrag(e) {
@@ -2487,8 +2490,8 @@
         return;
       }
   
-      drag.ghost.style.left = (e.clientX - drag.offsetX) + 'px';
-      drag.ghost.style.top = (e.clientY - drag.offsetY - drag.liftY) + 'px';
+      drag.ghost.style.left = (e.clientX - drag.ghostHalfW) + 'px';
+      drag.ghost.style.top = (e.clientY - drag.ghostHalfH - drag.liftY) + 'px';
   
       var ghostCenter = getGhostCenter();
       var anchor = ghostCenter
