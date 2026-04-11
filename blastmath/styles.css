@@ -589,8 +589,7 @@ body {
 }
 
 .bm-tile.bm-drop-land,
-.bm-neutral-block.bm-drop-land,
-.bm-special-tile.bm-drop-land {
+.bm-neutral-block.bm-drop-land {
   animation: bmDropLand var(--bm-drop-duration, 320ms) cubic-bezier(.22,.61,.36,1);
   transform-origin: 50% 50%;
   z-index: 1;
@@ -1129,6 +1128,106 @@ body {
   justify-content: center;
   min-height: calc(52px * var(--bm-ui-scale));
   height: var(--bm-row-hud-h);
+}
+
+.bm-hud-stat--lives {
+  position: relative;
+  overflow: visible;
+}
+
+.bm-hud-stat--lives.is-life-lost::after {
+  content: "-1";
+  position: absolute;
+  right: calc(-24px * var(--bm-ui-scale));
+  top: calc(-22px * var(--bm-ui-scale));
+  font-size: calc(32px * var(--bm-ui-scale));
+  line-height: 1;
+  font-weight: 900;
+  color: #ff6f96;
+  text-shadow:
+    0 calc(3px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.28),
+    0 0 calc(12px * var(--bm-ui-scale)) rgba(255, 90, 140, .28);
+  opacity: 0;
+  transform: translateY(calc(-6px * var(--bm-ui-scale))) scale(1);
+  pointer-events: none;
+  animation: bmLifeLostFloat 900ms cubic-bezier(.16,1,.22,1) 1;
+}
+
+[data-lives-icon].is-life-lost-icon {
+  animation: bmLifeLostHeart 900ms cubic-bezier(.16,1,.22,1) 1;
+  transform-origin: 50% 50%;
+}
+
+[data-lives-value].is-life-lost-value {
+  animation: bmLifeLostValue 900ms cubic-bezier(.16,1,.22,1) 1;
+  transform-origin: 50% 50%;
+}
+
+@keyframes bmLifeLostHeart {
+  0% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.25));
+  }
+  12% {
+    transform: scale(0.58) rotate(-14deg);
+    filter:
+      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
+      drop-shadow(0 0 18px rgba(255,72,118,.58));
+  }
+  30% {
+    transform: scale(1.46) rotate(12deg);
+    filter:
+      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
+      drop-shadow(0 0 26px rgba(255,72,118,.44));
+  }
+  48% {
+    transform: scale(0.94) rotate(-5deg);
+    filter:
+      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
+      drop-shadow(0 0 8px rgba(255,72,118,.20));
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.25));
+  }
+}
+
+@keyframes bmLifeLostValue {
+  0% {
+    transform: scale(1);
+    color: #ffffff;
+  }
+  12% {
+    transform: scale(0.78);
+    color: #ffd1dd;
+  }
+  30% {
+    transform: scale(1.34);
+    color: #ffffff;
+  }
+  100% {
+    transform: scale(1);
+    color: #ffffff;
+  }
+}
+
+@keyframes bmLifeLostFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(-6px * var(--bm-ui-scale))) scale(1);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(calc(-16px * var(--bm-ui-scale))) scale(1.08);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(calc(-34px * var(--bm-ui-scale))) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(calc(-52px * var(--bm-ui-scale))) scale(0.96);
+  }
 }
 
 .bm-btn--skip {
