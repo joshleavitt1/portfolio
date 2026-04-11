@@ -10,6 +10,23 @@
     storageKey: "blastmath.highscore"
   };
 
+  var SFX = {
+    pickup: new Audio('sounds/pickup.mp3'),
+    place: new Audio('sounds/place.mp3'),
+    blast: new Audio('sounds/blast.mp3'),
+    lose: new Audio('sounds/lose.mp3')
+  };
+  
+  function playSfx(name) {
+    var sound = SFX[name];
+    if (!sound) return;
+  
+    try {
+      sound.currentTime = 0;
+      sound.play();
+    } catch (e) {}
+  }
+
   var INTRO_QUERY_VALUE = "1";
   var INTRO_MESSAGE_TO_NEXT_STEP_DELAY = 250;
   var CHAIN_NEXT_BLAST_DELAY = 500;
@@ -1158,6 +1175,8 @@
   
     window.setTimeout(function () {
       state.lives = Math.max(0, state.lives - 1);
+
+      playSfx('lose');
       syncHudUi(root, state);
   
       if (state.lives <= 0) {
@@ -1189,6 +1208,7 @@
     state.blastIndices = [];
   
     window.setTimeout(function () {
+      playSfx('lose');
       transitionScreen(root, function () {
         setHomeResult(state, { reason: 'last-heart-loss' });
         resetStandardGameState(state);
@@ -2244,6 +2264,8 @@
     
       return;
     }
+    
+    playSfx('blast');
   
     var isIntroBlast = !!(state.intro && state.intro.active);
 
@@ -2360,12 +2382,15 @@
       renderGame(root, state);
       state.isResolving = false;
       state.comboStep = 0;
-
+    
       if (!(state.intro && state.intro.active)) {
         checkPostMoveState(root, state, render);
       }
+    
       return;
     }
+    
+    playSfx('blast');
   
     renderGame(root, state);
 
@@ -2679,6 +2704,8 @@
   
       state.hand[drag.pieceIndex] = null;
 
+      playSfx('place');
+
       if (!(state.intro && state.intro.active)) {
         state.moveCount += 1;
       }
@@ -2774,6 +2801,8 @@
         liftY: 96 * uiScale,
         previewCells: null
       };
+
+      playSfx('pickup');
       
       pieceEl.classList.add('is-held');
       
@@ -3268,6 +3297,16 @@
     syncUiScale();
     window.addEventListener('resize', syncUiScale);
     window.addEventListener('orientationchange', syncUiScale);
+  
+    // 🔊 unlock audio on first interaction
+    document.body.addEventListener('pointerdown', function initAudio() {
+      Object.values(SFX).forEach(function (s) {
+        s.play().catch(function(){});
+        s.pause();
+        s.currentTime = 0;
+      });
+    }, { once: true });
+  
     var app = createApp();
     app.render();
   });
