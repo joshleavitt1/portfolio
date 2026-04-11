@@ -744,25 +744,6 @@ body {
   --bm-tile-edge: #09090d;
 }
 
-.bm-special-tile,
-.bm-mini--special {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--bm-tile-radius);
-  border: none;
-  background: rgba(255,255,255,.15);
-  box-shadow: none;
-}
-
-.bm-special-tile::before,
-.bm-mini--special::before {
-  display: none;
-}
-
 .bm-special-tile__icon,
 .bm-mini__icon {
   position: relative;
@@ -1048,7 +1029,28 @@ body {
     inset -3px -3px 0 rgba(0,0,0,.14);
 }
 
-.bm-neutral-block::before {
+.bm-neutral-block,
+.bm-special-tile,
+.bm-mini--special {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--bm-tile-radius);
+  border: var(--bm-tile-border) solid var(--bm-neutral-edge);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 100%) top / 100% var(--bm-tile-gloss-h) no-repeat,
+    linear-gradient(180deg, var(--bm-neutral-top) 0%, var(--bm-neutral-mid) 34%, var(--bm-neutral-bot) 100%);
+  box-shadow:
+    inset 3px 3px 0 rgba(255,255,255,.18),
+    inset -3px -3px 0 rgba(0,0,0,.14);
+}
+
+.bm-neutral-block::before,
+.bm-special-tile::before,
+.bm-mini--special::before {
   content: "";
   position: absolute;
   inset: var(--bm-tile-face-inset);
@@ -1078,6 +1080,11 @@ body {
   pointer-events: none;
   line-height: 0;
   animation: bmBoardMessagePop 1400ms cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+.bm-board-message--centered {
+  transform: translate(-50%, -50%);
+  animation: bmBoardMessagePopCentered 1400ms cubic-bezier(.2,.8,.2,1) forwards;
 }
 
 .bm-board-message__svg {
@@ -1122,10 +1129,133 @@ body {
   }
 }
 
+@keyframes bmBoardMessagePopCentered {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -42%) scale(0.86);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+  34% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -56%) scale(0.98);
+  }
+}
+
 .bm-hud--intro {
   justify-content: center;
   min-height: calc(52px * var(--bm-ui-scale));
   height: var(--bm-row-hud-h);
+}
+
+.bm-hud-stat--lives {
+  position: relative;
+  overflow: visible;
+}
+
+.bm-hud-stat--lives.is-life-lost::after {
+  content: "-1";
+  position: absolute;
+  right: calc(-24px * var(--bm-ui-scale));
+  top: calc(-22px * var(--bm-ui-scale));
+  font-size: calc(32px * var(--bm-ui-scale));
+  line-height: 1;
+  font-weight: 900;
+  color: #ff6f96;
+  text-shadow:
+    0 calc(3px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.28),
+    0 0 calc(12px * var(--bm-ui-scale)) rgba(255, 90, 140, .28);
+  opacity: 0;
+  transform: translateY(calc(-6px * var(--bm-ui-scale))) scale(1);
+  pointer-events: none;
+  animation: bmLifeLostFloat 900ms cubic-bezier(.16,1,.22,1) 1;
+}
+
+[data-lives-icon].is-life-lost-icon {
+  animation: bmLifeLostHeart 900ms cubic-bezier(.16,1,.22,1) 1;
+  transform-origin: 50% 50%;
+}
+
+[data-lives-value].is-life-lost-value {
+  animation: bmLifeLostValue 900ms cubic-bezier(.16,1,.22,1) 1;
+  transform-origin: 50% 50%;
+}
+
+@keyframes bmLifeLostHeart {
+  0% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.25));
+  }
+  12% {
+    transform: scale(0.58) rotate(-14deg);
+    filter:
+      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
+      drop-shadow(0 0 18px rgba(255,72,118,.58));
+  }
+  30% {
+    transform: scale(1.46) rotate(12deg);
+    filter:
+      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
+      drop-shadow(0 0 26px rgba(255,72,118,.44));
+  }
+  48% {
+    transform: scale(0.94) rotate(-5deg);
+    filter:
+      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
+      drop-shadow(0 0 8px rgba(255,72,118,.20));
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.25));
+  }
+}
+
+@keyframes bmLifeLostValue {
+  0% {
+    transform: scale(1);
+    color: #ffffff;
+  }
+  12% {
+    transform: scale(0.78);
+    color: #ffd1dd;
+  }
+  30% {
+    transform: scale(1.34);
+    color: #ffffff;
+  }
+  100% {
+    transform: scale(1);
+    color: #ffffff;
+  }
+}
+
+@keyframes bmLifeLostFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(-6px * var(--bm-ui-scale))) scale(1);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(calc(-16px * var(--bm-ui-scale))) scale(1.08);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(calc(-34px * var(--bm-ui-scale))) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(calc(-52px * var(--bm-ui-scale))) scale(0.96);
+  }
 }
 
 .bm-btn--skip {

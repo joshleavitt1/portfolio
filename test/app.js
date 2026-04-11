@@ -99,9 +99,6 @@
         if (INTRO_STEPS[parsedExplicit]) return parsedExplicit;
       }
   
-      var dashedStep = params.get("intro-step-5");
-      if (dashedStep != null) return 5;
-  
       for (var i = 1; i <= 20; i++) {
         if (params.has("intro-step-" + i)) {
           if (INTRO_STEPS[i]) return i;
@@ -175,7 +172,7 @@
   var INTRO_STEPS = {
     1: {
       step: 1,
-      title: "Tiles that add up to 10 explode!",
+      title: "Make 10 in a row to blast!",
     
       boardCells: [
         { x: 2, y: 5, value: 1 }
@@ -190,7 +187,7 @@
   
     2: {
       step: 2,
-      title: "Explosions trigger up and down too!",
+      title: "Blast up and down too!",
   
       boardCells: [
         { x: 2, y: 5, value: 2 }
@@ -205,7 +202,26 @@
   
     3: {
       step: 3,
-      title: "Gravity pulls down tiles!",
+      title: "Use more tiles to blast!",
+  
+      boardCells: [
+        { x: 2, y: 5, value: 3 }
+      ],
+  
+      handPieces: [[
+        { x: 0, y: 0, value: 2 },
+        { x: 1, y: 0, value: 5 }
+      ]],
+  
+      targets: [
+        { x: 3, y: 5, direction: "horizontal" },
+        { x: 4, y: 5, direction: "horizontal" }
+      ]
+    },
+
+    4: {
+      step: 4,
+      title: "Tiles fall down!",
   
       boardCells: [
         { x: 2, y: 5, value: 3 }
@@ -218,9 +234,9 @@
       ]
     },
 
-    4: {
-      step: 4,
-      title: "You can even combo!",
+    5: {
+      step: 5,
+      title: "Chain blasts to combo!",
       introMode: "combo",
     
       boardCells: [
@@ -234,8 +250,8 @@
       targets: [{ x: 4, y: 5, direction: "horizontal" }]
     },
 
-    5: {
-      step: 5,
+    6: {
+      step: 6,
       title: "Blast through walls!",
       introMode: "neutral",
     
@@ -988,6 +1004,34 @@
       dropRandomNeutralTile(state);
     }
   }
+
+  function animateLifeLoss(root) {
+    var stat = root.querySelector('[data-lives-stat]');
+    var icon = root.querySelector('[data-lives-icon]');
+    var value = root.querySelector('[data-lives-value]');
+  
+    if (!stat || !icon || !value) return;
+  
+    stat.classList.remove('is-life-lost');
+    icon.classList.remove('is-life-lost-icon');
+    value.classList.remove('is-life-lost-value');
+  
+    void stat.offsetWidth;
+  
+    stat.classList.add('is-life-lost');
+    icon.classList.add('is-life-lost-icon');
+    value.classList.add('is-life-lost-value');
+  
+    window.setTimeout(function () {
+      var liveStat = root.querySelector('[data-lives-stat]');
+      var liveIcon = root.querySelector('[data-lives-icon]');
+      var liveValue = root.querySelector('[data-lives-value]');
+  
+      if (liveStat) liveStat.classList.remove('is-life-lost');
+      if (liveIcon) liveIcon.classList.remove('is-life-lost-icon');
+      if (liveValue) liveValue.classList.remove('is-life-lost-value');
+    }, 950);
+  }
   
   function resetBoardAfterLifeLoss(state) {
     state.moveCount = 0;
@@ -998,13 +1042,23 @@
     state.isResolving = false;
     state.comboStep = 0;
   }
+
+  function setHomeResult(state, result) {
+    state.homeResult = result || null;
+  }
+
+  function consumeHomeResult(state) {
+    var result = state.homeResult;
+    state.homeResult = null;
+    return result;
+  }
   
-  function runDeathReset(root, state) {
+  function runDeathReset(root, state, render) {
     var blastIndices = getAllOccupiedIndices(state.board);
-    var blastAnchor = getBlastAnchor(root, blastIndices);
+    var boardCenter = getBoardCenter(root);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1);
+      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
       hideBoardCells(root, blastIndices);
     }
   
@@ -1017,24 +1071,26 @@
   
       if (state.lives <= 0) {
         transitionScreen(root, function () {
-          state.screen = 'home';
+          setHomeResult(state, { reason: 'last-heart-loss' });
           resetStandardGameState(state);
-          renderHome(root);
+          state.screen = 'home';
+          render();
         });
         return;
       }
   
-      showBoardMessage(root, 'Try Again', blastAnchor);
+      showBoardMessage(root, 'Try Again', boardCenter, 0, 'centered');
       resetBoardAfterLifeLoss(state);
       renderGame(root, state);
+      animateLifeLoss(root);
     }, 320);
   }
   
-  function runGameOverToHome(root, state) {
+  function runGameOverToHome(root, state, render) {
     var blastIndices = getAllOccupiedIndices(state.board);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1);
+      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
       hideBoardCells(root, blastIndices);
     }
   
@@ -1043,27 +1099,28 @@
   
     window.setTimeout(function () {
       transitionScreen(root, function () {
-        state.screen = 'home';
+        setHomeResult(state, { reason: 'last-heart-loss' });
         resetStandardGameState(state);
-        renderHome(root);
+        state.screen = 'home';
+        render();
       });
     }, 320);
   }
   
-  function checkPostMoveState(root, state) {
+  function checkPostMoveState(root, state, render) {
     if (state.intro && state.intro.active) return;
   
     if (state.lives <= 0) {
-      runGameOverToHome(root, state);
+      runGameOverToHome(root, state, render);
       return;
     }
   
     if (hasAnyPlayableHand(state)) return;
   
     if (state.lives > 1) {
-      runDeathReset(root, state);
+      runDeathReset(root, state, render);
     } else {
-      runGameOverToHome(root, state);
+      runGameOverToHome(root, state, render);
     }
   }
   
@@ -1548,6 +1605,34 @@
     '</div></div>';
   }
 
+  function bindIntroSkip(root, state) {
+    if (!(state.intro && state.intro.active)) return;
+  
+    var skipBtn = root.querySelector('[data-skip-intro]');
+    if (!skipBtn) return;
+  
+    var skipIntro = function (e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+  
+      clearIntroTimers(state);
+  
+      if (state.boardMessageTimer) {
+        window.clearTimeout(state.boardMessageTimer);
+        state.boardMessageTimer = null;
+      }
+  
+      var oldMsg = document.body.querySelector('.bm-board-message');
+      if (oldMsg) oldMsg.remove();
+  
+      runIntroExitToFreshBoard(root, state);
+    };
+  
+    skipBtn.addEventListener('pointerdown', skipIntro);
+  }
+
   function renderHome(root) {
     root.innerHTML = '' +
       '<section class="bm-screen bm-home">' +
@@ -1580,9 +1665,9 @@
           '</div>' +
         '</div>' +
         '<div class="bm-hud-side bm-hud-side--right">' +
-          '<div class="bm-hud-stat bm-hud-stat--lives">' +
-            '<img src="images/hud/heart.svg" class="bm-hud-icon" alt="" />' +
-            '<span class="bm-hud-value bm-hud-lives-value">' + state.lives + '</span>' +
+          '<div class="bm-hud-stat bm-hud-stat--lives" data-lives-stat>' +
+            '<img src="images/hud/heart.svg" class="bm-hud-icon" data-lives-icon alt="" />' +
+            '<span class="bm-hud-value bm-hud-lives-value" data-lives-value>' + state.lives + '</span>' +
           '</div>' +
           '<button class="bm-hud-settings" type="button" aria-label="Settings">' +
             '<img src="images/hud/gear.svg" class="bm-hud-cog" alt="" />' +
@@ -1637,8 +1722,9 @@
         handHtml +
       '</section>';
 
-    syncScoreUi(root, state);
-    state.animMap = null;
+      syncScoreUi(root, state);
+      bindIntroSkip(root, state);
+      state.animMap = null;
   }
 
   function renderBoard(boardSize, board, animMap, blastIndices, state) {
@@ -1654,8 +1740,12 @@
       var extraClass = '';
       var extraStyle = '';
   
-      if (isIntro && !cell && !intro.completed && intro.allowedTargetIndex != null) {
-        if (index === intro.allowedTargetIndex) {
+      if (isIntro && !cell && !intro.completed) {
+        var isQueuedTarget = intro.targetQueue && intro.targetQueue.some(function (target) {
+          return target.index === index;
+        });
+      
+        if (isQueuedTarget) {
           cellClass += ' bm-intro-target-cell';
         }
       }
@@ -1735,6 +1825,18 @@
     return {
       left: (minLeft + maxRight) * 0.5,
       top: (minTop + maxBottom) * 0.5
+    };
+  }
+
+  function getBoardCenter(root) {
+    var board = root.querySelector('.bm-board');
+    if (!board) return null;
+  
+    var rect = board.getBoundingClientRect();
+  
+    return {
+      left: rect.left + (rect.width * 0.5),
+      top: rect.top + (rect.height * 0.5)
     };
   }
 
@@ -1849,8 +1951,10 @@
     });
   }
 
-  function spawnBlastFragments(root, state, blastIndices, comboStep) {
+  function spawnBlastFragments(root, state, blastIndices, comboStep, colorMode, launchMode) {
     comboStep = comboStep || 1;
+    colorMode = colorMode || 'board';
+    launchMode = launchMode || 'normal';
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
   
@@ -1865,6 +1969,7 @@
   
       var rect = cellEl.getBoundingClientRect();
       var size = rect.width;
+      var boardRect = board.getBoundingClientRect();
   
       var pieces = isNeutralCell(cell) ? 28 : 25;
 
@@ -1877,10 +1982,16 @@
         var fragSize = Math.max(5, size * (0.16 + Math.random() * 0.16));
   
         var startX = rect.left + (size * 0.12) + Math.random() * (size * 0.76);
-        var startY = rect.top + (size * 0.10) + Math.random() * (size * 0.30);
+        var startY = launchMode === 'life-loss'
+        ? boardRect.top + (size * 2.0) + Math.random() * (size * 0.10)
+        : rect.top + (size * 0.10) + Math.random() * (size * 0.30);
   
-        var driftX = (-size * 1.1) + Math.random() * (size * 2.2);
-        var liftY = (size * 0.82) + Math.random() * (size * 1.08);
+          var driftX = launchMode === 'life-loss'
+          ? (-size * 1.45) + Math.random() * (size * 2.9)
+          : (-size * 1.1) + Math.random() * (size * 2.2);
+          var liftY = launchMode === 'life-loss'
+          ? (size * 0.34) + Math.random() * (size * 0.36)
+          : (size * 0.82) + Math.random() * (size * 1.08);
         var fallY = (size * 1.85) + Math.random() * (size * 2.15);
         var rot = (-38 + Math.random() * 76).toFixed(1);
         var delay = Math.round(Math.random() * 24);
@@ -1888,7 +1999,11 @@
   
         var fragVariant = 1 + Math.floor(Math.random() * 4);
   
-        if (isNeutralCell(cell)) {
+        if (colorMode === 'rainbow') {
+          var rainbowTones = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'];
+          var rainbowTone = rainbowTones[Math.floor(Math.random() * rainbowTones.length)];
+          frag.className = 'bm-blast-frag bm-blast-frag--' + rainbowTone + ' bm-blast-frag--mix-' + fragVariant;
+        } else if (isNeutralCell(cell)) {
           frag.className = 'bm-blast-frag bm-blast-frag--neutral bm-blast-frag--neutral-mix-' + fragVariant;
         } else {
           frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone + ' bm-blast-frag--mix-' + fragVariant;
@@ -1982,7 +2097,57 @@
     }, 1000);
   }
 
-  function runBlastPhase(root, state, placedIndices, comboStep) {
+  function clearIntroTimers(state) {
+    if (!state || !state.introTimers) return;
+  
+    state.introTimers.forEach(function (timerId) {
+      window.clearTimeout(timerId);
+    });
+  
+    state.introTimers = [];
+  }
+
+  function queueIntroTimer(state, fn, delay) {
+    if (!state.introTimers) state.introTimers = [];
+  
+    var timerId = window.setTimeout(function () {
+      state.introTimers = state.introTimers.filter(function (id) {
+        return id !== timerId;
+      });
+      fn();
+    }, delay);
+  
+    state.introTimers.push(timerId);
+    return timerId;
+  }
+
+  function runIntroExitToFreshBoard(root, state) {
+    clearIntroTimers(state);
+  
+    var oldMsg = document.body.querySelector('.bm-board-message');
+    if (oldMsg) oldMsg.remove();
+  
+    var blastIndices = getAllOccupiedIndices(state.board);
+  
+    if (blastIndices.length) {
+      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
+      hideBoardCells(root, blastIndices);
+    }
+  
+    state.board = createEmptyBoard(state.boardSize);
+    state.blastIndices = [];
+    state.isResolving = true;
+  
+    window.setTimeout(function () {
+      markIntroSeen();
+      resetStandardGameState(state);
+      transitionScreen(root, function () {
+        renderGame(root, state);
+      });
+    }, 320);
+  }
+
+  function runBlastPhase(root, state, placedIndices, comboStep, render) {
     var blastResult;
   
     comboStep = comboStep || 1;
@@ -1998,7 +2163,7 @@
     
       if (!(state.intro && state.intro.active)) {
         runPostResolveDrops(root, state);
-        checkPostMoveState(root, state);
+        checkPostMoveState(root, state, render);
       }
     
       return;
@@ -2042,7 +2207,7 @@
   
         if (nextBlastResult.hasBlast) {
           window.setTimeout(function () {
-            runBlastPhase(root, state, [], comboStep + 1);
+            runBlastPhase(root, state, [], comboStep + 1, render);
           }, CHAIN_NEXT_BLAST_DELAY);
         } else {
           if (comboStep >= 2) {
@@ -2058,29 +2223,29 @@
           
           if (!(state.intro && state.intro.active)) {
             runPostResolveDrops(root, state);
-            checkPostMoveState(root, state);
+            checkPostMoveState(root, state, render);
           }
   
           if (state.intro && state.intro.active) {
             var nextStep = state.intro.step + 1;
             var introMessageDelay = INTRO_BLAST_TO_MESSAGE_DELAY;
           
-            window.setTimeout(function () {
+            clearIntroTimers(state);
+          
+            queueIntroTimer(state, function () {
               state.intro.completed = true;
               state.intro.hoveringValid = false;
               renderGame(root, state);
             }, introMessageDelay);
           
             if (INTRO_STEPS[nextStep]) {
-              window.setTimeout(function () {
+              queueIntroTimer(state, function () {
                 setupIntroStepByNumber(state, nextStep);
                 renderGame(root, state);
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             } else {
-              window.setTimeout(function () {
-                markIntroSeen();
-                resetStandardGameState(state);
-                renderGame(root, state);
+              queueIntroTimer(state, function () {
+                runIntroExitToFreshBoard(root, state);
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             }
           }
@@ -2088,7 +2253,7 @@
       });
   }
 
-  function runBombBlastPhase(root, state, bombIndices) {
+  function runBombBlastPhase(root, state, bombIndices, render) {
     var blastResult = classifyBombBlast(state.board, state.boardSize, bombIndices);
     state.blastIndices = blastResult.blastIndices;
   
@@ -2099,7 +2264,7 @@
       state.comboStep = 0;
 
       if (!(state.intro && state.intro.active)) {
-        checkPostMoveState(root, state);
+        checkPostMoveState(root, state, render);
       }
       return;
     }
@@ -2128,17 +2293,17 @@
   
       if (nextBlastResult.hasBlast) {
         window.setTimeout(function () {
-          runBlastPhase(root, state, [], 1);
+          runBlastPhase(root, state, [], 1, render);
         }, CHAIN_NEXT_BLAST_DELAY);
       } else {
         state.isResolving = false;
         runPostResolveDrops(root, state);
-        checkPostMoveState(root, state);
+        checkPostMoveState(root, state, render);
       }
     });
   }
 
-  function enableDrag(root, state) {
+  function enableDrag(root, state, render) {
     var drag = null;
   
     function getBoardMetrics() {
@@ -2235,18 +2400,25 @@
       state.intro.hoveringValid = !!isActive;
   
       var sourceCell = root.querySelector('[data-cell-index="' + state.intro.sourceIndex + '"]');
-      var targetCell = root.querySelector('[data-cell-index="' + state.intro.allowedTargetIndex + '"]');
-  
+      var targetCells = (state.intro.targetQueue || []).map(function (target) {
+        return root.querySelector('[data-cell-index="' + target.index + '"]');
+      }).filter(Boolean);
+      
       root.querySelectorAll('.bm-intro-source-cell').forEach(function (el) {
         el.classList.remove('bm-intro-source-cell');
       });
-  
+      
       root.querySelectorAll('.bm-intro-target-cell').forEach(function (el) {
         el.classList.remove('is-hovered');
       });
-  
+      
       if (sourceCell) sourceCell.classList.add('bm-intro-source-cell');
-      if (targetCell && isActive) targetCell.classList.add('is-hovered');
+      
+      if (isActive) {
+        targetCells.forEach(function (targetCell) {
+          targetCell.classList.add('is-hovered');
+        });
+      }
     }
   
     function isIntroTargetPlacement(cells) {
@@ -2418,9 +2590,9 @@
   
       window.setTimeout(function () {
         if (isBombPlacement) {
-          runBombBlastPhase(root, state, placedIndices);
+          runBombBlastPhase(root, state, placedIndices, render);
         } else {
-          runBlastPhase(root, state, placedIndices, 1);
+          runBlastPhase(root, state, placedIndices, 1, render);
         }
       }, 280);
   
@@ -2542,15 +2714,15 @@
     root.addEventListener('pointerup', endDrag);
     root.addEventListener('pointercancel', cancelDrag);
   }
-
-  function showBoardMessage(root, text, anchor) {
+  
+  function showBoardMessage(root, text, anchor, yOffset, variant) {
     if (!text) return;
   
     var oldMsg = document.body.querySelector('.bm-board-message');
     if (oldMsg) oldMsg.remove();
   
     var msg = document.createElement('div');
-    msg.className = 'bm-board-message';
+    msg.className = 'bm-board-message' + (variant ? ' bm-board-message--' + variant : '');
   
     var left = window.innerWidth * 0.5;
     var top = window.innerHeight * 0.5;
@@ -2559,7 +2731,7 @@
   
     if (anchor) {
       left = anchor.left;
-      top = anchor.top - (22 * scale);
+      top = anchor.top + (typeof yOffset === 'number' ? yOffset : (-22 * scale));
     }
   
     var viewW = Math.max(320, Math.round(textLen * 54));
@@ -2757,6 +2929,8 @@
       isResolving: false,
       boardMessage: '',
       boardMessageTimer: null,
+      introTimers: [],
+      homeResult: null,
       intro: {
         active: false,
         step: 0,
@@ -2774,6 +2948,13 @@
     function render() {
       if (state.screen === 'home') {
         renderHome(root);
+
+        var homeResult = consumeHomeResult(state);
+        if (homeResult && homeResult.reason === 'last-heart-loss') {
+          var homeEl = root.querySelector('.bm-home');
+          if (homeEl) homeEl.classList.add('bm-home--heart-loss');
+        }
+
         var play = root.querySelector('[data-play]');
         if (play) {
           play.addEventListener('click', function () {
@@ -2794,39 +2975,8 @@
       } else {
         renderGame(root, state);
 
-        if (state.intro && state.intro.active) {
-          var skipBtn = root.querySelector('[data-skip-intro]');
-          if (skipBtn) {
-            var skipIntro = function (e) {
-              if (e) {
-                e.preventDefault();
-                e.stopPropagation();
-              }
-        
-              if (state.boardMessageTimer) {
-                window.clearTimeout(state.boardMessageTimer);
-                state.boardMessageTimer = null;
-              }
-        
-              var oldMsg = document.body.querySelector('.bm-board-message');
-              if (oldMsg) oldMsg.remove();
-
-              /*markIntroSeen();*/
-              resetStandardGameState(state);
-              render();
-            };
-        
-            skipBtn.onclick = skipIntro;
-            skipBtn.ontouchend = skipIntro;
-            skipBtn.onmousedown = function (e) {
-              e.preventDefault();
-              e.stopPropagation();
-            };
-          }
-        }
-
         if (!state.dragBound) {
-          enableDrag(root, state);
+          enableDrag(root, state, render);
           state.dragBound = true;
         }
         
@@ -2841,6 +2991,138 @@
         }
       }
     }
+
+    window.BM_DEBUG = {
+      getState: function () {
+        return state;
+      },
+
+      render: function () {
+        render();
+      },
+
+      resetGame: function () {
+        resetStandardGameState(state);
+        state.screen = 'game';
+        render();
+      },
+
+      goHome: function () {
+        state.screen = 'home';
+        render();
+      },
+
+      setLives: function (n) {
+        state.lives = Math.max(0, Math.min(CONFIG.startingLives, Number(n) || 0));
+        render();
+      },
+
+      setScore: function (n) {
+        state.score = Math.max(0, Number(n) || 0);
+        state.displayScore = state.score;
+        if (state.score > state.highScore) {
+          state.highScore = state.score;
+          writeHighScore(state.highScore);
+        }
+        syncLevelProgression(root, state);
+        render();
+      },
+
+      setLevel: function (id) {
+        var level = null;
+
+        for (var i = 0; i < LEVELS.length; i++) {
+          if (LEVELS[i].id === id) {
+            level = LEVELS[i];
+            break;
+          }
+        }
+
+        if (!level) return;
+
+        state.currentLevel = level;
+        state.levelId = level.id;
+
+        if (level.id !== 2) {
+          state.level2BombInjected = false;
+        }
+
+        render();
+      },
+
+      clearBoard: function () {
+        state.board = createEmptyBoard(state.boardSize);
+        state.animMap = null;
+        state.blastIndices = [];
+        state.isResolving = false;
+        render();
+      },
+
+      fillHandWithBomb: function () {
+        state.hand = [
+          generatePiece(state.board, state.boardSize, {
+            allowedIds: ['single'],
+            maxRank: 1
+          }),
+          generatePiece(state.board, state.boardSize, {
+            allowedIds: ['single'],
+            maxRank: 1
+          }),
+          makeBombPiece()
+        ];
+        render();
+      },
+
+      setHandBombOnly: function () {
+        state.hand = [makeBombPiece(), null, null];
+        render();
+      },
+
+      spawnSkull: function () {
+        dropRandomSpecialTile(state, 'skull');
+        render();
+      },
+
+      spawnHeart: function () {
+        dropRandomSpecialTile(state, 'heart');
+        render();
+      },
+
+      spawnWall: function () {
+        dropRandomNeutralTile(state);
+        render();
+      },
+
+      forceNoMoves: function () {
+        state.hand = [null, null, null];
+        checkPostMoveState(root, state, render);
+      },
+
+      seedBoard: function (cells) {
+        state.board = createEmptyBoard(state.boardSize);
+
+        (cells || []).forEach(function (cell) {
+          var index = (cell.y * state.boardSize) + cell.x;
+
+          if (cell.kind === 'neutral') {
+            state.board[index] = makeNeutralCell();
+          } else if (cell.kind === 'bomb') {
+            state.board[index] = makeBombCell();
+          } else if (cell.kind === 'skull') {
+            state.board[index] = makeSkullCell();
+          } else if (cell.kind === 'heart') {
+            state.board[index] = makeHeartCell();
+          } else {
+            state.board[index] = makeCell(cell.value);
+          }
+        });
+
+        state.animMap = null;
+        state.blastIndices = [];
+        state.isResolving = false;
+        render();
+      }
+    };
 
     return { render: render };
   }

@@ -1058,7 +1058,7 @@
     var boardCenter = getBoardCenter(root);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1);
+      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
       hideBoardCells(root, blastIndices);
     }
   
@@ -1079,7 +1079,7 @@
         return;
       }
   
-      showBoardMessage(root, 'Try Again', boardCenter);
+      showBoardMessage(root, 'Try Again', boardCenter, 0, 'centered');
       resetBoardAfterLifeLoss(state);
       renderGame(root, state);
       animateLifeLoss(root);
@@ -1090,7 +1090,7 @@
     var blastIndices = getAllOccupiedIndices(state.board);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow');
+      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
       hideBoardCells(root, blastIndices);
     }
   
@@ -1800,18 +1800,6 @@
     }).join('');
   }
 
-  function getBoardCenter(root) {
-    var board = root.querySelector('.bm-board');
-    if (!board) return null;
-  
-    var rect = board.getBoundingClientRect();
-  
-    return {
-      left: rect.left + (rect.width * 0.5),
-      top: rect.top + (rect.height * 0.5)
-    };
-  }
-
   function getBlastAnchor(root, blastIndices) {
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return null;
@@ -1837,6 +1825,18 @@
     return {
       left: (minLeft + maxRight) * 0.5,
       top: (minTop + maxBottom) * 0.5
+    };
+  }
+
+  function getBoardCenter(root) {
+    var board = root.querySelector('.bm-board');
+    if (!board) return null;
+  
+    var rect = board.getBoundingClientRect();
+  
+    return {
+      left: rect.left + (rect.width * 0.5),
+      top: rect.top + (rect.height * 0.5)
     };
   }
 
@@ -1951,9 +1951,10 @@
     });
   }
 
-  function spawnBlastFragments(root, state, blastIndices, comboStep, colorMode) {
+  function spawnBlastFragments(root, state, blastIndices, comboStep, colorMode, launchMode) {
     comboStep = comboStep || 1;
     colorMode = colorMode || 'board';
+    launchMode = launchMode || 'normal';
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
   
@@ -1968,6 +1969,7 @@
   
       var rect = cellEl.getBoundingClientRect();
       var size = rect.width;
+      var boardRect = board.getBoundingClientRect();
   
       var pieces = isNeutralCell(cell) ? 28 : 25;
 
@@ -1980,10 +1982,16 @@
         var fragSize = Math.max(5, size * (0.16 + Math.random() * 0.16));
   
         var startX = rect.left + (size * 0.12) + Math.random() * (size * 0.76);
-        var startY = rect.top + (size * 0.10) + Math.random() * (size * 0.30);
+        var startY = launchMode === 'life-loss'
+        ? boardRect.top + (size * 2.0) + Math.random() * (size * 0.10)
+        : rect.top + (size * 0.10) + Math.random() * (size * 0.30);
   
-        var driftX = (-size * 1.1) + Math.random() * (size * 2.2);
-        var liftY = (size * 0.82) + Math.random() * (size * 1.08);
+          var driftX = launchMode === 'life-loss'
+          ? (-size * 1.45) + Math.random() * (size * 2.9)
+          : (-size * 1.1) + Math.random() * (size * 2.2);
+          var liftY = launchMode === 'life-loss'
+          ? (size * 0.34) + Math.random() * (size * 0.36)
+          : (size * 0.82) + Math.random() * (size * 1.08);
         var fallY = (size * 1.85) + Math.random() * (size * 2.15);
         var rot = (-38 + Math.random() * 76).toFixed(1);
         var delay = Math.round(Math.random() * 24);
@@ -2122,7 +2130,7 @@
     var blastIndices = getAllOccupiedIndices(state.board);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1);
+      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
       hideBoardCells(root, blastIndices);
     }
   
@@ -2706,15 +2714,15 @@
     root.addEventListener('pointerup', endDrag);
     root.addEventListener('pointercancel', cancelDrag);
   }
-
-  function showBoardMessage(root, text, anchor) {
+  
+  function showBoardMessage(root, text, anchor, yOffset, variant) {
     if (!text) return;
   
     var oldMsg = document.body.querySelector('.bm-board-message');
     if (oldMsg) oldMsg.remove();
   
     var msg = document.createElement('div');
-    msg.className = 'bm-board-message';
+    msg.className = 'bm-board-message' + (variant ? ' bm-board-message--' + variant : '');
   
     var left = window.innerWidth * 0.5;
     var top = window.innerHeight * 0.5;
@@ -2723,7 +2731,7 @@
   
     if (anchor) {
       left = anchor.left;
-      top = anchor.top - (22 * scale);
+      top = anchor.top + (typeof yOffset === 'number' ? yOffset : (-22 * scale));
     }
   
     var viewW = Math.max(320, Math.round(textLen * 54));

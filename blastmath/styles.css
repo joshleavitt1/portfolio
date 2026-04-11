@@ -1082,6 +1082,11 @@ body {
   animation: bmBoardMessagePop 1400ms cubic-bezier(.2,.8,.2,1) forwards;
 }
 
+.bm-board-message--centered {
+  transform: translate(-50%, -50%);
+  animation: bmBoardMessagePopCentered 1400ms cubic-bezier(.2,.8,.2,1) forwards;
+}
+
 .bm-board-message__svg {
   display: block;
   width: calc(360px * var(--bm-ui-scale));
@@ -1121,6 +1126,29 @@ body {
   100% {
     opacity: 0;
     transform: translate(-50%, -110%) scale(0.98);
+  }
+}
+
+@keyframes bmBoardMessagePopCentered {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -42%) scale(0.86);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+  34% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -56%) scale(0.98);
   }
 }
 
