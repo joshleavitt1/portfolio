@@ -822,7 +822,8 @@ body {
 }
 
 .bm-tile.bm-blast-pop,
-.bm-neutral-block.bm-blast-pop {
+.bm-neutral-block.bm-blast-pop,
+.bm-special-tile.bm-blast-pop {
   animation: bmBlastPopOutline 260ms cubic-bezier(.2,.9,.25,1) forwards;
   transform-origin: 50% 50%;
   z-index: 6;
@@ -830,7 +831,12 @@ body {
 }
 
 .bm-tile.bm-blast-pop::before,
-.bm-neutral-block.bm-blast-pop::before {
+.bm-neutral-block.bm-blast-pop::before,
+.bm-special-tile.bm-blast-pop::before {
+  opacity: 0;
+}
+
+.bm-special-tile.bm-blast-pop .bm-special-tile__icon {
   opacity: 0;
 }
 
@@ -1106,6 +1112,19 @@ body {
   filter: drop-shadow(0 calc(4px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.28));
 }
 
+.bm-board-message--style-blast .bm-board-message__text {
+  stroke: #3457D7;
+}
+
+.bm-board-message--style-life-gain .bm-board-message__text,
+.bm-board-message--style-combo .bm-board-message__text {
+  stroke: #00CB00;
+}
+
+.bm-board-message--style-life-loss .bm-board-message__text {
+  stroke: #D73437;
+}
+
 @keyframes bmBoardMessagePop {
   0% {
     opacity: 0;
@@ -1163,8 +1182,9 @@ body {
   overflow: visible;
 }
 
-.bm-hud-stat--lives.is-life-lost::after {
-  content: "-1";
+.bm-hud-stat--lives.is-life-lost::after,
+.bm-hud-stat--lives.is-life-gained::after {
+  content: attr(data-life-delta);
   position: absolute;
   right: calc(-24px * var(--bm-ui-scale));
   top: calc(-22px * var(--bm-ui-scale));
@@ -1181,6 +1201,20 @@ body {
   animation: bmLifeLostFloat 900ms cubic-bezier(.16,1,.22,1) 1;
 }
 
+.bm-hud-stat--lives.is-life-lost::after {
+  color: #ff6f96;
+  text-shadow:
+    0 calc(3px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.28),
+    0 0 calc(12px * var(--bm-ui-scale)) rgba(255, 90, 140, .28);
+}
+
+.bm-hud-stat--lives.is-life-gained::after {
+  color: #6dff8b;
+  text-shadow:
+    0 calc(3px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.28),
+    0 0 calc(12px * var(--bm-ui-scale)) rgba(90, 255, 140, .28);
+}
+
 [data-lives-icon].is-life-lost-icon {
   animation: bmLifeLostHeart 900ms cubic-bezier(.16,1,.22,1) 1;
   transform-origin: 50% 50%;
@@ -1188,6 +1222,16 @@ body {
 
 [data-lives-value].is-life-lost-value {
   animation: bmLifeLostValue 900ms cubic-bezier(.16,1,.22,1) 1;
+  transform-origin: 50% 50%;
+}
+
+[data-lives-icon].is-life-gained-icon {
+  animation: bmLifeGainedHeart 900ms cubic-bezier(.16,1,.22,1) 1;
+  transform-origin: 50% 50%;
+}
+
+[data-lives-value].is-life-gained-value {
+  animation: bmLifeGainedValue 900ms cubic-bezier(.16,1,.22,1) 1;
   transform-origin: 50% 50%;
 }
 
@@ -1255,6 +1299,54 @@ body {
   100% {
     opacity: 0;
     transform: translateY(calc(-52px * var(--bm-ui-scale))) scale(0.96);
+  }
+}
+
+@keyframes bmLifeGainedHeart {
+  0% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.25));
+  }
+  12% {
+    transform: scale(0.72) rotate(10deg);
+    filter:
+      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
+      drop-shadow(0 0 18px rgba(90,255,140,.50));
+  }
+  30% {
+    transform: scale(1.42) rotate(-8deg);
+    filter:
+      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
+      drop-shadow(0 0 26px rgba(90,255,140,.38));
+  }
+  48% {
+    transform: scale(1.02) rotate(4deg);
+    filter:
+      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
+      drop-shadow(0 0 8px rgba(90,255,140,.18));
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.25));
+  }
+}
+
+@keyframes bmLifeGainedValue {
+  0% {
+    transform: scale(1);
+    color: #ffffff;
+  }
+  12% {
+    transform: scale(0.84);
+    color: #d9ffe3;
+  }
+  30% {
+    transform: scale(1.34);
+    color: #ffffff;
+  }
+  100% {
+    transform: scale(1);
+    color: #ffffff;
   }
 }
 

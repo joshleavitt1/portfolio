@@ -10,6 +10,23 @@
     storageKey: "blastmath.highscore"
   };
 
+  var SFX = {
+    pickup: new Audio('sounds/pickup.mp3'),
+    place: new Audio('sounds/place.mp3'),
+    blast: new Audio('sounds/blast.mp3'),
+    lose: new Audio('sounds/lose.mp3')
+  };
+  
+  function playSfx(name) {
+    var sound = SFX[name];
+    if (!sound) return;
+  
+    try {
+      sound.currentTime = 0;
+      sound.play();
+    } catch (e) {}
+  }
+
   var INTRO_QUERY_VALUE = "1";
   var INTRO_MESSAGE_TO_NEXT_STEP_DELAY = 250;
   var CHAIN_NEXT_BLAST_DELAY = 500;
@@ -129,6 +146,8 @@
     state.isResolving = false;
     state.boardMessage = "";
     state.moveCount = 0;
+    state.pendingBombSpawn = false;
+    state.wallSpawnsSinceBomb = 0;
 
     state.intro = {
       active: false,
@@ -464,7 +483,7 @@
     return out;
   }
   
-  function collectNeutralBlastIndices(board, size, seedIndices) {
+  function collectAdjacentBlastBonusIndices(board, size, seedIndices) {
     var seen = new Set();
     var out = [];
   
@@ -473,7 +492,7 @@
   
       neighbors.forEach(function (neighborIndex) {
         var cell = board[neighborIndex];
-        if (!isNeutralCell(cell)) return;
+        if (!isAdjacentBlastBonusCell(cell)) return;
         if (seen.has(neighborIndex)) return;
   
         seen.add(neighborIndex);
@@ -524,13 +543,27 @@
       };
     }
   
-    var neutralBlastIndices = collectNeutralBlastIndices(board, size, blastIndices);
+    var neutralBlastIndices = collectAdjacentBlastBonusIndices(board, size, blastIndices);
   
     neutralBlastIndices.forEach(function (neutralIndex) {
       if (!seen.has(neutralIndex)) {
         seen.add(neutralIndex);
         blastIndices.push(neutralIndex);
       }
+    });
+
+    var triggeredBombIndices = blastIndices.filter(function (index) {
+      return isBombCell(board[index]);
+    });
+    
+    triggeredBombIndices.forEach(function (bombIndex) {
+      getBombBlastIndices(bombIndex, size).forEach(function (index) {
+        if (!board[index]) return;
+        if (seen.has(index)) return;
+    
+        seen.add(index);
+        blastIndices.push(index);
+      });
     });
   
     var clearedCount = blastIndices.length;
@@ -762,6 +795,10 @@
     return !!(cell && cell.kind === 'neutral');
   }
 
+  function isAdjacentBlastBonusCell(cell) {
+    return isNeutralCell(cell) || isBombCell(cell) || isSkullCell(cell) || isHeartCell(cell);
+  }
+
   function getEmptyBoardIndices(board) {
     var out = [];
   
@@ -816,6 +853,33 @@
     return dropRandomNeutralTile(state);
   }
 
+  function dropRandomBombTile(state) {
+    var availableColumns = [];
+  
+    for (var x = 0; x < state.boardSize; x++) {
+      if (getDropLandingRow(state.board, state.boardSize, x) >= 0) {
+        availableColumns.push(x);
+      }
+    }
+  
+    if (!availableColumns.length) {
+      return null;
+    }
+  
+    var column = availableColumns[Math.floor(Math.random() * availableColumns.length)];
+    var landingRow = getDropLandingRow(state.board, state.boardSize, column);
+    var landingIndex = (landingRow * state.boardSize) + column;
+  
+    state.board[landingIndex] = makeBombCell();
+  
+    return {
+      index: landingIndex,
+      fromRow: -1,
+      toRow: landingRow,
+      column: column
+    };
+  }
+
   function dropRandomSpecialTile(state, kind) {
     var availableColumns = [];
   
@@ -865,13 +929,35 @@
   function runPostResolveDrops(root, state) {
     if (!state || (state.intro && state.intro.active)) return;
   
-    var wallSpawn = maybeDropWall(state);
-    var specialSpawn = maybeDropSpecialTile(state);
-  
     var spawns = [];
+    var wallSpawn = null;
+    var specialSpawn = null;
+    var canUseBombCycle = !!(state.currentLevel && state.currentLevel.id >= 2);
   
-    if (wallSpawn) spawns.push(wallSpawn);
-    if (specialSpawn) spawns.push(specialSpawn);
+    if (canUseBombCycle && state.pendingBombSpawn) {
+      var bombSpawn = dropRandomBombTile(state);
+      if (bombSpawn) {
+        spawns.push(bombSpawn);
+        state.pendingBombSpawn = false;
+      }
+    } else {
+      wallSpawn = maybeDropWall(state);
+      if (wallSpawn) {
+        spawns.push(wallSpawn);
+  
+        if (canUseBombCycle) {
+          state.wallSpawnsSinceBomb = (state.wallSpawnsSinceBomb || 0) + 1;
+  
+          if (state.wallSpawnsSinceBomb >= 3) {
+            state.wallSpawnsSinceBomb = 0;
+            state.pendingBombSpawn = true;
+          }
+        }
+      }
+  
+      specialSpawn = maybeDropSpecialTile(state);
+      if (specialSpawn) spawns.push(specialSpawn);
+    }
   
     if (!spawns.length) return;
   
@@ -919,7 +1005,7 @@
       });
     });
   
-    var neutralBlastIndices = collectNeutralBlastIndices(board, size, blastIndices);
+    var neutralBlastIndices = collectAdjacentBlastBonusIndices(board, size, blastIndices);
   
     neutralBlastIndices.forEach(function (index) {
       if (seen.has(index)) return;
@@ -938,19 +1024,26 @@
   }
   
   function applySpecialBlastEffects(state, blastIndices) {
-    var lifeDelta = 0;
+    var skullsCleared = 0;
+    var heartsCleared = 0;
   
     blastIndices.forEach(function (index) {
       var cell = state.board[index];
-      if (isSkullCell(cell)) lifeDelta -= 1;
-      if (isHeartCell(cell)) lifeDelta += 1;
+      if (isSkullCell(cell)) skullsCleared += 1;
+      if (isHeartCell(cell)) heartsCleared += 1;
     });
+  
+    var lifeDelta = heartsCleared - skullsCleared;
   
     if (lifeDelta !== 0) {
       state.lives = Math.max(0, Math.min(CONFIG.startingLives, state.lives + lifeDelta));
     }
   
-    return lifeDelta;
+    return {
+      skullsCleared: skullsCleared,
+      heartsCleared: heartsCleared,
+      lifeDelta: lifeDelta
+    };
   }
   
   function hasAnyPlayableHand(state) {
@@ -1005,31 +1098,46 @@
     }
   }
 
-  function animateLifeLoss(root) {
+  function animateLifeDelta(root, delta) {
+    if (!delta) return;
+  
     var stat = root.querySelector('[data-lives-stat]');
     var icon = root.querySelector('[data-lives-icon]');
     var value = root.querySelector('[data-lives-value]');
   
     if (!stat || !icon || !value) return;
   
-    stat.classList.remove('is-life-lost');
-    icon.classList.remove('is-life-lost-icon');
-    value.classList.remove('is-life-lost-value');
+    stat.classList.remove('is-life-lost', 'is-life-gained');
+    icon.classList.remove('is-life-lost-icon', 'is-life-gained-icon');
+    value.classList.remove('is-life-lost-value', 'is-life-gained-value');
+  
+    stat.removeAttribute('data-life-delta');
   
     void stat.offsetWidth;
   
-    stat.classList.add('is-life-lost');
-    icon.classList.add('is-life-lost-icon');
-    value.classList.add('is-life-lost-value');
+    if (delta < 0) {
+      stat.classList.add('is-life-lost');
+      icon.classList.add('is-life-lost-icon');
+      value.classList.add('is-life-lost-value');
+      stat.setAttribute('data-life-delta', String(delta));
+    } else {
+      stat.classList.add('is-life-gained');
+      icon.classList.add('is-life-gained-icon');
+      value.classList.add('is-life-gained-value');
+      stat.setAttribute('data-life-delta', '+' + String(delta));
+    }
   
     window.setTimeout(function () {
       var liveStat = root.querySelector('[data-lives-stat]');
       var liveIcon = root.querySelector('[data-lives-icon]');
       var liveValue = root.querySelector('[data-lives-value]');
   
-      if (liveStat) liveStat.classList.remove('is-life-lost');
-      if (liveIcon) liveIcon.classList.remove('is-life-lost-icon');
-      if (liveValue) liveValue.classList.remove('is-life-lost-value');
+      if (liveStat) {
+        liveStat.classList.remove('is-life-lost', 'is-life-gained');
+        liveStat.removeAttribute('data-life-delta');
+      }
+      if (liveIcon) liveIcon.classList.remove('is-life-lost-icon', 'is-life-gained-icon');
+      if (liveValue) liveValue.classList.remove('is-life-lost-value', 'is-life-gained-value');
     }, 950);
   }
   
@@ -1067,6 +1175,8 @@
   
     window.setTimeout(function () {
       state.lives = Math.max(0, state.lives - 1);
+
+      playSfx('lose');
       syncHudUi(root, state);
   
       if (state.lives <= 0) {
@@ -1082,7 +1192,7 @@
       showBoardMessage(root, 'Try Again', boardCenter, 0, 'centered');
       resetBoardAfterLifeLoss(state);
       renderGame(root, state);
-      animateLifeLoss(root);
+      animateLifeDelta(root, -1);
     }, 320);
   }
   
@@ -1098,6 +1208,7 @@
     state.blastIndices = [];
   
     window.setTimeout(function () {
+      playSfx('lose');
       transitionScreen(root, function () {
         setHomeResult(state, { reason: 'last-heart-loss' });
         resetStandardGameState(state);
@@ -1446,21 +1557,10 @@
   function generateHand(board, boardSize, state) {
     var hand = [];
     var pieceBias = state && state.currentLevel ? state.currentLevel.pieceBias : null;
-    var shouldForceLevel2Bomb = !!(
-      state &&
-      state.currentLevel &&
-      state.currentLevel.id === 2 &&
-      !state.level2BombInjected
-    );
   
     var slot1 = generatePiece(board, boardSize, pickSlot12Rule(pieceBias));
     var slot2 = generatePiece(board, boardSize, pickSlot12Rule(pieceBias));
     var slot3 = generatePiece(board, boardSize, pickSlot3Rule(board, pieceBias));
-  
-    var bombPiece = shouldForceLevel2Bomb ? makeBombPiece() : maybeMakeBombPiece(state);
-    if (bombPiece) {
-      slot3 = bombPiece;
-    }
   
     hand.push(slot1);
     hand.push(slot2);
@@ -1505,10 +1605,6 @@
         allowedIds: ['single', 'h2', 'v2'],
         maxRank: 2
       });
-    }
-  
-    if (shouldForceLevel2Bomb && hand[2] && hand[2].kind === 'bomb') {
-      state.level2BombInjected = true;
     }
   
     return hand;
@@ -2168,8 +2264,13 @@
     
       return;
     }
+    
+    playSfx('blast');
   
     var isIntroBlast = !!(state.intro && state.intro.active);
+
+    renderGame(root, state);
+    
     var blastAnchor = getBlastAnchor(root, blastResult.blastIndices);
     
     if (isIntroBlast) {
@@ -2178,11 +2279,19 @@
     
     spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
 
-    applySpecialBlastEffects(state, blastResult.blastIndices);
+    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices);
+    var specialLifeMessage = getLifeDeltaMessage(specialEffectResult);
+    
     syncHudUi(root, state);
-
+    
     applyBlast(state.board, blastResult.blastIndices);
     hideBoardCells(root, blastResult.blastIndices);
+    
+    if (specialEffectResult.lifeDelta !== 0) {
+      window.setTimeout(function () {
+        animateLifeDelta(root, specialEffectResult.lifeDelta);
+      }, 120);
+    }
     
     window.setTimeout(function () {
       spawnBlastThumbPops(root, state, blastResult.blastIndices);
@@ -2190,8 +2299,21 @@
     
     if (blastResult.blastLabel) {
       window.setTimeout(function () {
-        showBoardMessage(root, blastResult.blastLabel, blastAnchor);
+        showBoardMessage(root, blastResult.blastLabel, blastAnchor, undefined, undefined, 'blast');
       }, 560);
+    }
+    
+    if (specialLifeMessage) {
+      window.setTimeout(function () {
+        showBoardMessage(
+          root,
+          specialLifeMessage,
+          blastAnchor,
+          -82,
+          undefined,
+          specialEffectResult.lifeDelta < 0 ? 'life-loss' : 'life-gain'
+        );
+      }, 760);
     }
     
     spawnScoreStars(root);
@@ -2214,7 +2336,7 @@
             var finalComboLabel = 'Combo ' + Math.min(comboStep, 4) + 'x';
             var finalComboAnchor = blastAnchor;
             window.setTimeout(function () {
-              showBoardMessage(root, finalComboLabel, finalComboAnchor);
+              showBoardMessage(root, finalComboLabel, finalComboAnchor, undefined, undefined, 'combo');
             }, 220);
           }
         
@@ -2233,8 +2355,6 @@
             clearIntroTimers(state);
           
             queueIntroTimer(state, function () {
-              state.intro.completed = true;
-              state.intro.hoveringValid = false;
               renderGame(root, state);
             }, introMessageDelay);
           
@@ -2262,26 +2382,48 @@
       renderGame(root, state);
       state.isResolving = false;
       state.comboStep = 0;
-
+    
       if (!(state.intro && state.intro.active)) {
         checkPostMoveState(root, state, render);
       }
+    
       return;
     }
+    
+    playSfx('blast');
   
+    renderGame(root, state);
+
     var blastAnchor = getBlastAnchor(root, blastResult.blastIndices);
-  
+    
     spawnBlastFragments(root, state, blastResult.blastIndices, 1);
 
-    applySpecialBlastEffects(state, blastResult.blastIndices);
+    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices);
+    var specialLifeMessage = getLifeDeltaMessage(specialEffectResult);
+    
     syncHudUi(root, state);
-
+    
     applyBlast(state.board, blastResult.blastIndices);
     hideBoardCells(root, blastResult.blastIndices);
-  
-    window.setTimeout(function () {
-      showBoardMessage(root, blastResult.blastLabel, blastAnchor);
-    }, 120);
+    
+    if (specialEffectResult.lifeDelta !== 0) {
+      window.setTimeout(function () {
+        animateLifeDelta(root, specialEffectResult.lifeDelta);
+      }, 120);
+    }
+    
+    if (specialLifeMessage) {
+      window.setTimeout(function () {
+        showBoardMessage(
+          root,
+          specialLifeMessage,
+          blastAnchor,
+          -82,
+          undefined,
+          specialEffectResult.lifeDelta < 0 ? 'life-loss' : 'life-gain'
+        );
+      }, 320);
+    }
   
     var moved = applyGravity(state.board, state.boardSize);
   
@@ -2499,10 +2641,19 @@
         var index = cell.y * state.boardSize + cell.x;
         var cellEl = root.querySelector('[data-cell-index="' + index + '"]');
         if (!cellEl) return;
-  
-        var preview = document.createElement('div');
-        preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
-        preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
+      
+        var preview;
+      
+        if (piece.kind === 'bomb') {
+          preview = document.createElement('div');
+          preview.className = 'bm-special-tile is-preview-tile';
+          preview.innerHTML = '<img class="bm-special-tile__icon" src="images/tiles/bomb.svg" alt="" />';
+        } else {
+          preview = document.createElement('div');
+          preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
+          preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
+        }
+      
         cellEl.appendChild(preview);
       });
   
@@ -2553,6 +2704,8 @@
   
       state.hand[drag.pieceIndex] = null;
 
+      playSfx('place');
+
       if (!(state.intro && state.intro.active)) {
         state.moveCount += 1;
       }
@@ -2561,6 +2714,10 @@
         state.intro.targetCursor += 1;
         state.intro.allowedTargetIndex = null;
         state.intro.hoveringValid = false;
+      
+        // kill intro placement glow immediately after a correct solve
+        state.intro.completed = true;
+        state.intro.targetQueue = [];
       }
   
       if (!(state.intro && state.intro.active)) {
@@ -2644,6 +2801,8 @@
         liftY: 96 * uiScale,
         previewCells: null
       };
+
+      playSfx('pickup');
       
       pieceEl.classList.add('is-held');
       
@@ -2714,15 +2873,32 @@
     root.addEventListener('pointerup', endDrag);
     root.addEventListener('pointercancel', cancelDrag);
   }
+
+  function getLifeDeltaMessage(effectResult) {
+    if (!effectResult) return '';
   
-  function showBoardMessage(root, text, anchor, yOffset, variant) {
+    if (effectResult.lifeDelta < 0) {
+      return 'Lose ' + Math.abs(effectResult.lifeDelta) + ' Life';
+    }
+  
+    if (effectResult.lifeDelta > 0) {
+      return 'Gain ' + effectResult.lifeDelta + ' Life';
+    }
+  
+    return '';
+  }
+  
+  function showBoardMessage(root, text, anchor, yOffset, positionVariant, styleVariant) {
     if (!text) return;
   
     var oldMsg = document.body.querySelector('.bm-board-message');
     if (oldMsg) oldMsg.remove();
   
     var msg = document.createElement('div');
-    msg.className = 'bm-board-message' + (variant ? ' bm-board-message--' + variant : '');
+    msg.className =
+    'bm-board-message' +
+    (positionVariant ? ' bm-board-message--' + positionVariant : '') +
+    (styleVariant ? ' bm-board-message--style-' + styleVariant : '');
   
     var left = window.innerWidth * 0.5;
     var top = window.innerHeight * 0.5;
@@ -2853,23 +3029,22 @@
   function syncLevelProgression(root, state) {
     if (!state || (state.intro && state.intro.active)) return;
   
+    var previousLevelId = state.levelId;
     var nextLevel = getCurrentLevel(state);
+  
     state.currentLevel = nextLevel;
   
-    if (state.levelId === nextLevel.id) return;
+    if (previousLevelId === nextLevel.id) return;
   
     state.levelId = nextLevel.id;
-    if (nextLevel.id !== 2) {
-      state.level2BombInjected = false;
-    }
-    
-    if (nextLevel.id === 2) {
-      state.hand = generateHand(state.board, state.boardSize, state);
-      renderGame(root, state);
+  
+    if (previousLevelId < 2 && nextLevel.id >= 2) {
+      state.pendingBombSpawn = true;
+      state.wallSpawnsSinceBomb = 0;
     }
   
     syncHudUi(root, state);
-    showBoardMessage(root, 'Level ' + nextLevel.id);
+    showBoardMessage(root, 'Level ' + nextLevel.id, null, 0, 'centered');
   }
 
   function transitionScreen(root, drawNext) {
@@ -3043,10 +3218,6 @@
         state.currentLevel = level;
         state.levelId = level.id;
 
-        if (level.id !== 2) {
-          state.level2BombInjected = false;
-        }
-
         render();
       },
 
@@ -3058,23 +3229,18 @@
         render();
       },
 
-      fillHandWithBomb: function () {
-        state.hand = [
-          generatePiece(state.board, state.boardSize, {
-            allowedIds: ['single'],
-            maxRank: 1
-          }),
-          generatePiece(state.board, state.boardSize, {
-            allowedIds: ['single'],
-            maxRank: 1
-          }),
-          makeBombPiece()
-        ];
+      spawnBomb: function () {
+        dropRandomBombTile(state);
         render();
       },
-
-      setHandBombOnly: function () {
-        state.hand = [makeBombPiece(), null, null];
+      
+      setPendingBomb: function () {
+        state.pendingBombSpawn = true;
+        render();
+      },
+      
+      setWallSpawnCount: function (n) {
+        state.wallSpawnsSinceBomb = Math.max(0, Number(n) || 0);
         render();
       },
 
@@ -3131,6 +3297,16 @@
     syncUiScale();
     window.addEventListener('resize', syncUiScale);
     window.addEventListener('orientationchange', syncUiScale);
+  
+    // 🔊 unlock audio on first interaction
+    document.body.addEventListener('pointerdown', function initAudio() {
+      Object.values(SFX).forEach(function (s) {
+        s.play().catch(function(){});
+        s.pause();
+        s.currentTime = 0;
+      });
+    }, { once: true });
+  
     var app = createApp();
     app.render();
   });
