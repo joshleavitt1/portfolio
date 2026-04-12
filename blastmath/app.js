@@ -1170,7 +1170,7 @@
     var boardCenter = getBoardCenter(root);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
+      spawnCenterUiBurst(root, 20, 2);
       hideBoardCells(root, blastIndices);
     }
   
@@ -1204,7 +1204,7 @@
     var blastIndices = getAllOccupiedIndices(state.board);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
+      spawnCenterUiBurst(root, 20, 2);
       hideBoardCells(root, blastIndices);
     }
   
@@ -1727,6 +1727,7 @@
       var oldMsg = document.body.querySelector('.bm-board-message');
       if (oldMsg) oldMsg.remove();
   
+      spawnCenterUiBurst(root, 20, 2);
       runIntroExitToFreshBoard(root, state);
     };
   
@@ -2133,6 +2134,65 @@
     });
   }
 
+  function spawnCenterUiBurst(root, count, sizeMult) {
+    count = typeof count === 'number' ? count : 20;
+    sizeMult = typeof sizeMult === 'number' ? sizeMult : 2;
+
+    var center = getBoardCenter(root);
+    if (!center) {
+      center = {
+        left: window.innerWidth * 0.5,
+        top: window.innerHeight * 0.5
+      };
+    }
+
+    var board = root.querySelector('.bm-board');
+    var sampleCell = board ? board.querySelector('.bm-cell') : null;
+    var baseSize = sampleCell
+      ? sampleCell.getBoundingClientRect().width
+      : 48;
+
+    for (var i = 0; i < count; i++) {
+      var frag = document.createElement('div');
+      var fragSize = Math.max(12, baseSize * (0.18 + Math.random() * 0.14) * sizeMult);
+
+      var angle = Math.random() * Math.PI * 2;
+      var distance = (baseSize * 1.4) + Math.random() * (baseSize * 2.4);
+      var driftX = Math.cos(angle) * distance;
+      var driftY = Math.sin(angle) * distance * 0.92 - (baseSize * 0.45);
+
+      var rot = (-60 + Math.random() * 120).toFixed(1);
+      var delay = Math.round(Math.random() * 24);
+      var duration = 760 + Math.round(Math.random() * 90);
+
+      var rainbowTones = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'];
+      var rainbowTone = rainbowTones[Math.floor(Math.random() * rainbowTones.length)];
+      var fragVariant = 1 + Math.floor(Math.random() * 4);
+
+      frag.className = 'bm-blast-frag bm-blast-frag--' + rainbowTone + ' bm-ui-burst-frag bm-blast-frag--mix-' + fragVariant;
+      frag.style.position = 'fixed';
+      frag.style.left = Math.round(center.left) + 'px';
+      frag.style.top = Math.round(center.top) + 'px';
+      frag.style.width = Math.round(fragSize) + 'px';
+      frag.style.height = Math.round(fragSize) + 'px';
+      frag.style.zIndex = 10020;
+      frag.style.setProperty('--bm-frag-dx', Math.round(driftX) + 'px');
+      frag.style.setProperty('--bm-frag-lift', Math.round(baseSize * 0.9) + 'px');
+      frag.style.setProperty('--bm-frag-dy', Math.round(driftY) + 'px');
+      frag.style.setProperty('--bm-frag-rot', rot + 'deg');
+      frag.style.setProperty('--bm-frag-delay', delay + 'ms');
+      frag.style.setProperty('--bm-frag-duration', duration + 'ms');
+
+      document.body.appendChild(frag);
+
+      (function (node, ttl) {
+        window.setTimeout(function () {
+          if (node.parentNode) node.parentNode.removeChild(node);
+        }, ttl);
+      })(frag, delay + duration + 120);
+    }
+  }
+
   function spawnBlastThumbPops(root, state, blastIndices) {
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
@@ -2230,7 +2290,7 @@
     var blastIndices = getAllOccupiedIndices(state.board);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
+      spawnCenterUiBurst(root, 20, 2);
       hideBoardCells(root, blastIndices);
     }
   
