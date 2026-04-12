@@ -16,6 +16,10 @@
     blast: new Audio('sounds/blast.mp3'),
     lose: new Audio('sounds/lose.mp3')
   };
+
+  Object.values(SFX).forEach(function (sound) {
+    sound.preload = 'auto';
+  });
   
   function playSfx(name) {
     var sound = SFX[name];
@@ -908,22 +912,38 @@
       column: column
     };
   }
-  
   function maybeDropSpecialTile(state) {
     if (!state || !state.currentLevel || !state.currentLevel.features) return false;
   
     var features = state.currentLevel.features;
-    var roll = Math.random();
-  
-    if (features.skulls && roll < (features.skullChance || 0)) {
-      return dropRandomSpecialTile(state, 'skull');
+    if (!features.skulls && !features.hearts) return false;
+
+    var skullChance = features.skullChance || 0;
+    var heartChance = features.heartChance || 0;
+
+    if (state.lives === 2) {
+      heartChance = 0.10;
+    } else if (state.lives <= 1) {
+      heartChance = 0.20;
     }
-  
-    if (features.hearts && roll < ((features.skullChance || 0) + (features.heartChance || 0))) {
+
+    var rolledSkull = !!features.skulls && Math.random() < skullChance;
+    var rolledHeart = !!features.hearts && Math.random() < heartChance;
+
+    if (!rolledSkull && !rolledHeart) return false;
+
+    if (rolledSkull && rolledHeart) {
+      if (state.lives >= CONFIG.startingLives) {
+        return dropRandomSpecialTile(state, 'skull');
+      }
       return dropRandomSpecialTile(state, 'heart');
     }
-  
-    return false;
+
+    if (rolledHeart) {
+      return dropRandomSpecialTile(state, 'heart');
+    }
+
+    return dropRandomSpecialTile(state, 'skull');
   }
 
   function runPostResolveDrops(root, state) {
@@ -1023,7 +1043,7 @@
     };
   }
   
-  function applySpecialBlastEffects(state, blastIndices) {
+  function applySpecialBlastEffects(state, blastIndices, suppressLifeEffects) {
     var skullsCleared = 0;
     var heartsCleared = 0;
   
@@ -1033,10 +1053,14 @@
       if (isHeartCell(cell)) heartsCleared += 1;
     });
   
-    var lifeDelta = heartsCleared - skullsCleared;
-  
-    if (lifeDelta !== 0) {
-      state.lives = Math.max(0, Math.min(CONFIG.startingLives, state.lives + lifeDelta));
+    var lifeDelta = 0;
+
+    if (!suppressLifeEffects) {
+      lifeDelta = heartsCleared - skullsCleared;
+    
+      if (lifeDelta !== 0) {
+        state.lives = Math.max(0, Math.min(CONFIG.startingLives, state.lives + lifeDelta));
+      }
     }
   
     return {
@@ -1166,7 +1190,7 @@
     var boardCenter = getBoardCenter(root);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
+      spawnCenterUiBurst(root, 20, 2);
       hideBoardCells(root, blastIndices);
     }
   
@@ -1200,7 +1224,7 @@
     var blastIndices = getAllOccupiedIndices(state.board);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
+      spawnCenterUiBurst(root, 20, 2);
       hideBoardCells(root, blastIndices);
     }
   
@@ -1723,6 +1747,7 @@
       var oldMsg = document.body.querySelector('.bm-board-message');
       if (oldMsg) oldMsg.remove();
   
+      spawnCenterUiBurst(root, 20, 2);
       runIntroExitToFreshBoard(root, state);
     };
   
@@ -2129,6 +2154,65 @@
     });
   }
 
+  function spawnCenterUiBurst(root, count, sizeMult) {
+    count = typeof count === 'number' ? count : 20;
+    sizeMult = typeof sizeMult === 'number' ? sizeMult : 2;
+
+    var center = getBoardCenter(root);
+    if (!center) {
+      center = {
+        left: window.innerWidth * 0.5,
+        top: window.innerHeight * 0.5
+      };
+    }
+
+    var board = root.querySelector('.bm-board');
+    var sampleCell = board ? board.querySelector('.bm-cell') : null;
+    var baseSize = sampleCell
+      ? sampleCell.getBoundingClientRect().width
+      : 48;
+
+    for (var i = 0; i < count; i++) {
+      var frag = document.createElement('div');
+      var fragSize = Math.max(12, baseSize * (0.18 + Math.random() * 0.14) * sizeMult);
+
+      var angle = Math.random() * Math.PI * 2;
+      var distance = (baseSize * 1.4) + Math.random() * (baseSize * 2.4);
+      var driftX = Math.cos(angle) * distance;
+      var driftY = Math.sin(angle) * distance * 0.92 - (baseSize * 0.45);
+
+      var rot = (-60 + Math.random() * 120).toFixed(1);
+      var delay = Math.round(Math.random() * 24);
+      var duration = 760 + Math.round(Math.random() * 90);
+
+      var rainbowTones = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'];
+      var rainbowTone = rainbowTones[Math.floor(Math.random() * rainbowTones.length)];
+      var fragVariant = 1 + Math.floor(Math.random() * 4);
+
+      frag.className = 'bm-blast-frag bm-blast-frag--' + rainbowTone + ' bm-ui-burst-frag bm-blast-frag--mix-' + fragVariant;
+      frag.style.position = 'fixed';
+      frag.style.left = Math.round(center.left) + 'px';
+      frag.style.top = Math.round(center.top) + 'px';
+      frag.style.width = Math.round(fragSize) + 'px';
+      frag.style.height = Math.round(fragSize) + 'px';
+      frag.style.zIndex = 10020;
+      frag.style.setProperty('--bm-frag-dx', Math.round(driftX) + 'px');
+      frag.style.setProperty('--bm-frag-lift', Math.round(baseSize * 0.9) + 'px');
+      frag.style.setProperty('--bm-frag-dy', Math.round(driftY) + 'px');
+      frag.style.setProperty('--bm-frag-rot', rot + 'deg');
+      frag.style.setProperty('--bm-frag-delay', delay + 'ms');
+      frag.style.setProperty('--bm-frag-duration', duration + 'ms');
+
+      document.body.appendChild(frag);
+
+      (function (node, ttl) {
+        window.setTimeout(function () {
+          if (node.parentNode) node.parentNode.removeChild(node);
+        }, ttl);
+      })(frag, delay + duration + 120);
+    }
+  }
+
   function spawnBlastThumbPops(root, state, blastIndices) {
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
@@ -2139,13 +2223,17 @@
       var cellEl = board.querySelector('[data-cell-index="' + index + '"]');
       if (!cellEl) return;
   
+      var rect = cellEl.getBoundingClientRect();
+  
       var thumb = document.createElement('img');
       thumb.src = 'images/tiles/thumb.svg';
       thumb.alt = '';
-      thumb.className = 'bm-blast-thumb-pop';
+      thumb.className = 'bm-blast-thumb-pop bm-blast-thumb-pop--fixed';
+      thumb.style.left = Math.round(rect.left + (rect.width / 2)) + 'px';
+      thumb.style.top = Math.round(rect.top + (rect.height / 2)) + 'px';
       thumb.style.setProperty('--bm-thumb-delay', (order * 60) + 'ms');
   
-      cellEl.appendChild(thumb);
+      document.body.appendChild(thumb);
   
       window.setTimeout(function () {
         if (thumb.parentNode) thumb.parentNode.removeChild(thumb);
@@ -2226,7 +2314,7 @@
     var blastIndices = getAllOccupiedIndices(state.board);
   
     if (blastIndices.length) {
-      spawnBlastFragments(root, state, blastIndices, 1, 'rainbow', 'life-loss');
+      spawnCenterUiBurst(root, 20, 2);
       hideBoardCells(root, blastIndices);
     }
   
@@ -2279,7 +2367,7 @@
     
     spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
 
-    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices);
+    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices, false);
     var specialLifeMessage = getLifeDeltaMessage(specialEffectResult);
     
     syncHudUi(root, state);
@@ -2398,7 +2486,7 @@
     
     spawnBlastFragments(root, state, blastResult.blastIndices, 1);
 
-    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices);
+    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices, true);
     var specialLifeMessage = getLifeDeltaMessage(specialEffectResult);
     
     syncHudUi(root, state);
@@ -2692,6 +2780,8 @@
       var draggedPiece = state.hand[drag.pieceIndex];
       var isBombPlacement = !!(draggedPiece && draggedPiece.kind === 'bomb');
 
+      playSfx('place');
+
       placedCells.forEach(function (cell) {
         state.board[cell.y * state.boardSize + cell.x] = isBombPlacement
           ? makeBombCell()
@@ -2703,8 +2793,6 @@
       });
   
       state.hand[drag.pieceIndex] = null;
-
-      playSfx('place');
 
       if (!(state.intro && state.intro.active)) {
         state.moveCount += 1;
@@ -3133,18 +3221,22 @@
         var play = root.querySelector('[data-play]');
         if (play) {
           play.addEventListener('click', function () {
-            transitionScreen(root, function () {
-              if (isIntroMode()) {
-                setupIntroStepByNumber(state, getIntroStartStep());
-              } else if (!hasSeenIntro()) {
-                setupIntroStepByNumber(state, 1);
-              } else {
-                resetStandardGameState(state);
-              }
-          
-              state.screen = 'game';
-              render();
-            });
+            spawnCenterUiBurst(root, 20, 2);
+
+            window.setTimeout(function () {
+              transitionScreen(root, function () {
+                if (isIntroMode()) {
+                  setupIntroStepByNumber(state, getIntroStartStep());
+                } else if (!hasSeenIntro()) {
+                  setupIntroStepByNumber(state, 1);
+                } else {
+                  resetStandardGameState(state);
+                }
+            
+                state.screen = 'game';
+                render();
+              });
+            }, 120);
           });
         }
       } else {

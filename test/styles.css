@@ -859,6 +859,14 @@ body {
   animation-delay: var(--bm-frag-delay, 0ms);
 }
 
+.bm-ui-burst-frag {
+  transform-origin: center;
+  box-shadow:
+    0 calc(3px * var(--bm-ui-scale)) calc(8px * var(--bm-ui-scale)) rgba(0,0,0,.22),
+    inset 1px 1px 0 rgba(255,255,255,.12),
+    inset -1px -1px 0 rgba(0,0,0,.10);
+}
+
 .bm-blast-frag::before {
   content: "";
   position: absolute;
@@ -1521,6 +1529,11 @@ body {
   filter: drop-shadow(0 calc(4px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.32));
   animation: bmBlastThumbPop 2500ms cubic-bezier(.2,.85,.2,1) forwards;
   animation-delay: var(--bm-thumb-delay, 0ms);
+}
+
+.bm-blast-thumb-pop--fixed {
+  position: fixed;
+  z-index: 10030;
 }
 
 @keyframes bmBlastThumbPop {

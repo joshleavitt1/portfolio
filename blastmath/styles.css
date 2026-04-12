@@ -1531,6 +1531,11 @@ body {
   animation-delay: var(--bm-thumb-delay, 0ms);
 }
 
+.bm-blast-thumb-pop--fixed {
+  position: fixed;
+  z-index: 10030;
+}
+
 @keyframes bmBlastThumbPop {
   0% {
     opacity: 0;

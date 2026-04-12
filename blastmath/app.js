@@ -912,22 +912,38 @@
       column: column
     };
   }
-  
   function maybeDropSpecialTile(state) {
     if (!state || !state.currentLevel || !state.currentLevel.features) return false;
   
     var features = state.currentLevel.features;
-    var roll = Math.random();
-  
-    if (features.skulls && roll < (features.skullChance || 0)) {
-      return dropRandomSpecialTile(state, 'skull');
+    if (!features.skulls && !features.hearts) return false;
+
+    var skullChance = features.skullChance || 0;
+    var heartChance = features.heartChance || 0;
+
+    if (state.lives === 2) {
+      heartChance = 0.10;
+    } else if (state.lives <= 1) {
+      heartChance = 0.20;
     }
-  
-    if (features.hearts && roll < ((features.skullChance || 0) + (features.heartChance || 0))) {
+
+    var rolledSkull = !!features.skulls && Math.random() < skullChance;
+    var rolledHeart = !!features.hearts && Math.random() < heartChance;
+
+    if (!rolledSkull && !rolledHeart) return false;
+
+    if (rolledSkull && rolledHeart) {
+      if (state.lives >= CONFIG.startingLives) {
+        return dropRandomSpecialTile(state, 'skull');
+      }
       return dropRandomSpecialTile(state, 'heart');
     }
-  
-    return false;
+
+    if (rolledHeart) {
+      return dropRandomSpecialTile(state, 'heart');
+    }
+
+    return dropRandomSpecialTile(state, 'skull');
   }
 
   function runPostResolveDrops(root, state) {
@@ -1027,7 +1043,7 @@
     };
   }
   
-  function applySpecialBlastEffects(state, blastIndices) {
+  function applySpecialBlastEffects(state, blastIndices, suppressLifeEffects) {
     var skullsCleared = 0;
     var heartsCleared = 0;
   
@@ -1037,10 +1053,14 @@
       if (isHeartCell(cell)) heartsCleared += 1;
     });
   
-    var lifeDelta = heartsCleared - skullsCleared;
-  
-    if (lifeDelta !== 0) {
-      state.lives = Math.max(0, Math.min(CONFIG.startingLives, state.lives + lifeDelta));
+    var lifeDelta = 0;
+
+    if (!suppressLifeEffects) {
+      lifeDelta = heartsCleared - skullsCleared;
+    
+      if (lifeDelta !== 0) {
+        state.lives = Math.max(0, Math.min(CONFIG.startingLives, state.lives + lifeDelta));
+      }
     }
   
     return {
@@ -2203,13 +2223,17 @@
       var cellEl = board.querySelector('[data-cell-index="' + index + '"]');
       if (!cellEl) return;
   
+      var rect = cellEl.getBoundingClientRect();
+  
       var thumb = document.createElement('img');
       thumb.src = 'images/tiles/thumb.svg';
       thumb.alt = '';
-      thumb.className = 'bm-blast-thumb-pop';
+      thumb.className = 'bm-blast-thumb-pop bm-blast-thumb-pop--fixed';
+      thumb.style.left = Math.round(rect.left + (rect.width / 2)) + 'px';
+      thumb.style.top = Math.round(rect.top + (rect.height / 2)) + 'px';
       thumb.style.setProperty('--bm-thumb-delay', (order * 60) + 'ms');
   
-      cellEl.appendChild(thumb);
+      document.body.appendChild(thumb);
   
       window.setTimeout(function () {
         if (thumb.parentNode) thumb.parentNode.removeChild(thumb);
@@ -2343,7 +2367,7 @@
     
     spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
 
-    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices);
+    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices, false);
     var specialLifeMessage = getLifeDeltaMessage(specialEffectResult);
     
     syncHudUi(root, state);
@@ -2462,7 +2486,7 @@
     
     spawnBlastFragments(root, state, blastResult.blastIndices, 1);
 
-    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices);
+    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices, true);
     var specialLifeMessage = getLifeDeltaMessage(specialEffectResult);
     
     syncHudUi(root, state);
@@ -3197,18 +3221,22 @@
         var play = root.querySelector('[data-play]');
         if (play) {
           play.addEventListener('click', function () {
-            transitionScreen(root, function () {
-              if (isIntroMode()) {
-                setupIntroStepByNumber(state, getIntroStartStep());
-              } else if (!hasSeenIntro()) {
-                setupIntroStepByNumber(state, 1);
-              } else {
-                resetStandardGameState(state);
-              }
-          
-              state.screen = 'game';
-              render();
-            });
+            spawnCenterUiBurst(root, 20, 2);
+
+            window.setTimeout(function () {
+              transitionScreen(root, function () {
+                if (isIntroMode()) {
+                  setupIntroStepByNumber(state, getIntroStartStep());
+                } else if (!hasSeenIntro()) {
+                  setupIntroStepByNumber(state, 1);
+                } else {
+                  resetStandardGameState(state);
+                }
+            
+                state.screen = 'game';
+                render();
+              });
+            }, 120);
           });
         }
       } else {
