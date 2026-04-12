@@ -16,6 +16,10 @@
     blast: new Audio('sounds/blast.mp3'),
     lose: new Audio('sounds/lose.mp3')
   };
+
+  Object.values(SFX).forEach(function (sound) {
+    sound.preload = 'auto';
+  });
   
   function playSfx(name) {
     var sound = SFX[name];
@@ -2692,6 +2696,8 @@
       var draggedPiece = state.hand[drag.pieceIndex];
       var isBombPlacement = !!(draggedPiece && draggedPiece.kind === 'bomb');
 
+      playSfx('place');
+
       placedCells.forEach(function (cell) {
         state.board[cell.y * state.boardSize + cell.x] = isBombPlacement
           ? makeBombCell()
@@ -2703,8 +2709,6 @@
       });
   
       state.hand[drag.pieceIndex] = null;
-
-      playSfx('place');
 
       if (!(state.intro && state.intro.active)) {
         state.moveCount += 1;
