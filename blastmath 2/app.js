@@ -26,59 +26,15 @@
 
   Object.values(SFX).forEach(function (sound) {
     sound.preload = 'auto';
-    sound.load();
   });
-
-  var SFX_POOL = {
-    pickup: [],
-    place: []
-  };
-
-  function warmSfxPool(name, count) {
-    var base = SFX[name];
-    if (!base) return;
-
-    SFX_POOL[name] = [];
-
-    for (var i = 0; i < count; i++) {
-      var clone = base.cloneNode(true);
-      clone.preload = 'auto';
-      clone.load();
-      SFX_POOL[name].push(clone);
-    }
-  }
-
+  
   function playSfx(name) {
     var sound = SFX[name];
     if (!sound) return;
-
+  
     try {
-      if (name === 'pickup' || name === 'place') {
-        var pool = SFX_POOL[name] || [];
-        var clone = null;
-
-        for (var i = 0; i < pool.length; i++) {
-          if (pool[i].paused || pool[i].ended) {
-            clone = pool[i];
-            break;
-          }
-        }
-
-        if (!clone) {
-          clone = sound.cloneNode(true);
-          clone.preload = 'auto';
-          clone.load();
-          pool.push(clone);
-          SFX_POOL[name] = pool;
-        }
-
-        clone.currentTime = 0;
-        clone.play().catch(function(){});
-        return;
-      }
-
       sound.currentTime = 0;
-      sound.play().catch(function(){});
+      sound.play();
     } catch (e) {}
   }
 
@@ -2723,6 +2679,8 @@
   
       var draggedPiece = state.hand[drag.pieceIndex];
 
+      playSfx('place');
+
       placedCells.forEach(function (cell) {
         state.board[cell.y * state.boardSize + cell.x] = {
           kind: 'number',
@@ -2795,8 +2753,6 @@
       if (pieceIndex < 0 || !state.hand[pieceIndex]) return;
   
       e.preventDefault();
-
-      playSfx('pickup');
   
       if (pieceEl.setPointerCapture) {
         pieceEl.setPointerCapture(e.pointerId);
@@ -2824,6 +2780,8 @@
         liftY: 96 * uiScale,
         previewCells: null
       };
+
+      playSfx('pickup');
       
       pieceEl.classList.add('is-held');
       
@@ -2878,10 +2836,6 @@
       if (!drag || e.pointerId !== drag.pointerId) return;
   
       e.preventDefault();
-
-      if (drag.previewCells && drag.previewCells.length) {
-        playSfx('place');
-      }
   
       if (commitPlacementFromPreview()) return;
       cleanupDrag();
@@ -3354,24 +3308,13 @@
   
     // 🔊 unlock audio on first interaction
     document.body.addEventListener('pointerdown', function initAudio() {
-      warmSfxPool('pickup', 3);
-      warmSfxPool('place', 3);
-  
       Object.values(SFX).forEach(function (s) {
         s.play().catch(function(){});
         s.pause();
         s.currentTime = 0;
       });
-  
-      ['pickup', 'place'].forEach(function (name) {
-        (SFX_POOL[name] || []).forEach(function (s) {
-          s.play().catch(function(){});
-          s.pause();
-          s.currentTime = 0;
-        });
-      });
     }, { once: true });
-
+  
     var app = createApp();
     app.render();
   });

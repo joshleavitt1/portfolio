@@ -7,7 +7,14 @@
     handTileSize: 52,
     handTileGap: 2,
     startingLives: 3,
-    storageKey: "blastmath.highscore"
+    storageKey: "blastmath.highscore",
+
+    heartChanceScaleAt2Lives: 2,
+    heartChanceScaleAt1Life: 3,
+
+    maxBombTilesOnBoard: 2,
+    maxHeartTilesOnBoard: 2,
+    maxSkullTilesOnBoard: 2
   };
 
   var SFX = {
@@ -19,15 +26,59 @@
 
   Object.values(SFX).forEach(function (sound) {
     sound.preload = 'auto';
+    sound.load();
   });
-  
+
+  var SFX_POOL = {
+    pickup: [],
+    place: []
+  };
+
+  function warmSfxPool(name, count) {
+    var base = SFX[name];
+    if (!base) return;
+
+    SFX_POOL[name] = [];
+
+    for (var i = 0; i < count; i++) {
+      var clone = base.cloneNode(true);
+      clone.preload = 'auto';
+      clone.load();
+      SFX_POOL[name].push(clone);
+    }
+  }
+
   function playSfx(name) {
     var sound = SFX[name];
     if (!sound) return;
-  
+
     try {
+      if (name === 'pickup' || name === 'place') {
+        var pool = SFX_POOL[name] || [];
+        var clone = null;
+
+        for (var i = 0; i < pool.length; i++) {
+          if (pool[i].paused || pool[i].ended) {
+            clone = pool[i];
+            break;
+          }
+        }
+
+        if (!clone) {
+          clone = sound.cloneNode(true);
+          clone.preload = 'auto';
+          clone.load();
+          pool.push(clone);
+          SFX_POOL[name] = pool;
+        }
+
+        clone.currentTime = 0;
+        clone.play().catch(function(){});
+        return;
+      }
+
       sound.currentTime = 0;
-      sound.play();
+      sound.play().catch(function(){});
     } catch (e) {}
   }
 
@@ -55,11 +106,10 @@
       id: 2,
       minScore: 1000,
       maxScore: 3000,
-      wallDropRate: 3,
+      wallDropRate: 4,
       pieceBias: 'double',
       features: {
         bombs: true,
-        bombChance: 0.05,
         skulls: false,
         hearts: false
       }
@@ -68,11 +118,10 @@
       id: 3,
       minScore: 3000,
       maxScore: 4000,
-      wallDropRate: 3,
+      wallDropRate: 4,
       pieceBias: 'mixed',
       features: {
         bombs: true,
-        bombChance: 0.05,
         skulls: true,
         skullChance: 0.10,
         hearts: true,
@@ -510,7 +559,11 @@
   function classifyBlastPhase(board, size, comboStep) {
     var groups = findBlastGroups(board, size);
     var blastIndices = [];
+    var normalBlastIndices = [];
+    var bombBlastIndices = [];
     var seen = new Set();
+    var normalSeen = new Set();
+    var bombSeen = new Set();
     var horizontalGroups = 0;
     var verticalGroups = 0;
     var totalGroups = 0;
@@ -522,9 +575,15 @@
   
       for (j = 0; j < groups[i].indices.length; j++) {
         index = groups[i].indices[j];
+
         if (!seen.has(index)) {
           seen.add(index);
           blastIndices.push(index);
+        }
+
+        if (!normalSeen.has(index)) {
+          normalSeen.add(index);
+          normalBlastIndices.push(index);
         }
       }
     }
@@ -554,6 +613,11 @@
         seen.add(neutralIndex);
         blastIndices.push(neutralIndex);
       }
+
+      if (!normalSeen.has(neutralIndex)) {
+        normalSeen.add(neutralIndex);
+        normalBlastIndices.push(neutralIndex);
+      }
     });
 
     var triggeredBombIndices = blastIndices.filter(function (index) {
@@ -563,10 +627,16 @@
     triggeredBombIndices.forEach(function (bombIndex) {
       getBombBlastIndices(bombIndex, size).forEach(function (index) {
         if (!board[index]) return;
-        if (seen.has(index)) return;
-    
-        seen.add(index);
-        blastIndices.push(index);
+
+        if (!seen.has(index)) {
+          seen.add(index);
+          blastIndices.push(index);
+        }
+
+        if (!normalSeen.has(index) && !bombSeen.has(index)) {
+          bombSeen.add(index);
+          bombBlastIndices.push(index);
+        }
       });
     });
   
@@ -598,6 +668,8 @@
     return {
       hasBlast: true,
       blastIndices: blastIndices,
+      normalBlastIndices: normalBlastIndices,
+      bombBlastIndices: bombBlastIndices,
       neutralBlastIndices: neutralBlastIndices,
       clearedCount: clearedCount,
       horizontalGroups: horizontalGroups,
@@ -813,6 +885,18 @@
     return out;
   }
 
+  function countBoardTilesByKind(board, kind) {
+    var count = 0;
+
+    for (var i = 0; i < board.length; i++) {
+      if (board[i] && board[i].kind === kind) {
+        count += 1;
+      }
+    }
+
+    return count;
+  }
+
   function getDropLandingRow(board, size, column) {
     for (var y = size - 1; y >= 0; y--) {
       var index = (y * size) + column;
@@ -858,6 +942,9 @@
   }
 
   function dropRandomBombTile(state) {
+    if (countBoardTilesByKind(state.board, 'bomb') >= CONFIG.maxBombTilesOnBoard) {
+      return null;
+    }
     var availableColumns = [];
   
     for (var x = 0; x < state.boardSize; x++) {
@@ -885,6 +972,13 @@
   }
 
   function dropRandomSpecialTile(state, kind) {
+    if (kind === 'heart' && countBoardTilesByKind(state.board, 'heart') >= CONFIG.maxHeartTilesOnBoard) {
+      return null;
+    }
+
+    if (kind === 'skull' && countBoardTilesByKind(state.board, 'skull') >= CONFIG.maxSkullTilesOnBoard) {
+      return null;
+    }
     var availableColumns = [];
   
     for (var x = 0; x < state.boardSize; x++) {
@@ -919,12 +1013,13 @@
     if (!features.skulls && !features.hearts) return false;
 
     var skullChance = features.skullChance || 0;
-    var heartChance = features.heartChance || 0;
+    var baseHeartChance = features.heartChance || 0;
+    var heartChance = baseHeartChance;
 
     if (state.lives === 2) {
-      heartChance = 0.10;
-    } else if (state.lives <= 1) {
-      heartChance = 0.20;
+      heartChance = baseHeartChance * CONFIG.heartChanceScaleAt2Lives;
+    } else if (state.lives === 1) {
+      heartChance = baseHeartChance * CONFIG.heartChanceScaleAt1Life;
     }
 
     var rolledSkull = !!features.skulls && Math.random() < skullChance;
@@ -939,10 +1034,7 @@
       return dropRandomSpecialTile(state, 'heart');
     }
 
-    if (rolledHeart) {
-      return dropRandomSpecialTile(state, 'heart');
-    }
-
+    if (rolledHeart) return dropRandomSpecialTile(state, 'heart');
     return dropRandomSpecialTile(state, 'skull');
   }
 
@@ -1012,55 +1104,20 @@
     return out;
   }
   
-  function classifyBombBlast(board, size, bombIndices) {
-    var blastIndices = [];
-    var seen = new Set();
-  
-    bombIndices.forEach(function (bombIndex) {
-      getBombBlastIndices(bombIndex, size).forEach(function (index) {
-        if (!board[index]) return;
-        if (seen.has(index)) return;
-        seen.add(index);
-        blastIndices.push(index);
-      });
-    });
-  
-    var neutralBlastIndices = collectAdjacentBlastBonusIndices(board, size, blastIndices);
-  
-    neutralBlastIndices.forEach(function (index) {
-      if (seen.has(index)) return;
-      seen.add(index);
-      blastIndices.push(index);
-    });
-  
-    return {
-      hasBlast: blastIndices.length > 0,
-      blastIndices: blastIndices,
-      neutralBlastIndices: neutralBlastIndices,
-      clearedCount: blastIndices.length,
-      blastLabel: 'Bomb',
-      scoreValue: 0
-    };
-  }
-  
-  function applySpecialBlastEffects(state, blastIndices, suppressLifeEffects) {
+  function applySpecialBlastEffects(state, normalBlastIndices) {
     var skullsCleared = 0;
     var heartsCleared = 0;
   
-    blastIndices.forEach(function (index) {
+    (normalBlastIndices || []).forEach(function (index) {
       var cell = state.board[index];
       if (isSkullCell(cell)) skullsCleared += 1;
       if (isHeartCell(cell)) heartsCleared += 1;
     });
   
-    var lifeDelta = 0;
-
-    if (!suppressLifeEffects) {
-      lifeDelta = heartsCleared - skullsCleared;
-    
-      if (lifeDelta !== 0) {
-        state.lives = Math.max(0, Math.min(CONFIG.startingLives, state.lives + lifeDelta));
-      }
+    var lifeDelta = heartsCleared - skullsCleared;
+  
+    if (lifeDelta !== 0) {
+      state.lives = Math.max(0, Math.min(CONFIG.startingLives, state.lives + lifeDelta));
     }
   
     return {
@@ -1280,35 +1337,6 @@
         };
       })
     };
-  }
-
-  function makeBombPiece() {
-    return {
-      id: 'bomb-' + Date.now() + '-' + Math.floor(Math.random() * 100000),
-      group: 'special',
-      rank: 1,
-      width: 1,
-      height: 1,
-      kind: 'bomb',
-      cells: [
-        {
-          x: 0,
-          y: 0,
-          value: 0,
-          tone: 'bomb'
-        }
-      ]
-    };
-  }
-  
-  function maybeMakeBombPiece(state) {
-    if (!state || !state.currentLevel || !state.currentLevel.features) return null;
-    if (!state.currentLevel.features.bombs) return null;
-  
-    var chanceValue = state.currentLevel.features.bombChance || 0;
-    if (Math.random() >= chanceValue) return null;
-  
-    return makeBombPiece();
   }
 
   function getPieceCellAt(piece, x, y) {
@@ -1710,12 +1738,6 @@
       var left = Math.round(cell.x * (cellSize + gap));
       var top = Math.round(cell.y * (cellSize + gap));
       var className = 'bm-mini bm-mini--' + cell.tone;
-
-      if (piece.kind === 'bomb') {
-        return '<div class="' + className + ' bm-mini--special" style="left:' + left + 'px; top:' + top + 'px;">' +
-          '<img class="bm-mini__icon" src="images/tiles/bomb.svg" alt="" />' +
-        '</div>';
-      }
     
       return '<div class="' + className + '" style="left:' + left + 'px; top:' + top + 'px;"><span class="bm-tile__label">' + cell.value + '</span></div>';
     }).join('');
@@ -2367,7 +2389,7 @@
     
     spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
 
-    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices, false);
+    var specialEffectResult = applySpecialBlastEffects(state, blastResult.normalBlastIndices);
     var specialLifeMessage = getLifeDeltaMessage(specialEffectResult);
     
     syncHudUi(root, state);
@@ -2459,78 +2481,6 @@
           }
         }
       });
-  }
-
-  function runBombBlastPhase(root, state, bombIndices, render) {
-    var blastResult = classifyBombBlast(state.board, state.boardSize, bombIndices);
-    state.blastIndices = blastResult.blastIndices;
-  
-    if (!blastResult.hasBlast) {
-      state.blastIndices = [];
-      renderGame(root, state);
-      state.isResolving = false;
-      state.comboStep = 0;
-    
-      if (!(state.intro && state.intro.active)) {
-        checkPostMoveState(root, state, render);
-      }
-    
-      return;
-    }
-    
-    playSfx('blast');
-  
-    renderGame(root, state);
-
-    var blastAnchor = getBlastAnchor(root, blastResult.blastIndices);
-    
-    spawnBlastFragments(root, state, blastResult.blastIndices, 1);
-
-    var specialEffectResult = applySpecialBlastEffects(state, blastResult.blastIndices, true);
-    var specialLifeMessage = getLifeDeltaMessage(specialEffectResult);
-    
-    syncHudUi(root, state);
-    
-    applyBlast(state.board, blastResult.blastIndices);
-    hideBoardCells(root, blastResult.blastIndices);
-    
-    if (specialEffectResult.lifeDelta !== 0) {
-      window.setTimeout(function () {
-        animateLifeDelta(root, specialEffectResult.lifeDelta);
-      }, 120);
-    }
-    
-    if (specialLifeMessage) {
-      window.setTimeout(function () {
-        showBoardMessage(
-          root,
-          specialLifeMessage,
-          blastAnchor,
-          -82,
-          undefined,
-          specialEffectResult.lifeDelta < 0 ? 'life-loss' : 'life-gain'
-        );
-      }, 320);
-    }
-  
-    var moved = applyGravity(state.board, state.boardSize);
-  
-    state.blastIndices = [];
-    state.comboStep = 0;
-  
-    animateGravityFall(root, state, moved).then(function () {
-      var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, 1);
-  
-      if (nextBlastResult.hasBlast) {
-        window.setTimeout(function () {
-          runBlastPhase(root, state, [], 1, render);
-        }, CHAIN_NEXT_BLAST_DELAY);
-      } else {
-        state.isResolving = false;
-        runPostResolveDrops(root, state);
-        checkPostMoveState(root, state, render);
-      }
-    });
   }
 
   function enableDrag(root, state, render) {
@@ -2732,15 +2682,9 @@
       
         var preview;
       
-        if (piece.kind === 'bomb') {
-          preview = document.createElement('div');
-          preview.className = 'bm-special-tile is-preview-tile';
-          preview.innerHTML = '<img class="bm-special-tile__icon" src="images/tiles/bomb.svg" alt="" />';
-        } else {
-          preview = document.createElement('div');
-          preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
-          preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
-        }
+        preview = document.createElement('div');
+        preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
+        preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
       
         cellEl.appendChild(preview);
       });
@@ -2778,18 +2722,13 @@
       }, 0);
   
       var draggedPiece = state.hand[drag.pieceIndex];
-      var isBombPlacement = !!(draggedPiece && draggedPiece.kind === 'bomb');
-
-      playSfx('place');
 
       placedCells.forEach(function (cell) {
-        state.board[cell.y * state.boardSize + cell.x] = isBombPlacement
-          ? makeBombCell()
-          : {
-              kind: 'number',
-              value: cell.value,
-              tone: cell.tone
-            };
+        state.board[cell.y * state.boardSize + cell.x] = {
+          kind: 'number',
+          value: cell.value,
+          tone: cell.tone
+        };
       });
   
       state.hand[drag.pieceIndex] = null;
@@ -2834,18 +2773,12 @@
       renderGame(root, state);
   
       window.setTimeout(function () {
-        if (isBombPlacement) {
-          runBombBlastPhase(root, state, placedIndices, render);
-        } else {
-          runBlastPhase(root, state, placedIndices, 1, render);
-        }
+        runBlastPhase(root, state, placedIndices, 1, render);
       }, 280);
   
-      if (!isBombPlacement) {
-        window.setTimeout(function () {
-          addScore(root, state, placementScore, true);
-        }, 280);
-      }
+      window.setTimeout(function () {
+        addScore(root, state, placementScore, true);
+      }, 280);
   
       return true;
     }
@@ -2862,6 +2795,8 @@
       if (pieceIndex < 0 || !state.hand[pieceIndex]) return;
   
       e.preventDefault();
+
+      playSfx('pickup');
   
       if (pieceEl.setPointerCapture) {
         pieceEl.setPointerCapture(e.pointerId);
@@ -2889,8 +2824,6 @@
         liftY: 96 * uiScale,
         previewCells: null
       };
-
-      playSfx('pickup');
       
       pieceEl.classList.add('is-held');
       
@@ -2945,6 +2878,10 @@
       if (!drag || e.pointerId !== drag.pointerId) return;
   
       e.preventDefault();
+
+      if (drag.previewCells && drag.previewCells.length) {
+        playSfx('place');
+      }
   
       if (commitPlacementFromPreview()) return;
       cleanupDrag();
@@ -3307,8 +3244,33 @@
 
         if (!level) return;
 
+        state.screen = 'game';
+
         state.currentLevel = level;
         state.levelId = level.id;
+
+        if (level.id === 1) {
+          state.score = 0;
+        } else {
+          state.score = level.minScore;
+        }
+        state.displayScore = state.score;
+
+        state.moveCount = 0;
+        state.comboStep = 0;
+        state.animMap = null;
+        state.blastIndices = [];
+        state.isResolving = false;
+
+        state.pendingBombSpawn = false;
+        state.wallSpawnsSinceBomb = 0;
+
+        if (level.id >= 2) {
+          state.pendingBombSpawn = true;
+        }
+
+        seedBoardForCurrentLevel(state);
+        state.hand = generateHand(state.board, state.boardSize, state);
 
         render();
       },
@@ -3392,13 +3354,24 @@
   
     // 🔊 unlock audio on first interaction
     document.body.addEventListener('pointerdown', function initAudio() {
+      warmSfxPool('pickup', 3);
+      warmSfxPool('place', 3);
+  
       Object.values(SFX).forEach(function (s) {
         s.play().catch(function(){});
         s.pause();
         s.currentTime = 0;
       });
-    }, { once: true });
   
+      ['pickup', 'place'].forEach(function (name) {
+        (SFX_POOL[name] || []).forEach(function (s) {
+          s.play().catch(function(){});
+          s.pause();
+          s.currentTime = 0;
+        });
+      });
+    }, { once: true });
+
     var app = createApp();
     app.render();
   });
