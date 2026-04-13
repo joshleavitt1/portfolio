@@ -1090,7 +1090,7 @@ body {
   left: 0;
   top: 0;
   transform: translate(-50%, -100%);
-  z-index: 10001;
+  z-index: 10050;
   pointer-events: none;
   line-height: 0;
   animation: bmBoardMessagePop 1400ms cubic-bezier(.2,.8,.2,1) forwards;
@@ -1131,6 +1131,11 @@ body {
 
 .bm-board-message--style-life-loss .bm-board-message__text {
   stroke: #D73437;
+}
+
+.bm-board-message--style-points .bm-board-message__text {
+  fill: #FF7300;
+  stroke: #FFFFFF;
 }
 
 @keyframes bmBoardMessagePop {

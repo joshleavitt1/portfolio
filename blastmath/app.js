@@ -21,7 +21,8 @@
     pickup: new Audio('sounds/pickup.mp3'),
     place: new Audio('sounds/place.mp3'),
     blast: new Audio('sounds/blast.mp3'),
-    lose: new Audio('sounds/lose.mp3')
+    lose: new Audio('sounds/lose.mp3'),
+    start: new Audio('sounds/start.mp3')
   };
 
   Object.values(SFX).forEach(function (sound) {
@@ -88,6 +89,11 @@
   var INTRO_THUMB_POP_DELAY = 500;
   var INTRO_THUMB_POP_DURATION = 2500;
   var INTRO_BLAST_TO_MESSAGE_DELAY = INTRO_THUMB_POP_DELAY + INTRO_THUMB_POP_DURATION;
+  var BLAST_MESSAGE_STEP_DELAY = 420;
+  var BLAST_PRIMARY_MESSAGE_DELAY = INTRO_THUMB_POP_DELAY + BLAST_MESSAGE_STEP_DELAY;
+  var BLAST_SECONDARY_MESSAGE_DELAY = BLAST_PRIMARY_MESSAGE_DELAY + BLAST_MESSAGE_STEP_DELAY;
+  var POINTS_MESSAGE_EXTRA_DELAY = 260;
+  var POINTS_MESSAGE_DURATION = 1800;
 
   var LEVELS = [
     {
@@ -201,6 +207,7 @@
     state.moveCount = 0;
     state.pendingBombSpawn = false;
     state.wallSpawnsSinceBomb = 0;
+    state.pendingComboPoints = 0;
 
     state.intro = {
       active: false,
@@ -2347,6 +2354,7 @@
     window.setTimeout(function () {
       markIntroSeen();
       resetStandardGameState(state);
+      playSfx('start');
       transitionScreen(root, function () {
         renderGame(root, state);
       });
@@ -2360,6 +2368,11 @@
   
     blastResult = classifyBlastPhase(state.board, state.boardSize, comboStep);
     state.blastIndices = blastResult.blastIndices;
+
+    if (comboStep === 1) {
+      state.pendingComboPoints = 0;
+    }
+    state.pendingComboPoints += blastResult.scoreValue;
   
     if (!blastResult.hasBlast) {
       state.blastIndices = [];
@@ -2407,13 +2420,21 @@
       spawnBlastThumbPops(root, state, blastResult.blastIndices);
     }, INTRO_THUMB_POP_DELAY);
     
+    var pointsMessageDelay = BLAST_PRIMARY_MESSAGE_DELAY;
+    
     if (blastResult.blastLabel) {
       window.setTimeout(function () {
         showBoardMessage(root, blastResult.blastLabel, blastAnchor, undefined, undefined, 'blast');
-      }, 560);
+      }, BLAST_PRIMARY_MESSAGE_DELAY);
+    
+      pointsMessageDelay = BLAST_SECONDARY_MESSAGE_DELAY;
     }
     
     if (specialLifeMessage) {
+      var specialLifeDelay = blastResult.blastLabel
+        ? BLAST_SECONDARY_MESSAGE_DELAY
+        : BLAST_PRIMARY_MESSAGE_DELAY;
+    
       window.setTimeout(function () {
         showBoardMessage(
           root,
@@ -2423,7 +2444,9 @@
           undefined,
           specialEffectResult.lifeDelta < 0 ? 'life-loss' : 'life-gain'
         );
-      }, 760);
+      }, specialLifeDelay);
+    
+      pointsMessageDelay = Math.max(pointsMessageDelay, specialLifeDelay + BLAST_MESSAGE_STEP_DELAY);
     }
     
     spawnScoreStars(root);
@@ -2445,10 +2468,44 @@
           if (comboStep >= 2) {
             var finalComboLabel = 'Combo ' + Math.min(comboStep, 4) + 'x';
             var finalComboAnchor = blastAnchor;
+            var finalComboPoints = state.pendingComboPoints;
+          
             window.setTimeout(function () {
               showBoardMessage(root, finalComboLabel, finalComboAnchor, undefined, undefined, 'combo');
             }, 220);
+          
+            if (!isIntroBlast) {
+              window.setTimeout(function () {
+                showBoardMessage(
+                  root,
+                  formatPointsMessage(finalComboPoints),
+                  finalComboAnchor,
+                  undefined,
+                  undefined,
+                  'points',
+                  POINTS_MESSAGE_DURATION
+                );
+              }, 220 + BLAST_MESSAGE_STEP_DELAY + POINTS_MESSAGE_EXTRA_DELAY);
+            }
+          } else {
+            var finalSinglePoints = state.pendingComboPoints;
+          
+            if (!isIntroBlast) {
+              window.setTimeout(function () {
+                showBoardMessage(
+                  root,
+                  formatPointsMessage(finalSinglePoints),
+                  blastAnchor,
+                  undefined,
+                  undefined,
+                  'points',
+                  POINTS_MESSAGE_DURATION
+                );
+              }, pointsMessageDelay + POINTS_MESSAGE_EXTRA_DELAY);
+            }
           }
+          
+          state.pendingComboPoints = 0;
         
           state.isResolving = false;
           state.comboStep = 0;
@@ -2912,8 +2969,12 @@
   
     return '';
   }
+
+  function formatPointsMessage(points) {
+    return '+' + (points || 0);
+  }
   
-  function showBoardMessage(root, text, anchor, yOffset, positionVariant, styleVariant) {
+  function showBoardMessage(root, text, anchor, yOffset, positionVariant, styleVariant, duration) {
     if (!text) return;
   
     var oldMsg = document.body.querySelector('.bm-board-message');
@@ -2952,7 +3013,7 @@
   
     window.setTimeout(function () {
       if (msg.parentNode) msg.parentNode.removeChild(msg);
-    }, 1400);
+    }, duration || 1400);
   }
 
   function syncHudUi(root, state) {
@@ -3112,6 +3173,7 @@
       screen: 'home',
       highScore: readHighScore(),
       score: 0,
+      pendingComboPoints: 0,
       displayScore: 0,
       scoreAnimFrame: null,
       scoreAnimDoneTimer: null,
@@ -3164,12 +3226,15 @@
               transitionScreen(root, function () {
                 if (isIntroMode()) {
                   setupIntroStepByNumber(state, getIntroStartStep());
+                  playSfx('start');
                 } else if (!hasSeenIntro()) {
                   setupIntroStepByNumber(state, 1);
+                  playSfx('start');
                 } else {
                   resetStandardGameState(state);
+                  playSfx('start');
                 }
-            
+                
                 state.screen = 'game';
                 render();
               });
