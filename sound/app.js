@@ -27,59 +27,23 @@
 
   Object.values(SFX).forEach(function (sound) {
     sound.preload = 'auto';
+    sound.playsInline = true;
+    sound.muted = false;
     sound.load();
   });
-
-  var SFX_POOL = {
-    pickup: [],
-    place: []
-  };
-
-  function warmSfxPool(name, count) {
-    var base = SFX[name];
-    if (!base) return;
-
-    SFX_POOL[name] = [];
-
-    for (var i = 0; i < count; i++) {
-      var clone = base.cloneNode(true);
-      clone.preload = 'auto';
-      clone.load();
-      SFX_POOL[name].push(clone);
-    }
-  }
 
   function playSfx(name) {
     var sound = SFX[name];
     if (!sound) return;
 
     try {
-      if (name === 'pickup' || name === 'place') {
-        var pool = SFX_POOL[name] || [];
-        var clone = null;
-
-        for (var i = 0; i < pool.length; i++) {
-          if (pool[i].paused || pool[i].ended) {
-            clone = pool[i];
-            break;
-          }
-        }
-
-        if (!clone) {
-          clone = sound.cloneNode(true);
-          clone.preload = 'auto';
-          clone.load();
-          pool.push(clone);
-          SFX_POOL[name] = pool;
-        }
-
-        clone.currentTime = 0;
-        clone.play().catch(function(){});
-        return;
-      }
-
+      sound.pause();
       sound.currentTime = 0;
-      sound.play().catch(function(){});
+
+      var playPromise = sound.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(function(){});
+      }
     } catch (e) {}
   }
 
@@ -111,7 +75,7 @@
     {
       id: 2,
       minScore: 1000,
-      maxScore: 3000,
+      maxScore: 2000,
       wallDropRate: 4,
       pieceBias: 'double',
       features: {
@@ -122,9 +86,23 @@
     },
     {
       id: 3,
-      minScore: 3000,
-      maxScore: 4000,
+      minScore: 2000,
+      maxScore: 3000,
       wallDropRate: 4,
+      pieceBias: 'mixed',
+      features: {
+        bombs: true,
+        skulls: true,
+        skullChance: 0.10,
+        hearts: true,
+        heartChance: 0.05
+      }
+    },
+    {
+      id: 4,
+      minScore: 3000,
+      maxScore: Infinity,
+      wallDropRate: 3,
       pieceBias: 'mixed',
       features: {
         bombs: true,
@@ -205,9 +183,11 @@
     state.isResolving = false;
     state.boardMessage = "";
     state.moveCount = 0;
+    state.handCount = 0;
     state.pendingBombSpawn = false;
     state.wallSpawnsSinceBomb = 0;
     state.pendingComboPoints = 0;
+    state.justDealtNewHand = false;
 
     state.intro = {
       active: false,
@@ -1018,29 +998,39 @@
   
     var features = state.currentLevel.features;
     if (!features.skulls && !features.hearts) return false;
-
+  
+    var levelId = state.currentLevel ? state.currentLevel.id : 1;
+  
+    // Level 3: only check every OTHER fresh hand
+    if (levelId === 3 && state.handCount % 2 !== 0) {
+      return false;
+    }
+  
+    // Level 4+: check every fresh hand
+    // no extra gate needed here
+  
     var skullChance = features.skullChance || 0;
     var baseHeartChance = features.heartChance || 0;
     var heartChance = baseHeartChance;
-
+  
     if (state.lives === 2) {
       heartChance = baseHeartChance * CONFIG.heartChanceScaleAt2Lives;
     } else if (state.lives === 1) {
       heartChance = baseHeartChance * CONFIG.heartChanceScaleAt1Life;
     }
-
+  
     var rolledSkull = !!features.skulls && Math.random() < skullChance;
     var rolledHeart = !!features.hearts && Math.random() < heartChance;
-
+  
     if (!rolledSkull && !rolledHeart) return false;
-
+  
     if (rolledSkull && rolledHeart) {
       if (state.lives >= CONFIG.startingLives) {
         return dropRandomSpecialTile(state, 'skull');
       }
       return dropRandomSpecialTile(state, 'heart');
     }
-
+  
     if (rolledHeart) return dropRandomSpecialTile(state, 'heart');
     return dropRandomSpecialTile(state, 'skull');
   }
@@ -1074,8 +1064,11 @@
         }
       }
   
-      specialSpawn = maybeDropSpecialTile(state);
-      if (specialSpawn) spawns.push(specialSpawn);
+      if (state.justDealtNewHand) {
+        specialSpawn = maybeDropSpecialTile(state);
+        if (specialSpawn) spawns.push(specialSpawn);
+        state.justDealtNewHand = false;
+      }
     }
   
     if (!spawns.length) return;
@@ -1231,6 +1224,8 @@
   
   function resetBoardAfterLifeLoss(state) {
     state.moveCount = 0;
+    state.handCount = 0;
+    state.justDealtNewHand = false;
     seedBoardForCurrentLevel(state);
     state.hand = generateHand(state.board, state.boardSize, state);
     state.animMap = null;
@@ -2807,6 +2802,8 @@
       if (!(state.intro && state.intro.active)) {
         if (state.hand.every(function (piece) { return !piece; })) {
           state.hand = generateHand(state.board, state.boardSize, state);
+          state.handCount += 1;
+          state.justDealtNewHand = true;
         }
       }
   
@@ -2933,14 +2930,18 @@
   
     function endDrag(e) {
       if (!drag || e.pointerId !== drag.pointerId) return;
-  
+
       e.preventDefault();
 
-      if (drag.previewCells && drag.previewCells.length) {
-        playSfx('place');
+      var hadValidPreview = !!(drag.previewCells && drag.previewCells.length);
+
+      if (commitPlacementFromPreview()) {
+        if (hadValidPreview) {
+          playSfx('place');
+        }
+        return;
       }
-  
-      if (commitPlacementFromPreview()) return;
+
       cleanupDrag();
     }
   
@@ -3181,6 +3182,8 @@
       lives: CONFIG.startingLives,
       boardSize: CONFIG.boardSize,
       moveCount: 0,
+      handCount: 0,
+      justDealtNewHand: false,
       levelId: 1,
       currentLevel: LEVELS[0],
       hand: generateHand(createEmptyBoard(CONFIG.boardSize), CONFIG.boardSize, null),
@@ -3322,11 +3325,13 @@
         state.displayScore = state.score;
 
         state.moveCount = 0;
+        state.handCount = 0;
+        state.justDealtNewHand = false;
         state.comboStep = 0;
         state.animMap = null;
         state.blastIndices = [];
         state.isResolving = false;
-
+        
         state.pendingBombSpawn = false;
         state.wallSpawnsSinceBomb = 0;
 
@@ -3419,21 +3424,26 @@
   
     // 🔊 unlock audio on first interaction
     document.body.addEventListener('pointerdown', function initAudio() {
-      warmSfxPool('pickup', 3);
-      warmSfxPool('place', 3);
-  
       Object.values(SFX).forEach(function (s) {
-        s.play().catch(function(){});
-        s.pause();
-        s.currentTime = 0;
-      });
-  
-      ['pickup', 'place'].forEach(function (name) {
-        (SFX_POOL[name] || []).forEach(function (s) {
-          s.play().catch(function(){});
-          s.pause();
-          s.currentTime = 0;
-        });
+        try {
+          s.volume = 0.001;
+          var p = s.play();
+          if (p && typeof p.then === 'function') {
+            p.then(function () {
+              s.pause();
+              s.currentTime = 0;
+              s.volume = 1;
+            }).catch(function () {
+              s.volume = 1;
+            });
+          } else {
+            s.pause();
+            s.currentTime = 0;
+            s.volume = 1;
+          }
+        } catch (e) {
+          s.volume = 1;
+        }
       });
     }, { once: true });
 
