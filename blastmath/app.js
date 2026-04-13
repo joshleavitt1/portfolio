@@ -25,6 +25,12 @@
     start: new Audio('sounds/start.mp3')
   };
 
+  var audioCtx = null;
+  var SFX_BUFFERS = {
+    pickup: null,
+    place: null
+  };
+
   Object.values(SFX).forEach(function (sound) {
     sound.preload = 'auto';
     sound.playsInline = true;
@@ -32,7 +38,73 @@
     sound.load();
   });
 
+  function ensureAudioContext() {
+    if (!audioCtx) {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) audioCtx = new Ctx();
+    }
+
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(function(){});
+    }
+
+    return audioCtx;
+  }
+
+  function loadBuffer(url, done) {
+    var ctx = ensureAudioContext();
+    if (!ctx) {
+      done(null);
+      return;
+    }
+
+    fetch(url)
+      .then(function (res) { return res.arrayBuffer(); })
+      .then(function (buf) { return ctx.decodeAudioData(buf); })
+      .then(function (decoded) { done(decoded); })
+      .catch(function () { done(null); });
+  }
+
+  function primeResponsiveSfx() {
+    if (SFX_BUFFERS.pickup && SFX_BUFFERS.place) return;
+
+    loadBuffer('sounds/pickup.mp3', function (buffer) {
+      SFX_BUFFERS.pickup = buffer;
+    });
+
+    loadBuffer('sounds/place.mp3', function (buffer) {
+      SFX_BUFFERS.place = buffer;
+    });
+  }
+
+  function playBufferedSfx(name) {
+    var ctx = ensureAudioContext();
+    var buffer = SFX_BUFFERS[name];
+
+    if (!ctx || !buffer) return false;
+
+    try {
+      var source = ctx.createBufferSource();
+      var gain = ctx.createGain();
+
+      gain.gain.value = 1;
+
+      source.buffer = buffer;
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      source.start(0);
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function playSfx(name) {
+    if (name === 'pickup' || name === 'place') {
+      if (playBufferedSfx(name)) return;
+    }
+
     var sound = SFX[name];
     if (!sound) return;
 
@@ -2935,10 +3007,11 @@
 
       var hadValidPreview = !!(drag.previewCells && drag.previewCells.length);
 
+      if (hadValidPreview) {
+        playSfx('place');
+      }
+
       if (commitPlacementFromPreview()) {
-        if (hadValidPreview) {
-          playSfx('place');
-        }
         return;
       }
 
@@ -3229,15 +3302,12 @@
               transitionScreen(root, function () {
                 if (isIntroMode()) {
                   setupIntroStepByNumber(state, getIntroStartStep());
-                  playSfx('start');
                 } else if (!hasSeenIntro()) {
                   setupIntroStepByNumber(state, 1);
-                  playSfx('start');
                 } else {
                   resetStandardGameState(state);
                   playSfx('start');
-                }
-                
+                }           
                 state.screen = 'game';
                 render();
               });
@@ -3424,10 +3494,17 @@
   
     // 🔊 unlock audio on first interaction
     document.body.addEventListener('pointerdown', function initAudio() {
-      Object.values(SFX).forEach(function (s) {
+      ensureAudioContext();
+      primeResponsiveSfx();
+
+      ['pickup', 'place', 'blast'].forEach(function (name) {
+        var s = SFX[name];
+        if (!s) return;
+
         try {
           s.volume = 0.001;
           var p = s.play();
+
           if (p && typeof p.then === 'function') {
             p.then(function () {
               s.pause();
