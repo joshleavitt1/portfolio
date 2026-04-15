@@ -276,6 +276,12 @@ body {
 .bm-hud-icon--daily {
   width: calc(40px * var(--bm-ui-scale));
   height: calc(40px * var(--bm-ui-scale));
+  animation: bmGemIdle 2.2s ease-in-out infinite;
+}
+
+@keyframes bmGemIdle {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
 }
 
 .bm-score,
@@ -390,114 +396,6 @@ body {
 .bm-score__value--daily {
   font-size: calc(72px * var(--bm-ui-scale));
   line-height: 1;
-  color: #ffffff;
-  transition:
-    transform 140ms ease,
-    text-shadow 140ms ease,
-    filter 140ms ease;
-}
-
-.bm-score__burst--daily-moves {
-  display: block;
-}
-
-.bm-score-star--moves {
-  border-radius: 999px;
-  box-shadow:
-    0 calc(2px * var(--bm-ui-scale)) calc(4px * var(--bm-ui-scale)) rgba(0,0,0,.18);
-}
-
-.bm-moves--safe {
-  animation: bmMovesSafePulse 1250ms ease-in-out infinite;
-}
-
-.bm-moves--warning {
-  animation: bmMovesWarningPulse 1250ms ease-in-out infinite;
-}
-
-.bm-moves--danger {
-  animation: bmMovesDangerPulse 1250ms ease-in-out infinite;
-}
-
-@keyframes bmMovesSafePulse {
-  0%, 100% {
-    transform: scale(1);
-    color: #ffffff;
-    text-shadow:
-      0 calc(2px * var(--bm-ui-scale))
-      calc(3px * var(--bm-ui-scale))
-      rgba(0,0,0,.25);
-    filter: saturate(1) brightness(1);
-  }
-  50% {
-    transform: scale(1.15);
-    color: #cffff0;
-    text-shadow:
-      0 calc(2px * var(--bm-ui-scale))
-      calc(3px * var(--bm-ui-scale))
-      rgba(0,0,0,.25),
-      0 0 calc(14px * var(--bm-ui-scale)) rgb(0, 155, 23),
-      0 0 calc(28px * var(--bm-ui-scale)) rgba(0, 113, 47, 0.95);
-    filter: saturate(1.1) brightness(1.05);
-  }
-}
-
-@keyframes bmMovesWarningPulse {
-  0%, 100% {
-    transform: scale(1);
-    color: #ffffff;
-    text-shadow:
-      0 calc(2px * var(--bm-ui-scale))
-      calc(3px * var(--bm-ui-scale))
-      rgba(0,0,0,.25);
-    filter: saturate(1) brightness(1);
-  }
-  50% {
-    transform: scale(1.15);
-    color: #fff0b8;
-    text-shadow:
-      0 calc(2px * var(--bm-ui-scale))
-      calc(3px * var(--bm-ui-scale))
-      rgba(0,0,0,.25),
-      0 0 calc(14px * var(--bm-ui-scale)) rgba(255,191,46),
-      0 0 calc(28px * var(--bm-ui-scale)) rgba(255,122,0,.95);
-    filter: saturate(1.1) brightness(1.05);
-  }
-}
-
-@keyframes bmMovesDangerPulse {
-  0%, 100% {
-    transform: scale(1);
-    color: #ffffff;
-    text-shadow:
-      0 calc(2px * var(--bm-ui-scale))
-      calc(3px * var(--bm-ui-scale))
-      rgba(0,0,0,.25);
-    filter: saturate(1) brightness(1);
-  }
-  50% {
-    transform: scale(1.15);
-    color: #ffd4df;
-    text-shadow:
-      0 calc(2px * var(--bm-ui-scale))
-      calc(3px * var(--bm-ui-scale))
-      rgba(0,0,0,.25),
-      0 0 calc(14px * var(--bm-ui-scale)) rgba(255,70,116),
-      0 0 calc(28px * var(--bm-ui-scale)) rgba(214,52,55,.95);
-    filter: saturate(1.1) brightness(1.05);
-  }
-}
-
-@keyframes bmMovesHit {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.32);
-  }
-  100% {
-    transform: scale(1);
-  }
 }
 
 .bm-score__value.is-scoring {
@@ -704,8 +602,7 @@ body {
 }
 
 .bm-tile.bm-drop-land,
-.bm-neutral-block.bm-drop-land,
-.bm-special-tile.bm-drop-land {
+.bm-neutral-block.bm-drop-land {
   animation: bmDropLand var(--bm-drop-duration, 320ms) cubic-bezier(.22,.61,.36,1);
   transform-origin: 50% 50%;
   z-index: 1;
