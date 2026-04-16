@@ -132,10 +132,10 @@
     } catch (e) {}
   }
 
-  var BOOT_TOTAL_MS = 1750;
-  var BOOT_POP_IN_MS = 350;
-  var BOOT_HOLD_MS = 1100;
-  var BOOT_POP_OUT_MS = 300;
+  var BOOT_TOTAL_MS = 2625;
+  var BOOT_POP_IN_MS = 525;
+  var BOOT_HOLD_MS = 1650;
+  var BOOT_POP_OUT_MS = 450;
   var INTRO_QUERY_VALUE = "1";
   var INTRO_MESSAGE_TO_NEXT_STEP_DELAY = 250;
   var CHAIN_NEXT_BLAST_DELAY = 500;
@@ -674,6 +674,18 @@
   }
 
   var INTRO_SEEN_KEY = "blastmath.introSeen";
+
+  var BOOT_SEEN_KEY = "blastmath.bootSeen";
+
+  function hasSeenBoot() {
+    try { return localStorage.getItem(BOOT_SEEN_KEY) === "1"; }
+    catch (e) { return false; }
+  }
+
+  function markBootSeen() {
+    try { localStorage.setItem(BOOT_SEEN_KEY, "1"); }
+    catch (e) {}
+  }
 
   function hasSeenIntro() {
     try { return localStorage.getItem(INTRO_SEEN_KEY) === "1"; }
@@ -1459,7 +1471,7 @@ function markHelperSeen(id) {
   
     return {
       index: landingIndex,
-      fromRow: -1,
+      fromRow: -2,
       toRow: landingRow,
       column: column
     };
@@ -1498,7 +1510,7 @@ function markHelperSeen(id) {
   
     return {
       index: landingIndex,
-      fromRow: -1,
+      fromRow: -2,
       toRow: landingRow,
       column: column
     };
@@ -1534,7 +1546,7 @@ function markHelperSeen(id) {
   
     return {
       index: landingIndex,
-      fromRow: -1,
+      fromRow: -2,
       toRow: landingRow,
       column: column
     };
@@ -2542,7 +2554,7 @@ function markHelperSeen(id) {
     '</div></div>';
   }
 
-  function bindIntroSkip(root, state) {
+  function bindIntroSkip(root, state, render) {
     if (!(state.intro && state.intro.active)) return;
   
     var skipBtn = root.querySelector('[data-skip-intro]');
@@ -2566,7 +2578,7 @@ function markHelperSeen(id) {
   
       spawnCenterUiBurst(root, 20, 2);
       if (window.posthog) window.posthog.capture('intro_skipped', { intro_step: state.intro && state.intro.step });
-      runIntroExitToFreshBoard(root, state);
+      runIntroExitToFreshBoard(root, state, render);
     };
 
     skipBtn.addEventListener('pointerdown', skipIntro);
@@ -2650,7 +2662,7 @@ function markHelperSeen(id) {
           '<button class="bm-btn bm-home__btn bm-home__btn--classic" type="button" data-play>Classic</button>' +
           '<button class="bm-btn bm-btn--daily bm-home__btn bm-home__btn--daily" type="button" data-daily>' +
             '<span>Daily Blast</span>' +
-            '<span class="bm-daily-badge"></span>' +
+            '<span class="bm-daily-ribbon"><span class="bm-daily-ribbon__text">Free</span></span>' +
           '</button>' +
         '</div>' +
       '</section>';
@@ -2750,8 +2762,14 @@ function markHelperSeen(id) {
   '</section>';
 
   syncScoreUi(root, state);
-  bindIntroSkip(root, state);
+  bindIntroSkip(root, state, renderApp);
   bindHelperModal(root, state, renderApp);
+
+  if (state.intro && state.intro.active) {
+    ensureAudioContext();
+    primeResponsiveSfx();
+  }
+
   state.animMap = null;
   }
 
@@ -3259,7 +3277,7 @@ function markHelperSeen(id) {
     return timerId;
   }
 
-  function runIntroExitToFreshBoard(root, state) {
+  function runIntroExitToFreshBoard(root, state, render) {
     clearIntroTimers(state);
   
     var oldMsg = document.body.querySelector('.bm-board-message');
@@ -3283,11 +3301,9 @@ function markHelperSeen(id) {
       clearSavedGame('game');
       resetStandardGameState(state);
       state.screen = 'home';
-      playSfx('start');
-  
-      transitionScreen(root, function () {
-        render();
-      });
+      state.bootStarted = false;
+
+      render();
     }, 320);
   }
 
@@ -3495,7 +3511,7 @@ function markHelperSeen(id) {
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             } else {
               queueIntroTimer(state, function () {
-                runIntroExitToFreshBoard(root, state);
+                runIntroExitToFreshBoard(root, state, render);
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             }
           }
@@ -4253,6 +4269,8 @@ function markHelperSeen(id) {
       boardMessage: '',
       boardMessageTimer: null,
       introTimers: [],
+      bootStarted: false,
+      bootTimer: null,
       homeResult: null,
       helperModal: null,
       dailyHands: [],
@@ -4261,8 +4279,6 @@ function markHelperSeen(id) {
       dailyJustHitDanger: false,
       dailyMovesBand: null,
       dailyMovesPulseStarted: false,
-      bootStarted: false,
-      bootTimer: null,
       intro: {
         active: false,
         step: 0,
@@ -4286,6 +4302,11 @@ function markHelperSeen(id) {
       },
     };
 
+    document.body.addEventListener('pointerdown', function initAudioWarmup() {
+      ensureAudioContext();
+      primeResponsiveSfx();
+    }, { once: true });
+
     function runBootFlow() {
       if (state.bootTimer) {
         window.clearTimeout(state.bootTimer);
@@ -4296,27 +4317,39 @@ function markHelperSeen(id) {
 
       state.bootTimer = window.setTimeout(function () {
         state.bootTimer = null;
+        markBootSeen();
 
         transitionScreen(root, function () {
           if (isIntroMode()) {
             setupIntroStepByNumber(state, getIntroStartStep());
             state.screen = 'game';
+            render();
             playSfx('start');
-          } else if (!hasSeenIntro()) {
-            setupIntroStepByNumber(state, 1);
-            state.screen = 'game';
-            playSfx('start');
-          } else {
-            state.screen = 'home';
+            return;
           }
 
+          if (!hasSeenIntro()) {
+            setupIntroStepByNumber(state, 1);
+            state.screen = 'game';
+            render();
+            playSfx('start');
+            return;
+          }
+
+          state.screen = 'home';
           render();
         });
-      }, BOOT_TOTAL_MS);
+      }, 1750);
     }
 
     function render() {
       if (state.screen === 'boot') {
+        if (hasSeenBoot()) {
+          state.screen = 'home';
+          render();
+          return;
+        }
+
         renderBoot(root);
 
         if (!state.bootStarted) {
@@ -4352,9 +4385,8 @@ function markHelperSeen(id) {
                   state.screen = 'game';
                 }
 
-                playSfx('start');
-                
                 render();
+                playSfx('start');
               });
             }, 120);
           });
@@ -4380,28 +4412,26 @@ function markHelperSeen(id) {
                   var dailyKey = getCurrentDailyPuzzleKey();
                   startDailyGame(state, dailyKey);
                 }
-                
+
                 playSfx('start');
-                
+
                 if (window.posthog) {
                   window.posthog.capture('daily_started', { puzzle_id: state.daily.puzzleId });
                 }
-                
+
                 render();
               });
             }, 120);
           });
         }
-
-      } 
-      else {
+      } else {
         renderGame(root, state, render);
 
         if (!state.dragBound) {
           enableDrag(root, state, render);
           state.dragBound = true;
         }
-        
+
         var game = root.querySelector('[data-game]');
         if (game) {
           game.addEventListener('dblclick', function () {
