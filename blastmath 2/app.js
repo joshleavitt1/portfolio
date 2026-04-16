@@ -8,6 +8,8 @@
     handTileGap: 2,
     startingLives: 3,
     storageKey: "blastmath.highscore",
+    classicSaveKey: "blastmath.save.classic",
+    dailySaveKey: "blastmath.save.daily",
 
     heartChanceScaleAt2Lives: 2,
     heartChanceScaleAt1Life: 3,
@@ -677,9 +679,231 @@
     catch (e) {}
   }
 
+  var HELPER_SEEN_KEY = "blastmath.helperSeen";
+
+function readHelperSeen() {
+  try { return JSON.parse(localStorage.getItem(HELPER_SEEN_KEY) || "{}"); }
+  catch (e) { return {}; }
+}
+
+function hasSeenHelper(id) {
+  var seen = readHelperSeen();
+  return seen[id] === 1;
+}
+
+function markHelperSeen(id) {
+  try {
+    var seen = readHelperSeen();
+    seen[id] = 1;
+    localStorage.setItem(HELPER_SEEN_KEY, JSON.stringify(seen));
+  } catch (e) {}
+}
+
   function readHighScore() {
     try { return Number(localStorage.getItem(CONFIG.storageKey) || 0) || 0; }
     catch (e) { return 0; }
+  }
+
+  function getSaveKeyForScreen(screen) {
+    if (screen === 'daily') return CONFIG.dailySaveKey;
+    return CONFIG.classicSaveKey;
+  }
+  
+  function getActiveSaveKey(state) {
+    if (state && state.screen === 'daily') return CONFIG.dailySaveKey;
+    return CONFIG.classicSaveKey;
+  }
+
+  function clonePieceForSave(piece) {
+    if (!piece) return null;
+
+    return {
+      id: piece.id,
+      group: piece.group,
+      rank: piece.rank,
+      width: piece.width,
+      height: piece.height,
+      cells: (piece.cells || []).map(function (cell) {
+        return {
+          x: cell.x,
+          y: cell.y,
+          value: cell.value,
+          tone: cell.tone
+        };
+      })
+    };
+  }
+
+  function cloneHandForSave(hand) {
+    return (hand || []).map(function (piece) {
+      return clonePieceForSave(piece);
+    });
+  }
+
+  function cloneBoardForSave(board) {
+    return (board || []).map(function (cell) {
+      if (!cell) return null;
+      return Object.assign({}, cell);
+    });
+  }
+
+  function sanitizeSavedState(saved) {
+    if (!saved || typeof saved !== 'object') return null;
+    if (!saved.screen) return null;
+    if (!Array.isArray(saved.board)) return null;
+    if (!Array.isArray(saved.hand)) return null;
+    return saved;
+  }
+
+  function readSavedGame(screen) {
+    try {
+      var key = getSaveKeyForScreen(screen);
+      var raw = localStorage.getItem(key);
+      if (!raw) return null;
+      return sanitizeSavedState(JSON.parse(raw));
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  function clearSavedGame(screen) {
+    try {
+      localStorage.removeItem(getSaveKeyForScreen(screen));
+    } catch (e) {}
+  }
+  
+  function clearAllSavedGames() {
+    try {
+      localStorage.removeItem(CONFIG.classicSaveKey);
+      localStorage.removeItem(CONFIG.dailySaveKey);
+    } catch (e) {}
+  }
+  
+  function writeSavedGame(state) {
+    try {
+      if (!state) return;
+  
+      if (state.screen === 'home') {
+        return;
+      }
+  
+      if (state.intro && state.intro.active) {
+        clearSavedGame('game');
+        return;
+      }
+  
+      var payload = {
+        screen: state.screen,
+        highScore: state.highScore,
+        score: state.score,
+        displayScore: state.displayScore,
+        comboStep: state.comboStep,
+        lives: state.lives,
+        boardSize: state.boardSize,
+        moveCount: state.moveCount,
+        handCount: state.handCount,
+        justDealtNewHand: state.justDealtNewHand,
+        levelId: state.levelId,
+        currentLevelId: state.currentLevel ? state.currentLevel.id : 1,
+        board: cloneBoardForSave(state.board),
+        hand: cloneHandForSave(state.hand),
+        pendingBombSpawn: state.pendingBombSpawn,
+        wallSpawnsSinceBomb: state.wallSpawnsSinceBomb,
+        pendingComboPoints: state.pendingComboPoints,
+        dailyHands: (state.dailyHands || []).map(function (handSet) {
+          return cloneHandForSave(handSet);
+        }),
+        dailyHandIndex: state.dailyHandIndex || 0,
+        dailyMovesBand: state.dailyMovesBand || null,
+        daily: state.daily ? {
+          active: !!state.daily.active,
+          puzzleId: state.daily.puzzleId,
+          movesRemaining: state.daily.movesRemaining,
+          gemTarget: state.daily.gemTarget,
+          gemsRemaining: state.daily.gemsRemaining,
+          completed: !!state.daily.completed,
+          failed: !!state.daily.failed,
+          handIndex: state.daily.handIndex || 0,
+          handCount: state.daily.handCount || 0,
+          variantSeed: state.daily.variantSeed,
+          chosenGems: state.daily.chosenGems || []
+        } : null
+      };
+  
+      localStorage.setItem(getActiveSaveKey(state), JSON.stringify(payload));
+    } catch (e) {}
+  }
+
+  function restoreSavedGame(state, saved) {
+    if (!saved) return false;
+
+    state.screen = saved.screen || 'home';
+    state.highScore = typeof saved.highScore === 'number' ? saved.highScore : state.highScore;
+    state.score = typeof saved.score === 'number' ? saved.score : 0;
+    state.displayScore = typeof saved.displayScore === 'number' ? saved.displayScore : state.score;
+    state.comboStep = typeof saved.comboStep === 'number' ? saved.comboStep : 0;
+    state.lives = typeof saved.lives === 'number' ? saved.lives : CONFIG.startingLives;
+    state.boardSize = typeof saved.boardSize === 'number' ? saved.boardSize : CONFIG.boardSize;
+    state.moveCount = typeof saved.moveCount === 'number' ? saved.moveCount : 0;
+    state.handCount = typeof saved.handCount === 'number' ? saved.handCount : 0;
+    state.justDealtNewHand = !!saved.justDealtNewHand;
+    state.levelId = typeof saved.levelId === 'number' ? saved.levelId : 1;
+    state.currentLevel = LEVELS.filter(function (level) {
+      return level.id === (saved.currentLevelId || state.levelId);
+    })[0] || LEVELS[0];
+    state.board = cloneBoardForSave(saved.board);
+    state.hand = cloneHandForSave(saved.hand);
+    state.pendingBombSpawn = !!saved.pendingBombSpawn;
+    state.wallSpawnsSinceBomb = typeof saved.wallSpawnsSinceBomb === 'number' ? saved.wallSpawnsSinceBomb : 0;
+    state.pendingComboPoints = typeof saved.pendingComboPoints === 'number' ? saved.pendingComboPoints : 0;
+    state.animMap = null;
+    state.blastIndices = [];
+    state.isResolving = false;
+    state.boardMessage = '';
+    state.dailyHands = (saved.dailyHands || []).map(function (handSet) {
+      return cloneHandForSave(handSet);
+    });
+    state.dailyHandIndex = typeof saved.dailyHandIndex === 'number' ? saved.dailyHandIndex : 0;
+    state.dailyMovesBand = saved.dailyMovesBand || null;
+    state.dailyMovesPulseStarted = false;
+    state.dailyJustHitDanger = false;
+
+    state.intro = {
+      active: false,
+      step: 0,
+      title: "",
+      sourceIndex: null,
+      allowedTargetIndex: null,
+      hoveringValid: false,
+      completed: false,
+      direction: "horizontal",
+      targetQueue: [],
+      targetCursor: 0
+    };
+
+    state.daily = saved.daily ? {
+      active: !!saved.daily.active,
+      puzzleId: saved.daily.puzzleId,
+      movesRemaining: saved.daily.movesRemaining,
+      gemTarget: saved.daily.gemTarget,
+      gemsRemaining: saved.daily.gemsRemaining,
+      completed: !!saved.daily.completed,
+      failed: !!saved.daily.failed,
+      handIndex: saved.daily.handIndex || 0,
+      handCount: saved.daily.handCount || 0,
+      variantSeed: saved.daily.variantSeed,
+      chosenGems: saved.daily.chosenGems || []
+    } : {
+      active: false,
+      puzzleId: null,
+      movesRemaining: 0,
+      gemTarget: 0,
+      gemsRemaining: 0,
+      completed: false,
+      failed: false
+    };
+
+    return true;
   }
 
   function getCurrent12HourWindowIndex() {
@@ -1364,6 +1588,13 @@
       if (bombSpawn) {
         spawns.push(bombSpawn);
         state.pendingBombSpawn = false;
+
+        openHelperModal(state, {
+          id: 'bomb',
+          icon: 'bomb',
+          title: 'Bomb Tile',
+          body: 'Blast next to it to clear its row and column.'
+        });
       }
     } else {
       wallSpawn = maybeDropWall(state);
@@ -1382,27 +1613,42 @@
   
       if (state.justDealtNewHand) {
         specialSpawn = maybeDropSpecialTile(state);
-        if (specialSpawn) spawns.push(specialSpawn);
+
+        if (specialSpawn) {
+          spawns.push(specialSpawn);
+
+          var spawnedCell = state.board[specialSpawn.index];
+
+          if (isSkullCell(spawnedCell)) {
+            openHelperModal(state, {
+              id: 'skull',
+              icon: 'skull',
+              title: 'Skull Tile',
+              body: 'Blast it and lose 1 life.'
+            });
+          } else if (isHeartCell(spawnedCell)) {
+            openHelperModal(state, {
+              id: 'heart',
+              icon: 'heart',
+              title: 'Heart Tile',
+              body: 'Blast it and gain 1 life.'
+            });
+          }
+        }
+
         state.justDealtNewHand = false;
       }
     }
   
     if (!spawns.length) {
-
-      if (state.comboStep >= 2) {
-        setTimeout(function () {
-          playSfx('combo');
-        }, 120);
-      }
-    
-      // reset combo AFTER playing
       state.comboStep = 0;
-    
       return;
     }
+
+    state.animMap = null;
   
     state.animMap = buildSpawnAnimMap(root, state, spawns);
-    renderGame(root, state);
+    renderGame(root, state, render);
   }
 
   function getBombBlastIndices(index, size) {
@@ -1596,6 +1842,14 @@
 
     state.dailyHands = buildDailyHandsFromPuzzle(puzzle);
     state.dailyHandIndex = 0;
+    state.dailyJustHitDanger = false;
+    state.dailyMovesBand = null;
+    state.dailyMovesPulseStarted = false;
+
+    if (state.dailyMovesHitTimer) {
+      window.clearTimeout(state.dailyMovesHitTimer);
+      state.dailyMovesHitTimer = null;
+    }
 
     state.board = buildDailyBoardFromPuzzle(puzzle, chosenGems);
 
@@ -1746,7 +2000,7 @@
   
       showBoardMessage(root, 'Try Again', boardCenter, 0, 'centered');
       resetBoardAfterLifeLoss(state);
-      renderGame(root, state);
+      renderGame(root, state, render);
       animateLifeDelta(root, -1);
     }, 320);
   }
@@ -1766,6 +2020,7 @@
       playSfx('lose');
       if (window.posthog) window.posthog.capture('game_over', { score: state.score, high_score: state.highScore, level: state.levelId });
       transitionScreen(root, function () {
+        clearSavedGame('game');
         setHomeResult(state, { reason: 'last-heart-loss' });
         resetStandardGameState(state);
         state.screen = 'home';
@@ -1808,6 +2063,15 @@
 
       playSfx('start');
       showBoardMessage(root, 'Cleared!', null, 0, 'centered');
+
+      window.setTimeout(function () {
+        transitionScreen(root, function () {
+          clearSavedGame('daily');
+          state.screen = 'home';
+          render();
+        });
+      }, 1400);
+
       return true;
     }
 
@@ -1826,6 +2090,15 @@
 
       playSfx('lose');
       showBoardMessage(root, 'So Close!', null, 0, 'centered');
+
+      window.setTimeout(function () {
+        transitionScreen(root, function () {
+          clearSavedGame('daily');
+          state.screen = 'home';
+          render();
+        });
+      }, 1400);
+
       return true;
     }
 
@@ -2293,6 +2566,61 @@
     skipBtn.addEventListener('pointerdown', skipIntro);
   }
 
+  function openHelperModal(state, helper) {
+    if (!state || !helper || !helper.id) return false;
+    if (hasSeenHelper(helper.id)) return false;
+    if (state.helperModal) return false;
+  
+    markHelperSeen(helper.id);
+  
+    state.helperModal = {
+      id: helper.id,
+      icon: helper.icon || '',
+      title: helper.title || '',
+      body: helper.body || ''
+    };
+  
+    return true;
+  }
+  
+  function closeHelperModal(state) {
+    if (!state || !state.helperModal) return;
+    state.helperModal = null;
+  }
+  
+  function renderHelperModal(state) {
+    if (!state || !state.helperModal) return '';
+  
+    var helper = state.helperModal;
+  
+    return '' +
+      '<div class="bm-helper-modal" data-helper-modal>' +
+        '<div class="bm-helper-modal__scrim"></div>' +
+        '<div class="bm-helper-modal__card" role="dialog" aria-modal="true" aria-label="' + helper.title + '">' +
+          '<button class="bm-helper-modal__close" type="button" aria-label="Close" data-helper-close>' +
+            '<img class="bm-helper-modal__close-icon" src="images/hud/close.svg" alt="" />' +
+          '</button>' +
+          '<div class="bm-helper-modal__body bm-helper-modal__body--daily">' + helper.body + '</div>' +
+        '</div>' +
+      '</div>';
+  }
+  
+  function bindHelperModal(root, state, render) {
+    if (!state || !state.helperModal) return;
+  
+    var nodes = root.querySelectorAll('[data-helper-dismiss], [data-helper-close]');
+    if (!nodes.length) return;
+  
+    nodes.forEach(function (node) {
+      node.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHelperModal(state);
+        render();
+      });
+    });
+  }
+
   function renderHome(root) {
     root.innerHTML = '' +
       '<section class="bm-screen bm-home">' +
@@ -2308,7 +2636,7 @@
       '</section>';
   }
 
-  function renderGame(root, state) {
+  function renderGame(root, state, renderApp) {
     var isDaily = isDailyMode(state);
     var isIntro = !!(state.intro && state.intro.active);
 
@@ -2353,7 +2681,8 @@
       : isDaily
       ? (
         '<div class="bm-score bm-score--daily">' +
-          '<div class="bm-score__value bm-score__value--daily" data-daily-moves-value>' + state.daily.movesRemaining + '</div>' +
+          '<div class="bm-score__burst bm-score__burst--daily-moves" data-daily-moves-burst></div>' +
+          '<div class="bm-score__value bm-score__value--daily bm-daily-moves-value" data-daily-moves-value>' + state.daily.movesRemaining + '</div>' +
         '</div>'
       )
       : (
@@ -2383,22 +2712,24 @@
     }).join('') + '</div>'
   );
 
-    root.innerHTML = '' +
-      '<section class="bm-screen bm-game" data-game>' +
-        hudHtml +
-        '<div class="bm-spacer" aria-hidden="true"></div>' +
-        scoreHtml +
-        '<div class="bm-spacer" aria-hidden="true"></div>' +
-        '<div class="bm-board-wrap">' +
-          '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
-        '</div>' +
-        '<div class="bm-spacer" aria-hidden="true"></div>' +
-        handHtml +
-      '</section>';
+  root.innerHTML = '' +
+  '<section class="bm-screen bm-game" data-game>' +
+    hudHtml +
+    '<div class="bm-spacer" aria-hidden="true"></div>' +
+    scoreHtml +
+    '<div class="bm-spacer" aria-hidden="true"></div>' +
+    '<div class="bm-board-wrap">' +
+      '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
+    '</div>' +
+    '<div class="bm-spacer" aria-hidden="true"></div>' +
+    handHtml +
+    renderHelperModal(state) +
+  '</section>';
 
-      syncScoreUi(root, state);
-      bindIntroSkip(root, state);
-      state.animMap = null;
+  syncScoreUi(root, state);
+  bindIntroSkip(root, state);
+  bindHelperModal(root, state, renderApp);
+  state.animMap = null;
   }
 
   function renderBoard(boardSize, board, animMap, blastIndices, state) {
@@ -2836,6 +3167,51 @@
     }, 1000);
   }
 
+  function spawnDailyMovesStars(root, band) {
+    var burst = root.querySelector('[data-daily-moves-burst]');
+    if (!burst) return;
+
+    burst.innerHTML = '';
+
+    var starCount = band === 'danger' ? 10 : band === 'warning' ? 7 : 5;
+    var tonePool = band === 'danger'
+      ? ['c5', 'c6']
+      : band === 'warning'
+        ? ['c3', 'c9']
+        : ['c2', 'c8'];
+
+    for (var i = 0; i < starCount; i++) {
+      var star = document.createElement('div');
+      var size = 10 + Math.round(Math.random() * 10);
+      var x = -72 + Math.round(Math.random() * 144);
+      var y = -24 + Math.round(Math.random() * 48);
+      var rot = -55 + Math.round(Math.random() * 110);
+      var delay = Math.round(Math.random() * 60);
+      var tone = tonePool[Math.floor(Math.random() * tonePool.length)];
+
+      star.className = 'bm-score-star bm-score-star--moves bm-mini--' + tone;
+      star.style.width = size + 'px';
+      star.style.height = size + 'px';
+      star.style.left = '50%';
+      star.style.top = '50%';
+      star.style.setProperty('--bm-star-x', x + 'px');
+      star.style.setProperty('--bm-star-y', y + 'px');
+      star.style.setProperty('--bm-star-rot', rot + 'deg');
+      star.style.setProperty('--bm-star-delay', delay + 'ms');
+
+      burst.appendChild(star);
+    }
+
+    burst.classList.remove('is-score-bursting');
+    void burst.offsetWidth;
+    burst.classList.add('is-score-bursting');
+
+    window.setTimeout(function () {
+      burst.classList.remove('is-score-bursting');
+      burst.innerHTML = '';
+    }, 1000);
+  }
+
   function clearIntroTimers(state) {
     if (!state || !state.introTimers) return;
   
@@ -2880,10 +3256,13 @@
     window.setTimeout(function () {
       markIntroSeen();
       if (window.posthog) window.posthog.capture('intro_completed');
+  
+      clearSavedGame('game');
       resetStandardGameState(state);
-      playSfx('start');
+      state.screen = 'home';
+  
       transitionScreen(root, function () {
-        renderGame(root, state);
+        render();
       });
     }, 320);
   }
@@ -2903,7 +3282,7 @@
   
     if (!blastResult.hasBlast) {
       state.blastIndices = [];
-      renderGame(root, state);
+      renderGame(root, state, render);
       state.isResolving = false;
       state.comboStep = 0;
     
@@ -2923,7 +3302,7 @@
   
     var isIntroBlast = !!(state.intro && state.intro.active);
 
-    renderGame(root, state);
+    renderGame(root, state, render);
     
     var blastAnchor = getBlastAnchor(root, blastResult.blastIndices);
     
@@ -3026,6 +3405,7 @@
             if (window.posthog) window.posthog.capture('combo_achieved', { combo_step: comboStep, total_score_awarded: finalComboPoints });
 
             window.setTimeout(function () {
+              playSfx('combo');
               showBoardMessage(root, finalComboLabel, finalComboAnchor, undefined, undefined, 'combo');
             }, 220);
           
@@ -3081,13 +3461,13 @@
             clearIntroTimers(state);
           
             queueIntroTimer(state, function () {
-              renderGame(root, state);
+              renderGame(root, state, render);
             }, introMessageDelay);
           
             if (INTRO_STEPS[nextStep]) {
               queueIntroTimer(state, function () {
                 setupIntroStepByNumber(state, nextStep);
-                renderGame(root, state);
+                renderGame(root, state, render);
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             } else {
               queueIntroTimer(state, function () {
@@ -3353,7 +3733,12 @@
         state.moveCount += 1;
 
         if (isDailyMode(state) && state.daily.movesRemaining > 0) {
+          var previousDailyMoves = state.daily.movesRemaining;
           state.daily.movesRemaining -= 1;
+
+          if (previousDailyMoves > 4 && state.daily.movesRemaining === 4) {
+            state.dailyJustHitDanger = true;
+          }
         }
       }
   
@@ -3402,7 +3787,7 @@
       clearPreview();
       drag = null;
   
-      renderGame(root, state);
+      renderGame(root, state, render);
   
       window.setTimeout(function () {
         runBlastPhase(root, state, placedIndices, 1, render);
@@ -3417,6 +3802,7 @@
   
     function beginDrag(e) {
       if (state.isResolving) return;
+      if (state.helperModal) return;
       if (e.button !== undefined && e.button !== 0) return;
   
       var pieceEl = e.target.closest('[data-piece]');
@@ -3611,6 +3997,57 @@
 
     if (dailyMovesEl && state.daily) {
       dailyMovesEl.textContent = state.daily.movesRemaining;
+
+      var nextBand = state.daily.movesRemaining > 8
+        ? 'safe'
+        : state.daily.movesRemaining > 4
+          ? 'warning'
+          : 'danger';
+
+      if (state.dailyMovesBand !== nextBand) {
+        dailyMovesEl.classList.remove('bm-moves--safe', 'bm-moves--warning', 'bm-moves--danger');
+
+        if (nextBand === 'safe') {
+          dailyMovesEl.classList.add('bm-moves--safe');
+        } else if (nextBand === 'warning') {
+          dailyMovesEl.classList.add('bm-moves--warning');
+        } else {
+          dailyMovesEl.classList.add('bm-moves--danger');
+        }
+
+        if (state.dailyMovesPulseStarted) {
+          spawnDailyMovesStars(root, nextBand);
+        }
+
+        state.dailyMovesBand = nextBand;
+      } else if (!state.dailyMovesPulseStarted) {
+        if (nextBand === 'safe') {
+          dailyMovesEl.classList.add('bm-moves--safe');
+        } else if (nextBand === 'warning') {
+          dailyMovesEl.classList.add('bm-moves--warning');
+        } else {
+          dailyMovesEl.classList.add('bm-moves--danger');
+        }
+      }
+
+      state.dailyMovesPulseStarted = true;
+
+      if (state.dailyJustHitDanger) {
+        dailyMovesEl.classList.remove('bm-moves-hit');
+        void dailyMovesEl.offsetWidth;
+        dailyMovesEl.classList.add('bm-moves-hit');
+        state.dailyJustHitDanger = false;
+
+        if (state.dailyMovesHitTimer) {
+          window.clearTimeout(state.dailyMovesHitTimer);
+        }
+
+        state.dailyMovesHitTimer = window.setTimeout(function () {
+          var liveMovesEl = root.querySelector('[data-daily-moves-value]');
+          if (liveMovesEl) liveMovesEl.classList.remove('bm-moves-hit');
+          state.dailyMovesHitTimer = null;
+        }, 320);
+      }
     }
   }
 
@@ -3703,7 +4140,7 @@
     if (skipRender) {
       syncHudUi(root, state);
     } else {
-      renderGame(root, state);
+      renderGame(root, state, render);
     }
 
     animateScoreTo(root, state);
@@ -3793,8 +4230,13 @@
       boardMessageTimer: null,
       introTimers: [],
       homeResult: null,
+      helperModal: null,
       dailyHands: [],
       dailyHandIndex: 0,
+      dailyMovesHitTimer: null,
+      dailyJustHitDanger: false,
+      dailyMovesBand: null,
+      dailyMovesPulseStarted: false,
       intro: {
         active: false,
         step: 0,
@@ -3835,16 +4277,24 @@
 
             window.setTimeout(function () {
               transitionScreen(root, function () {
-                if (isIntroMode()) {
+                var savedClassic = readSavedGame('game');
+
+                if (savedClassic) {
+                  restoreSavedGame(state, savedClassic);
+                  state.screen = 'game';
+                  playSfx('start');
+                } else if (isIntroMode()) {
                   setupIntroStepByNumber(state, getIntroStartStep());
+                  state.screen = 'game';
                 } else if (!hasSeenIntro()) {
                   setupIntroStepByNumber(state, 1);
+                  state.screen = 'game';
                 } else {
                   resetStandardGameState(state);
+                  state.screen = 'game';
                   playSfx('start');
                 }
-                if (window.posthog) window.posthog.capture('game_started', { high_score: state.highScore });
-                state.screen = 'game';
+                
                 render();
               });
             }, 120);
@@ -3858,12 +4308,26 @@
 
             window.setTimeout(function () {
               transitionScreen(root, function () {
-                var dailyKey = getCurrentDailyPuzzleKey();
-                startDailyGame(state, dailyKey);
+                var savedDaily = readSavedGame('daily');
+
+                if (
+                  savedDaily &&
+                  savedDaily.daily &&
+                  savedDaily.daily.active &&
+                  savedDaily.daily.puzzleId === getCurrentDailyPuzzleKey()
+                ) {
+                  restoreSavedGame(state, savedDaily);
+                } else {
+                  var dailyKey = getCurrentDailyPuzzleKey();
+                  startDailyGame(state, dailyKey);
+                }
+                
                 playSfx('start');
+                
                 if (window.posthog) {
                   window.posthog.capture('daily_started', { puzzle_id: state.daily.puzzleId });
                 }
+                
                 render();
               });
             }, 120);
@@ -3872,7 +4336,7 @@
 
       } 
       else {
-        renderGame(root, state);
+        renderGame(root, state, render);
 
         if (!state.dragBound) {
           enableDrag(root, state, render);
@@ -3889,6 +4353,8 @@
           });
         }
       }
+
+      writeSavedGame(state);
     }
 
     window.BM_DEBUG = {
@@ -4155,6 +4621,16 @@
         render();
       }
     };
+
+    window.addEventListener('pagehide', function () {
+      writeSavedGame(state);
+    });
+    
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') {
+        writeSavedGame(state);
+      }
+    });
 
     return { render: render };
   }
