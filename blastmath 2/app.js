@@ -132,6 +132,10 @@
     } catch (e) {}
   }
 
+  var BOOT_TOTAL_MS = 1750;
+  var BOOT_POP_IN_MS = 350;
+  var BOOT_HOLD_MS = 1100;
+  var BOOT_POP_OUT_MS = 300;
   var INTRO_QUERY_VALUE = "1";
   var INTRO_MESSAGE_TO_NEXT_STEP_DELAY = 250;
   var CHAIN_NEXT_BLAST_DELAY = 500;
@@ -474,7 +478,8 @@
   var INTRO_STEPS = {
     1: {
       step: 1,
-      title: "Make 10 in a row to blast!",
+      title: "Learn to Blast",
+      subtitle: "Tiles that add up to 10 explode!",
     
       boardCells: [
         { x: 2, y: 5, value: 1 }
@@ -638,6 +643,7 @@
       active: true,
       step: def.step,
       title: def.title,
+      subtitle: def.subtitle || "",
       sourceIndex: sourceIndex,
       allowedTargetIndex: def.targets.length
         ? ((def.targets[0].y * CONFIG.boardSize) + def.targets[0].x)
@@ -2621,17 +2627,31 @@ function markHelperSeen(id) {
     });
   }
 
+  function renderBoot(root) {
+    root.innerHTML = '' +
+      '<section class="bm-screen bm-boot">' +
+        '<div class="bm-boot__center">' +
+          '<div class="bm-logo bm-boot__logo" aria-label="Blast Math logo">' +
+            '<img src="images/brand/logo.png" alt="Blast Math" class="bm-logo__img" />' +
+          '</div>' +
+        '</div>' +
+      '</section>';
+  }
+
   function renderHome(root) {
     root.innerHTML = '' +
       '<section class="bm-screen bm-home">' +
         '<div class="bm-home__center">' +
-          '<div class="bm-logo" aria-label="Blast Math logo">' +
+          '<div class="bm-logo bm-home__logo" aria-label="Blast Math logo">' +
             '<img src="images/brand/logo.png" alt="Blast Math" class="bm-logo__img" />' +
           '</div>' +
         '</div>' +
         '<div class="bm-home__actions">' +
-          '<button class="bm-btn" type="button" data-play>Play Classic</button>' +
-          '<button class="bm-btn bm-btn--daily" type="button" data-daily>Free Daily Blast</button>' +
+          '<button class="bm-btn bm-home__btn bm-home__btn--classic" type="button" data-play>Classic</button>' +
+          '<button class="bm-btn bm-btn--daily bm-home__btn bm-home__btn--daily" type="button" data-daily>' +
+            '<span>Daily Blast</span>' +
+            '<span class="bm-daily-badge"></span>' +
+          '</button>' +
         '</div>' +
       '</section>';
   }
@@ -2673,11 +2693,14 @@ function markHelperSeen(id) {
     );
 
     var scoreHtml = isIntro
-      ? (
-        '<div class="bm-score bm-score--intro">' +
-          '<div class="bm-score__title" data-score-title>' + state.intro.title + '</div>' +
-        '</div>'
-      )
+    ? (
+      '<div class="bm-score bm-score--intro">' +
+        '<div class="bm-score__title" data-score-title>' + state.intro.title + '</div>' +
+        (state.intro.subtitle
+          ? '<div class="bm-score__subtitle">' + state.intro.subtitle + '</div>'
+          : '') +
+      '</div>'
+    )
       : isDaily
       ? (
         '<div class="bm-score bm-score--daily">' +
@@ -3260,6 +3283,7 @@ function markHelperSeen(id) {
       clearSavedGame('game');
       resetStandardGameState(state);
       state.screen = 'home';
+      playSfx('start');
   
       transitionScreen(root, function () {
         render();
@@ -4205,7 +4229,7 @@ function markHelperSeen(id) {
     mount.innerHTML = '<div class="bm-stage" data-stage></div>';
     var root = mount.querySelector('[data-stage]');
     var state = {
-      screen: 'home',
+      screen: 'boot',
       highScore: readHighScore(),
       score: 0,
       pendingComboPoints: 0,
@@ -4237,6 +4261,8 @@ function markHelperSeen(id) {
       dailyJustHitDanger: false,
       dailyMovesBand: null,
       dailyMovesPulseStarted: false,
+      bootStarted: false,
+      bootTimer: null,
       intro: {
         active: false,
         step: 0,
@@ -4260,7 +4286,46 @@ function markHelperSeen(id) {
       },
     };
 
+    function runBootFlow() {
+      if (state.bootTimer) {
+        window.clearTimeout(state.bootTimer);
+        state.bootTimer = null;
+      }
+
+      state.bootStarted = true;
+
+      state.bootTimer = window.setTimeout(function () {
+        state.bootTimer = null;
+
+        transitionScreen(root, function () {
+          if (isIntroMode()) {
+            setupIntroStepByNumber(state, getIntroStartStep());
+            state.screen = 'game';
+            playSfx('start');
+          } else if (!hasSeenIntro()) {
+            setupIntroStepByNumber(state, 1);
+            state.screen = 'game';
+            playSfx('start');
+          } else {
+            state.screen = 'home';
+          }
+
+          render();
+        });
+      }, BOOT_TOTAL_MS);
+    }
+
     function render() {
+      if (state.screen === 'boot') {
+        renderBoot(root);
+
+        if (!state.bootStarted) {
+          runBootFlow();
+        }
+
+        return;
+      }
+
       if (state.screen === 'home') {
         renderHome(root);
 
@@ -4282,18 +4347,12 @@ function markHelperSeen(id) {
                 if (savedClassic) {
                   restoreSavedGame(state, savedClassic);
                   state.screen = 'game';
-                  playSfx('start');
-                } else if (isIntroMode()) {
-                  setupIntroStepByNumber(state, getIntroStartStep());
-                  state.screen = 'game';
-                } else if (!hasSeenIntro()) {
-                  setupIntroStepByNumber(state, 1);
-                  state.screen = 'game';
                 } else {
                   resetStandardGameState(state);
                   state.screen = 'game';
-                  playSfx('start');
                 }
+
+                playSfx('start');
                 
                 render();
               });
