@@ -155,6 +155,22 @@ body {
   text-shadow: var(--bm-text-shadow);
 }
 
+#app.is-dimmed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 8, 24, 0.52);
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.bm-game,
+.bm-home,
+.bm-boot {
+  position: relative;
+  z-index: 1;
+}
+
 .bm-screen {
   width: 100%;
   height: 100%;
@@ -189,27 +205,35 @@ body {
   width: calc(450px * var(--bm-ui-scale));
   height: auto;
   display: block;
-  filter: drop-shadow(0px 8px 8px rgba(0,0,0,0.40));
+  filter: drop-shadow(0px 8px 8px rgba(0,0,0,0.20));
 }
 
 .bm-boot__logo {
-  animation: bmBootLogo 2625ms ease forwards;
+  animation: bmBootLogo 3125ms ease forwards;
   transform-origin: center center;
 }
 
 .bm-home__logo,
 .bm-home__btn--classic,
-.bm-home__btn--daily,
-.bm-daily-ribbon {
+.bm-home__btn--daily {
   opacity: 0;
   transform: scale(0.86);
   animation: bmHomePopIn 320ms cubic-bezier(.2,.9,.25,1) forwards;
 }
 
+.bm-score--daily-empty {
+  height: 0;
+  min-height: 0;
+}
+
 .bm-home__logo { animation-delay: 80ms; }
 .bm-home__btn--classic { animation-delay: 220ms; }
 .bm-home__btn--daily { animation-delay: 360ms; }
-.bm-daily-ribbon { animation-delay: 520ms; }
+.bm-daily-ribbon {
+  opacity: 0;
+  animation: bmDailyRibbonPopIn 320ms cubic-bezier(.2,.9,.25,1) forwards;
+  animation-delay: 520ms;
+}
 
 .bm-home__actions {
   display: grid;
@@ -218,32 +242,30 @@ body {
 
 .bm-daily-ribbon {
   position: absolute;
-  top: calc(18px * var(--bm-ui-scale));
-  right: calc(-38px * var(--bm-ui-scale));
-  width: calc(150px * var(--bm-ui-scale));
-  height: calc(36px * var(--bm-ui-scale));
+  top: calc(16px * var(--bm-ui-scale));
+  right: calc(-32px * var(--bm-ui-scale));
+  width: calc(124px * var(--bm-ui-scale));
+  height: calc(32px * var(--bm-ui-scale));
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, #f5f5f5, #d9d9d9);
+  background: linear-gradient(180deg, #f4f4f4, #d7d7d7);
   box-shadow:
     0 calc(3px * var(--bm-ui-scale)) calc(8px * var(--bm-ui-scale)) rgba(0,0,0,.18),
     inset 0 calc(1px * var(--bm-ui-scale)) 0 rgba(255,255,255,.65);
-  -webkit-transform: rotate(90deg); /* Chrome, Safari, newer Edge */
-  -moz-transform: rotate(90deg);    /* Firefox */
-  -ms-transform: rotate(90deg);     /* IE 9 */
-  transform: rotate(90deg);    
+  transform: rotate(45deg);
   transform-origin: center;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
+  overflow: hidden;
 }
 
 .bm-daily-ribbon__text {
   color: #243768;
   font-size: calc(16px * var(--bm-ui-scale));
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1;
   text-shadow: none;
-  transform: rotate(45deg);
+  transform: rotate(0deg);
 }
 
 .bm-daily-ribbon::before,
@@ -251,9 +273,9 @@ body {
   content: "";
   position: absolute;
   top: 0;
-  width: calc(10px * var(--bm-ui-scale));
+  width: calc(12px * var(--bm-ui-scale));
   height: 100%;
-  background: rgba(0,0,0,.08);
+  background: linear-gradient(180deg, #f4f4f4, #d7d7d7);
 }
 
 .bm-daily-ribbon::before {
@@ -269,15 +291,15 @@ body {
     opacity: 0;
     transform: scale(0.72);
   }
-  20% {
+  17% {
     opacity: 1;
     transform: scale(1.04);
   }
-  30% {
+  26% {
     opacity: 1;
     transform: scale(1);
   }
-  82% {
+  86% {
     opacity: 1;
     transform: scale(1);
   }
@@ -302,7 +324,24 @@ body {
   }
 }
 
+@keyframes bmDailyRibbonPopIn {
+  0% {
+    opacity: 0;
+    transform: rotate(45deg) scale(0.86);
+  }
+  70% {
+    opacity: 1;
+    transform: rotate(45deg) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(45deg) scale(1);
+  }
+}
+
 .bm-btn {
+  position: relative;
+  overflow: hidden;
   height: calc(80px * var(--bm-ui-scale));
   border-radius: var(--bm-ui-block-radius);
   background: linear-gradient(180deg, var(--bm-btn-green-top), var(--bm-btn-green-bottom));
@@ -371,25 +410,6 @@ body {
   height: calc(38px * var(--bm-ui-scale));
   display: block;
   filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.25));
-}
-
-.bm-hud--daily {
-  justify-content: space-between;
-}
-
-.bm-hud--daily-centered {
-  justify-content: center;
-}
-
-.bm-hud-stat--daily-score {
-  gap: calc(12px * var(--bm-ui-scale));
-  align-items: center;
-  justify-content: center;
-}
-
-.bm-hud-icon--daily {
-  width: calc(40px * var(--bm-ui-scale));
-  height: calc(40px * var(--bm-ui-scale));
 }
 
 .bm-score,
@@ -536,11 +556,11 @@ body {
 @keyframes bmMovesSafePulse {
   0%, 100% {
     transform: scale(1);
-    color: #ffffff;
+    color: #36DC36;
     text-shadow:
-      0 calc(2px * var(--bm-ui-scale))
-      calc(3px * var(--bm-ui-scale))
-      rgba(0,0,0,.25);
+      0 calc(2px * var(--bm-ui-scale)) calc(3px * var(--bm-ui-scale)) rgba(0,0,0,.25),
+      0 0 calc(14px * var(--bm-ui-scale)) rgba(54,220,54,.55),
+      0 0 calc(28px * var(--bm-ui-scale)) rgba(54,220,54,.35);
     filter: saturate(1) brightness(1);
   }
   50% {
@@ -559,22 +579,20 @@ body {
 @keyframes bmMovesWarningPulse {
   0%, 100% {
     transform: scale(1);
-    color: #ffffff;
+    color: #FFBF00;
     text-shadow:
-      0 calc(2px * var(--bm-ui-scale))
-      calc(3px * var(--bm-ui-scale))
-      rgba(0,0,0,.25);
+      0 calc(2px * var(--bm-ui-scale)) calc(3px * var(--bm-ui-scale)) rgba(0,0,0,.25),
+      0 0 calc(14px * var(--bm-ui-scale)) rgba(255,191,0,.55),
+      0 0 calc(28px * var(--bm-ui-scale)) rgba(255,191,0,.35);
     filter: saturate(1) brightness(1);
   }
   50% {
     transform: scale(1.15);
-    color: #fff0b8;
+    color: #FF3B3B;
     text-shadow:
-      0 calc(2px * var(--bm-ui-scale))
-      calc(3px * var(--bm-ui-scale))
-      rgba(0,0,0,.25),
-      0 0 calc(14px * var(--bm-ui-scale)) rgba(255,191,46),
-      0 0 calc(28px * var(--bm-ui-scale)) rgba(255,122,0,.95);
+      0 calc(2px * var(--bm-ui-scale)) calc(3px * var(--bm-ui-scale)) rgba(0,0,0,.25),
+      0 0 calc(14px * var(--bm-ui-scale)) rgba(255,59,59,.60),
+      0 0 calc(28px * var(--bm-ui-scale)) rgba(255,59,59,.38);
     filter: saturate(1.1) brightness(1.05);
   }
 }
@@ -819,7 +837,8 @@ body {
 
 .bm-tile.bm-drop-land,
 .bm-neutral-block.bm-drop-land,
-.bm-special-tile.bm-drop-land {
+.bm-special-tile.bm-drop-land,
+.bm-gem-tile.bm-drop-land {
   animation: bmDropLand var(--bm-drop-duration, 360ms) cubic-bezier(.22,.61,.36,1);
   transform-origin: 50% 50%;
   z-index: 1;
@@ -991,7 +1010,10 @@ body {
 
 .bm-special-tile.bm-place-pop,
 .bm-special-tile.bm-drop-land,
-.bm-special-tile.bm-blast-pop {
+.bm-special-tile.bm-blast-pop,
+.bm-gem-tile.bm-place-pop,
+.bm-gem-tile.bm-drop-land,
+.bm-gem-tile.bm-blast-pop {
   z-index: 3;
 }
 
@@ -1053,7 +1075,8 @@ body {
 
 .bm-tile.bm-blast-pop,
 .bm-neutral-block.bm-blast-pop,
-.bm-special-tile.bm-blast-pop {
+.bm-special-tile.bm-blast-pop,
+.bm-gem-tile.bm-blast-pop {
   animation: bmBlastPopOutline 260ms cubic-bezier(.2,.9,.25,1) forwards;
   transform-origin: 50% 50%;
   z-index: 6;
@@ -1062,7 +1085,8 @@ body {
 
 .bm-tile.bm-blast-pop::before,
 .bm-neutral-block.bm-blast-pop::before,
-.bm-special-tile.bm-blast-pop::before {
+.bm-special-tile.bm-blast-pop::before,
+.bm-gem-tile.bm-blast-pop::before {
   opacity: 0;
 }
 
@@ -1315,6 +1339,31 @@ body {
     inset 0 calc(2px * var(--bm-ui-scale)) calc(4px * var(--bm-ui-scale)) rgba(0,0,0,0.12);
 }
 
+.bm-gem-tile {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  border-radius: var(--bm-tile-radius);
+  background: var(--bm-board-cell);
+  box-shadow: none;
+  border: none;
+}
+
+.bm-gem-tile::before {
+  display: none;
+}
+
+.bm-gem-tile__icon {
+  position: relative;
+  z-index: 2;
+  width: max(40px, calc(40px * var(--bm-ui-scale)));
+  height: max(40px, calc(40px * var(--bm-ui-scale)));
+  object-fit: contain;
+  filter: none;
+}
+
 .bm-board-message {
   position: fixed;
   left: 0;
@@ -1380,7 +1429,7 @@ body {
 .bm-helper-modal__scrim {
   position: absolute;
   inset: 0;
-  background: rgba(0, 12, 36, 0.12);
+  background: transparent;
 }
 
 .bm-helper-modal__card {
@@ -1505,101 +1554,6 @@ body {
 .bm-hud-stat--daily-score {
   position: relative;
   overflow: visible;
-}
-
-.bm-hud-stat--daily-score.is-daily-gem-gained::after {
-  content: attr(data-daily-gem-delta);
-  position: absolute;
-  right: calc(-24px * var(--bm-ui-scale));
-  top: calc(-22px * var(--bm-ui-scale));
-  font-size: calc(32px * var(--bm-ui-scale));
-  line-height: 1;
-  font-weight: 900;
-  color: #ffd54a;
-  text-shadow:
-    0 calc(3px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.28),
-    0 0 calc(12px * var(--bm-ui-scale)) rgba(255, 213, 74, .32);
-  opacity: 0;
-  transform: translateY(calc(-6px * var(--bm-ui-scale))) scale(1);
-  pointer-events: none;
-  animation: bmDailyGemFloat 900ms cubic-bezier(.16,1,.22,1) 1;
-}
-
-[data-daily-gems-icon].is-daily-gem-gained-icon {
-  animation: bmDailyGemIcon 900ms cubic-bezier(.16,1,.22,1) 1;
-  transform-origin: 50% 50%;
-}
-
-[data-daily-gems-value].is-daily-gem-gained-value {
-  animation: bmDailyGemValue 900ms cubic-bezier(.16,1,.22,1) 1;
-  transform-origin: 50% 50%;
-}
-
-@keyframes bmDailyGemIcon {
-  0% {
-    transform: scale(1) rotate(0deg);
-    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.25));
-  }
-  12% {
-    transform: scale(0.72) rotate(10deg);
-    filter:
-      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
-      drop-shadow(0 0 18px rgba(255,213,74,.52));
-  }
-  30% {
-    transform: scale(1.42) rotate(-8deg);
-    filter:
-      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
-      drop-shadow(0 0 26px rgba(255,213,74,.40));
-  }
-  48% {
-    transform: scale(1.02) rotate(4deg);
-    filter:
-      drop-shadow(0px 2px 2px rgba(0,0,0,0.25))
-      drop-shadow(0 0 8px rgba(255,213,74,.20));
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.25));
-  }
-}
-
-@keyframes bmDailyGemValue {
-  0% {
-    transform: scale(1);
-    color: #ffffff;
-  }
-  12% {
-    transform: scale(0.84);
-    color: #fff0a8;
-  }
-  30% {
-    transform: scale(1.34);
-    color: #ffffff;
-  }
-  100% {
-    transform: scale(1);
-    color: #ffffff;
-  }
-}
-
-@keyframes bmDailyGemFloat {
-  0% {
-    opacity: 0;
-    transform: translateY(calc(-6px * var(--bm-ui-scale))) scale(1);
-  }
-  18% {
-    opacity: 1;
-    transform: translateY(calc(-16px * var(--bm-ui-scale))) scale(1.08);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(calc(-34px * var(--bm-ui-scale))) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(calc(-52px * var(--bm-ui-scale))) scale(0.96);
-  }
 }
 
 .bm-hud-stat--lives.is-life-lost::after,

@@ -38,9 +38,11 @@
   };
 
   var audioCtx = null;
+  var pendingStartSfx = false;
   var SFX_BUFFERS = {
     pickup: null,
-    place: null
+    place: null,
+    start: null
   };
 
   Object.values(SFX).forEach(function (sound) {
@@ -78,15 +80,25 @@
   }
 
   function primeResponsiveSfx() {
-    if (SFX_BUFFERS.pickup && SFX_BUFFERS.place) return;
+    if (SFX_BUFFERS.pickup && SFX_BUFFERS.place && SFX_BUFFERS.start) return;
 
-    loadBuffer('sounds/pickup.mp3', function (buffer) {
-      SFX_BUFFERS.pickup = buffer;
-    });
+    if (!SFX_BUFFERS.pickup) {
+      loadBuffer('sounds/pickup.mp3', function (buffer) {
+        SFX_BUFFERS.pickup = buffer;
+      });
+    }
 
-    loadBuffer('sounds/place.mp3', function (buffer) {
-      SFX_BUFFERS.place = buffer;
-    });
+    if (!SFX_BUFFERS.place) {
+      loadBuffer('sounds/place.mp3', function (buffer) {
+        SFX_BUFFERS.place = buffer;
+      });
+    }
+
+    if (!SFX_BUFFERS.start) {
+      loadBuffer('sounds/start.mp3', function (buffer) {
+        SFX_BUFFERS.start = buffer;
+      });
+    }
   }
 
   function playBufferedSfx(name) {
@@ -113,7 +125,7 @@
   }
 
   function playSfx(name) {
-    if (name === 'pickup' || name === 'place') {
+    if (name === 'pickup' || name === 'place' || name === 'start') {
       if (playBufferedSfx(name)) return;
     }
 
@@ -132,10 +144,10 @@
     } catch (e) {}
   }
 
-  var BOOT_TOTAL_MS = 2625;
   var BOOT_POP_IN_MS = 525;
-  var BOOT_HOLD_MS = 1650;
+  var BOOT_HOLD_MS = 2150; // +500ms hold
   var BOOT_POP_OUT_MS = 450;
+  var BOOT_TOTAL_MS = BOOT_POP_IN_MS + BOOT_HOLD_MS + BOOT_POP_OUT_MS;
   var INTRO_QUERY_VALUE = "1";
   var INTRO_MESSAGE_TO_NEXT_STEP_DELAY = 250;
   var CHAIN_NEXT_BLAST_DELAY = 500;
@@ -403,6 +415,7 @@
     state.pendingBombSpawn = false;
     state.wallSpawnsSinceBomb = 0;
     state.pendingComboPoints = 0;
+    state.pendingPostResolveDrops = [];
     state.justDealtNewHand = false;
 
     state.intro = {
@@ -1292,7 +1305,7 @@ function markHelperSeen(id) {
       map[spawn.index] = {
         type: 'drop-land',
         distance: (spawn.toRow - spawn.fromRow) * step,
-        duration: 360
+        duration: 520
       };
     });
   
@@ -1471,7 +1484,7 @@ function markHelperSeen(id) {
   
     return {
       index: landingIndex,
-      fromRow: -2,
+      fromRow: -6,
       toRow: landingRow,
       column: column
     };
@@ -1510,7 +1523,7 @@ function markHelperSeen(id) {
   
     return {
       index: landingIndex,
-      fromRow: -2,
+      fromRow: -6,
       toRow: landingRow,
       column: column
     };
@@ -1546,7 +1559,7 @@ function markHelperSeen(id) {
   
     return {
       index: landingIndex,
-      fromRow: -2,
+      fromRow: -6,
       toRow: landingRow,
       column: column
     };
@@ -1593,31 +1606,22 @@ function markHelperSeen(id) {
     return dropRandomSpecialTile(state, 'skull');
   }
 
-  function runPostResolveDrops(root, state) {
+  function queuePostResolveDrops(state) {
     if (!state || (state.intro && state.intro.active)) return;
   
-    var spawns = [];
-    var wallSpawn = null;
-    var specialSpawn = null;
+    var queued = [];
     var canUseBombCycle = !!(state.currentLevel && state.currentLevel.id >= 2);
   
     if (canUseBombCycle && state.pendingBombSpawn) {
-      var bombSpawn = dropRandomBombTile(state);
-      if (bombSpawn) {
-        spawns.push(bombSpawn);
-        state.pendingBombSpawn = false;
-
-        openHelperModal(state, {
-          id: 'bomb',
-          icon: 'bomb',
-          title: 'Bomb Tile',
-          body: 'Blast next to it to clear its row and column.'
-        });
-      }
+      queued.push('bomb');
+      state.pendingBombSpawn = false;
     } else {
-      wallSpawn = maybeDropWall(state);
+      var wallSpawn = maybeDropWall(state);
+  
       if (wallSpawn) {
-        spawns.push(wallSpawn);
+        // undo the immediate placement — we only wanted the decision, not the spawn yet
+        state.board[wallSpawn.index] = null;
+        queued.push('wall');
   
         if (canUseBombCycle) {
           state.wallSpawnsSinceBomb = (state.wallSpawnsSinceBomb || 0) + 1;
@@ -1630,41 +1634,73 @@ function markHelperSeen(id) {
       }
   
       if (state.justDealtNewHand) {
-        specialSpawn = maybeDropSpecialTile(state);
-
+        var specialSpawn = maybeDropSpecialTile(state);
+  
         if (specialSpawn) {
-          spawns.push(specialSpawn);
-
           var spawnedCell = state.board[specialSpawn.index];
-
+          state.board[specialSpawn.index] = null;
+  
           if (isSkullCell(spawnedCell)) {
-            openHelperModal(state, {
-              id: 'skull',
-              icon: 'skull',
-              title: 'Skull Tile',
-              body: 'Blast it and lose 1 life.'
-            });
+            queued.push('skull');
           } else if (isHeartCell(spawnedCell)) {
-            openHelperModal(state, {
-              id: 'heart',
-              icon: 'heart',
-              title: 'Heart Tile',
-              body: 'Blast it and gain 1 life.'
-            });
+            queued.push('heart');
           }
         }
-
+  
         state.justDealtNewHand = false;
       }
     }
+  
+    state.pendingPostResolveDrops = queued;
+  }
+
+  function runPostResolveDrops(root, state, render) {
+    if (!state || (state.intro && state.intro.active)) return;
+  
+    var spawns = [];
+    var queued = state.pendingPostResolveDrops || [];
+  
+    queued.forEach(function (kind) {
+      var spawn = null;
+  
+      if (kind === 'bomb') {
+        spawn = dropRandomBombTile(state);
+        if (spawn) {
+          spawns.push(spawn);
+          maybeOpenTileHelper(state, 'bomb');
+        }
+        return;
+      }
+  
+      if (kind === 'wall') {
+        spawn = dropRandomNeutralTile(state);
+        if (spawn) spawns.push(spawn);
+        return;
+      }
+  
+      if (kind === 'skull' || kind === 'heart') {
+        spawn = dropRandomSpecialTile(state, kind);
+  
+        if (spawn) {
+          spawns.push(spawn);
+  
+          if (kind === 'skull') {
+            maybeOpenTileHelper(state, 'skull');
+          } else if (kind === 'heart') {
+            maybeOpenTileHelper(state, 'heart');
+          }
+        }
+      }
+    });
+  
+    state.pendingPostResolveDrops = [];
   
     if (!spawns.length) {
       state.comboStep = 0;
       return;
     }
-
-    state.animMap = null;
   
+    state.animMap = null;
     state.animMap = buildSpawnAnimMap(root, state, spawns);
     renderGame(root, state, render);
   }
@@ -1880,6 +1916,9 @@ function markHelperSeen(id) {
     state.hand = state.dailyHands[0]
       ? state.dailyHands[0].slice()
       : [null, null, null];
+
+      maybeOpenTileHelper(state, 'daily');
+
   }
 
   function isDailyMode(state) {
@@ -2079,7 +2118,7 @@ function markHelperSeen(id) {
         });
       }
 
-      playSfx('start');
+      playSfx('combo');
       showBoardMessage(root, 'Cleared!', null, 0, 'centered');
 
       window.setTimeout(function () {
@@ -2584,6 +2623,48 @@ function markHelperSeen(id) {
     skipBtn.addEventListener('pointerdown', skipIntro);
   }
 
+  function maybeOpenTileHelper(state, kind) {
+    if (!state) return false;
+  
+    if (kind === 'bomb') {
+      return openHelperModal(state, {
+        id: 'bomb',
+        icon: 'bomb',
+        title: 'Bomb Tile',
+        body: 'Blast next to it to clear its row and column.'
+      });
+    }
+  
+    if (kind === 'skull') {
+      return openHelperModal(state, {
+        id: 'skull',
+        icon: 'skull',
+        title: 'Skull Tile',
+        body: 'Blast it and lose 1 life.'
+      });
+    }
+  
+    if (kind === 'heart') {
+      return openHelperModal(state, {
+        id: 'heart',
+        icon: 'heart',
+        title: 'Heart Tile',
+        body: 'Blast it and gain 1 life.'
+      });
+    }
+  
+    if (kind === 'daily') {
+      return openHelperModal(state, {
+        id: 'daily',
+        icon: 'gem',
+        title: 'Daily Blast',
+        body: 'Blast all gems before you run out of moves.'
+      });
+    }
+  
+    return false;
+  }
+
   function openHelperModal(state, helper) {
     if (!state || !helper || !helper.id) return false;
     if (hasSeenHelper(helper.id)) return false;
@@ -2597,6 +2678,9 @@ function markHelperSeen(id) {
       title: helper.title || '',
       body: helper.body || ''
     };
+
+    var app = document.getElementById('app');
+    if (app) app.classList.add('is-dimmed');
   
     return true;
   }
@@ -2604,6 +2688,8 @@ function markHelperSeen(id) {
   function closeHelperModal(state) {
     if (!state || !state.helperModal) return;
     state.helperModal = null;
+    var app = document.getElementById('app');
+    if (app) app.classList.remove('is-dimmed');
   }
   
   function renderHelperModal(state) {
@@ -2680,12 +2766,7 @@ function markHelperSeen(id) {
     )
     : isDaily
     ? (
-      '<div class="bm-hud bm-hud--daily-centered">' +
-        '<div class="bm-hud-stat bm-hud-stat--daily-score" data-daily-gems-stat>' +
-          '<img src="images/hud/gem.svg" class="bm-hud-icon bm-hud-icon--daily" data-daily-gems-icon alt="" />' +
-          '<span class="bm-hud-value bm-hud-daily-score-value" data-daily-gems-value>' + (state.daily.gemTarget - state.daily.gemsRemaining) + '</span>' +
-        '</div>' +
-      '</div>'
+      '<div class="bm-hud bm-hud--daily-empty"></div>'
     )
     : (
       '<div class="bm-hud">' +
@@ -2713,13 +2794,10 @@ function markHelperSeen(id) {
           : '') +
       '</div>'
     )
-      : isDaily
-      ? (
-        '<div class="bm-score bm-score--daily">' +
-          '<div class="bm-score__burst bm-score__burst--daily-moves" data-daily-moves-burst></div>' +
-          '<div class="bm-score__value bm-score__value--daily bm-daily-moves-value" data-daily-moves-value>' + state.daily.movesRemaining + '</div>' +
-        '</div>'
-      )
+    : isDaily
+    ? (
+      '<div class="bm-score bm-score--daily-empty"></div>'
+    )
       : (
         '<div class="bm-score">' +
           '<div class="bm-score__burst" data-score-burst></div>' +
@@ -2758,8 +2836,8 @@ function markHelperSeen(id) {
     '</div>' +
     '<div class="bm-spacer" aria-hidden="true"></div>' +
     handHtml +
-    renderHelperModal(state) +
-  '</section>';
+  '</section>' +
+  renderHelperModal(state);
 
   syncScoreUi(root, state);
   bindIntroSkip(root, state, renderApp);
@@ -2826,7 +2904,15 @@ function markHelperSeen(id) {
         '</div>';
       }
 
-      if (isSpecialIconCell(cell) || isGemCell(cell)) {
+      if (isGemCell(cell)) {
+        return '<div class="' + cellClass + '" data-cell-index="' + index + '">' +
+          '<div class="bm-gem-tile' + extraClass + '"' + extraStyle + '>' +
+            '<img class="bm-gem-tile__icon" src="images/tiles/gem.svg" alt="" />' +
+          '</div>' +
+        '</div>';
+      }
+
+      if (isSpecialIconCell(cell)) {
         var iconName = isBombCell(cell)
           ? 'bomb'
           : isSkullCell(cell)
@@ -3295,6 +3381,7 @@ function markHelperSeen(id) {
     state.isResolving = true;
   
     window.setTimeout(function () {
+      playSfx('combo');
       markIntroSeen();
       if (window.posthog) window.posthog.capture('intro_completed');
   
@@ -3302,7 +3389,7 @@ function markHelperSeen(id) {
       resetStandardGameState(state);
       state.screen = 'home';
       state.bootStarted = false;
-
+  
       render();
     }, 320);
   }
@@ -3330,8 +3417,10 @@ function markHelperSeen(id) {
         if (isDailyMode(state)) {
           checkDailyEndState(root, state, render);
         } else {
-          runPostResolveDrops(root, state);
-          checkPostMoveState(root, state, render);
+          runPostResolveDrops(root, state, render);
+          window.setTimeout(function () {
+            checkPostMoveState(root, state, render);
+          }, 380);
         }
       }
     
@@ -3378,7 +3467,6 @@ function markHelperSeen(id) {
     if (isDailyMode(state) && dailyGemsCleared > 0) {
       window.setTimeout(function () {
         syncHudUi(root, state);
-        animateDailyGemGain(root, dailyGemsCleared);
       }, 120);
     }
     
@@ -3489,8 +3577,10 @@ function markHelperSeen(id) {
             if (isDailyMode(state)) {
               checkDailyEndState(root, state, render);
             } else {
-              runPostResolveDrops(root, state);
-              checkPostMoveState(root, state, render);
+              runPostResolveDrops(root, state, render);
+              window.setTimeout(function () {
+                checkPostMoveState(root, state, render);
+              }, 380);
             }
           }
   
@@ -3809,6 +3899,10 @@ function markHelperSeen(id) {
           }
         }
       }
+
+      if (!(state.intro && state.intro.active)) {
+        queuePostResolveDrops(state);
+      }
   
       state.isResolving = true;
   
@@ -4025,15 +4119,10 @@ function markHelperSeen(id) {
   function syncHudUi(root, state) {
     var highScoreEl = root.querySelector('.bm-hud-score-value');
     var livesEl = root.querySelector('.bm-hud-lives-value');
-    var dailyScoreEl = root.querySelector('.bm-hud-daily-score-value');
     var dailyMovesEl = root.querySelector('[data-daily-moves-value]');
   
     if (highScoreEl) highScoreEl.textContent = state.highScore;
     if (livesEl) livesEl.textContent = state.lives;
-
-    if (dailyScoreEl && state.daily) {
-      dailyScoreEl.textContent = Math.max(0, state.daily.gemTarget - state.daily.gemsRemaining);
-    }
 
     if (dailyMovesEl && state.daily) {
       dailyMovesEl.textContent = state.daily.movesRemaining;
@@ -4305,7 +4394,11 @@ function markHelperSeen(id) {
     document.body.addEventListener('pointerdown', function initAudioWarmup() {
       ensureAudioContext();
       primeResponsiveSfx();
-    }, { once: true });
+    
+      if (pendingStartSfx) {
+        pendingStartSfx = false;
+      }
+    }, { once: true, capture: true });
 
     function runBootFlow() {
       if (state.bootTimer) {
@@ -4324,7 +4417,7 @@ function markHelperSeen(id) {
             setupIntroStepByNumber(state, getIntroStartStep());
             state.screen = 'game';
             render();
-            playSfx('start');
+            pendingStartSfx = false;
             return;
           }
 
@@ -4332,14 +4425,14 @@ function markHelperSeen(id) {
             setupIntroStepByNumber(state, 1);
             state.screen = 'game';
             render();
-            playSfx('start');
+            pendingStartSfx = false;
             return;
           }
 
           state.screen = 'home';
           render();
         });
-      }, 1750);
+      }, BOOT_TOTAL_MS);
     }
 
     function render() {
@@ -4728,40 +4821,6 @@ function markHelperSeen(id) {
     syncUiScale();
     window.addEventListener('resize', syncUiScale);
     window.addEventListener('orientationchange', syncUiScale);
-  
-    // 🔊 unlock audio on first interaction
-    document.body.addEventListener('pointerdown', function initAudio() {
-      ensureAudioContext();
-      primeResponsiveSfx();
-
-      ['pickup', 'place', 'blast', 'lose', 'start'].forEach(function (name) {
-        var s = SFX[name];
-        if (!s) return;
-
-        try {
-          var targetVolume = (SFX_VOLUME[name] != null) ? SFX_VOLUME[name] : 1;
-
-          s.volume = 0.001;
-          var p = s.play();
-
-          if (p && typeof p.then === 'function') {
-            p.then(function () {
-              s.pause();
-              s.currentTime = 0;
-              s.volume = targetVolume;
-            }).catch(function () {
-              s.volume = targetVolume;
-            });
-          } else {
-            s.pause();
-            s.currentTime = 0;
-            s.volume = targetVolume;
-          }
-        } catch (e) {
-          s.volume = (SFX_VOLUME[name] != null) ? SFX_VOLUME[name] : 1;
-        }
-      });
-    }, { once: true });
 
     var app = createApp();
     app.render();

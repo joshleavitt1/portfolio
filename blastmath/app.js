@@ -38,9 +38,11 @@
   };
 
   var audioCtx = null;
+  var pendingStartSfx = false;
   var SFX_BUFFERS = {
     pickup: null,
-    place: null
+    place: null,
+    start: null
   };
 
   Object.values(SFX).forEach(function (sound) {
@@ -78,15 +80,25 @@
   }
 
   function primeResponsiveSfx() {
-    if (SFX_BUFFERS.pickup && SFX_BUFFERS.place) return;
+    if (SFX_BUFFERS.pickup && SFX_BUFFERS.place && SFX_BUFFERS.start) return;
 
-    loadBuffer('sounds/pickup.mp3', function (buffer) {
-      SFX_BUFFERS.pickup = buffer;
-    });
+    if (!SFX_BUFFERS.pickup) {
+      loadBuffer('sounds/pickup.mp3', function (buffer) {
+        SFX_BUFFERS.pickup = buffer;
+      });
+    }
 
-    loadBuffer('sounds/place.mp3', function (buffer) {
-      SFX_BUFFERS.place = buffer;
-    });
+    if (!SFX_BUFFERS.place) {
+      loadBuffer('sounds/place.mp3', function (buffer) {
+        SFX_BUFFERS.place = buffer;
+      });
+    }
+
+    if (!SFX_BUFFERS.start) {
+      loadBuffer('sounds/start.mp3', function (buffer) {
+        SFX_BUFFERS.start = buffer;
+      });
+    }
   }
 
   function playBufferedSfx(name) {
@@ -113,7 +125,7 @@
   }
 
   function playSfx(name) {
-    if (name === 'pickup' || name === 'place') {
+    if (name === 'pickup' || name === 'place' || name === 'start') {
       if (playBufferedSfx(name)) return;
     }
 
@@ -132,10 +144,10 @@
     } catch (e) {}
   }
 
-  var BOOT_TOTAL_MS = 2625;
   var BOOT_POP_IN_MS = 525;
-  var BOOT_HOLD_MS = 1650;
+  var BOOT_HOLD_MS = 2150; // +500ms hold
   var BOOT_POP_OUT_MS = 450;
+  var BOOT_TOTAL_MS = BOOT_POP_IN_MS + BOOT_HOLD_MS + BOOT_POP_OUT_MS;
   var INTRO_QUERY_VALUE = "1";
   var INTRO_MESSAGE_TO_NEXT_STEP_DELAY = 250;
   var CHAIN_NEXT_BLAST_DELAY = 500;
@@ -191,14 +203,14 @@
       id: 4,
       minScore: 3000,
       maxScore: Infinity,
-      wallDropRate: 3,
+      wallDropRate: 4,
       pieceBias: 'mixed',
       features: {
         bombs: true,
         skulls: true,
-        skullChance: 0.10,
+        skullChance: 0.12,
         hearts: true,
-        heartChance: 0.05
+        heartChance: 0.08
       }
     }
   ];
@@ -403,6 +415,7 @@
     state.pendingBombSpawn = false;
     state.wallSpawnsSinceBomb = 0;
     state.pendingComboPoints = 0;
+    state.pendingPostResolveDrops = [];
     state.justDealtNewHand = false;
 
     state.intro = {
@@ -478,8 +491,7 @@
   var INTRO_STEPS = {
     1: {
       step: 1,
-      title: "Learn to Blast",
-      subtitle: "Tiles that add up to 10 explode!",
+      title: "Make 10 to Blast!",
     
       boardCells: [
         { x: 2, y: 5, value: 1 }
@@ -494,7 +506,7 @@
   
     2: {
       step: 2,
-      title: "Blast up and down too!",
+      title: "Blast all directions!",
   
       boardCells: [
         { x: 2, y: 5, value: 2 }
@@ -509,7 +521,7 @@
   
     3: {
       step: 3,
-      title: "Use more tiles to blast!",
+      title: "Blast a row!",
   
       boardCells: [
         { x: 2, y: 5, value: 3 }
@@ -543,8 +555,7 @@
 
     5: {
       step: 5,
-      title: "Chain blasts to combo!",
-      introMode: "combo",
+      title: "Blasts can combo!",
     
       boardCells: [
         { x: 2, y: 5, kind: "number", value: 4 },
@@ -560,7 +571,6 @@
     6: {
       step: 6,
       title: "Blast through walls!",
-      introMode: "neutral",
     
       boardCells: [
         { x: 3, y: 2, kind: "number", value: 8 },
@@ -643,7 +653,6 @@
       active: true,
       step: def.step,
       title: def.title,
-      subtitle: def.subtitle || "",
       sourceIndex: sourceIndex,
       allowedTargetIndex: def.targets.length
         ? ((def.targets[0].y * CONFIG.boardSize) + def.targets[0].x)
@@ -1292,7 +1301,7 @@ function markHelperSeen(id) {
       map[spawn.index] = {
         type: 'drop-land',
         distance: (spawn.toRow - spawn.fromRow) * step,
-        duration: 360
+        duration: 520
       };
     });
   
@@ -1471,7 +1480,7 @@ function markHelperSeen(id) {
   
     return {
       index: landingIndex,
-      fromRow: -2,
+      fromRow: -6,
       toRow: landingRow,
       column: column
     };
@@ -1510,7 +1519,7 @@ function markHelperSeen(id) {
   
     return {
       index: landingIndex,
-      fromRow: -2,
+      fromRow: -6,
       toRow: landingRow,
       column: column
     };
@@ -1546,7 +1555,7 @@ function markHelperSeen(id) {
   
     return {
       index: landingIndex,
-      fromRow: -2,
+      fromRow: -6,
       toRow: landingRow,
       column: column
     };
@@ -1593,31 +1602,22 @@ function markHelperSeen(id) {
     return dropRandomSpecialTile(state, 'skull');
   }
 
-  function runPostResolveDrops(root, state) {
+  function queuePostResolveDrops(state) {
     if (!state || (state.intro && state.intro.active)) return;
   
-    var spawns = [];
-    var wallSpawn = null;
-    var specialSpawn = null;
+    var queued = [];
     var canUseBombCycle = !!(state.currentLevel && state.currentLevel.id >= 2);
   
     if (canUseBombCycle && state.pendingBombSpawn) {
-      var bombSpawn = dropRandomBombTile(state);
-      if (bombSpawn) {
-        spawns.push(bombSpawn);
-        state.pendingBombSpawn = false;
-
-        openHelperModal(state, {
-          id: 'bomb',
-          icon: 'bomb',
-          title: 'Bomb Tile',
-          body: 'Blast next to it to clear its row and column.'
-        });
-      }
+      queued.push('bomb');
+      state.pendingBombSpawn = false;
     } else {
-      wallSpawn = maybeDropWall(state);
+      var wallSpawn = maybeDropWall(state);
+  
       if (wallSpawn) {
-        spawns.push(wallSpawn);
+        // undo the immediate placement — we only wanted the decision, not the spawn yet
+        state.board[wallSpawn.index] = null;
+        queued.push('wall');
   
         if (canUseBombCycle) {
           state.wallSpawnsSinceBomb = (state.wallSpawnsSinceBomb || 0) + 1;
@@ -1630,41 +1630,73 @@ function markHelperSeen(id) {
       }
   
       if (state.justDealtNewHand) {
-        specialSpawn = maybeDropSpecialTile(state);
-
+        var specialSpawn = maybeDropSpecialTile(state);
+  
         if (specialSpawn) {
-          spawns.push(specialSpawn);
-
           var spawnedCell = state.board[specialSpawn.index];
-
+          state.board[specialSpawn.index] = null;
+  
           if (isSkullCell(spawnedCell)) {
-            openHelperModal(state, {
-              id: 'skull',
-              icon: 'skull',
-              title: 'Skull Tile',
-              body: 'Blast it and lose 1 life.'
-            });
+            queued.push('skull');
           } else if (isHeartCell(spawnedCell)) {
-            openHelperModal(state, {
-              id: 'heart',
-              icon: 'heart',
-              title: 'Heart Tile',
-              body: 'Blast it and gain 1 life.'
-            });
+            queued.push('heart');
           }
         }
-
+  
         state.justDealtNewHand = false;
       }
     }
+  
+    state.pendingPostResolveDrops = queued;
+  }
+
+  function runPostResolveDrops(root, state, render) {
+    if (!state || (state.intro && state.intro.active)) return;
+  
+    var spawns = [];
+    var queued = state.pendingPostResolveDrops || [];
+  
+    queued.forEach(function (kind) {
+      var spawn = null;
+  
+      if (kind === 'bomb') {
+        spawn = dropRandomBombTile(state);
+        if (spawn) {
+          spawns.push(spawn);
+          maybeOpenTileHelper(state, 'bomb');
+        }
+        return;
+      }
+  
+      if (kind === 'wall') {
+        spawn = dropRandomNeutralTile(state);
+        if (spawn) spawns.push(spawn);
+        return;
+      }
+  
+      if (kind === 'skull' || kind === 'heart') {
+        spawn = dropRandomSpecialTile(state, kind);
+  
+        if (spawn) {
+          spawns.push(spawn);
+  
+          if (kind === 'skull') {
+            maybeOpenTileHelper(state, 'skull');
+          } else if (kind === 'heart') {
+            maybeOpenTileHelper(state, 'heart');
+          }
+        }
+      }
+    });
+  
+    state.pendingPostResolveDrops = [];
   
     if (!spawns.length) {
       state.comboStep = 0;
       return;
     }
-
-    state.animMap = null;
   
+    state.animMap = null;
     state.animMap = buildSpawnAnimMap(root, state, spawns);
     renderGame(root, state, render);
   }
@@ -1880,6 +1912,9 @@ function markHelperSeen(id) {
     state.hand = state.dailyHands[0]
       ? state.dailyHands[0].slice()
       : [null, null, null];
+
+      maybeOpenTileHelper(state, 'daily');
+
   }
 
   function isDailyMode(state) {
@@ -1929,40 +1964,51 @@ function markHelperSeen(id) {
     }, 950);
   }
 
-  function animateDailyGemGain(root, delta) {
-    if (!delta || delta <= 0) return;
-
-    var stat = root.querySelector('[data-daily-gems-stat]');
-    var icon = root.querySelector('[data-daily-gems-icon]');
-    var value = root.querySelector('[data-daily-gems-value]');
-
-    if (!stat || !icon || !value) return;
-
-    stat.classList.remove('is-daily-gem-gained');
-    icon.classList.remove('is-daily-gem-gained-icon');
-    value.classList.remove('is-daily-gem-gained-value');
-
-    stat.removeAttribute('data-daily-gem-delta');
-
-    void stat.offsetWidth;
-
-    stat.classList.add('is-daily-gem-gained');
-    icon.classList.add('is-daily-gem-gained-icon');
-    value.classList.add('is-daily-gem-gained-value');
-    stat.setAttribute('data-daily-gem-delta', '+' + String(delta));
-
+  function syncDailyHudUi(root, state) {
+    if (!root || !state || !state.daily) return;
+  
+    var movesEl = root.querySelector('[data-daily-moves-value]');
+    var progressEl = root.querySelector('[data-daily-moves-ring]');
+    var timerWrapEl = root.querySelector('[data-daily-moves-ring-wrap]');
+  
+    if (!movesEl || !progressEl || !timerWrapEl) return;
+  
+    var moves = typeof state.daily.movesRemaining === 'number'
+      ? state.daily.movesRemaining
+      : 0;
+  
+    var maxMoves = 12;
+    var radius = 40;
+    var circumference = 2 * Math.PI * radius;
+    var progress = Math.max(0, Math.min(1, moves / maxMoves));
+    var dashOffset = circumference * (1 - progress);
+  
+    movesEl.textContent = moves;
+    progressEl.style.strokeDasharray = String(circumference);
+    progressEl.style.strokeDashoffset = String(dashOffset);
+  
+    timerWrapEl.classList.remove(
+      'bm-daily-timer--safe',
+      'bm-daily-timer--warning',
+      'bm-daily-timer--danger',
+      'is-moves-hit'
+    );
+  
+    if (moves >= 9) {
+      timerWrapEl.classList.add('bm-daily-timer--safe');
+    } else if (moves >= 5) {
+      timerWrapEl.classList.add('bm-daily-timer--warning');
+    } else {
+      timerWrapEl.classList.add('bm-daily-timer--danger');
+    }
+  
+    void timerWrapEl.offsetWidth;
+    timerWrapEl.classList.add('is-moves-hit');
+  
     window.setTimeout(function () {
-      var liveStat = root.querySelector('[data-daily-gems-stat]');
-      var liveIcon = root.querySelector('[data-daily-gems-icon]');
-      var liveValue = root.querySelector('[data-daily-gems-value]');
-
-      if (liveStat) {
-        liveStat.classList.remove('is-daily-gem-gained');
-        liveStat.removeAttribute('data-daily-gem-delta');
-      }
-      if (liveIcon) liveIcon.classList.remove('is-daily-gem-gained-icon');
-      if (liveValue) liveValue.classList.remove('is-daily-gem-gained-value');
-    }, 950);
+      var liveWrap = root.querySelector('[data-daily-moves-ring-wrap]');
+      if (liveWrap) liveWrap.classList.remove('is-moves-hit');
+    }, 300);
   }
   
   function resetBoardAfterLifeLoss(state) {
@@ -2079,7 +2125,7 @@ function markHelperSeen(id) {
         });
       }
 
-      playSfx('start');
+      playSfx('combo');
       showBoardMessage(root, 'Cleared!', null, 0, 'centered');
 
       window.setTimeout(function () {
@@ -2578,10 +2624,52 @@ function markHelperSeen(id) {
   
       spawnCenterUiBurst(root, 20, 2);
       if (window.posthog) window.posthog.capture('intro_skipped', { intro_step: state.intro && state.intro.step });
-      runIntroExitToFreshBoard(root, state, render);
+      runIntroExitToFreshBoard(root, state, render, { playComboSfx: true });
     };
 
     skipBtn.addEventListener('pointerdown', skipIntro);
+  }
+
+  function maybeOpenTileHelper(state, kind) {
+    if (!state) return false;
+  
+    if (kind === 'bomb') {
+      return openHelperModal(state, {
+        id: 'bomb',
+        icon: 'bomb',
+        title: 'Bomb Tile',
+        body: 'Blast next to it to clear its row and column.'
+      });
+    }
+  
+    if (kind === 'skull') {
+      return openHelperModal(state, {
+        id: 'skull',
+        icon: 'skull',
+        title: 'Skull Tile',
+        body: 'Blast it and lose 1 life.'
+      });
+    }
+  
+    if (kind === 'heart') {
+      return openHelperModal(state, {
+        id: 'heart',
+        icon: 'heart',
+        title: 'Heart Tile',
+        body: 'Blast it and gain 1 life.'
+      });
+    }
+  
+    if (kind === 'daily') {
+      return openHelperModal(state, {
+        id: 'daily',
+        icon: 'gem',
+        title: 'Daily Blast',
+        body: 'Blast all gems before you run out of moves.'
+      });
+    }
+  
+    return false;
   }
 
   function openHelperModal(state, helper) {
@@ -2597,6 +2685,9 @@ function markHelperSeen(id) {
       title: helper.title || '',
       body: helper.body || ''
     };
+
+    var app = document.getElementById('app');
+    if (app) app.classList.add('is-dimmed');
   
     return true;
   }
@@ -2604,6 +2695,8 @@ function markHelperSeen(id) {
   function closeHelperModal(state) {
     if (!state || !state.helperModal) return;
     state.helperModal = null;
+    var app = document.getElementById('app');
+    if (app) app.classList.remove('is-dimmed');
   }
   
   function renderHelperModal(state) {
@@ -2680,12 +2773,7 @@ function markHelperSeen(id) {
     )
     : isDaily
     ? (
-      '<div class="bm-hud bm-hud--daily-centered">' +
-        '<div class="bm-hud-stat bm-hud-stat--daily-score" data-daily-gems-stat>' +
-          '<img src="images/hud/gem.svg" class="bm-hud-icon bm-hud-icon--daily" data-daily-gems-icon alt="" />' +
-          '<span class="bm-hud-value bm-hud-daily-score-value" data-daily-gems-value>' + (state.daily.gemTarget - state.daily.gemsRemaining) + '</span>' +
-        '</div>' +
-      '</div>'
+      '<div class="bm-hud bm-hud--daily-empty"></div>'
     )
     : (
       '<div class="bm-hud">' +
@@ -2708,18 +2796,22 @@ function markHelperSeen(id) {
     ? (
       '<div class="bm-score bm-score--intro">' +
         '<div class="bm-score__title" data-score-title>' + state.intro.title + '</div>' +
-        (state.intro.subtitle
-          ? '<div class="bm-score__subtitle">' + state.intro.subtitle + '</div>'
-          : '') +
       '</div>'
     )
-      : isDaily
-      ? (
-        '<div class="bm-score bm-score--daily">' +
-          '<div class="bm-score__burst bm-score__burst--daily-moves" data-daily-moves-burst></div>' +
-          '<div class="bm-score__value bm-score__value--daily bm-daily-moves-value" data-daily-moves-value>' + state.daily.movesRemaining + '</div>' +
+    : isDaily
+    ? (
+        '<div class="bm-daily-top">' +
+          '<div class="bm-daily-timer" data-daily-moves-ring-wrap>' +
+            '<svg class="bm-daily-timer__svg" viewBox="0 0 100 100" aria-hidden="true">' +
+              '<circle class="bm-daily-timer__track" cx="50" cy="50" r="40"></circle>' +
+              '<circle class="bm-daily-timer__progress" cx="50" cy="50" r="40" data-daily-moves-ring></circle>' +
+            '</svg>' +
+            '<div class="bm-daily-timer__value" data-daily-moves-value>' +
+              (state.daily ? state.daily.movesRemaining : 0) +
+            '</div>' +
+          '</div>' +
         '</div>'
-      )
+    )
       : (
         '<div class="bm-score">' +
           '<div class="bm-score__burst" data-score-burst></div>' +
@@ -2747,21 +2839,36 @@ function markHelperSeen(id) {
     }).join('') + '</div>'
   );
 
-  root.innerHTML = '' +
-  '<section class="bm-screen bm-game" data-game>' +
-    hudHtml +
-    '<div class="bm-spacer" aria-hidden="true"></div>' +
-    scoreHtml +
-    '<div class="bm-spacer" aria-hidden="true"></div>' +
-    '<div class="bm-board-wrap">' +
-      '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
-    '</div>' +
-    '<div class="bm-spacer" aria-hidden="true"></div>' +
-    handHtml +
-    renderHelperModal(state) +
-  '</section>';
+  var layoutHtml = isDaily
+  ? (
+    '<section class="bm-screen bm-game bm-game--daily" data-game>' +
+      scoreHtml +
+      '<div class="bm-spacer" aria-hidden="true"></div>' +
+      '<div class="bm-board-wrap">' +
+        '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
+      '</div>' +
+      '<div class="bm-spacer" aria-hidden="true"></div>' +
+      handHtml +
+    '</section>'
+  )
+  : (
+    '<section class="bm-screen bm-game" data-game>' +
+      hudHtml +
+      '<div class="bm-spacer" aria-hidden="true"></div>' +
+      scoreHtml +
+      '<div class="bm-spacer" aria-hidden="true"></div>' +
+      '<div class="bm-board-wrap">' +
+        '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
+      '</div>' +
+      '<div class="bm-spacer" aria-hidden="true"></div>' +
+      handHtml +
+    '</section>'
+  );
+
+root.innerHTML = layoutHtml + renderHelperModal(state);
 
   syncScoreUi(root, state);
+  syncDailyHudUi(root, state);
   bindIntroSkip(root, state, renderApp);
   bindHelperModal(root, state, renderApp);
 
@@ -2826,7 +2933,15 @@ function markHelperSeen(id) {
         '</div>';
       }
 
-      if (isSpecialIconCell(cell) || isGemCell(cell)) {
+      if (isGemCell(cell)) {
+        return '<div class="' + cellClass + '" data-cell-index="' + index + '">' +
+          '<div class="bm-gem-tile' + extraClass + '"' + extraStyle + '>' +
+            '<img class="bm-gem-tile__icon" src="images/tiles/gem.svg" alt="" />' +
+          '</div>' +
+        '</div>';
+      }
+
+      if (isSpecialIconCell(cell)) {
         var iconName = isBombCell(cell)
           ? 'bomb'
           : isSkullCell(cell)
@@ -2902,7 +3017,7 @@ function markHelperSeen(id) {
   
   function getCellContentEl(cellEl) {
     if (!cellEl) return null;
-    return cellEl.querySelector('.bm-tile, .bm-neutral-block, .bm-special-tile');
+    return cellEl.querySelector('.bm-tile, .bm-neutral-block, .bm-special-tile, .bm-gem-tile');
   }
 
   function hideBoardCells(root, indices) {
@@ -3051,7 +3166,13 @@ function markHelperSeen(id) {
           var rainbowTones = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'];
           var rainbowTone = rainbowTones[Math.floor(Math.random() * rainbowTones.length)];
           frag.className = 'bm-blast-frag bm-blast-frag--' + rainbowTone + ' bm-blast-frag--mix-' + fragVariant;
-        } else if (isNeutralCell(cell)) {
+        } else if (
+          isNeutralCell(cell) ||
+          isBombCell(cell) ||
+          isSkullCell(cell) ||
+          isHeartCell(cell) ||
+          isGemCell(cell)
+        ) {
           frag.className = 'bm-blast-frag bm-blast-frag--neutral bm-blast-frag--neutral-mix-' + fragVariant;
         } else {
           frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone + ' bm-blast-frag--mix-' + fragVariant;
@@ -3277,7 +3398,8 @@ function markHelperSeen(id) {
     return timerId;
   }
 
-  function runIntroExitToFreshBoard(root, state, render) {
+  function runIntroExitToFreshBoard(root, state, render, options) {
+    options = options || {};
     clearIntroTimers(state);
   
     var oldMsg = document.body.querySelector('.bm-board-message');
@@ -3295,6 +3417,9 @@ function markHelperSeen(id) {
     state.isResolving = true;
   
     window.setTimeout(function () {
+      if (options.playComboSfx) {
+        playSfx('combo');
+      }
       markIntroSeen();
       if (window.posthog) window.posthog.capture('intro_completed');
   
@@ -3302,7 +3427,7 @@ function markHelperSeen(id) {
       resetStandardGameState(state);
       state.screen = 'home';
       state.bootStarted = false;
-
+  
       render();
     }, 320);
   }
@@ -3330,8 +3455,10 @@ function markHelperSeen(id) {
         if (isDailyMode(state)) {
           checkDailyEndState(root, state, render);
         } else {
-          runPostResolveDrops(root, state);
-          checkPostMoveState(root, state, render);
+          runPostResolveDrops(root, state, render);
+          window.setTimeout(function () {
+            checkPostMoveState(root, state, render);
+          }, 380);
         }
       }
     
@@ -3378,7 +3505,6 @@ function markHelperSeen(id) {
     if (isDailyMode(state) && dailyGemsCleared > 0) {
       window.setTimeout(function () {
         syncHudUi(root, state);
-        animateDailyGemGain(root, dailyGemsCleared);
       }, 120);
     }
     
@@ -3489,8 +3615,10 @@ function markHelperSeen(id) {
             if (isDailyMode(state)) {
               checkDailyEndState(root, state, render);
             } else {
-              runPostResolveDrops(root, state);
-              checkPostMoveState(root, state, render);
+              runPostResolveDrops(root, state, render);
+              window.setTimeout(function () {
+                checkPostMoveState(root, state, render);
+              }, 380);
             }
           }
   
@@ -3511,7 +3639,7 @@ function markHelperSeen(id) {
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             } else {
               queueIntroTimer(state, function () {
-                runIntroExitToFreshBoard(root, state, render);
+                runIntroExitToFreshBoard(root, state, render, { playComboSfx: false });
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             }
           }
@@ -3809,6 +3937,10 @@ function markHelperSeen(id) {
           }
         }
       }
+
+      if (!(state.intro && state.intro.active)) {
+        queuePostResolveDrops(state);
+      }
   
       state.isResolving = true;
   
@@ -4025,15 +4157,10 @@ function markHelperSeen(id) {
   function syncHudUi(root, state) {
     var highScoreEl = root.querySelector('.bm-hud-score-value');
     var livesEl = root.querySelector('.bm-hud-lives-value');
-    var dailyScoreEl = root.querySelector('.bm-hud-daily-score-value');
     var dailyMovesEl = root.querySelector('[data-daily-moves-value]');
   
     if (highScoreEl) highScoreEl.textContent = state.highScore;
     if (livesEl) livesEl.textContent = state.lives;
-
-    if (dailyScoreEl && state.daily) {
-      dailyScoreEl.textContent = Math.max(0, state.daily.gemTarget - state.daily.gemsRemaining);
-    }
 
     if (dailyMovesEl && state.daily) {
       dailyMovesEl.textContent = state.daily.movesRemaining;
@@ -4205,7 +4332,6 @@ function markHelperSeen(id) {
   
     if (window.posthog) window.posthog.capture('level_up', { level: nextLevel.id, score: state.score });
     syncHudUi(root, state);
-    showBoardMessage(root, 'Level ' + nextLevel.id, null, 0, 'centered');
   }
 
   function transitionScreen(root, drawNext) {
@@ -4305,7 +4431,11 @@ function markHelperSeen(id) {
     document.body.addEventListener('pointerdown', function initAudioWarmup() {
       ensureAudioContext();
       primeResponsiveSfx();
-    }, { once: true });
+    
+      if (pendingStartSfx) {
+        pendingStartSfx = false;
+      }
+    }, { once: true, capture: true });
 
     function runBootFlow() {
       if (state.bootTimer) {
@@ -4324,7 +4454,7 @@ function markHelperSeen(id) {
             setupIntroStepByNumber(state, getIntroStartStep());
             state.screen = 'game';
             render();
-            playSfx('start');
+            pendingStartSfx = false;
             return;
           }
 
@@ -4332,14 +4462,14 @@ function markHelperSeen(id) {
             setupIntroStepByNumber(state, 1);
             state.screen = 'game';
             render();
-            playSfx('start');
+            pendingStartSfx = false;
             return;
           }
 
           state.screen = 'home';
           render();
         });
-      }, 1750);
+      }, BOOT_TOTAL_MS);
     }
 
     function render() {
@@ -4728,40 +4858,6 @@ function markHelperSeen(id) {
     syncUiScale();
     window.addEventListener('resize', syncUiScale);
     window.addEventListener('orientationchange', syncUiScale);
-  
-    // 🔊 unlock audio on first interaction
-    document.body.addEventListener('pointerdown', function initAudio() {
-      ensureAudioContext();
-      primeResponsiveSfx();
-
-      ['pickup', 'place', 'blast', 'lose', 'start'].forEach(function (name) {
-        var s = SFX[name];
-        if (!s) return;
-
-        try {
-          var targetVolume = (SFX_VOLUME[name] != null) ? SFX_VOLUME[name] : 1;
-
-          s.volume = 0.001;
-          var p = s.play();
-
-          if (p && typeof p.then === 'function') {
-            p.then(function () {
-              s.pause();
-              s.currentTime = 0;
-              s.volume = targetVolume;
-            }).catch(function () {
-              s.volume = targetVolume;
-            });
-          } else {
-            s.pause();
-            s.currentTime = 0;
-            s.volume = targetVolume;
-          }
-        } catch (e) {
-          s.volume = (SFX_VOLUME[name] != null) ? SFX_VOLUME[name] : 1;
-        }
-      });
-    }, { once: true });
 
     var app = createApp();
     app.render();
