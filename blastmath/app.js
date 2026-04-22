@@ -134,6 +134,33 @@
     }
   }
 
+  function unlockAudioNow() {
+    ensureAudioContext();
+    primeResponsiveSfx();
+  
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(function(){});
+    }
+  
+    Object.keys(SFX).forEach(function (key) {
+      var sound = SFX[key];
+      if (!sound) return;
+  
+      try {
+        sound.volume = 0;
+        sound.currentTime = 0;
+        var p = sound.play();
+        if (p && typeof p.then === 'function') {
+          p.then(function () {
+            sound.pause();
+            sound.currentTime = 0;
+            sound.volume = (SFX_VOLUME[key] != null) ? SFX_VOLUME[key] : 1;
+          }).catch(function(){});
+        }
+      } catch (e) {}
+    });
+  }
+
   function playBufferedSfx(name) {
     var ctx = ensureAudioContext();
     var buffer = SFX_BUFFERS[name];
@@ -646,6 +673,10 @@ function openDailyCompletedLanding(state) {
     puzzleKey: getDailyCompletionKey()
   };
   state.screen = 'daily-complete';
+}
+
+function openDailyPaywall(state) {
+  state.screen = 'daily-paywall';
 }
 
   function readHighScore() {
@@ -2784,43 +2815,31 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
   function bindDailyResultScreen(root, state, render) {
     var nextBtn = root.querySelector('[data-daily-next-challenge]');
     if (!nextBtn) return;
-
+  
     nextBtn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
-
-      var nextChallengeId = getNextDailyChallengeId(state.daily && state.daily.challengeId);
-
+  
+      var currentChallengeId = state.daily && state.daily.challengeId;
+      var nextChallengeId = getNextDailyChallengeId(currentChallengeId);
+  
       if (nextChallengeId) {
-        resetDailyChallengeStats(state, state.daily.challengeId);
-
-        var nextStats = getDailyChallengeStats(state, nextChallengeId);
-
-        spawnCenterGemBurst(root, getDailyChallengeConfig(nextChallengeId).icon, 20, 2);
-
-        window.setTimeout(function () {
+        var isLockedNextChallenge = !state.isPaid && currentChallengeId === 'easy' && nextChallengeId === 'medium';
+  
+        if (isLockedNextChallenge) {
           transitionScreen(root, function () {
-            launchDailyChallenge(root, state, render, nextChallengeId, {
-              tries: nextStats.completed ? 1 : (nextStats.tries || 1),
-              startedAt: nextStats.completed ? Date.now() : (nextStats.startedAt || Date.now()),
-              finishedAt: nextStats.completed ? 0 : (nextStats.finishedAt || 0)
-            });
+            openDailyPaywall(state);
+            render();
           });
-        }, 120);
-
+          return;
+        }
+  
+        launchDailyChallenge(root, state, render, nextChallengeId);
         return;
       }
-
-      resetDailyChallengeStats(state, state.daily.challengeId);
-      spawnCenterGemBurst(root, getDailyChallengeConfig(state.daily.challengeId).icon, 20, 2);
-
-      window.setTimeout(function () {
-        transitionScreen(root, function () {
-          clearSavedGame('daily');
-          state.screen = 'home';
-          render();
-        });
-      }, 120);
+  
+      state.screen = 'home';
+      render();
     });
   }
 
@@ -2836,6 +2855,24 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       state.screen = 'home';
       render();
     });
+  }
+
+  function bindDailyPaywall(root, state, render) {
+    var close = root.querySelector('[data-daily-paywall-close]');
+    var cta = root.querySelector('[data-daily-paywall-cta]');
+  
+    if (close) {
+      close.onclick = function () {
+        state.screen = 'home';
+        render();
+      };
+    }
+  
+    if (cta) {
+      cta.onclick = function () {
+        console.log('HOOK STRIPE HERE');
+      };
+    }
   }
 
   function renderBoot(root) {
@@ -3013,45 +3050,79 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       '</div>';
   }
 
-function renderDailyResultScreen(state) {
-  if (!state.daily || !state.daily.showingResultScreen) return '';
-
-  var challenge = getDailyChallengeConfig(state.daily.challengeId);
-  var nextChallengeId = getNextDailyChallengeId(state.daily.challengeId);
-  var nextLabel = nextChallengeId ? getDailyChallengeConfig(nextChallengeId).label : 'Home';
-  var ctaText = nextChallengeId ? ('Play ' + nextLabel) : 'Back Home';
-  var elapsedTime = formatDailyElapsedTime(state.daily.startedAt, state.daily.finishedAt);
-
-  return '' +
-  '<section class="bm-screen bm-daily-result" data-daily-result>' +
-
-    '<div class="bm-daily-result__content">' +
-
-      '<div class="bm-daily-result__icon-wrap">' +
-        '<img class="bm-daily-result__icon" src="' + challenge.icon + '" alt="" />' +
-      '</div>' +
-
-      '<div class="bm-daily-result__title">' + challenge.label + ' Challenge Complete</div>' +
-
-      '<div class="bm-daily-result__subtitle">You beat 68% of players on today’s ' + challenge.label + ' Challenge</div>' +
-
-      '<div class="bm-daily-result__stats">' +
-        '<div class="bm-daily-result__stat">' +
-          '<div class="bm-daily-result__stat-head">Tries</div>' +
-          '<div class="bm-daily-result__stat-body">' + (state.daily.tries || 1) + '</div>' +
+  function renderDailyResultScreen(state) {
+    if (!state.daily || !state.daily.showingResultScreen) return '';
+  
+    var challenge = getDailyChallengeConfig(state.daily.challengeId);
+    var nextChallengeId = getNextDailyChallengeId(state.daily.challengeId);
+    var nextLabel = nextChallengeId ? getDailyChallengeConfig(nextChallengeId).label : 'Home';
+    var elapsedTime = formatDailyElapsedTime(state.daily.startedAt, state.daily.finishedAt);
+  
+    var isLockedNextChallenge = !state.isPaid && challenge.id === 'easy' && nextChallengeId === 'medium';
+    var ctaText = nextChallengeId ? ('Play ' + nextLabel) : 'Back Home';
+  
+    return '' +
+    '<section class="bm-screen bm-daily-result" data-daily-result>' +
+  
+      '<div class="bm-daily-result__content">' +
+  
+        '<div class="bm-daily-result__icon-wrap">' +
+          '<img class="bm-daily-result__icon" src="' + challenge.icon + '" alt="" />' +
         '</div>' +
-        '<div class="bm-daily-result__stat">' +
-          '<div class="bm-daily-result__stat-head">Time</div>' +
-          '<div class="bm-daily-result__stat-body">' + elapsedTime + '</div>' +
+  
+        '<div class="bm-daily-result__title">' + challenge.label + ' Challenge Complete</div>' +
+  
+        '<div class="bm-daily-result__subtitle">You beat 68% of players on today’s ' + challenge.label + ' Challenge</div>' +
+  
+        '<div class="bm-daily-result__stats">' +
+          '<div class="bm-daily-result__stat">' +
+            '<div class="bm-daily-result__stat-head">Tries</div>' +
+            '<div class="bm-daily-result__stat-body">' + (state.daily.tries || 1) + '</div>' +
+          '</div>' +
+          '<div class="bm-daily-result__stat">' +
+            '<div class="bm-daily-result__stat-head">Time</div>' +
+            '<div class="bm-daily-result__stat-body">' + elapsedTime + '</div>' +
+          '</div>' +
         '</div>' +
+  
       '</div>' +
+  
+      '<button class="bm-btn bm-btn--classic bm-daily-result__cta" type="button" data-daily-next-challenge>' +
+        '<span>' + ctaText + '</span>' +
+        (isLockedNextChallenge
+          ? '<img class="bm-daily-result__lock" src="images/paywall/lock.svg" alt="" />'
+          : '') +
+      '</button>' +
+  
+    '</section>';
+  }
 
-      '</div>' +
-
-      '<button class="bm-btn bm-btn--classic bm-daily-result__cta" type="button" data-daily-next-challenge>' + ctaText + '</button>' +
-
-  '</section>';
-}
+  function renderDailyPaywallScreen() {
+    return '' +
+      '<section class="bm-screen bm-daily-paywall" data-daily-paywall>' +
+  
+        '<button class="bm-daily-paywall__close" type="button" data-daily-paywall-close>' +
+          '✕' +
+        '</button>' +
+  
+        '<div class="bm-daily-paywall__content">' +
+  
+          '<div class="bm-daily-paywall__title">Finish Today’s Challenge</div>' +
+  
+          '<div class="bm-daily-paywall__benefits">' +
+            '<div>Play medium & hard</div>' +
+            '<div>Complete the challenge</div>' +
+            '<div>Earn full rewards</div>' +
+          '</div>' +
+  
+        '</div>' +
+  
+        '<button class="bm-btn bm-btn--classic bm-daily-paywall__cta" data-daily-paywall-cta>' +
+          'Finish Challenge' +
+        '</button>' +
+  
+      '</section>';
+  }
 
 function renderDailyCompletedLanding(state) {
   var hard = getDailyChallengeConfig('hard');
@@ -4598,6 +4669,7 @@ var gemIcon = dailyChallenge
     mount.innerHTML = '<div class="bm-stage" data-stage></div>';
     var root = mount.querySelector('[data-stage]');
     var state = {
+      isPaid: false,
       screen: 'boot',
       highScore: readHighScore(),
       score: 0,
@@ -4775,29 +4847,34 @@ var gemIcon = dailyChallenge
               ? (savedDaily.daily.challengeId || 'easy')
               : 'easy';
 
-            spawnCenterGemBurst(
-              root,
-              getDailyChallengeConfig(launchChallengeId).icon,
-              20,
-              2
-            );
-
-            transitionScreen(root, function () {
-              if (hasActiveSavedDaily) {
-                restoreSavedGame(state, savedDaily);
-                state.screen = 'daily';
-                render();
-                playSfx('start');
-              } else {
-                launchDailyChallenge(root, state, render, 'easy');
-              }
-            });
+              spawnCenterGemBurst(
+                root,
+                getDailyChallengeConfig(launchChallengeId).icon,
+                20,
+                2
+              );
+              
+              window.setTimeout(function () {
+                transitionScreen(root, function () {
+                  if (hasActiveSavedDaily) {
+                    restoreSavedGame(state, savedDaily);
+                    state.screen = 'daily';
+                    render();
+                    playSfx('start');
+                  } else {
+                    launchDailyChallenge(root, state, render, 'easy');
+                  }
+                });
+              }, 120);
           });
         }
 
       } else if (state.screen === 'daily-complete') {
         root.innerHTML = renderDailyCompletedLanding(state);
         bindDailyCompletedLanding(root, state, render);
+      } else if (state.screen === 'daily-paywall') {
+        root.innerHTML = renderDailyPaywallScreen();
+        bindDailyPaywall(root, state, render);
       } else {
         renderGame(root, state, render);
 
@@ -4806,11 +4883,17 @@ var gemIcon = dailyChallenge
           state.dragBound = true;
         }
       }
+      
 
       writeSavedGame(state);
     }
 
     window.BM_DEBUG = {
+
+      paywall: function () {
+        openDailyPaywall(state);
+        render();
+      },
 
       nextDailyPuzzle: function () {
         var current = typeof DAILY_WINDOW_OVERRIDE === 'number'
@@ -5110,7 +5193,11 @@ var gemIcon = dailyChallenge
     syncUiScale();
     window.addEventListener('resize', syncUiScale);
     window.addEventListener('orientationchange', syncUiScale);
-
+  
+    document.addEventListener('pointerdown', function bmUnlockOnce() {
+      unlockAudioNow();
+    }, { once: true });
+  
     var app = createApp();
     app.render();
   });
