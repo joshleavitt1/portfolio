@@ -2857,20 +2857,72 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
     });
   }
 
+  function setPaywallEmailModalOpen(root, isOpen) {
+    var modal = root.querySelector('[data-paywall-email-modal]');
+    if (!modal) return;
+  
+    modal.classList.toggle('is-open', !!isOpen);
+  
+    var input = root.querySelector('[data-paywall-email-input]');
+    if (isOpen && input) {
+      window.setTimeout(function () {
+        input.focus();
+      }, 120);
+    }
+  }
+
   function bindDailyPaywall(root, state, render) {
     var close = root.querySelector('[data-daily-paywall-close]');
     var cta = root.querySelector('[data-daily-paywall-cta]');
+    var emailDismiss = root.querySelector('[data-paywall-email-dismiss]');
+    var emailContinue = root.querySelector('[data-paywall-email-continue]');
   
     if (close) {
-      close.onclick = function () {
+      close.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+  
+        var modal = root.querySelector('[data-paywall-email-modal]');
+        if (modal && modal.classList.contains('is-open')) {
+          setPaywallEmailModalOpen(root, false);
+          return;
+        }
+  
         state.screen = 'home';
         render();
       };
     }
   
     if (cta) {
-      cta.onclick = function () {
-        console.log('HOOK STRIPE HERE');
+      cta.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPaywallEmailModalOpen(root, true);
+      };
+    }
+  
+    if (emailDismiss) {
+      emailDismiss.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPaywallEmailModalOpen(root, false);
+      };
+    }
+  
+    if (emailContinue) {
+      emailContinue.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+  
+        var input = root.querySelector('[data-paywall-email-input]');
+        var email = input ? String(input.value || '').trim() : '';
+  
+        if (!email) {
+          if (input) input.focus();
+          return;
+        }
+  
+        console.log('EMAIL CAPTURE HERE:', email);
       };
     }
   }
@@ -3097,31 +3149,59 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
     '</section>';
   }
 
-  function renderDailyPaywallScreen() {
+  function renderDailyPaywallScreen(state) {
     return '' +
       '<section class="bm-screen bm-daily-paywall" data-daily-paywall>' +
   
-        '<button class="bm-daily-paywall__close" type="button" data-daily-paywall-close>' +
-          '✕' +
+        '<button class="bm-daily-paywall__close" type="button" data-daily-paywall-close aria-label="Close">' +
+          '<img class="bm-daily-paywall__close-icon" src="images/paywall/close.svg" alt="" />' +
         '</button>' +
   
         '<div class="bm-daily-paywall__content">' +
   
           '<div class="bm-daily-paywall__title">Finish Today’s Challenge</div>' +
   
+          '<img class="bm-daily-paywall__group-image" src="images/paywall/group.svg" alt="" />' +
+  
           '<div class="bm-daily-paywall__benefits">' +
-            '<div>Play medium & hard</div>' +
-            '<div>Complete the challenge</div>' +
-            '<div>Earn full rewards</div>' +
+            '<div class="bm-daily-paywall__benefit">' +
+              '<img class="bm-daily-paywall__benefit-icon" src="images/paywall/fire.svg" alt="" />' +
+              '<div class="bm-daily-paywall__benefit-text">Play medium & hard levels</div>' +
+            '</div>' +
+  
+            '<div class="bm-daily-paywall__benefit">' +
+              '<img class="bm-daily-paywall__benefit-icon" src="images/paywall/play.svg" alt="" />' +
+              '<div class="bm-daily-paywall__benefit-text">Complete today’s challenge</div>' +
+            '</div>' +
+  
+            '<div class="bm-daily-paywall__benefit">' +
+              '<img class="bm-daily-paywall__benefit-icon" src="images/paywall/trophy.svg" alt="" />' +
+              '<div class="bm-daily-paywall__benefit-text">Earn full rewards</div>' +
+            '</div>' +
           '</div>' +
   
         '</div>' +
   
-        '<button class="bm-btn bm-btn--classic bm-daily-paywall__cta" data-daily-paywall-cta>' +
-          'Finish Challenge' +
-        '</button>' +
+        '<div class="bm-daily-paywall__bottom">' +
+          '<div class="bm-daily-paywall__legal">$4.99/month • Cancel anytime</div>' +
+          '<button class="bm-btn bm-btn--classic bm-daily-paywall__cta" type="button" data-daily-paywall-cta>Finish Challenge</button>' +
+        '</div>' +
   
-      '</section>';
+      '</section>' +
+      renderPaywallEmailModal();
+  }
+
+  function renderPaywallEmailModal() {
+    return '' +
+      '<div class="bm-paywall-email-modal" data-paywall-email-modal>' +
+        '<button class="bm-paywall-email-modal__backdrop" type="button" data-paywall-email-dismiss aria-label="Close"></button>' +
+        '<div class="bm-paywall-email-modal__sheet">' +
+          '<div class="bm-paywall-email-modal__title">One last step</div>' +
+          '<div class="bm-paywall-email-modal__subtitle">Enter your email to continue, no password needed.</div>' +
+          '<input class="bm-paywall-email-modal__input" type="email" inputmode="email" autocomplete="email" placeholder="Enter your email" data-paywall-email-input />' +
+          '<button class="bm-btn bm-btn--classic bm-paywall-email-modal__cta" type="button" data-paywall-email-continue>Continue</button>' +
+        '</div>' +
+      '</div>';
   }
 
 function renderDailyCompletedLanding(state) {
@@ -4870,7 +4950,7 @@ var gemIcon = dailyChallenge
         root.innerHTML = renderDailyCompletedLanding(state);
         bindDailyCompletedLanding(root, state, render);
       } else if (state.screen === 'daily-paywall') {
-        root.innerHTML = renderDailyPaywallScreen();
+        root.innerHTML = renderDailyPaywallScreen(state);
         bindDailyPaywall(root, state, render);
       } else {
         renderGame(root, state, render);
