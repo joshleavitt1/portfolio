@@ -11,6 +11,39 @@
     classicSaveKey: "blastmath.save.classic",
     dailySaveKey: "blastmath.save.daily",
 
+    dailyStartCoverage: 24,
+    dailyStartGemCount: 10,
+    dailyStartWallCount: 14,
+    dailyStartRows: 4,
+
+    dailyChallenges: {
+      easy: {
+        id: 'easy',
+        label: 'Easy',
+        gemTarget: 8,
+        startRows: 3,
+        wallDropRate: 4,
+        icon: 'images/tiles/easy.svg'
+      },
+      medium: {
+        id: 'medium',
+        label: 'Medium',
+        gemTarget: 10,
+        startRows: 4,
+        wallDropRate: 3,
+        icon: 'images/tiles/medium.svg'
+      },
+      hard: {
+        id: 'hard',
+        label: 'Hard',
+        gemTarget: 12,
+        startRows: 4,
+        topExtraCells: 2,
+        wallDropRate: 2,
+        icon: 'images/tiles/hard.svg'
+      }
+    },
+
     heartChanceScaleAt2Lives: 2,
     heartChanceScaleAt1Life: 3,
 
@@ -214,133 +247,6 @@
       }
     }
   ];
-
-  var DAILY_PUZZLES = {
-    "daily-1": {
-      id: "daily-1",
-      moves: 12,
-      gemCount: 5,
-      gemSlots: [
-        { x: 1, y: 5 },
-        { x: 4, y: 5 },
-        { x: 2, y: 4 },
-        { x: 0, y: 3 },
-        { x: 5, y: 3 },
-        { x: 1, y: 2 },
-        { x: 4, y: 2 },
-        { x: 2, y: 1 }
-      ],
-      walls: [
-        { x: 0, y: 5 },
-        { x: 2, y: 5 },
-        { x: 3, y: 5 },
-        { x: 5, y: 5 },
-
-        { x: 1, y: 4 },
-        { x: 3, y: 4 },
-        { x: 4, y: 4 },
-
-        { x: 1, y: 3 },
-        { x: 4, y: 3 },
-
-        { x: 2, y: 2 },
-        { x: 3, y: 2 },
-        { x: 4, y: 2 },
-
-        { x: 1, y: 1 },
-        { x: 2, y: 1 },
-        { x: 4, y: 1 },
-
-        { x: 0, y: 0 },
-        { x: 2, y: 0 },
-        { x: 5, y: 0 }
-      ],
-      hands: [
-        [
-          [{ x: 0, y: 0, value: 3 }],
-          [{ x: 0, y: 0, value: 7 }],
-          [{ x: 0, y: 0, value: 4 }, { x: 1, y: 0, value: 6 }]
-        ],
-        [
-          [{ x: 0, y: 0, value: 2 }, { x: 1, y: 0, value: 5 }],
-          [{ x: 0, y: 0, value: 8 }],
-          [{ x: 0, y: 0, value: 1 }, { x: 0, y: 1, value: 9 }]
-        ],
-        [
-          [{ x: 0, y: 0, value: 4 }],
-          [{ x: 0, y: 0, value: 6 }],
-          [{ x: 0, y: 0, value: 5 }, { x: 1, y: 0, value: 3 }]
-        ],
-        [
-          [{ x: 0, y: 0, value: 1 }],
-          [{ x: 0, y: 0, value: 9 }],
-          [{ x: 0, y: 0, value: 2 }, { x: 1, y: 0, value: 8 }]
-        ]
-      ]
-    },
-
-    "daily-2": {
-      id: "daily-2",
-      moves: 12,
-      gemCount: 5,
-      gemSlots: [
-        { x: 2, y: 5 },
-        { x: 5, y: 5 },
-        { x: 1, y: 4 },
-        { x: 4, y: 4 },
-        { x: 0, y: 3 },
-        { x: 3, y: 3 },
-        { x: 5, y: 2 },
-        { x: 1, y: 1 }
-      ],
-      walls: [
-        { x: 0, y: 5 },
-        { x: 1, y: 5 },
-        { x: 3, y: 5 },
-
-        { x: 2, y: 4 },
-        { x: 5, y: 4 },
-
-        { x: 1, y: 3 },
-        { x: 2, y: 3 },
-        { x: 4, y: 3 },
-
-        { x: 0, y: 2 },
-        { x: 2, y: 2 },
-        { x: 3, y: 2 },
-
-        { x: 1, y: 1 },
-        { x: 3, y: 1 },
-        { x: 4, y: 1 },
-
-        { x: 0, y: 0 },
-        { x: 2, y: 0 },
-        { x: 5, y: 0 }
-      ],
-      hands: [
-        [
-          [{ x: 0, y: 0, value: 1 }],
-          [{ x: 0, y: 0, value: 9 }],
-          [{ x: 0, y: 0, value: 2 }, { x: 1, y: 0, value: 8 }]
-        ],
-        [
-          [{ x: 0, y: 0, value: 3 }],
-          [{ x: 0, y: 0, value: 7 }],
-          [{ x: 0, y: 0, value: 5 }, { x: 0, y: 1, value: 5 }]
-        ],
-        [
-          [{ x: 0, y: 0, value: 4 }],
-          [{ x: 0, y: 0, value: 6 }],
-          [{ x: 0, y: 0, value: 1 }, { x: 1, y: 0, value: 4 }]
-        ],
-        [
-          [{ x: 0, y: 0, value: 2 }],
-          [{ x: 0, y: 0, value: 8 }],
-          [{ x: 0, y: 0, value: 3 }, { x: 1, y: 0, value: 7 }]
-        ]
-      ]
-    }
-  };
   
   function getCurrentLevel(state) {
     var score = state && typeof state.score === 'number' ? state.score : 0;
@@ -455,37 +361,6 @@
       height: height,
       cells: cells
     };
-  }
-
-  function makeFixedPiece(cells, id) {
-    var normalized = (cells || []).map(function (cell) {
-      return makeCellAt(cell.x || 0, cell.y || 0, cell.value);
-    });
-
-    var width = 1;
-    var height = 1;
-
-    normalized.forEach(function (cell) {
-      width = Math.max(width, cell.x + 1);
-      height = Math.max(height, cell.y + 1);
-    });
-
-    return {
-      id: id || ("daily-piece-" + Date.now()),
-      group: "daily",
-      rank: normalized.length,
-      width: width,
-      height: height,
-      cells: normalized
-    };
-  }
-
-  function buildDailyHandsFromPuzzle(puzzle) {
-    return (puzzle.hands || []).map(function (handSet, handIndex) {
-      return (handSet || []).map(function (pieceCells, pieceIndex) {
-        return makeFixedPiece(pieceCells, puzzle.id + "-h" + handIndex + "-p" + pieceIndex);
-      });
-    });
   }
 
   var INTRO_STEPS = {
@@ -726,6 +601,53 @@ function markHelperSeen(id) {
   } catch (e) {}
 }
 
+// === DAILY COMPLETION TRACKING ===
+var DAILY_COMPLETED_KEY = "blastmath.daily.completed";
+
+function getDailyCompletionKey() {
+  return getCurrentDailyPuzzleKey() + ":" + getCurrentDailyVariantSeed();
+}
+
+function readCompletedDailyMap() {
+  try { return JSON.parse(localStorage.getItem(DAILY_COMPLETED_KEY) || "{}"); }
+  catch (e) { return {}; }
+}
+
+function markCurrentDailyCompleted() {
+  try {
+    var map = readCompletedDailyMap();
+    map[getDailyCompletionKey()] = 1;
+    localStorage.setItem(DAILY_COMPLETED_KEY, JSON.stringify(map));
+  } catch (e) {}
+}
+
+function shouldShowDailyRibbon(state) {
+  var map = readCompletedDailyMap();
+  var currentKey = getDailyCompletionKey();
+
+  if (state && state.daily && state.daily.completed) return false;
+  return map[currentKey] !== 1;
+}
+
+function isCurrentDailyCompleted() {
+  var map = readCompletedDailyMap();
+  return map[getDailyCompletionKey()] === 1;
+}
+
+function openDailyCompletedLanding(state) {
+  var challengeId = 'hard';
+
+  if (state && state.daily && state.daily.challengeId) {
+    challengeId = state.daily.challengeId;
+  }
+
+  state.dailyCompletedLanding = {
+    challengeId: challengeId,
+    puzzleKey: getDailyCompletionKey()
+  };
+  state.screen = 'daily-complete';
+}
+
   function readHighScore() {
     try { return Number(localStorage.getItem(CONFIG.storageKey) || 0) || 0; }
     catch (e) { return 0; }
@@ -837,23 +759,22 @@ function markHelperSeen(id) {
         pendingBombSpawn: state.pendingBombSpawn,
         wallSpawnsSinceBomb: state.wallSpawnsSinceBomb,
         pendingComboPoints: state.pendingComboPoints,
-        dailyHands: (state.dailyHands || []).map(function (handSet) {
-          return cloneHandForSave(handSet);
-        }),
-        dailyHandIndex: state.dailyHandIndex || 0,
-        dailyMovesBand: state.dailyMovesBand || null,
+        dailyStats: state.dailyStats || createDailyStatsMap(),
         daily: state.daily ? {
           active: !!state.daily.active,
           puzzleId: state.daily.puzzleId,
-          movesRemaining: state.daily.movesRemaining,
+          challengeId: state.daily.challengeId,
           gemTarget: state.daily.gemTarget,
           gemsRemaining: state.daily.gemsRemaining,
           completed: !!state.daily.completed,
           failed: !!state.daily.failed,
-          handIndex: state.daily.handIndex || 0,
-          handCount: state.daily.handCount || 0,
           variantSeed: state.daily.variantSeed,
-          chosenGems: state.daily.chosenGems || []
+          layoutIndices: state.daily.layoutIndices || [],
+          tries: state.daily.tries || 1,
+          startedAt: state.daily.startedAt || 0,
+          finishedAt: state.daily.finishedAt || 0,
+          showingLossModal: !!state.daily.showingLossModal,
+          showingResultScreen: !!state.daily.showingResultScreen
         } : null
       };
   
@@ -887,13 +808,6 @@ function markHelperSeen(id) {
     state.blastIndices = [];
     state.isResolving = false;
     state.boardMessage = '';
-    state.dailyHands = (saved.dailyHands || []).map(function (handSet) {
-      return cloneHandForSave(handSet);
-    });
-    state.dailyHandIndex = typeof saved.dailyHandIndex === 'number' ? saved.dailyHandIndex : 0;
-    state.dailyMovesBand = saved.dailyMovesBand || null;
-    state.dailyMovesPulseStarted = false;
-    state.dailyJustHitDanger = false;
 
     state.intro = {
       active: false,
@@ -908,27 +822,43 @@ function markHelperSeen(id) {
       targetCursor: 0
     };
 
+    state.dailyStats = createDailyStatsMap(saved.dailyStats);
+
     state.daily = saved.daily ? {
       active: !!saved.daily.active,
       puzzleId: saved.daily.puzzleId,
-      movesRemaining: saved.daily.movesRemaining,
+      challengeId: saved.daily.challengeId || 'easy',
       gemTarget: saved.daily.gemTarget,
       gemsRemaining: saved.daily.gemsRemaining,
       completed: !!saved.daily.completed,
       failed: !!saved.daily.failed,
-      handIndex: saved.daily.handIndex || 0,
-      handCount: saved.daily.handCount || 0,
       variantSeed: saved.daily.variantSeed,
-      chosenGems: saved.daily.chosenGems || []
+      layoutIndices: saved.daily.layoutIndices || [],
+      tries: saved.daily.tries || 1,
+      startedAt: saved.daily.startedAt || 0,
+      finishedAt: saved.daily.finishedAt || 0,
+      showingLossModal: !!saved.daily.showingLossModal,
+      showingResultScreen: !!saved.daily.showingResultScreen
     } : {
       active: false,
       puzzleId: null,
-      movesRemaining: 0,
+      challengeId: 'easy',
       gemTarget: 0,
       gemsRemaining: 0,
       completed: false,
-      failed: false
+      failed: false,
+      variantSeed: null,
+      layoutIndices: [],
+      tries: 1,
+      startedAt: 0,
+      finishedAt: 0,
+      showingLossModal: false,
+      showingResultScreen: false
     };
+
+    if (state.daily && state.daily.active) {
+      state.screen = 'daily';
+    }
 
     return true;
   }
@@ -942,15 +872,11 @@ function markHelperSeen(id) {
   }
 
   function getDailyPuzzleIds() {
-    return Object.keys(DAILY_PUZZLES);
+    return ['daily-seeded'];
   }
 
   function getCurrentDailyPuzzleKey() {
-    var ids = getDailyPuzzleIds();
-    if (!ids.length) return null;
-
-    var windowIndex = getCurrent12HourWindowIndex();
-    return ids[windowIndex % ids.length];
+    return 'daily-seeded';
   }
 
   var DAILY_WINDOW_OVERRIDE = null;
@@ -973,18 +899,80 @@ function markHelperSeen(id) {
     };
   }
 
-  function pickGemSlotsForPuzzle(puzzle, seed) {
-    var slots = (puzzle.gemSlots || []).slice();
-    var gemCount = Math.min(puzzle.gemCount || 5, slots.length);
-    var rng = makeSeededRng(seed);
-    var chosen = [];
+  function shuffleWithSeed(list, rng) {
+    var out = list.slice();
 
-    while (slots.length && chosen.length < gemCount) {
-      var index = Math.floor(rng() * slots.length);
-      chosen.push(slots.splice(index, 1)[0]);
+    for (var i = out.length - 1; i > 0; i--) {
+      var j = Math.floor(rng() * (i + 1));
+      var temp = out[i];
+      out[i] = out[j];
+      out[j] = temp;
     }
 
-    return chosen;
+    return out;
+  }
+
+  function getDailySeededStartIndices(seed, startRows) {
+    var rng = makeSeededRng(seed);
+    var indices = [];
+    var size = CONFIG.boardSize;
+    var rows = Math.max(1, Math.min(size, startRows || 4));
+    var startRow = size - rows;
+  
+    for (var y = startRow; y < size; y++) {
+      for (var x = 0; x < size; x++) {
+        indices.push((y * size) + x);
+      }
+    }
+  
+    return shuffleWithSeed(indices, rng);
+  }
+  
+  function buildSeededDailyBoard(seed, challenge) {
+    var board = createEmptyBoard(CONFIG.boardSize);
+    var rng = makeSeededRng(seed ^ 0x9e3779b9);
+    var size = CONFIG.boardSize;
+    var startRows = challenge.startRows || 4;
+    var topExtraCells = challenge.topExtraCells || 0;
+  
+    var baseIndices = [];
+    var extraRowIndices = [];
+    var startRow = size - startRows;
+  
+    for (var y = startRow; y < size; y++) {
+      for (var x = 0; x < size; x++) {
+        baseIndices.push((y * size) + x);
+      }
+    }
+  
+    if (topExtraCells > 0 && startRow - 1 >= 0) {
+      for (var extraX = 0; extraX < size; extraX++) {
+        extraRowIndices.push(((startRow - 1) * size) + extraX);
+      }
+      extraRowIndices = shuffleWithSeed(extraRowIndices, rng).slice(0, topExtraCells);
+    }
+  
+    var candidateIndices = shuffleWithSeed(baseIndices.concat(extraRowIndices), rng);
+    var coverage = baseIndices.length + extraRowIndices.length;
+    var chosen = candidateIndices.slice(0, coverage);
+  
+    var gemCount = Math.min(challenge.gemTarget, chosen.length);
+    var gemIndices = chosen.slice(0, gemCount);
+    var wallIndices = chosen.slice(gemCount);
+  
+    gemIndices.forEach(function (index) {
+      board[index] = makeGemCell();
+    });
+  
+    wallIndices.forEach(function (index) {
+      board[index] = makeNeutralCell();
+    });
+  
+    return {
+      board: board,
+      gemTarget: gemIndices.length,
+      chosenIndices: chosen.slice()
+    };
   }
 
   function syncUiScale() {
@@ -1487,11 +1475,20 @@ function markHelperSeen(id) {
   }
   
   function maybeDropWall(state) {
-    if (!state || !state.currentLevel) return false;
-    if (!state.currentLevel.wallDropRate) return false;
+    if (!state) return false;
     if (state.moveCount <= 0) return false;
+
+    if (isDailyMode(state)) {
+      var dailyChallenge = getDailyChallengeConfig(state.daily && state.daily.challengeId);
+      var dailyWallRate = dailyChallenge.wallDropRate || 3;
+      if (state.moveCount % dailyWallRate !== 0) return false;
+      return dropRandomNeutralTile(state);
+    }
+
+    if (!state.currentLevel) return false;
+    if (!state.currentLevel.wallDropRate) return false;
     if (state.moveCount % state.currentLevel.wallDropRate !== 0) return false;
-  
+
     return dropRandomNeutralTile(state);
   }
 
@@ -1606,6 +1603,22 @@ function markHelperSeen(id) {
     if (!state || (state.intro && state.intro.active)) return;
   
     var queued = [];
+
+    if (isDailyMode(state)) {
+      var wallSpawn = maybeDropWall(state);
+
+      if (wallSpawn) {
+        state.board[wallSpawn.index] = null;
+        queued.push('wall');
+      }
+
+      state.pendingBombSpawn = false;
+      state.wallSpawnsSinceBomb = 0;
+      state.justDealtNewHand = false;
+      state.pendingPostResolveDrops = queued;
+      return;
+    }
+  
     var canUseBombCycle = !!(state.currentLevel && state.currentLevel.id >= 2);
   
     if (canUseBombCycle && state.pendingBombSpawn) {
@@ -1615,7 +1628,6 @@ function markHelperSeen(id) {
       var wallSpawn = maybeDropWall(state);
   
       if (wallSpawn) {
-        // undo the immediate placement — we only wanted the decision, not the spawn yet
         state.board[wallSpawn.index] = null;
         queued.push('wall');
   
@@ -1648,6 +1660,11 @@ function markHelperSeen(id) {
     }
   
     state.pendingPostResolveDrops = queued;
+  }
+
+  function hasQueuedWallDrop(state) {
+    var queued = state && state.pendingPostResolveDrops;
+    return !!(queued && queued.indexOf('wall') !== -1);
   }
 
   function runPostResolveDrops(root, state, render) {
@@ -1693,12 +1710,29 @@ function markHelperSeen(id) {
   
     if (!spawns.length) {
       state.comboStep = 0;
+  
+      if (isDailyMode(state)) {
+        checkDailyEndState(root, state, render);
+      } else {
+        checkPostMoveState(root, state, render);
+      }
+  
       return;
     }
   
     state.animMap = null;
     state.animMap = buildSpawnAnimMap(root, state, spawns);
     renderGame(root, state, render);
+  
+    window.setTimeout(function () {
+      state.animMap = null;
+  
+      if (isDailyMode(state)) {
+        checkDailyEndState(root, state, render);
+      } else {
+        checkPostMoveState(root, state, render);
+      }
+    }, 540);
   }
 
   function getBombBlastIndices(index, size) {
@@ -1803,20 +1837,6 @@ function markHelperSeen(id) {
     }
   }
 
-  function buildDailyBoardFromPuzzle(puzzle, chosenGems) {
-    var board = createEmptyBoard(CONFIG.boardSize);
-
-    (puzzle.walls || []).forEach(function (cell) {
-      board[(cell.y * CONFIG.boardSize) + cell.x] = makeNeutralCell();
-    });
-
-    (chosenGems || []).forEach(function (cell) {
-      board[(cell.y * CONFIG.boardSize) + cell.x] = makeGemCell();
-    });
-
-    return board;
-  }
-
   function isBoardGravityStable(board, size) {
     for (var x = 0; x < size; x++) {
       var foundEmpty = false;
@@ -1836,86 +1856,150 @@ function markHelperSeen(id) {
     return true;
   }
 
-  function startDailyGame(state, puzzleId) {
-    var resolvedPuzzleId = puzzleId || getCurrentDailyPuzzleKey();
-    var puzzle = DAILY_PUZZLES[resolvedPuzzleId];
-    if (!puzzle) return;
+  var DAILY_CHALLENGE_ORDER = ['easy', 'medium', 'hard'];
 
-    var variantSeed = getCurrentDailyVariantSeed();
-    var chosenGems = pickGemSlotsForPuzzle(puzzle, variantSeed);
+function getDailyChallengeConfig(challengeId) {
+  return CONFIG.dailyChallenges[challengeId] || CONFIG.dailyChallenges.easy;
+}
 
-    state.screen = 'daily';
-    state.score = 0;
-    state.displayScore = 0;
-    state.comboStep = 0;
-    state.lives = CONFIG.startingLives;
-    state.boardSize = CONFIG.boardSize;
-    state.currentLevel = LEVELS[0];
-    state.levelId = 1;
-    state.moveCount = 0;
-    state.handCount = 0;
-    state.pendingBombSpawn = false;
-    state.wallSpawnsSinceBomb = 0;
-    state.pendingComboPoints = 0;
-    state.justDealtNewHand = false;
-    state.animMap = null;
-    state.blastIndices = [];
-    state.isResolving = false;
-    state.boardMessage = "";
+function getNextDailyChallengeId(challengeId) {
+  var index = DAILY_CHALLENGE_ORDER.indexOf(challengeId);
+  if (index < 0 || index >= DAILY_CHALLENGE_ORDER.length - 1) return null;
+  return DAILY_CHALLENGE_ORDER[index + 1];
+}
 
-    state.intro = {
-      active: false,
-      step: 0,
-      title: "",
-      sourceIndex: null,
-      allowedTargetIndex: null,
-      hoveringValid: false,
-      completed: false,
-      direction: "horizontal",
-      targetQueue: [],
-      targetCursor: 0
-    };
+function formatDailyElapsedTime(startedAt, finishedAt) {
+  var start = Number(startedAt) || Date.now();
+  var end = Number(finishedAt) || Date.now();
+  var totalSeconds = Math.max(0, Math.floor((end - start) / 1000));
+  var minutes = Math.floor(totalSeconds / 60);
+  var seconds = totalSeconds % 60;
+  return minutes + ':' + String(seconds).padStart(2, '0');
+}
 
-    state.daily = {
-      active: true,
-      puzzleId: puzzle.id,
-      movesRemaining: puzzle.moves,
-      gemTarget: chosenGems.length,
-      gemsRemaining: chosenGems.length,
-      completed: false,
-      failed: false,
-      handIndex: 0,
-      handCount: puzzle.hands ? puzzle.hands.length : 0,
-      variantSeed: variantSeed,
-      chosenGems: chosenGems
-    };
+function createDailyStatsMap(stats) {
+  return {
+    easy: Object.assign({ tries: 1, startedAt: 0, finishedAt: 0, completed: false }, stats && stats.easy),
+    medium: Object.assign({ tries: 1, startedAt: 0, finishedAt: 0, completed: false }, stats && stats.medium),
+    hard: Object.assign({ tries: 1, startedAt: 0, finishedAt: 0, completed: false }, stats && stats.hard)
+  };
+}
 
-    state.dailyHands = buildDailyHandsFromPuzzle(puzzle);
-    state.dailyHandIndex = 0;
-    state.dailyJustHitDanger = false;
-    state.dailyMovesBand = null;
-    state.dailyMovesPulseStarted = false;
-
-    if (state.dailyMovesHitTimer) {
-      window.clearTimeout(state.dailyMovesHitTimer);
-      state.dailyMovesHitTimer = null;
-    }
-
-    state.board = buildDailyBoardFromPuzzle(puzzle, chosenGems);
-
-    if (!isBoardGravityStable(state.board, state.boardSize)) {
-      applyGravity(state.board, state.boardSize);
-    }
-
-    state.animMap = null;
-
-    state.hand = state.dailyHands[0]
-      ? state.dailyHands[0].slice()
-      : [null, null, null];
-
-      maybeOpenTileHelper(state, 'daily');
-
+function getDailyChallengeStats(state, challengeId) {
+  if (!state.dailyStats) {
+    state.dailyStats = createDailyStatsMap();
   }
+
+  if (!state.dailyStats[challengeId]) {
+    state.dailyStats[challengeId] = { tries: 1, startedAt: 0, finishedAt: 0, completed: false };
+  }
+
+  return state.dailyStats[challengeId];
+}
+
+function resetDailyChallengeStats(state, challengeId) {
+  if (!state.dailyStats) {
+    state.dailyStats = createDailyStatsMap();
+  }
+
+  state.dailyStats[challengeId] = {
+    tries: 1,
+    startedAt: 0,
+    finishedAt: 0,
+    completed: false
+  };
+}
+
+function startDailyGame(state, challengeId, options) {
+  options = options || {};
+
+  var resolvedPuzzleId = getCurrentDailyPuzzleKey() || 'daily-seeded';
+  var variantSeed = getCurrentDailyVariantSeed();
+  var challenge = getDailyChallengeConfig(challengeId || 'easy');
+  state.dailyStats = createDailyStatsMap(state.dailyStats);
+  var challengeStats = getDailyChallengeStats(state, challenge.id);
+  var resolvedStartedAt = options.startedAt || challengeStats.startedAt || Date.now();
+  var resolvedFinishedAt = options.finishedAt || challengeStats.finishedAt || 0;
+  var resolvedTries = options.tries || challengeStats.tries || 1;
+  var seeded = buildSeededDailyBoard(variantSeed, challenge);
+
+  state.screen = 'daily';
+  state.score = 0;
+  state.displayScore = 0;
+  state.comboStep = 0;
+  state.lives = CONFIG.startingLives;
+  state.boardSize = CONFIG.boardSize;
+  state.currentLevel = LEVELS[0];
+  state.levelId = 1;
+  state.moveCount = 0;
+  state.handCount = 0;
+  state.pendingBombSpawn = false;
+  state.wallSpawnsSinceBomb = 0;
+  state.pendingComboPoints = 0;
+  state.justDealtNewHand = false;
+  state.animMap = null;
+  state.blastIndices = [];
+  state.isResolving = false;
+  state.boardMessage = "";
+  state.pendingPostResolveDrops = [];
+
+  state.intro = {
+    active: false,
+    step: 0,
+    title: "",
+    sourceIndex: null,
+    allowedTargetIndex: null,
+    hoveringValid: false,
+    completed: false,
+    direction: "horizontal",
+    targetQueue: [],
+    targetCursor: 0
+  };
+
+  state.daily = {
+    active: true,
+    puzzleId: resolvedPuzzleId,
+    challengeId: challenge.id,
+    gemTarget: seeded.gemTarget,
+    gemsRemaining: seeded.gemTarget,
+    completed: !!challengeStats.completed,
+    failed: false,
+    variantSeed: variantSeed,
+    layoutIndices: seeded.chosenIndices,
+    tries: resolvedTries,
+    startedAt: resolvedStartedAt,
+    finishedAt: resolvedFinishedAt,
+    showingLossModal: false,
+    showingResultScreen: false
+  };
+
+  state.board = seeded.board;
+
+  if (!isBoardGravityStable(state.board, state.boardSize)) {
+    applyGravity(state.board, state.boardSize);
+  }
+
+  state.animMap = null;
+  state.hand = generateHand(state.board, state.boardSize, state);
+
+  maybeOpenTileHelper(state, 'daily');
+}
+
+function launchDailyChallenge(root, state, render, challengeId, options) {
+  options = options || {};
+
+  startDailyGame(state, challengeId, options);
+  playSfx('start');
+
+  if (window.posthog) {
+    window.posthog.capture('daily_started', {
+      puzzle_id: state.daily && state.daily.puzzleId,
+      challenge_id: state.daily && state.daily.challengeId
+    });
+  }
+
+  render();
+}
 
   function isDailyMode(state) {
     return !!(state && state.daily && state.daily.active);
@@ -1967,48 +2051,26 @@ function markHelperSeen(id) {
   function syncDailyHudUi(root, state) {
     if (!root || !state || !state.daily) return;
   
-    var movesEl = root.querySelector('[data-daily-moves-value]');
-    var progressEl = root.querySelector('[data-daily-moves-ring]');
-    var timerWrapEl = root.querySelector('[data-daily-moves-ring-wrap]');
+    var fillEl = root.querySelector('[data-daily-progress-fill]');
+    var valueEl = root.querySelector('[data-daily-progress-value]');
   
-    if (!movesEl || !progressEl || !timerWrapEl) return;
+    if (!fillEl || !valueEl) return;
   
-    var moves = typeof state.daily.movesRemaining === 'number'
-      ? state.daily.movesRemaining
-      : 0;
+    var target = Math.max(1, state.daily.gemTarget || 1);
+    var remaining = Math.max(0, state.daily.gemsRemaining || 0);
+    var collected = Math.max(0, target - remaining);
+    var pct = Math.max(0, Math.min(1, collected / target));
   
-    var maxMoves = 12;
-    var radius = 40;
-    var circumference = 2 * Math.PI * radius;
-    var progress = Math.max(0, Math.min(1, moves / maxMoves));
-    var dashOffset = circumference * (1 - progress);
+    fillEl.style.width = (pct * 100) + '%';
   
-    movesEl.textContent = moves;
-    progressEl.style.strokeDasharray = String(circumference);
-    progressEl.style.strokeDashoffset = String(dashOffset);
+    var prevValue = Number(valueEl.textContent);
+    valueEl.textContent = collected;
   
-    timerWrapEl.classList.remove(
-      'bm-daily-timer--safe',
-      'bm-daily-timer--warning',
-      'bm-daily-timer--danger',
-      'is-moves-hit'
-    );
-  
-    if (moves >= 9) {
-      timerWrapEl.classList.add('bm-daily-timer--safe');
-    } else if (moves >= 5) {
-      timerWrapEl.classList.add('bm-daily-timer--warning');
-    } else {
-      timerWrapEl.classList.add('bm-daily-timer--danger');
+    if (!isNaN(prevValue) && prevValue !== remaining) {
+      valueEl.classList.remove('is-daily-progress-value-hit');
+      void valueEl.offsetWidth;
+      valueEl.classList.add('is-daily-progress-value-hit');
     }
-  
-    void timerWrapEl.offsetWidth;
-    timerWrapEl.classList.add('is-moves-hit');
-  
-    window.setTimeout(function () {
-      var liveWrap = root.querySelector('[data-daily-moves-ring-wrap]');
-      if (liveWrap) liveWrap.classList.remove('is-moves-hit');
-    }, 300);
   }
   
   function resetBoardAfterLifeLoss(state) {
@@ -2114,58 +2176,62 @@ function markHelperSeen(id) {
     if (!isDailyMode(state)) return false;
     if (state.intro && state.intro.active) return false;
     if (state.isResolving) return false;
-
+  
     if (state.daily.gemsRemaining <= 0 && !state.daily.completed) {
       state.daily.completed = true;
-
+      state.daily.failed = false;
+      state.daily.finishedAt = Date.now();
+      var completedStats = getDailyChallengeStats(state, state.daily.challengeId);
+      completedStats.tries = state.daily.tries || 1;
+      completedStats.startedAt = state.daily.startedAt || Date.now();
+      completedStats.finishedAt = state.daily.finishedAt;
+      completedStats.completed = true;
+      state.daily.showingLossModal = false;
+      state.daily.showingResultScreen = true;
+  
+      if ((state.daily && state.daily.challengeId) === 'hard') {
+        markCurrentDailyCompleted();
+      }
+  
       if (window.posthog) {
         window.posthog.capture('daily_completed', {
           puzzle_id: state.daily.puzzleId,
-          moves_remaining: state.daily.movesRemaining
+          challenge_id: state.daily.challengeId,
+          tries: state.daily.tries,
+          elapsed_time: state.daily.finishedAt - state.daily.startedAt
         });
       }
-
+  
       playSfx('combo');
-      showBoardMessage(root, 'Cleared!', null, 0, 'centered');
-
-      window.setTimeout(function () {
-        transitionScreen(root, function () {
-          clearSavedGame('daily');
-          state.screen = 'home';
-          render();
-        });
-      }, 1400);
-
+      render();
       return true;
     }
-
-    var noMovesLeft = state.daily.movesRemaining <= 0;
-    var noHandLeft = !state.hand || state.hand.every(function (piece) { return !piece; });
-
-    if ((noMovesLeft || noHandLeft) && state.daily.gemsRemaining > 0 && !state.daily.failed) {
+  
+    var noPlayableHand = !hasAnyPlayableHand(state);
+  
+    if (noPlayableHand && state.daily.gemsRemaining > 0 && !state.daily.showingLossModal) {
       state.daily.failed = true;
-
+      state.daily.completed = false;
+      state.daily.showingLossModal = true;
+      state.daily.showingResultScreen = false;
+      var failedStats = getDailyChallengeStats(state, state.daily.challengeId);
+      failedStats.tries = (failedStats.tries || 1) + 1;
+      state.daily.tries = failedStats.tries;
+  
       if (window.posthog) {
         window.posthog.capture('daily_failed', {
           puzzle_id: state.daily.puzzleId,
-          gems_remaining: state.daily.gemsRemaining
+          challenge_id: state.daily.challengeId,
+          gems_remaining: state.daily.gemsRemaining,
+          tries: state.daily.tries
         });
       }
-
+  
       playSfx('lose');
-      showBoardMessage(root, 'So Close!', null, 0, 'centered');
-
-      window.setTimeout(function () {
-        transitionScreen(root, function () {
-          clearSavedGame('daily');
-          state.screen = 'home';
-          render();
-        });
-      }, 1400);
-
+      render();
       return true;
     }
-
+  
     return false;
   }
   
@@ -2627,7 +2693,7 @@ function markHelperSeen(id) {
       runIntroExitToFreshBoard(root, state, render, { playComboSfx: true });
     };
 
-    skipBtn.addEventListener('pointerdown', skipIntro);
+    skipBtn.addEventListener('click', skipIntro);
   }
 
   function maybeOpenTileHelper(state, kind) {
@@ -2664,8 +2730,8 @@ function markHelperSeen(id) {
       return openHelperModal(state, {
         id: 'daily',
         icon: 'gem',
-        title: 'Daily Blast',
-        body: 'Blast all gems before you run out of moves.'
+        title: 'Daily Challenge',
+        body: 'Blast all the gems before you run out of moves. There are 3 rounds and each gets harder.'
       });
     }
   
@@ -2685,9 +2751,6 @@ function markHelperSeen(id) {
       title: helper.title || '',
       body: helper.body || ''
     };
-
-    var app = document.getElementById('app');
-    if (app) app.classList.add('is-dimmed');
   
     return true;
   }
@@ -2695,23 +2758,20 @@ function markHelperSeen(id) {
   function closeHelperModal(state) {
     if (!state || !state.helperModal) return;
     state.helperModal = null;
-    var app = document.getElementById('app');
-    if (app) app.classList.remove('is-dimmed');
   }
   
   function renderHelperModal(state) {
     if (!state || !state.helperModal) return '';
   
     var helper = state.helperModal;
+    var isDaily = helper.id === 'daily';
   
     return '' +
       '<div class="bm-helper-modal" data-helper-modal>' +
-        '<div class="bm-helper-modal__scrim"></div>' +
         '<div class="bm-helper-modal__card" role="dialog" aria-modal="true" aria-label="' + helper.title + '">' +
-          '<button class="bm-helper-modal__close" type="button" aria-label="Close" data-helper-close>' +
-            '<img class="bm-helper-modal__close-icon" src="images/hud/close.svg" alt="" />' +
-          '</button>' +
-          '<div class="bm-helper-modal__body bm-helper-modal__body--daily">' + helper.body + '</div>' +
+          '<div class="bm-helper-modal__title">' + helper.title + '</div>' +
+          '<div class="bm-helper-modal__desc' + (isDaily ? ' bm-helper-modal__desc--daily' : '') + '">' + helper.body + '</div>' +
+          '<button class="bm-btn bm-btn--classic bm-helper-modal__btn" type="button" data-helper-close>Got It</button>' +
         '</div>' +
       '</div>';
   }
@@ -2726,9 +2786,102 @@ function markHelperSeen(id) {
       node.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        closeHelperModal(state);
-        render();
+    
+        var modal = root.querySelector('[data-helper-modal]');
+
+        if (!modal) {
+          closeHelperModal(state);
+          render();
+          return;
+        }
+        
+        modal.classList.add('is-exiting');
+        
+        window.setTimeout(function () {
+          closeHelperModal(state);
+          render();
+        }, 220);
       });
+    });
+  }
+
+  function bindDailyLossModal(root, state, render) {
+    var tryAgain = root.querySelector('[data-daily-try-again]');
+    if (!tryAgain) return;
+  
+    tryAgain.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    
+      var retryStats = getDailyChallengeStats(state, state.daily.challengeId);
+
+      spawnCenterGemBurst(root, getDailyChallengeConfig(state.daily.challengeId).icon, 20, 2);
+
+      window.setTimeout(function () {
+        transitionScreen(root, function () {
+          launchDailyChallenge(root, state, render, state.daily.challengeId, {
+            tries: retryStats.tries || state.daily.tries || 1,
+            startedAt: retryStats.startedAt || state.daily.startedAt || Date.now()
+          });
+        });
+      }, 120);
+    });
+  }
+  
+  function bindDailyResultScreen(root, state, render) {
+    var nextBtn = root.querySelector('[data-daily-next-challenge]');
+    if (!nextBtn) return;
+  
+    nextBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+  
+      var nextChallengeId = getNextDailyChallengeId(state.daily && state.daily.challengeId);
+  
+      if (nextChallengeId) {
+        resetDailyChallengeStats(state, state.daily.challengeId);
+
+        var nextStats = getDailyChallengeStats(state, nextChallengeId);
+
+        spawnCenterGemBurst(root, getDailyChallengeConfig(nextChallengeId).icon, 20, 2);
+
+        window.setTimeout(function () {
+          transitionScreen(root, function () {
+            launchDailyChallenge(root, state, render, nextChallengeId, {
+              tries: nextStats.completed ? 1 : (nextStats.tries || 1),
+              startedAt: nextStats.completed ? Date.now() : (nextStats.startedAt || Date.now()),
+              finishedAt: nextStats.completed ? 0 : (nextStats.finishedAt || 0)
+            });
+          });
+        }, 120);
+
+        return;
+      }
+
+      resetDailyChallengeStats(state, state.daily.challengeId);
+      spawnCenterGemBurst(root, getDailyChallengeConfig(state.daily.challengeId).icon, 20, 2);
+
+      window.setTimeout(function () {
+        transitionScreen(root, function () {
+          clearSavedGame('daily');
+          state.screen = 'home';
+          render();
+        });
+      }, 120);
+    });
+  }
+
+  function bindDailyCompletedLanding(root, state, render) {
+    var homeBtn = root.querySelector('[data-daily-complete-home]');
+    if (!homeBtn) return;
+  
+    homeBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+  
+      state.dailyCompletedLanding = null;
+      state.screen = 'home';
+      render();
     });
   }
 
@@ -2743,7 +2896,7 @@ function markHelperSeen(id) {
       '</section>';
   }
 
-  function renderHome(root) {
+  function renderHome(root, state) {
     root.innerHTML = '' +
       '<section class="bm-screen bm-home">' +
         '<div class="bm-home__center">' +
@@ -2752,10 +2905,12 @@ function markHelperSeen(id) {
           '</div>' +
         '</div>' +
         '<div class="bm-home__actions">' +
-          '<button class="bm-btn bm-home__btn bm-home__btn--classic" type="button" data-play>Classic</button>' +
+          '<button class="bm-btn bm-btn--classic bm-home__btn bm-home__btn--classic" type="button" data-play>Classic</button>' +
           '<button class="bm-btn bm-btn--daily bm-home__btn bm-home__btn--daily" type="button" data-daily>' +
-            '<span>Daily Blast</span>' +
-            '<span class="bm-daily-ribbon"><span class="bm-daily-ribbon__text">Free</span></span>' +
+            '<span>Daily Challenge</span>' +
+            (shouldShowDailyRibbon(state)
+              ? '<span class="bm-daily-ribbon"><span class="bm-daily-ribbon__text">New</span></span>'
+              : '') +
           '</button>' +
         '</div>' +
       '</section>';
@@ -2764,11 +2919,12 @@ function markHelperSeen(id) {
   function renderGame(root, state, renderApp) {
     var isDaily = isDailyMode(state);
     var isIntro = !!(state.intro && state.intro.active);
+    var dailyChallenge = isDaily ? getDailyChallengeConfig(state.daily && state.daily.challengeId) : null;
 
     var hudHtml = isIntro
     ? (
       '<div class="bm-hud bm-hud--intro">' +
-        '<button class="bm-btn bm-btn--skip" type="button" data-skip-intro>Skip</button>' +
+        '<button class="bm-btn bm-btn--daily bm-btn--skip" type="button" data-skip-intro>Skip</button>' +
       '</div>'
     )
     : isDaily
@@ -2800,17 +2956,20 @@ function markHelperSeen(id) {
     )
     : isDaily
     ? (
-        '<div class="bm-daily-top">' +
-          '<div class="bm-daily-timer" data-daily-moves-ring-wrap>' +
-            '<svg class="bm-daily-timer__svg" viewBox="0 0 100 100" aria-hidden="true">' +
-              '<circle class="bm-daily-timer__track" cx="50" cy="50" r="40"></circle>' +
-              '<circle class="bm-daily-timer__progress" cx="50" cy="50" r="40" data-daily-moves-ring></circle>' +
-            '</svg>' +
-            '<div class="bm-daily-timer__value" data-daily-moves-value>' +
-              (state.daily ? state.daily.movesRemaining : 0) +
-            '</div>' +
+      '<div class="bm-daily-top">' +
+      '<div class="bm-daily-progress">' +
+       '<img class="bm-daily-progress__icon" src="' + (dailyChallenge ? dailyChallenge.icon : 'images/tiles/easy.svg') + '" alt="" />' +
+        '<div class="bm-daily-progress__track">' +
+          '<div class="bm-daily-progress__burst" data-daily-progress-burst></div>' +
+          '<div class="bm-daily-progress__bar">' +
+            '<div class="bm-daily-progress__fill bm-daily-progress__fill--' + (dailyChallenge ? dailyChallenge.id : 'easy') + '" data-daily-progress-fill></div>' +
           '</div>' +
-        '</div>'
+        '</div>' +
+        '<div class="bm-daily-progress__value" data-daily-progress-value>' +
+          (state.daily ? Math.max(0, (state.daily.gemTarget || 0) - (state.daily.gemsRemaining || 0)) : 0) +
+        '</div>' +
+      '</div>' +
+    '</div>'
     )
       : (
         '<div class="bm-score">' +
@@ -2842,12 +3001,13 @@ function markHelperSeen(id) {
   var layoutHtml = isDaily
   ? (
     '<section class="bm-screen bm-game bm-game--daily" data-game>' +
+      '<div class="bm-spacer bm-spacer--daily-top" aria-hidden="true"></div>' +
       scoreHtml +
-      '<div class="bm-spacer" aria-hidden="true"></div>' +
+      '<div class="bm-spacer bm-spacer--daily-mid" aria-hidden="true"></div>' +
       '<div class="bm-board-wrap">' +
         '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
       '</div>' +
-      '<div class="bm-spacer" aria-hidden="true"></div>' +
+      '<div class="bm-spacer bm-spacer--daily-bottom" aria-hidden="true"></div>' +
       handHtml +
     '</section>'
   )
@@ -2865,12 +3025,19 @@ function markHelperSeen(id) {
     '</section>'
   );
 
-root.innerHTML = layoutHtml + renderHelperModal(state);
+  if (isDaily && state.daily && state.daily.showingResultScreen) {
+    root.innerHTML = renderDailyResultScreen(state);
+  } else {
+    root.innerHTML = layoutHtml + renderHelperModal(state) + renderDailyLossModal(state);
+  }
 
   syncScoreUi(root, state);
   syncDailyHudUi(root, state);
   bindIntroSkip(root, state, renderApp);
   bindHelperModal(root, state, renderApp);
+
+  bindDailyLossModal(root, state, renderApp);
+  bindDailyResultScreen(root, state, renderApp);
 
   if (state.intro && state.intro.active) {
     ensureAudioContext();
@@ -2880,7 +3047,88 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
   state.animMap = null;
   }
 
+  function renderDailyLossModal(state) {
+    if (!state.daily || !state.daily.showingLossModal) return '';
+  
+    return '' +
+      '<div class="bm-helper-modal bm-daily-loss-modal" data-daily-loss-modal>' +
+        '<div class="bm-helper-modal__card" role="dialog" aria-modal="true" aria-label="Nice Try">' +
+          '<div class="bm-helper-modal__title">Nice Try</div>' +
+          '<div class="bm-helper-modal__desc">You didn’t clear all the gems this time. Get them on the next run.</div>' +
+          '<button class="bm-btn bm-btn--classic bm-helper-modal__btn" type="button" data-daily-try-again>Try Again</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+function renderDailyResultScreen(state) {
+  if (!state.daily || !state.daily.showingResultScreen) return '';
+
+  var challenge = getDailyChallengeConfig(state.daily.challengeId);
+  var nextChallengeId = getNextDailyChallengeId(state.daily.challengeId);
+  var nextLabel = nextChallengeId ? getDailyChallengeConfig(nextChallengeId).label : 'Home';
+  var ctaText = nextChallengeId ? ('Play ' + nextLabel) : 'Back Home';
+  var elapsedTime = formatDailyElapsedTime(state.daily.startedAt, state.daily.finishedAt);
+
+  return '' +
+  '<section class="bm-screen bm-daily-result" data-daily-result>' +
+
+    '<div class="bm-daily-result__content">' +
+
+      '<div class="bm-daily-result__icon-wrap">' +
+        '<img class="bm-daily-result__icon" src="' + challenge.icon + '" alt="" />' +
+      '</div>' +
+
+      '<div class="bm-daily-result__title">' + challenge.label + ' Challenge Complete</div>' +
+
+      '<div class="bm-daily-result__subtitle">You beat 68% of players on today’s ' + challenge.label + ' Challenge</div>' +
+
+      '<div class="bm-daily-result__stats">' +
+        '<div class="bm-daily-result__stat">' +
+          '<div class="bm-daily-result__stat-head">Tries</div>' +
+          '<div class="bm-daily-result__stat-body">' + (state.daily.tries || 1) + '</div>' +
+        '</div>' +
+        '<div class="bm-daily-result__stat">' +
+          '<div class="bm-daily-result__stat-head">Time</div>' +
+          '<div class="bm-daily-result__stat-body">' + elapsedTime + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '</div>' +
+
+      '<button class="bm-btn bm-btn--classic bm-daily-result__cta" type="button" data-daily-next-challenge>' + ctaText + '</button>' +
+
+  '</section>';
+}
+
+function renderDailyCompletedLanding(state) {
+  var hard = getDailyChallengeConfig('hard');
+
+  return '' +
+    '<section class="bm-screen bm-daily-complete-landing" data-daily-complete-landing>' +
+      '<div class="bm-daily-complete-landing__content">' +
+        '<div class="bm-daily-complete-landing__icons" aria-hidden="true">' +
+          '<img class="bm-daily-complete-landing__icon bm-daily-complete-landing__icon--easy" src="' + getDailyChallengeConfig('easy').icon + '" alt="" />' +
+          '<img class="bm-daily-complete-landing__icon bm-daily-complete-landing__icon--medium" src="' + getDailyChallengeConfig('medium').icon + '" alt="" />' +
+          '<img class="bm-daily-complete-landing__icon bm-daily-complete-landing__icon--hard" src="' + hard.icon + '" alt="" />' +
+        '</div>' +
+
+        '<div class="bm-daily-complete-landing__title">Daily Challenge Complete</div>' +
+
+        '<div class="bm-daily-complete-landing__subtitle">You beat 68% of players on today’s Daily Challenge. See you tomorrow for a new challenge!</div>' +
+      '</div>' +
+
+      '<button class="bm-btn bm-btn--classic bm-daily-complete-landing__cta" type="button" data-daily-complete-home>Home</button>' +
+    '</section>';
+}
+
   function renderBoard(boardSize, board, animMap, blastIndices, state) {
+    var dailyChallenge = (state && state.daily && state.daily.active)
+  ? getDailyChallengeConfig(state.daily.challengeId)
+  : null;
+
+var gemIcon = dailyChallenge
+  ? dailyChallenge.icon
+  : 'images/tiles/gem.svg';
     animMap = animMap || {};
     blastIndices = blastIndices || [];
     state = state || {};
@@ -2936,7 +3184,7 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
       if (isGemCell(cell)) {
         return '<div class="' + cellClass + '" data-cell-index="' + index + '">' +
           '<div class="bm-gem-tile' + extraClass + '"' + extraStyle + '>' +
-            '<img class="bm-gem-tile__icon" src="images/tiles/gem.svg" alt="" />' +
+            '<img class="bm-gem-tile__icon" src="' + gemIcon + '" alt="" />' +
           '</div>' +
         '</div>';
       }
@@ -3261,6 +3509,64 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
     }
   }
 
+  function spawnCenterGemBurst(root, gemSrc, count, sizeMult) {
+    count = typeof count === 'number' ? count : 20;
+    sizeMult = typeof sizeMult === 'number' ? sizeMult : 2;
+    gemSrc = gemSrc || 'images/tiles/gem.svg';
+  
+    var center = getBoardCenter(root);
+    if (!center) {
+      center = {
+        left: window.innerWidth * 0.5,
+        top: window.innerHeight * 0.5
+      };
+    }
+  
+    var board = root.querySelector('.bm-board');
+    var sampleCell = board ? board.querySelector('.bm-cell') : null;
+    var baseSize = sampleCell
+      ? sampleCell.getBoundingClientRect().width
+      : 48;
+  
+    for (var i = 0; i < count; i++) {
+      var gem = document.createElement('img');
+      var gemSize = Math.max(18, baseSize * (0.34 + Math.random() * 0.20) * sizeMult);
+  
+      var angle = Math.random() * Math.PI * 2;
+      var distance = (baseSize * 1.1) + Math.random() * (baseSize * 2.0);
+      var driftX = Math.cos(angle) * distance;
+      var driftY = Math.sin(angle) * distance * 0.92 - (baseSize * 0.35);
+  
+      var rot = (-80 + Math.random() * 160).toFixed(1);
+      var delay = Math.round(Math.random() * 24);
+      var duration = 760 + Math.round(Math.random() * 90);
+  
+      gem.src = gemSrc;
+      gem.alt = '';
+      gem.className = 'bm-ui-burst-gem';
+      gem.style.position = 'fixed';
+      gem.style.left = Math.round(center.left) + 'px';
+      gem.style.top = Math.round(center.top) + 'px';
+      gem.style.width = Math.round(gemSize) + 'px';
+      gem.style.height = Math.round(gemSize) + 'px';
+      gem.style.zIndex = 10020;
+      gem.style.setProperty('--bm-frag-dx', Math.round(driftX) + 'px');
+      gem.style.setProperty('--bm-frag-lift', Math.round(baseSize * 0.9) + 'px');
+      gem.style.setProperty('--bm-frag-dy', Math.round(driftY) + 'px');
+      gem.style.setProperty('--bm-frag-rot', rot + 'deg');
+      gem.style.setProperty('--bm-frag-delay', delay + 'ms');
+      gem.style.setProperty('--bm-frag-duration', duration + 'ms');
+  
+      document.body.appendChild(gem);
+  
+      (function (node, ttl) {
+        window.setTimeout(function () {
+          if (node.parentNode) node.parentNode.removeChild(node);
+        }, ttl);
+      })(gem, delay + duration + 120);
+    }
+  }
+
   function spawnBlastThumbPops(root, state, blastIndices) {
     var board = root.querySelector('.bm-board');
     if (!board || !blastIndices || !blastIndices.length) return;
@@ -3299,9 +3605,9 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
   
     for (var i = 0; i < starCount; i++) {
       var star = document.createElement('img');
-      var size = 12 + Math.round(Math.random() * 14);
-      var x = -78 + Math.round(Math.random() * 156);
-      var y = -26 + Math.round(Math.random() * 52);
+      var size = 24 + Math.round(Math.random() * 28);
+      var x = -156 + Math.round(Math.random() * 312);
+      var y = -52 + Math.round(Math.random() * 104);
       var rot = -55 + Math.round(Math.random() * 110);
       var delay = Math.round(Math.random() * 70);
   
@@ -3329,47 +3635,49 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
     }, 1000);
   }
 
-  function spawnDailyMovesStars(root, band) {
-    var burst = root.querySelector('[data-daily-moves-burst]');
+  function spawnDailyProgressGems(root, state) {
+    var burst = root.querySelector('[data-daily-progress-burst]');
     if (!burst) return;
+
+    var challenge = getDailyChallengeConfig(
+      state && state.daily ? state.daily.challengeId : 'easy'
+    );
+    var gemSrc = challenge && challenge.icon ? challenge.icon : 'images/tiles/gem.svg';
 
     burst.innerHTML = '';
 
-    var starCount = band === 'danger' ? 10 : band === 'warning' ? 7 : 5;
-    var tonePool = band === 'danger'
-      ? ['c5', 'c6']
-      : band === 'warning'
-        ? ['c3', 'c9']
-        : ['c2', 'c8'];
+    var gemCount = 18;
 
-    for (var i = 0; i < starCount; i++) {
-      var star = document.createElement('div');
-      var size = 10 + Math.round(Math.random() * 10);
-      var x = -72 + Math.round(Math.random() * 144);
-      var y = -24 + Math.round(Math.random() * 48);
+    for (var i = 0; i < gemCount; i++) {
+      var gem = document.createElement('img');
+      var size = 20 + Math.round(Math.random() * 18);
+      var angle = Math.random() * Math.PI * 2;
+      var radius = 34 + Math.random() * 72;
+      var x = Math.round(Math.cos(angle) * radius);
+      var y = Math.round(Math.sin(angle) * radius);
       var rot = -55 + Math.round(Math.random() * 110);
-      var delay = Math.round(Math.random() * 60);
-      var tone = tonePool[Math.floor(Math.random() * tonePool.length)];
+      var delay = Math.round(Math.random() * 70);
 
-      star.className = 'bm-score-star bm-score-star--moves bm-mini--' + tone;
-      star.style.width = size + 'px';
-      star.style.height = size + 'px';
-      star.style.left = '50%';
-      star.style.top = '50%';
-      star.style.setProperty('--bm-star-x', x + 'px');
-      star.style.setProperty('--bm-star-y', y + 'px');
-      star.style.setProperty('--bm-star-rot', rot + 'deg');
-      star.style.setProperty('--bm-star-delay', delay + 'ms');
+      gem.src = gemSrc;
+      gem.className = 'bm-daily-progress-gem';
+      gem.style.width = size + 'px';
+      gem.style.height = size + 'px';
+      gem.style.left = '50%';
+      gem.style.top = '50%';
+      gem.style.setProperty('--bm-star-x', x + 'px');
+      gem.style.setProperty('--bm-star-y', y + 'px');
+      gem.style.setProperty('--bm-star-rot', rot + 'deg');
+      gem.style.setProperty('--bm-star-delay', delay + 'ms');
 
-      burst.appendChild(star);
+      burst.appendChild(gem);
     }
 
-    burst.classList.remove('is-score-bursting');
+    burst.classList.remove('is-daily-progress-bursting');
     void burst.offsetWidth;
-    burst.classList.add('is-score-bursting');
+    burst.classList.add('is-daily-progress-bursting');
 
     window.setTimeout(function () {
-      burst.classList.remove('is-score-bursting');
+      burst.classList.remove('is-daily-progress-bursting');
       burst.innerHTML = '';
     }, 1000);
   }
@@ -3420,14 +3728,24 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
       if (options.playComboSfx) {
         playSfx('combo');
       }
+    
       markIntroSeen();
       if (window.posthog) window.posthog.capture('intro_completed');
-  
+    
       clearSavedGame('game');
+    
+      state.helperModal = null;
+      state.animMap = null;
+      state.blastIndices = [];
+      state.isResolving = false;
+      state.boardMessage = '';
+      state.pendingPostResolveDrops = [];
+      state.introTimers = [];
+    
       resetStandardGameState(state);
       state.screen = 'home';
       state.bootStarted = false;
-  
+    
       render();
     }, 320);
   }
@@ -3453,7 +3771,14 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
     
       if (!(state.intro && state.intro.active)) {
         if (isDailyMode(state)) {
-          checkDailyEndState(root, state, render);
+          var dailyEnded = checkDailyEndState(root, state, render);
+          if (!dailyEnded) {
+            var noBlastDailyDelay = hasQueuedWallDrop(state) ? 900 : 0;
+
+            window.setTimeout(function () {
+              runPostResolveDrops(root, state, render);
+            }, noBlastDailyDelay);
+          }
         } else {
           runPostResolveDrops(root, state, render);
           window.setTimeout(function () {
@@ -3503,9 +3828,28 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
     hideBoardCells(root, blastResult.blastIndices);
 
     if (isDailyMode(state) && dailyGemsCleared > 0) {
-      window.setTimeout(function () {
-        syncHudUi(root, state);
-      }, 120);
+      syncDailyHudUi(root, state);
+    
+      var fillEl = root.querySelector('[data-daily-progress-fill]');
+      var barEl = root.querySelector('.bm-daily-progress__bar');
+    
+      if (fillEl) {
+        fillEl.classList.remove('is-daily-progress-hit');
+        void fillEl.offsetWidth;
+        fillEl.classList.add('is-daily-progress-hit');
+      }
+    
+      if (barEl) {
+        barEl.classList.remove('is-daily-progress-bar-hit');
+        void barEl.offsetWidth;
+        barEl.classList.add('is-daily-progress-bar-hit');
+    
+        window.setTimeout(function () {
+          barEl.classList.remove('is-daily-progress-bar-hit');
+        }, 420);
+      }
+
+      spawnDailyProgressGems(root, state);
     }
     
     if (specialEffectResult.lifeDelta !== 0) {
@@ -3613,7 +3957,14 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
           
           if (!(state.intro && state.intro.active)) {
             if (isDailyMode(state)) {
-              checkDailyEndState(root, state, render);
+              var dailyEnded = checkDailyEndState(root, state, render);
+              if (!dailyEnded) {
+                var dailyPostDropDelay = (dailyGemsCleared > 0 && hasQueuedWallDrop(state)) ? 900 : 0;
+
+                window.setTimeout(function () {
+                  runPostResolveDrops(root, state, render);
+                }, dailyPostDropDelay);
+              }
             } else {
               runPostResolveDrops(root, state, render);
               window.setTimeout(function () {
@@ -3899,15 +4250,6 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
 
       if (!(state.intro && state.intro.active)) {
         state.moveCount += 1;
-
-        if (isDailyMode(state) && state.daily.movesRemaining > 0) {
-          var previousDailyMoves = state.daily.movesRemaining;
-          state.daily.movesRemaining -= 1;
-
-          if (previousDailyMoves > 4 && state.daily.movesRemaining === 4) {
-            state.dailyJustHitDanger = true;
-          }
-        }
       }
   
       if (state.intro && state.intro.active) {
@@ -3922,19 +4264,9 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
   
       if (!(state.intro && state.intro.active)) {
         if (state.hand.every(function (piece) { return !piece; })) {
-          if (isDailyMode(state)) {
-            state.daily.handIndex += 1;
-
-            if (state.dailyHands && state.dailyHands[state.daily.handIndex]) {
-              state.hand = state.dailyHands[state.daily.handIndex].slice();
-            } else {
-              state.hand = [null, null, null];
-            }
-          } else {
-            state.hand = generateHand(state.board, state.boardSize, state);
-            state.handCount += 1;
-            state.justDealtNewHand = true;
-          }
+          state.hand = generateHand(state.board, state.boardSize, state);
+          state.handCount += 1;
+          state.justDealtNewHand = true;
         }
       }
 
@@ -4059,8 +4391,8 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
         clearPreview();
         return;
       }
-  
-      drag.ghost.style.opacity = 0.14;
+
+      drag.ghost.style.opacity = 0;
       showPreview(piece, previewCells);
     }
   
@@ -4157,65 +4489,9 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
   function syncHudUi(root, state) {
     var highScoreEl = root.querySelector('.bm-hud-score-value');
     var livesEl = root.querySelector('.bm-hud-lives-value');
-    var dailyMovesEl = root.querySelector('[data-daily-moves-value]');
   
     if (highScoreEl) highScoreEl.textContent = state.highScore;
     if (livesEl) livesEl.textContent = state.lives;
-
-    if (dailyMovesEl && state.daily) {
-      dailyMovesEl.textContent = state.daily.movesRemaining;
-
-      var nextBand = state.daily.movesRemaining > 8
-        ? 'safe'
-        : state.daily.movesRemaining > 4
-          ? 'warning'
-          : 'danger';
-
-      if (state.dailyMovesBand !== nextBand) {
-        dailyMovesEl.classList.remove('bm-moves--safe', 'bm-moves--warning', 'bm-moves--danger');
-
-        if (nextBand === 'safe') {
-          dailyMovesEl.classList.add('bm-moves--safe');
-        } else if (nextBand === 'warning') {
-          dailyMovesEl.classList.add('bm-moves--warning');
-        } else {
-          dailyMovesEl.classList.add('bm-moves--danger');
-        }
-
-        if (state.dailyMovesPulseStarted) {
-          spawnDailyMovesStars(root, nextBand);
-        }
-
-        state.dailyMovesBand = nextBand;
-      } else if (!state.dailyMovesPulseStarted) {
-        if (nextBand === 'safe') {
-          dailyMovesEl.classList.add('bm-moves--safe');
-        } else if (nextBand === 'warning') {
-          dailyMovesEl.classList.add('bm-moves--warning');
-        } else {
-          dailyMovesEl.classList.add('bm-moves--danger');
-        }
-      }
-
-      state.dailyMovesPulseStarted = true;
-
-      if (state.dailyJustHitDanger) {
-        dailyMovesEl.classList.remove('bm-moves-hit');
-        void dailyMovesEl.offsetWidth;
-        dailyMovesEl.classList.add('bm-moves-hit');
-        state.dailyJustHitDanger = false;
-
-        if (state.dailyMovesHitTimer) {
-          window.clearTimeout(state.dailyMovesHitTimer);
-        }
-
-        state.dailyMovesHitTimer = window.setTimeout(function () {
-          var liveMovesEl = root.querySelector('[data-daily-moves-value]');
-          if (liveMovesEl) liveMovesEl.classList.remove('bm-moves-hit');
-          state.dailyMovesHitTimer = null;
-        }, 320);
-      }
-    }
   }
 
   function syncScoreUi(root, state) {
@@ -4398,13 +4674,8 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
       bootStarted: false,
       bootTimer: null,
       homeResult: null,
+      dailyCompletedLanding: null,
       helperModal: null,
-      dailyHands: [],
-      dailyHandIndex: 0,
-      dailyMovesHitTimer: null,
-      dailyJustHitDanger: false,
-      dailyMovesBand: null,
-      dailyMovesPulseStarted: false,
       intro: {
         active: false,
         step: 0,
@@ -4417,14 +4688,22 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
         targetQueue: [],
         targetCursor: 0
       },
+      dailyStats: createDailyStatsMap(),
       daily: {
         active: false,
         puzzleId: null,
-        movesRemaining: 0,
+        challengeId: 'easy',
         gemTarget: 0,
         gemsRemaining: 0,
         completed: false,
-        failed: false
+        failed: false,
+        variantSeed: null,
+        layoutIndices: [],
+        tries: 1,
+        startedAt: 0,
+        finishedAt: 0,
+        showingLossModal: false,
+        showingResultScreen: false
       },
     };
 
@@ -4490,7 +4769,7 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
       }
 
       if (state.screen === 'home') {
-        renderHome(root);
+        renderHome(root, state);
 
         var homeResult = consumeHomeResult(state);
         if (homeResult && homeResult.reason === 'last-heart-loss') {
@@ -4502,7 +4781,6 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
         if (play) {
           play.addEventListener('click', function () {
             spawnCenterUiBurst(root, 20, 2);
-
             window.setTimeout(function () {
               transitionScreen(root, function () {
                 var savedClassic = readSavedGame('game');
@@ -4525,51 +4803,56 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
         var daily = root.querySelector('[data-daily]');
         if (daily) {
           daily.addEventListener('click', function () {
-            spawnCenterUiBurst(root, 20, 2);
+            var savedDaily = readSavedGame('daily');
+            var hasActiveSavedDaily = !!(
+              savedDaily &&
+              savedDaily.daily &&
+              savedDaily.daily.active &&
+              savedDaily.daily.puzzleId === getCurrentDailyPuzzleKey() &&
+              savedDaily.daily.variantSeed === getCurrentDailyVariantSeed()
+            );
 
-            window.setTimeout(function () {
+            if (isCurrentDailyCompleted() && !hasActiveSavedDaily) {
               transitionScreen(root, function () {
-                var savedDaily = readSavedGame('daily');
-
-                if (
-                  savedDaily &&
-                  savedDaily.daily &&
-                  savedDaily.daily.active &&
-                  savedDaily.daily.puzzleId === getCurrentDailyPuzzleKey()
-                ) {
-                  restoreSavedGame(state, savedDaily);
-                } else {
-                  var dailyKey = getCurrentDailyPuzzleKey();
-                  startDailyGame(state, dailyKey);
-                }
-
-                playSfx('start');
-
-                if (window.posthog) {
-                  window.posthog.capture('daily_started', { puzzle_id: state.daily.puzzleId });
-                }
-
+                openDailyCompletedLanding(state);
                 render();
               });
-            }, 120);
+              return;
+            }
+
+            var launchChallengeId = hasActiveSavedDaily
+              ? (savedDaily.daily.challengeId || 'easy')
+              : 'easy';
+
+            spawnCenterGemBurst(
+              root,
+              getDailyChallengeConfig(launchChallengeId).icon,
+              20,
+              2
+            );
+
+            transitionScreen(root, function () {
+              if (hasActiveSavedDaily) {
+                restoreSavedGame(state, savedDaily);
+                state.screen = 'daily';
+                render();
+                playSfx('start');
+              } else {
+                launchDailyChallenge(root, state, render, 'easy');
+              }
+            });
           });
         }
+        
+      } else if (state.screen === 'daily-complete') {
+        root.innerHTML = renderDailyCompletedLanding(state);
+        bindDailyCompletedLanding(root, state, render);
       } else {
         renderGame(root, state, render);
 
         if (!state.dragBound) {
           enableDrag(root, state, render);
           state.dragBound = true;
-        }
-
-        var game = root.querySelector('[data-game]');
-        if (game) {
-          game.addEventListener('dblclick', function () {
-            transitionScreen(root, function () {
-              state.screen = 'home';
-              render();
-            });
-          });
         }
       }
 
@@ -4579,17 +4862,37 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
     window.BM_DEBUG = {
 
       nextDailyPuzzle: function () {
-        var ids = getDailyPuzzleIds();
-        if (!ids.length) return;
-
-        var currentId = state.daily && state.daily.puzzleId;
-        var currentIndex = ids.indexOf(currentId);
-
-        if (currentIndex < 0) currentIndex = 0;
-
-        var nextIndex = (currentIndex + 1) % ids.length;
-        startDailyGame(state, ids[nextIndex]);
+        var current = typeof DAILY_WINDOW_OVERRIDE === 'number'
+          ? DAILY_WINDOW_OVERRIDE
+          : getCurrent12HourWindowIndex();
+      
+        DAILY_WINDOW_OVERRIDE = current + 1;
+        DAILY_VARIANT_OVERRIDE = null;
+      
+        clearSavedGame('daily');
+      
+        state.daily = {
+          active: false,
+          puzzleId: null,
+          challengeId: 'easy',
+          gemTarget: 0,
+          gemsRemaining: 0,
+          completed: false,
+          failed: false,
+          variantSeed: null,
+          layoutIndices: [],
+          tries: 1,
+          startedAt: 0,
+          finishedAt: 0,
+          showingLossModal: false,
+          showingResultScreen: false
+        };
+      
+        state.dailyCompletedLanding = null;
+        state.screen = 'home';
         render();
+      
+        console.log('Advanced fake daily window to', DAILY_WINDOW_OVERRIDE);
       },
 
       randomDailyPuzzle: function () {
@@ -4641,8 +4944,9 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
         console.log({
           puzzleId: state.daily && state.daily.puzzleId,
           variantSeed: state.daily && state.daily.variantSeed,
-          chosenGems: state.daily && state.daily.chosenGems,
-          movesRemaining: state.daily && state.daily.movesRemaining
+          gemTarget: state.daily && state.daily.gemTarget,
+          gemsRemaining: state.daily && state.daily.gemsRemaining,
+          layoutIndices: state.daily && state.daily.layoutIndices
         });
       },
 
@@ -4660,13 +4964,6 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
         render();
       },
 
-      setDailyMoves: function (n) {
-        state.daily.active = true;
-        state.screen = 'daily';
-        state.daily.movesRemaining = Math.max(0, Number(n) || 0);
-        render();
-      },
-
       setDailyGems: function (n) {
         state.daily.active = true;
         state.screen = 'daily';
@@ -4680,15 +4977,19 @@ root.innerHTML = layoutHtml + renderHelperModal(state);
         state.daily.gemsRemaining = 0;
         state.daily.completed = false;
         state.daily.failed = false;
+        state.daily.showingLossModal = false;
+        state.daily.showingResultScreen = false;
         checkDailyEndState(root, state, render);
       },
-
+      
       forceDailyLoss: function () {
         state.daily.active = true;
         state.screen = 'daily';
-        state.daily.movesRemaining = 0;
         state.daily.failed = false;
         state.daily.completed = false;
+        state.daily.showingLossModal = false;
+        state.daily.showingResultScreen = false;
+        state.hand = [null, null, null];
         checkDailyEndState(root, state, render);
       },
 

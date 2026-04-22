@@ -11,39 +11,6 @@
     classicSaveKey: "blastmath.save.classic",
     dailySaveKey: "blastmath.save.daily",
 
-    dailyStartCoverage: 24,
-    dailyStartGemCount: 10,
-    dailyStartWallCount: 14,
-    dailyStartRows: 4,
-
-    dailyChallenges: {
-      easy: {
-        id: 'easy',
-        label: 'Easy',
-        gemTarget: 8,
-        startRows: 3,
-        wallDropRate: 4,
-        icon: 'images/tiles/easy.svg'
-      },
-      medium: {
-        id: 'medium',
-        label: 'Medium',
-        gemTarget: 10,
-        startRows: 4,
-        wallDropRate: 3,
-        icon: 'images/tiles/medium.svg'
-      },
-      hard: {
-        id: 'hard',
-        label: 'Hard',
-        gemTarget: 12,
-        startRows: 4,
-        topExtraCells: 2,
-        wallDropRate: 2,
-        icon: 'images/tiles/hard.svg'
-      }
-    },
-
     heartChanceScaleAt2Lives: 2,
     heartChanceScaleAt1Life: 3,
 
@@ -236,17 +203,144 @@
       id: 4,
       minScore: 3000,
       maxScore: Infinity,
-      wallDropRate: 4,
+      wallDropRate: 3,
       pieceBias: 'mixed',
       features: {
         bombs: true,
         skulls: true,
-        skullChance: 0.12,
+        skullChance: 0.10,
         hearts: true,
-        heartChance: 0.08
+        heartChance: 0.05
       }
     }
   ];
+
+  var DAILY_PUZZLES = {
+    "daily-1": {
+      id: "daily-1",
+      moves: 12,
+      gemCount: 5,
+      gemSlots: [
+        { x: 1, y: 5 },
+        { x: 4, y: 5 },
+        { x: 2, y: 4 },
+        { x: 0, y: 3 },
+        { x: 5, y: 3 },
+        { x: 1, y: 2 },
+        { x: 4, y: 2 },
+        { x: 2, y: 1 }
+      ],
+      walls: [
+        { x: 0, y: 5 },
+        { x: 2, y: 5 },
+        { x: 3, y: 5 },
+        { x: 5, y: 5 },
+
+        { x: 1, y: 4 },
+        { x: 3, y: 4 },
+        { x: 4, y: 4 },
+
+        { x: 1, y: 3 },
+        { x: 4, y: 3 },
+
+        { x: 2, y: 2 },
+        { x: 3, y: 2 },
+        { x: 4, y: 2 },
+
+        { x: 1, y: 1 },
+        { x: 2, y: 1 },
+        { x: 4, y: 1 },
+
+        { x: 0, y: 0 },
+        { x: 2, y: 0 },
+        { x: 5, y: 0 }
+      ],
+      hands: [
+        [
+          [{ x: 0, y: 0, value: 3 }],
+          [{ x: 0, y: 0, value: 7 }],
+          [{ x: 0, y: 0, value: 4 }, { x: 1, y: 0, value: 6 }]
+        ],
+        [
+          [{ x: 0, y: 0, value: 2 }, { x: 1, y: 0, value: 5 }],
+          [{ x: 0, y: 0, value: 8 }],
+          [{ x: 0, y: 0, value: 1 }, { x: 0, y: 1, value: 9 }]
+        ],
+        [
+          [{ x: 0, y: 0, value: 4 }],
+          [{ x: 0, y: 0, value: 6 }],
+          [{ x: 0, y: 0, value: 5 }, { x: 1, y: 0, value: 3 }]
+        ],
+        [
+          [{ x: 0, y: 0, value: 1 }],
+          [{ x: 0, y: 0, value: 9 }],
+          [{ x: 0, y: 0, value: 2 }, { x: 1, y: 0, value: 8 }]
+        ]
+      ]
+    },
+
+    "daily-2": {
+      id: "daily-2",
+      moves: 12,
+      gemCount: 5,
+      gemSlots: [
+        { x: 2, y: 5 },
+        { x: 5, y: 5 },
+        { x: 1, y: 4 },
+        { x: 4, y: 4 },
+        { x: 0, y: 3 },
+        { x: 3, y: 3 },
+        { x: 5, y: 2 },
+        { x: 1, y: 1 }
+      ],
+      walls: [
+        { x: 0, y: 5 },
+        { x: 1, y: 5 },
+        { x: 3, y: 5 },
+
+        { x: 2, y: 4 },
+        { x: 5, y: 4 },
+
+        { x: 1, y: 3 },
+        { x: 2, y: 3 },
+        { x: 4, y: 3 },
+
+        { x: 0, y: 2 },
+        { x: 2, y: 2 },
+        { x: 3, y: 2 },
+
+        { x: 1, y: 1 },
+        { x: 3, y: 1 },
+        { x: 4, y: 1 },
+
+        { x: 0, y: 0 },
+        { x: 2, y: 0 },
+        { x: 5, y: 0 }
+      ],
+      hands: [
+        [
+          [{ x: 0, y: 0, value: 1 }],
+          [{ x: 0, y: 0, value: 9 }],
+          [{ x: 0, y: 0, value: 2 }, { x: 1, y: 0, value: 8 }]
+        ],
+        [
+          [{ x: 0, y: 0, value: 3 }],
+          [{ x: 0, y: 0, value: 7 }],
+          [{ x: 0, y: 0, value: 5 }, { x: 0, y: 1, value: 5 }]
+        ],
+        [
+          [{ x: 0, y: 0, value: 4 }],
+          [{ x: 0, y: 0, value: 6 }],
+          [{ x: 0, y: 0, value: 1 }, { x: 1, y: 0, value: 4 }]
+        ],
+        [
+          [{ x: 0, y: 0, value: 2 }],
+          [{ x: 0, y: 0, value: 8 }],
+          [{ x: 0, y: 0, value: 3 }, { x: 1, y: 0, value: 7 }]
+        ]
+      ]
+    }
+  };
   
   function getCurrentLevel(state) {
     var score = state && typeof state.score === 'number' ? state.score : 0;
@@ -363,10 +457,42 @@
     };
   }
 
+  function makeFixedPiece(cells, id) {
+    var normalized = (cells || []).map(function (cell) {
+      return makeCellAt(cell.x || 0, cell.y || 0, cell.value);
+    });
+
+    var width = 1;
+    var height = 1;
+
+    normalized.forEach(function (cell) {
+      width = Math.max(width, cell.x + 1);
+      height = Math.max(height, cell.y + 1);
+    });
+
+    return {
+      id: id || ("daily-piece-" + Date.now()),
+      group: "daily",
+      rank: normalized.length,
+      width: width,
+      height: height,
+      cells: normalized
+    };
+  }
+
+  function buildDailyHandsFromPuzzle(puzzle) {
+    return (puzzle.hands || []).map(function (handSet, handIndex) {
+      return (handSet || []).map(function (pieceCells, pieceIndex) {
+        return makeFixedPiece(pieceCells, puzzle.id + "-h" + handIndex + "-p" + pieceIndex);
+      });
+    });
+  }
+
   var INTRO_STEPS = {
     1: {
       step: 1,
-      title: "Make 10 to Blast!",
+      title: "Learn to Blast",
+      subtitle: "Tiles that add up to 10 explode!",
     
       boardCells: [
         { x: 2, y: 5, value: 1 }
@@ -381,7 +507,7 @@
   
     2: {
       step: 2,
-      title: "Blast all directions!",
+      title: "Blast up and down too!",
   
       boardCells: [
         { x: 2, y: 5, value: 2 }
@@ -396,7 +522,7 @@
   
     3: {
       step: 3,
-      title: "Blast a row!",
+      title: "Use more tiles to blast!",
   
       boardCells: [
         { x: 2, y: 5, value: 3 }
@@ -430,7 +556,8 @@
 
     5: {
       step: 5,
-      title: "Blasts can combo!",
+      title: "Chain blasts to combo!",
+      introMode: "combo",
     
       boardCells: [
         { x: 2, y: 5, kind: "number", value: 4 },
@@ -446,6 +573,7 @@
     6: {
       step: 6,
       title: "Blast through walls!",
+      introMode: "neutral",
     
       boardCells: [
         { x: 3, y: 2, kind: "number", value: 8 },
@@ -528,6 +656,7 @@
       active: true,
       step: def.step,
       title: def.title,
+      subtitle: def.subtitle || "",
       sourceIndex: sourceIndex,
       allowedTargetIndex: def.targets.length
         ? ((def.targets[0].y * CONFIG.boardSize) + def.targets[0].x)
@@ -599,34 +728,6 @@ function markHelperSeen(id) {
     seen[id] = 1;
     localStorage.setItem(HELPER_SEEN_KEY, JSON.stringify(seen));
   } catch (e) {}
-}
-
-// === DAILY COMPLETION TRACKING ===
-var DAILY_COMPLETED_KEY = "blastmath.daily.completed";
-
-function getDailyCompletionKey() {
-  return getCurrentDailyPuzzleKey() + ":" + getCurrentDailyVariantSeed();
-}
-
-function readCompletedDailyMap() {
-  try { return JSON.parse(localStorage.getItem(DAILY_COMPLETED_KEY) || "{}"); }
-  catch (e) { return {}; }
-}
-
-function markCurrentDailyCompleted() {
-  try {
-    var map = readCompletedDailyMap();
-    map[getDailyCompletionKey()] = 1;
-    localStorage.setItem(DAILY_COMPLETED_KEY, JSON.stringify(map));
-  } catch (e) {}
-}
-
-function shouldShowDailyRibbon(state) {
-  var map = readCompletedDailyMap();
-  var currentKey = getDailyCompletionKey();
-
-  if (state && state.daily && state.daily.completed) return false;
-  return map[currentKey] !== 1;
 }
 
   function readHighScore() {
@@ -740,22 +841,23 @@ function shouldShowDailyRibbon(state) {
         pendingBombSpawn: state.pendingBombSpawn,
         wallSpawnsSinceBomb: state.wallSpawnsSinceBomb,
         pendingComboPoints: state.pendingComboPoints,
-        dailyStats: state.dailyStats || createDailyStatsMap(),
+        dailyHands: (state.dailyHands || []).map(function (handSet) {
+          return cloneHandForSave(handSet);
+        }),
+        dailyHandIndex: state.dailyHandIndex || 0,
+        dailyMovesBand: state.dailyMovesBand || null,
         daily: state.daily ? {
           active: !!state.daily.active,
           puzzleId: state.daily.puzzleId,
-          challengeId: state.daily.challengeId,
+          movesRemaining: state.daily.movesRemaining,
           gemTarget: state.daily.gemTarget,
           gemsRemaining: state.daily.gemsRemaining,
           completed: !!state.daily.completed,
           failed: !!state.daily.failed,
+          handIndex: state.daily.handIndex || 0,
+          handCount: state.daily.handCount || 0,
           variantSeed: state.daily.variantSeed,
-          layoutIndices: state.daily.layoutIndices || [],
-          tries: state.daily.tries || 1,
-          startedAt: state.daily.startedAt || 0,
-          finishedAt: state.daily.finishedAt || 0,
-          showingLossModal: !!state.daily.showingLossModal,
-          showingResultScreen: !!state.daily.showingResultScreen
+          chosenGems: state.daily.chosenGems || []
         } : null
       };
   
@@ -789,6 +891,13 @@ function shouldShowDailyRibbon(state) {
     state.blastIndices = [];
     state.isResolving = false;
     state.boardMessage = '';
+    state.dailyHands = (saved.dailyHands || []).map(function (handSet) {
+      return cloneHandForSave(handSet);
+    });
+    state.dailyHandIndex = typeof saved.dailyHandIndex === 'number' ? saved.dailyHandIndex : 0;
+    state.dailyMovesBand = saved.dailyMovesBand || null;
+    state.dailyMovesPulseStarted = false;
+    state.dailyJustHitDanger = false;
 
     state.intro = {
       active: false,
@@ -803,43 +912,27 @@ function shouldShowDailyRibbon(state) {
       targetCursor: 0
     };
 
-    state.dailyStats = createDailyStatsMap(saved.dailyStats);
-
     state.daily = saved.daily ? {
       active: !!saved.daily.active,
       puzzleId: saved.daily.puzzleId,
-      challengeId: saved.daily.challengeId || 'easy',
+      movesRemaining: saved.daily.movesRemaining,
       gemTarget: saved.daily.gemTarget,
       gemsRemaining: saved.daily.gemsRemaining,
       completed: !!saved.daily.completed,
       failed: !!saved.daily.failed,
+      handIndex: saved.daily.handIndex || 0,
+      handCount: saved.daily.handCount || 0,
       variantSeed: saved.daily.variantSeed,
-      layoutIndices: saved.daily.layoutIndices || [],
-      tries: saved.daily.tries || 1,
-      startedAt: saved.daily.startedAt || 0,
-      finishedAt: saved.daily.finishedAt || 0,
-      showingLossModal: !!saved.daily.showingLossModal,
-      showingResultScreen: !!saved.daily.showingResultScreen
+      chosenGems: saved.daily.chosenGems || []
     } : {
       active: false,
       puzzleId: null,
-      challengeId: 'easy',
+      movesRemaining: 0,
       gemTarget: 0,
       gemsRemaining: 0,
       completed: false,
-      failed: false,
-      variantSeed: null,
-      layoutIndices: [],
-      tries: 1,
-      startedAt: 0,
-      finishedAt: 0,
-      showingLossModal: false,
-      showingResultScreen: false
+      failed: false
     };
-
-    if (state.daily && state.daily.active) {
-      state.screen = 'daily';
-    }
 
     return true;
   }
@@ -853,11 +946,15 @@ function shouldShowDailyRibbon(state) {
   }
 
   function getDailyPuzzleIds() {
-    return ['daily-seeded'];
+    return Object.keys(DAILY_PUZZLES);
   }
 
   function getCurrentDailyPuzzleKey() {
-    return 'daily-seeded';
+    var ids = getDailyPuzzleIds();
+    if (!ids.length) return null;
+
+    var windowIndex = getCurrent12HourWindowIndex();
+    return ids[windowIndex % ids.length];
   }
 
   var DAILY_WINDOW_OVERRIDE = null;
@@ -880,80 +977,18 @@ function shouldShowDailyRibbon(state) {
     };
   }
 
-  function shuffleWithSeed(list, rng) {
-    var out = list.slice();
-
-    for (var i = out.length - 1; i > 0; i--) {
-      var j = Math.floor(rng() * (i + 1));
-      var temp = out[i];
-      out[i] = out[j];
-      out[j] = temp;
-    }
-
-    return out;
-  }
-
-  function getDailySeededStartIndices(seed, startRows) {
+  function pickGemSlotsForPuzzle(puzzle, seed) {
+    var slots = (puzzle.gemSlots || []).slice();
+    var gemCount = Math.min(puzzle.gemCount || 5, slots.length);
     var rng = makeSeededRng(seed);
-    var indices = [];
-    var size = CONFIG.boardSize;
-    var rows = Math.max(1, Math.min(size, startRows || 4));
-    var startRow = size - rows;
-  
-    for (var y = startRow; y < size; y++) {
-      for (var x = 0; x < size; x++) {
-        indices.push((y * size) + x);
-      }
+    var chosen = [];
+
+    while (slots.length && chosen.length < gemCount) {
+      var index = Math.floor(rng() * slots.length);
+      chosen.push(slots.splice(index, 1)[0]);
     }
-  
-    return shuffleWithSeed(indices, rng);
-  }
-  
-  function buildSeededDailyBoard(seed, challenge) {
-    var board = createEmptyBoard(CONFIG.boardSize);
-    var rng = makeSeededRng(seed ^ 0x9e3779b9);
-    var size = CONFIG.boardSize;
-    var startRows = challenge.startRows || 4;
-    var topExtraCells = challenge.topExtraCells || 0;
-  
-    var baseIndices = [];
-    var extraRowIndices = [];
-    var startRow = size - startRows;
-  
-    for (var y = startRow; y < size; y++) {
-      for (var x = 0; x < size; x++) {
-        baseIndices.push((y * size) + x);
-      }
-    }
-  
-    if (topExtraCells > 0 && startRow - 1 >= 0) {
-      for (var extraX = 0; extraX < size; extraX++) {
-        extraRowIndices.push(((startRow - 1) * size) + extraX);
-      }
-      extraRowIndices = shuffleWithSeed(extraRowIndices, rng).slice(0, topExtraCells);
-    }
-  
-    var candidateIndices = shuffleWithSeed(baseIndices.concat(extraRowIndices), rng);
-    var coverage = baseIndices.length + extraRowIndices.length;
-    var chosen = candidateIndices.slice(0, coverage);
-  
-    var gemCount = Math.min(challenge.gemTarget, chosen.length);
-    var gemIndices = chosen.slice(0, gemCount);
-    var wallIndices = chosen.slice(gemCount);
-  
-    gemIndices.forEach(function (index) {
-      board[index] = makeGemCell();
-    });
-  
-    wallIndices.forEach(function (index) {
-      board[index] = makeNeutralCell();
-    });
-  
-    return {
-      board: board,
-      gemTarget: gemIndices.length,
-      chosenIndices: chosen.slice()
-    };
+
+    return chosen;
   }
 
   function syncUiScale() {
@@ -1456,20 +1491,11 @@ function shouldShowDailyRibbon(state) {
   }
   
   function maybeDropWall(state) {
-    if (!state) return false;
-    if (state.moveCount <= 0) return false;
-
-    if (isDailyMode(state)) {
-      var dailyChallenge = getDailyChallengeConfig(state.daily && state.daily.challengeId);
-      var dailyWallRate = dailyChallenge.wallDropRate || 3;
-      if (state.moveCount % dailyWallRate !== 0) return false;
-      return dropRandomNeutralTile(state);
-    }
-
-    if (!state.currentLevel) return false;
+    if (!state || !state.currentLevel) return false;
     if (!state.currentLevel.wallDropRate) return false;
+    if (state.moveCount <= 0) return false;
     if (state.moveCount % state.currentLevel.wallDropRate !== 0) return false;
-
+  
     return dropRandomNeutralTile(state);
   }
 
@@ -1584,22 +1610,6 @@ function shouldShowDailyRibbon(state) {
     if (!state || (state.intro && state.intro.active)) return;
   
     var queued = [];
-
-    if (isDailyMode(state)) {
-      var wallSpawn = maybeDropWall(state);
-
-      if (wallSpawn) {
-        state.board[wallSpawn.index] = null;
-        queued.push('wall');
-      }
-
-      state.pendingBombSpawn = false;
-      state.wallSpawnsSinceBomb = 0;
-      state.justDealtNewHand = false;
-      state.pendingPostResolveDrops = queued;
-      return;
-    }
-  
     var canUseBombCycle = !!(state.currentLevel && state.currentLevel.id >= 2);
   
     if (canUseBombCycle && state.pendingBombSpawn) {
@@ -1609,6 +1619,7 @@ function shouldShowDailyRibbon(state) {
       var wallSpawn = maybeDropWall(state);
   
       if (wallSpawn) {
+        // undo the immediate placement — we only wanted the decision, not the spawn yet
         state.board[wallSpawn.index] = null;
         queued.push('wall');
   
@@ -1686,29 +1697,12 @@ function shouldShowDailyRibbon(state) {
   
     if (!spawns.length) {
       state.comboStep = 0;
-  
-      if (isDailyMode(state)) {
-        checkDailyEndState(root, state, render);
-      } else {
-        checkPostMoveState(root, state, render);
-      }
-  
       return;
     }
   
     state.animMap = null;
     state.animMap = buildSpawnAnimMap(root, state, spawns);
     renderGame(root, state, render);
-  
-    window.setTimeout(function () {
-      state.animMap = null;
-  
-      if (isDailyMode(state)) {
-        checkDailyEndState(root, state, render);
-      } else {
-        checkPostMoveState(root, state, render);
-      }
-    }, 540);
   }
 
   function getBombBlastIndices(index, size) {
@@ -1813,6 +1807,20 @@ function shouldShowDailyRibbon(state) {
     }
   }
 
+  function buildDailyBoardFromPuzzle(puzzle, chosenGems) {
+    var board = createEmptyBoard(CONFIG.boardSize);
+
+    (puzzle.walls || []).forEach(function (cell) {
+      board[(cell.y * CONFIG.boardSize) + cell.x] = makeNeutralCell();
+    });
+
+    (chosenGems || []).forEach(function (cell) {
+      board[(cell.y * CONFIG.boardSize) + cell.x] = makeGemCell();
+    });
+
+    return board;
+  }
+
   function isBoardGravityStable(board, size) {
     for (var x = 0; x < size; x++) {
       var foundEmpty = false;
@@ -1832,150 +1840,86 @@ function shouldShowDailyRibbon(state) {
     return true;
   }
 
-  var DAILY_CHALLENGE_ORDER = ['easy', 'medium', 'hard'];
+  function startDailyGame(state, puzzleId) {
+    var resolvedPuzzleId = puzzleId || getCurrentDailyPuzzleKey();
+    var puzzle = DAILY_PUZZLES[resolvedPuzzleId];
+    if (!puzzle) return;
 
-function getDailyChallengeConfig(challengeId) {
-  return CONFIG.dailyChallenges[challengeId] || CONFIG.dailyChallenges.easy;
-}
+    var variantSeed = getCurrentDailyVariantSeed();
+    var chosenGems = pickGemSlotsForPuzzle(puzzle, variantSeed);
 
-function getNextDailyChallengeId(challengeId) {
-  var index = DAILY_CHALLENGE_ORDER.indexOf(challengeId);
-  if (index < 0 || index >= DAILY_CHALLENGE_ORDER.length - 1) return null;
-  return DAILY_CHALLENGE_ORDER[index + 1];
-}
+    state.screen = 'daily';
+    state.score = 0;
+    state.displayScore = 0;
+    state.comboStep = 0;
+    state.lives = CONFIG.startingLives;
+    state.boardSize = CONFIG.boardSize;
+    state.currentLevel = LEVELS[0];
+    state.levelId = 1;
+    state.moveCount = 0;
+    state.handCount = 0;
+    state.pendingBombSpawn = false;
+    state.wallSpawnsSinceBomb = 0;
+    state.pendingComboPoints = 0;
+    state.justDealtNewHand = false;
+    state.animMap = null;
+    state.blastIndices = [];
+    state.isResolving = false;
+    state.boardMessage = "";
 
-function formatDailyElapsedTime(startedAt, finishedAt) {
-  var start = Number(startedAt) || Date.now();
-  var end = Number(finishedAt) || Date.now();
-  var totalSeconds = Math.max(0, Math.floor((end - start) / 1000));
-  var minutes = Math.floor(totalSeconds / 60);
-  var seconds = totalSeconds % 60;
-  return minutes + ':' + String(seconds).padStart(2, '0');
-}
+    state.intro = {
+      active: false,
+      step: 0,
+      title: "",
+      sourceIndex: null,
+      allowedTargetIndex: null,
+      hoveringValid: false,
+      completed: false,
+      direction: "horizontal",
+      targetQueue: [],
+      targetCursor: 0
+    };
 
-function createDailyStatsMap(stats) {
-  return {
-    easy: Object.assign({ tries: 1, startedAt: 0, finishedAt: 0, completed: false }, stats && stats.easy),
-    medium: Object.assign({ tries: 1, startedAt: 0, finishedAt: 0, completed: false }, stats && stats.medium),
-    hard: Object.assign({ tries: 1, startedAt: 0, finishedAt: 0, completed: false }, stats && stats.hard)
-  };
-}
+    state.daily = {
+      active: true,
+      puzzleId: puzzle.id,
+      movesRemaining: puzzle.moves,
+      gemTarget: chosenGems.length,
+      gemsRemaining: chosenGems.length,
+      completed: false,
+      failed: false,
+      handIndex: 0,
+      handCount: puzzle.hands ? puzzle.hands.length : 0,
+      variantSeed: variantSeed,
+      chosenGems: chosenGems
+    };
 
-function getDailyChallengeStats(state, challengeId) {
-  if (!state.dailyStats) {
-    state.dailyStats = createDailyStatsMap();
+    state.dailyHands = buildDailyHandsFromPuzzle(puzzle);
+    state.dailyHandIndex = 0;
+    state.dailyJustHitDanger = false;
+    state.dailyMovesBand = null;
+    state.dailyMovesPulseStarted = false;
+
+    if (state.dailyMovesHitTimer) {
+      window.clearTimeout(state.dailyMovesHitTimer);
+      state.dailyMovesHitTimer = null;
+    }
+
+    state.board = buildDailyBoardFromPuzzle(puzzle, chosenGems);
+
+    if (!isBoardGravityStable(state.board, state.boardSize)) {
+      applyGravity(state.board, state.boardSize);
+    }
+
+    state.animMap = null;
+
+    state.hand = state.dailyHands[0]
+      ? state.dailyHands[0].slice()
+      : [null, null, null];
+
+      maybeOpenTileHelper(state, 'daily');
+
   }
-
-  if (!state.dailyStats[challengeId]) {
-    state.dailyStats[challengeId] = { tries: 1, startedAt: 0, finishedAt: 0, completed: false };
-  }
-
-  return state.dailyStats[challengeId];
-}
-
-function resetDailyChallengeStats(state, challengeId) {
-  if (!state.dailyStats) {
-    state.dailyStats = createDailyStatsMap();
-  }
-
-  state.dailyStats[challengeId] = {
-    tries: 1,
-    startedAt: 0,
-    finishedAt: 0,
-    completed: false
-  };
-}
-
-function startDailyGame(state, challengeId, options) {
-  options = options || {};
-
-  var resolvedPuzzleId = getCurrentDailyPuzzleKey() || 'daily-seeded';
-  var variantSeed = getCurrentDailyVariantSeed();
-  var challenge = getDailyChallengeConfig(challengeId || 'easy');
-  state.dailyStats = createDailyStatsMap(state.dailyStats);
-  var challengeStats = getDailyChallengeStats(state, challenge.id);
-  var resolvedStartedAt = options.startedAt || challengeStats.startedAt || Date.now();
-  var resolvedFinishedAt = options.finishedAt || challengeStats.finishedAt || 0;
-  var resolvedTries = options.tries || challengeStats.tries || 1;
-  var seeded = buildSeededDailyBoard(variantSeed, challenge);
-
-  state.screen = 'daily';
-  state.score = 0;
-  state.displayScore = 0;
-  state.comboStep = 0;
-  state.lives = CONFIG.startingLives;
-  state.boardSize = CONFIG.boardSize;
-  state.currentLevel = LEVELS[0];
-  state.levelId = 1;
-  state.moveCount = 0;
-  state.handCount = 0;
-  state.pendingBombSpawn = false;
-  state.wallSpawnsSinceBomb = 0;
-  state.pendingComboPoints = 0;
-  state.justDealtNewHand = false;
-  state.animMap = null;
-  state.blastIndices = [];
-  state.isResolving = false;
-  state.boardMessage = "";
-  state.pendingPostResolveDrops = [];
-
-  state.intro = {
-    active: false,
-    step: 0,
-    title: "",
-    sourceIndex: null,
-    allowedTargetIndex: null,
-    hoveringValid: false,
-    completed: false,
-    direction: "horizontal",
-    targetQueue: [],
-    targetCursor: 0
-  };
-
-  state.daily = {
-    active: true,
-    puzzleId: resolvedPuzzleId,
-    challengeId: challenge.id,
-    gemTarget: seeded.gemTarget,
-    gemsRemaining: seeded.gemTarget,
-    completed: !!challengeStats.completed,
-    failed: false,
-    variantSeed: variantSeed,
-    layoutIndices: seeded.chosenIndices,
-    tries: resolvedTries,
-    startedAt: resolvedStartedAt,
-    finishedAt: resolvedFinishedAt,
-    showingLossModal: false,
-    showingResultScreen: false
-  };
-
-  state.board = seeded.board;
-
-  if (!isBoardGravityStable(state.board, state.boardSize)) {
-    applyGravity(state.board, state.boardSize);
-  }
-
-  state.animMap = null;
-  state.hand = generateHand(state.board, state.boardSize, state);
-
-  maybeOpenTileHelper(state, 'daily');
-}
-
-function launchDailyChallenge(root, state, render, challengeId, options) {
-  options = options || {};
-
-  startDailyGame(state, challengeId, options);
-  playSfx('start');
-
-  if (window.posthog) {
-    window.posthog.capture('daily_started', {
-      puzzle_id: state.daily && state.daily.puzzleId,
-      challenge_id: state.daily && state.daily.challengeId
-    });
-  }
-
-  render();
-}
 
   function isDailyMode(state) {
     return !!(state && state.daily && state.daily.active);
@@ -2024,29 +1968,40 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
     }, 950);
   }
 
-  function syncDailyHudUi(root, state) {
-    if (!root || !state || !state.daily) return;
-  
-    var fillEl = root.querySelector('[data-daily-progress-fill]');
-    var valueEl = root.querySelector('[data-daily-progress-value]');
-  
-    if (!fillEl || !valueEl) return;
-  
-    var target = Math.max(1, state.daily.gemTarget || 1);
-    var remaining = Math.max(0, state.daily.gemsRemaining || 0);
-    var collected = Math.max(0, target - remaining);
-    var pct = Math.max(0, Math.min(1, collected / target));
-  
-    fillEl.style.width = (pct * 100) + '%';
-  
-    var prevValue = Number(valueEl.textContent);
-    valueEl.textContent = remaining;
-  
-    if (!isNaN(prevValue) && prevValue !== remaining) {
-      valueEl.classList.remove('is-daily-progress-value-hit');
-      void valueEl.offsetWidth;
-      valueEl.classList.add('is-daily-progress-value-hit');
-    }
+  function animateDailyGemGain(root, delta) {
+    if (!delta || delta <= 0) return;
+
+    var stat = root.querySelector('[data-daily-gems-stat]');
+    var icon = root.querySelector('[data-daily-gems-icon]');
+    var value = root.querySelector('[data-daily-gems-value]');
+
+    if (!stat || !icon || !value) return;
+
+    stat.classList.remove('is-daily-gem-gained');
+    icon.classList.remove('is-daily-gem-gained-icon');
+    value.classList.remove('is-daily-gem-gained-value');
+
+    stat.removeAttribute('data-daily-gem-delta');
+
+    void stat.offsetWidth;
+
+    stat.classList.add('is-daily-gem-gained');
+    icon.classList.add('is-daily-gem-gained-icon');
+    value.classList.add('is-daily-gem-gained-value');
+    stat.setAttribute('data-daily-gem-delta', '+' + String(delta));
+
+    window.setTimeout(function () {
+      var liveStat = root.querySelector('[data-daily-gems-stat]');
+      var liveIcon = root.querySelector('[data-daily-gems-icon]');
+      var liveValue = root.querySelector('[data-daily-gems-value]');
+
+      if (liveStat) {
+        liveStat.classList.remove('is-daily-gem-gained');
+        liveStat.removeAttribute('data-daily-gem-delta');
+      }
+      if (liveIcon) liveIcon.classList.remove('is-daily-gem-gained-icon');
+      if (liveValue) liveValue.classList.remove('is-daily-gem-gained-value');
+    }, 950);
   }
   
   function resetBoardAfterLifeLoss(state) {
@@ -2152,60 +2107,58 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
     if (!isDailyMode(state)) return false;
     if (state.intro && state.intro.active) return false;
     if (state.isResolving) return false;
-  
+
     if (state.daily.gemsRemaining <= 0 && !state.daily.completed) {
       state.daily.completed = true;
-      state.daily.failed = false;
-      state.daily.finishedAt = Date.now();
-      var completedStats = getDailyChallengeStats(state, state.daily.challengeId);
-      completedStats.tries = state.daily.tries || 1;
-      completedStats.startedAt = state.daily.startedAt || Date.now();
-      completedStats.finishedAt = state.daily.finishedAt;
-      completedStats.completed = true;
-      state.daily.showingLossModal = false;
-      state.daily.showingResultScreen = true;
-  
-      markCurrentDailyCompleted();
-  
+
       if (window.posthog) {
         window.posthog.capture('daily_completed', {
           puzzle_id: state.daily.puzzleId,
-          challenge_id: state.daily.challengeId,
-          tries: state.daily.tries,
-          elapsed_time: state.daily.finishedAt - state.daily.startedAt
+          moves_remaining: state.daily.movesRemaining
         });
       }
-  
+
       playSfx('combo');
-      render();
+      showBoardMessage(root, 'Cleared!', null, 0, 'centered');
+
+      window.setTimeout(function () {
+        transitionScreen(root, function () {
+          clearSavedGame('daily');
+          state.screen = 'home';
+          render();
+        });
+      }, 1400);
+
       return true;
     }
-  
-    var noPlayableHand = !hasAnyPlayableHand(state);
-  
-    if (noPlayableHand && state.daily.gemsRemaining > 0 && !state.daily.showingLossModal) {
+
+    var noMovesLeft = state.daily.movesRemaining <= 0;
+    var noHandLeft = !state.hand || state.hand.every(function (piece) { return !piece; });
+
+    if ((noMovesLeft || noHandLeft) && state.daily.gemsRemaining > 0 && !state.daily.failed) {
       state.daily.failed = true;
-      state.daily.completed = false;
-      state.daily.showingLossModal = true;
-      state.daily.showingResultScreen = false;
-      var failedStats = getDailyChallengeStats(state, state.daily.challengeId);
-      failedStats.tries = (failedStats.tries || 1) + 1;
-      state.daily.tries = failedStats.tries;
-  
+
       if (window.posthog) {
         window.posthog.capture('daily_failed', {
           puzzle_id: state.daily.puzzleId,
-          challenge_id: state.daily.challengeId,
-          gems_remaining: state.daily.gemsRemaining,
-          tries: state.daily.tries
+          gems_remaining: state.daily.gemsRemaining
         });
       }
-  
+
       playSfx('lose');
-      render();
+      showBoardMessage(root, 'So Close!', null, 0, 'centered');
+
+      window.setTimeout(function () {
+        transitionScreen(root, function () {
+          clearSavedGame('daily');
+          state.screen = 'home';
+          render();
+        });
+      }, 1400);
+
       return true;
     }
-  
+
     return false;
   }
   
@@ -2664,10 +2617,10 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
   
       spawnCenterUiBurst(root, 20, 2);
       if (window.posthog) window.posthog.capture('intro_skipped', { intro_step: state.intro && state.intro.step });
-      runIntroExitToFreshBoard(root, state, render, { playComboSfx: true });
+      runIntroExitToFreshBoard(root, state, render);
     };
 
-    skipBtn.addEventListener('click', skipIntro);
+    skipBtn.addEventListener('pointerdown', skipIntro);
   }
 
   function maybeOpenTileHelper(state, kind) {
@@ -2704,8 +2657,8 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       return openHelperModal(state, {
         id: 'daily',
         icon: 'gem',
-        title: 'Daily Challenge',
-        body: 'Blast all the gems before you run out of moves. There are 3 rounds and each gets harder.'
+        title: 'Daily Blast',
+        body: 'Blast all gems before you run out of moves.'
       });
     }
   
@@ -2725,6 +2678,9 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       title: helper.title || '',
       body: helper.body || ''
     };
+
+    var app = document.getElementById('app');
+    if (app) app.classList.add('is-dimmed');
   
     return true;
   }
@@ -2732,20 +2688,23 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
   function closeHelperModal(state) {
     if (!state || !state.helperModal) return;
     state.helperModal = null;
+    var app = document.getElementById('app');
+    if (app) app.classList.remove('is-dimmed');
   }
   
   function renderHelperModal(state) {
     if (!state || !state.helperModal) return '';
   
     var helper = state.helperModal;
-    var isDaily = helper.id === 'daily';
   
     return '' +
       '<div class="bm-helper-modal" data-helper-modal>' +
+        '<div class="bm-helper-modal__scrim"></div>' +
         '<div class="bm-helper-modal__card" role="dialog" aria-modal="true" aria-label="' + helper.title + '">' +
-          '<div class="bm-helper-modal__title">' + helper.title + '</div>' +
-          '<div class="bm-helper-modal__desc' + (isDaily ? ' bm-helper-modal__desc--daily' : '') + '">' + helper.body + '</div>' +
-          '<button class="bm-btn bm-btn--classic bm-helper-modal__btn" type="button" data-helper-close>Got It</button>' +
+          '<button class="bm-helper-modal__close" type="button" aria-label="Close" data-helper-close>' +
+            '<img class="bm-helper-modal__close-icon" src="images/hud/close.svg" alt="" />' +
+          '</button>' +
+          '<div class="bm-helper-modal__body bm-helper-modal__body--daily">' + helper.body + '</div>' +
         '</div>' +
       '</div>';
   }
@@ -2760,69 +2719,9 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       node.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-    
-        var modal = root.querySelector('[data-helper-modal]');
-
-        if (!modal) {
-          closeHelperModal(state);
-          render();
-          return;
-        }
-        
-        modal.classList.add('is-exiting');
-        
-        window.setTimeout(function () {
-          closeHelperModal(state);
-          render();
-        }, 220);
+        closeHelperModal(state);
+        render();
       });
-    });
-  }
-
-  function bindDailyLossModal(root, state, render) {
-    var tryAgain = root.querySelector('[data-daily-try-again]');
-    if (!tryAgain) return;
-  
-    tryAgain.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    
-      var retryStats = getDailyChallengeStats(state, state.daily.challengeId);
-
-      launchDailyChallenge(root, state, render, state.daily.challengeId, {
-        tries: retryStats.tries || state.daily.tries || 1,
-        startedAt: retryStats.startedAt || state.daily.startedAt || Date.now()
-      });
-    });
-  }
-  
-  function bindDailyResultScreen(root, state, render) {
-    var nextBtn = root.querySelector('[data-daily-next-challenge]');
-    if (!nextBtn) return;
-  
-    nextBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-  
-      var nextChallengeId = getNextDailyChallengeId(state.daily && state.daily.challengeId);
-  
-      if (nextChallengeId) {
-        resetDailyChallengeStats(state, state.daily.challengeId);
-
-        var nextStats = getDailyChallengeStats(state, nextChallengeId);
-
-        launchDailyChallenge(root, state, render, nextChallengeId, {
-          tries: nextStats.completed ? 1 : (nextStats.tries || 1),
-          startedAt: nextStats.completed ? Date.now() : (nextStats.startedAt || Date.now()),
-          finishedAt: nextStats.completed ? 0 : (nextStats.finishedAt || 0)
-        });
-        return;
-      }
-
-      resetDailyChallengeStats(state, state.daily.challengeId);
-      clearSavedGame('daily');
-      state.screen = 'home';
-      render();
     });
   }
 
@@ -2837,7 +2736,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       '</section>';
   }
 
-  function renderHome(root, state) {
+  function renderHome(root) {
     root.innerHTML = '' +
       '<section class="bm-screen bm-home">' +
         '<div class="bm-home__center">' +
@@ -2846,12 +2745,10 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
           '</div>' +
         '</div>' +
         '<div class="bm-home__actions">' +
-          '<button class="bm-btn bm-btn--classic bm-home__btn bm-home__btn--classic" type="button" data-play>Classic</button>' +
+          '<button class="bm-btn bm-home__btn bm-home__btn--classic" type="button" data-play>Classic</button>' +
           '<button class="bm-btn bm-btn--daily bm-home__btn bm-home__btn--daily" type="button" data-daily>' +
-            '<span>Daily Challenge</span>' +
-            (shouldShowDailyRibbon(state)
-              ? '<span class="bm-daily-ribbon"><span class="bm-daily-ribbon__text">New</span></span>'
-              : '') +
+            '<span>Daily Blast</span>' +
+            '<span class="bm-daily-ribbon"><span class="bm-daily-ribbon__text">Free</span></span>' +
           '</button>' +
         '</div>' +
       '</section>';
@@ -2860,12 +2757,11 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
   function renderGame(root, state, renderApp) {
     var isDaily = isDailyMode(state);
     var isIntro = !!(state.intro && state.intro.active);
-    var dailyChallenge = isDaily ? getDailyChallengeConfig(state.daily && state.daily.challengeId) : null;
 
     var hudHtml = isIntro
     ? (
       '<div class="bm-hud bm-hud--intro">' +
-        '<button class="bm-btn bm-btn--daily bm-btn--skip" type="button" data-skip-intro>Skip</button>' +
+        '<button class="bm-btn bm-btn--skip" type="button" data-skip-intro>Skip</button>' +
       '</div>'
     )
     : isDaily
@@ -2893,24 +2789,14 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
     ? (
       '<div class="bm-score bm-score--intro">' +
         '<div class="bm-score__title" data-score-title>' + state.intro.title + '</div>' +
+        (state.intro.subtitle
+          ? '<div class="bm-score__subtitle">' + state.intro.subtitle + '</div>'
+          : '') +
       '</div>'
     )
     : isDaily
     ? (
-      '<div class="bm-daily-top">' +
-      '<div class="bm-daily-progress">' +
-       '<img class="bm-daily-progress__icon" src="' + (dailyChallenge ? dailyChallenge.icon : 'images/tiles/easy.svg') + '" alt="" />' +
-        '<div class="bm-daily-progress__track">' +
-          '<div class="bm-daily-progress__burst" data-daily-progress-burst></div>' +
-          '<div class="bm-daily-progress__bar">' +
-            '<div class="bm-daily-progress__fill bm-daily-progress__fill--' + (dailyChallenge ? dailyChallenge.id : 'easy') + '" data-daily-progress-fill></div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="bm-daily-progress__value" data-daily-progress-value>' +
-          (state.daily ? state.daily.gemsRemaining : 0) +
-        '</div>' +
-      '</div>' +
-    '</div>'
+      '<div class="bm-score bm-score--daily-empty"></div>'
     )
       : (
         '<div class="bm-score">' +
@@ -2939,46 +2825,23 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
     }).join('') + '</div>'
   );
 
-  var layoutHtml = isDaily
-  ? (
-    '<section class="bm-screen bm-game bm-game--daily" data-game>' +
-      '<div class="bm-spacer bm-spacer--daily-top" aria-hidden="true"></div>' +
-      scoreHtml +
-      '<div class="bm-spacer bm-spacer--daily-mid" aria-hidden="true"></div>' +
-      '<div class="bm-board-wrap">' +
-        '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
-      '</div>' +
-      '<div class="bm-spacer bm-spacer--daily-bottom" aria-hidden="true"></div>' +
-      handHtml +
-    '</section>'
-  )
-  : (
-    '<section class="bm-screen bm-game" data-game>' +
-      hudHtml +
-      '<div class="bm-spacer" aria-hidden="true"></div>' +
-      scoreHtml +
-      '<div class="bm-spacer" aria-hidden="true"></div>' +
-      '<div class="bm-board-wrap">' +
-        '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
-      '</div>' +
-      '<div class="bm-spacer" aria-hidden="true"></div>' +
-      handHtml +
-    '</section>'
-  );
-
-  if (isDaily && state.daily && state.daily.showingResultScreen) {
-    root.innerHTML = renderDailyResultScreen(state);
-  } else {
-    root.innerHTML = layoutHtml + renderHelperModal(state) + renderDailyLossModal(state);
-  }
+  root.innerHTML = '' +
+  '<section class="bm-screen bm-game" data-game>' +
+    hudHtml +
+    '<div class="bm-spacer" aria-hidden="true"></div>' +
+    scoreHtml +
+    '<div class="bm-spacer" aria-hidden="true"></div>' +
+    '<div class="bm-board-wrap">' +
+      '<div class="bm-board">' + renderBoard(state.boardSize, state.board, state.animMap, state.blastIndices, state) + '</div>' +
+    '</div>' +
+    '<div class="bm-spacer" aria-hidden="true"></div>' +
+    handHtml +
+  '</section>' +
+  renderHelperModal(state);
 
   syncScoreUi(root, state);
-  syncDailyHudUi(root, state);
   bindIntroSkip(root, state, renderApp);
   bindHelperModal(root, state, renderApp);
-
-  bindDailyLossModal(root, state, renderApp);
-  bindDailyResultScreen(root, state, renderApp);
 
   if (state.intro && state.intro.active) {
     ensureAudioContext();
@@ -2988,67 +2851,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
   state.animMap = null;
   }
 
-  function renderDailyLossModal(state) {
-    if (!state.daily || !state.daily.showingLossModal) return '';
-  
-    return '' +
-      '<div class="bm-helper-modal bm-daily-loss-modal" data-daily-loss-modal>' +
-        '<div class="bm-helper-modal__card" role="dialog" aria-modal="true" aria-label="Nice Try">' +
-          '<div class="bm-helper-modal__title">Nice Try</div>' +
-          '<div class="bm-helper-modal__desc">You didn’t clear all the gems this time. Get them on the next run.</div>' +
-          '<button class="bm-btn bm-btn--classic bm-helper-modal__btn" type="button" data-daily-try-again>Try Again</button>' +
-        '</div>' +
-      '</div>';
-  }
-
-function renderDailyResultScreen(state) {
-  if (!state.daily || !state.daily.showingResultScreen) return '';
-
-  var challenge = getDailyChallengeConfig(state.daily.challengeId);
-  var nextChallengeId = getNextDailyChallengeId(state.daily.challengeId);
-  var nextLabel = nextChallengeId ? getDailyChallengeConfig(nextChallengeId).label : 'Home';
-  var ctaText = nextChallengeId ? ('Play ' + nextLabel) : 'Back Home';
-  var elapsedTime = formatDailyElapsedTime(state.daily.startedAt, state.daily.finishedAt);
-
-  return '' +
-  '<section class="bm-screen bm-daily-result" data-daily-result>' +
-
-    '<div class="bm-daily-result__content">' +
-
-      '<div class="bm-daily-result__icon-wrap">' +
-        '<img class="bm-daily-result__icon" src="' + challenge.icon + '" alt="" />' +
-      '</div>' +
-
-      '<div class="bm-daily-result__title">' + challenge.label + ' Challenge Complete</div>' +
-
-      '<div class="bm-daily-result__subtitle">You beat 68% of players on today’s ' + challenge.label + ' Challenge</div>' +
-
-      '<div class="bm-daily-result__stats">' +
-        '<div class="bm-daily-result__stat">' +
-          '<div class="bm-daily-result__stat-head">Tries</div>' +
-          '<div class="bm-daily-result__stat-body">' + (state.daily.tries || 1) + '</div>' +
-        '</div>' +
-        '<div class="bm-daily-result__stat">' +
-          '<div class="bm-daily-result__stat-head">Time</div>' +
-          '<div class="bm-daily-result__stat-body">' + elapsedTime + '</div>' +
-        '</div>' +
-      '</div>' +
-
-      '</div>' +
-
-      '<button class="bm-btn bm-btn--classic bm-daily-result__cta" type="button" data-daily-next-challenge>' + ctaText + '</button>' +
-
-  '</section>';
-}
-
   function renderBoard(boardSize, board, animMap, blastIndices, state) {
-    var dailyChallenge = (state && state.daily && state.daily.active)
-  ? getDailyChallengeConfig(state.daily.challengeId)
-  : null;
-
-var gemIcon = dailyChallenge
-  ? dailyChallenge.icon
-  : 'images/tiles/gem.svg';
     animMap = animMap || {};
     blastIndices = blastIndices || [];
     state = state || {};
@@ -3104,7 +2907,7 @@ var gemIcon = dailyChallenge
       if (isGemCell(cell)) {
         return '<div class="' + cellClass + '" data-cell-index="' + index + '">' +
           '<div class="bm-gem-tile' + extraClass + '"' + extraStyle + '>' +
-            '<img class="bm-gem-tile__icon" src="' + gemIcon + '" alt="" />' +
+            '<img class="bm-gem-tile__icon" src="images/tiles/gem.svg" alt="" />' +
           '</div>' +
         '</div>';
       }
@@ -3185,7 +2988,7 @@ var gemIcon = dailyChallenge
   
   function getCellContentEl(cellEl) {
     if (!cellEl) return null;
-    return cellEl.querySelector('.bm-tile, .bm-neutral-block, .bm-special-tile, .bm-gem-tile');
+    return cellEl.querySelector('.bm-tile, .bm-neutral-block, .bm-special-tile');
   }
 
   function hideBoardCells(root, indices) {
@@ -3334,13 +3137,7 @@ var gemIcon = dailyChallenge
           var rainbowTones = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'];
           var rainbowTone = rainbowTones[Math.floor(Math.random() * rainbowTones.length)];
           frag.className = 'bm-blast-frag bm-blast-frag--' + rainbowTone + ' bm-blast-frag--mix-' + fragVariant;
-        } else if (
-          isNeutralCell(cell) ||
-          isBombCell(cell) ||
-          isSkullCell(cell) ||
-          isHeartCell(cell) ||
-          isGemCell(cell)
-        ) {
+        } else if (isNeutralCell(cell)) {
           frag.className = 'bm-blast-frag bm-blast-frag--neutral bm-blast-frag--neutral-mix-' + fragVariant;
         } else {
           frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone + ' bm-blast-frag--mix-' + fragVariant;
@@ -3467,9 +3264,9 @@ var gemIcon = dailyChallenge
   
     for (var i = 0; i < starCount; i++) {
       var star = document.createElement('img');
-      var size = 24 + Math.round(Math.random() * 28);
-      var x = -156 + Math.round(Math.random() * 312);
-      var y = -52 + Math.round(Math.random() * 104);
+      var size = 12 + Math.round(Math.random() * 14);
+      var x = -78 + Math.round(Math.random() * 156);
+      var y = -26 + Math.round(Math.random() * 52);
       var rot = -55 + Math.round(Math.random() * 110);
       var delay = Math.round(Math.random() * 70);
   
@@ -3497,49 +3294,47 @@ var gemIcon = dailyChallenge
     }, 1000);
   }
 
-  function spawnDailyProgressGems(root, state) {
-    var burst = root.querySelector('[data-daily-progress-burst]');
+  function spawnDailyMovesStars(root, band) {
+    var burst = root.querySelector('[data-daily-moves-burst]');
     if (!burst) return;
-
-    var challenge = getDailyChallengeConfig(
-      state && state.daily ? state.daily.challengeId : 'easy'
-    );
-    var gemSrc = challenge && challenge.icon ? challenge.icon : 'images/tiles/gem.svg';
 
     burst.innerHTML = '';
 
-    var gemCount = 18;
+    var starCount = band === 'danger' ? 10 : band === 'warning' ? 7 : 5;
+    var tonePool = band === 'danger'
+      ? ['c5', 'c6']
+      : band === 'warning'
+        ? ['c3', 'c9']
+        : ['c2', 'c8'];
 
-    for (var i = 0; i < gemCount; i++) {
-      var gem = document.createElement('img');
-      var size = 20 + Math.round(Math.random() * 18);
-      var angle = Math.random() * Math.PI * 2;
-      var radius = 34 + Math.random() * 72;
-      var x = Math.round(Math.cos(angle) * radius);
-      var y = Math.round(Math.sin(angle) * radius);
+    for (var i = 0; i < starCount; i++) {
+      var star = document.createElement('div');
+      var size = 10 + Math.round(Math.random() * 10);
+      var x = -72 + Math.round(Math.random() * 144);
+      var y = -24 + Math.round(Math.random() * 48);
       var rot = -55 + Math.round(Math.random() * 110);
-      var delay = Math.round(Math.random() * 70);
+      var delay = Math.round(Math.random() * 60);
+      var tone = tonePool[Math.floor(Math.random() * tonePool.length)];
 
-      gem.src = gemSrc;
-      gem.className = 'bm-daily-progress-gem';
-      gem.style.width = size + 'px';
-      gem.style.height = size + 'px';
-      gem.style.left = '50%';
-      gem.style.top = '50%';
-      gem.style.setProperty('--bm-star-x', x + 'px');
-      gem.style.setProperty('--bm-star-y', y + 'px');
-      gem.style.setProperty('--bm-star-rot', rot + 'deg');
-      gem.style.setProperty('--bm-star-delay', delay + 'ms');
+      star.className = 'bm-score-star bm-score-star--moves bm-mini--' + tone;
+      star.style.width = size + 'px';
+      star.style.height = size + 'px';
+      star.style.left = '50%';
+      star.style.top = '50%';
+      star.style.setProperty('--bm-star-x', x + 'px');
+      star.style.setProperty('--bm-star-y', y + 'px');
+      star.style.setProperty('--bm-star-rot', rot + 'deg');
+      star.style.setProperty('--bm-star-delay', delay + 'ms');
 
-      burst.appendChild(gem);
+      burst.appendChild(star);
     }
 
-    burst.classList.remove('is-daily-progress-bursting');
+    burst.classList.remove('is-score-bursting');
     void burst.offsetWidth;
-    burst.classList.add('is-daily-progress-bursting');
+    burst.classList.add('is-score-bursting');
 
     window.setTimeout(function () {
-      burst.classList.remove('is-daily-progress-bursting');
+      burst.classList.remove('is-score-bursting');
       burst.innerHTML = '';
     }, 1000);
   }
@@ -3568,8 +3363,7 @@ var gemIcon = dailyChallenge
     return timerId;
   }
 
-  function runIntroExitToFreshBoard(root, state, render, options) {
-    options = options || {};
+  function runIntroExitToFreshBoard(root, state, render) {
     clearIntroTimers(state);
   
     var oldMsg = document.body.querySelector('.bm-board-message');
@@ -3587,27 +3381,15 @@ var gemIcon = dailyChallenge
     state.isResolving = true;
   
     window.setTimeout(function () {
-      if (options.playComboSfx) {
-        playSfx('combo');
-      }
-    
+      playSfx('combo');
       markIntroSeen();
       if (window.posthog) window.posthog.capture('intro_completed');
-    
+  
       clearSavedGame('game');
-    
-      state.helperModal = null;
-      state.animMap = null;
-      state.blastIndices = [];
-      state.isResolving = false;
-      state.boardMessage = '';
-      state.pendingPostResolveDrops = [];
-      state.introTimers = [];
-    
       resetStandardGameState(state);
       state.screen = 'home';
       state.bootStarted = false;
-    
+  
       render();
     }, 320);
   }
@@ -3633,10 +3415,7 @@ var gemIcon = dailyChallenge
     
       if (!(state.intro && state.intro.active)) {
         if (isDailyMode(state)) {
-          var dailyEnded = checkDailyEndState(root, state, render);
-          if (!dailyEnded) {
-            runPostResolveDrops(root, state, render);
-          }
+          checkDailyEndState(root, state, render);
         } else {
           runPostResolveDrops(root, state, render);
           window.setTimeout(function () {
@@ -3686,28 +3465,9 @@ var gemIcon = dailyChallenge
     hideBoardCells(root, blastResult.blastIndices);
 
     if (isDailyMode(state) && dailyGemsCleared > 0) {
-      syncDailyHudUi(root, state);
-    
-      var fillEl = root.querySelector('[data-daily-progress-fill]');
-      var barEl = root.querySelector('.bm-daily-progress__bar');
-    
-      if (fillEl) {
-        fillEl.classList.remove('is-daily-progress-hit');
-        void fillEl.offsetWidth;
-        fillEl.classList.add('is-daily-progress-hit');
-      }
-    
-      if (barEl) {
-        barEl.classList.remove('is-daily-progress-bar-hit');
-        void barEl.offsetWidth;
-        barEl.classList.add('is-daily-progress-bar-hit');
-    
-        window.setTimeout(function () {
-          barEl.classList.remove('is-daily-progress-bar-hit');
-        }, 420);
-      }
-
-      spawnDailyProgressGems(root, state);
+      window.setTimeout(function () {
+        syncHudUi(root, state);
+      }, 120);
     }
     
     if (specialEffectResult.lifeDelta !== 0) {
@@ -3815,10 +3575,7 @@ var gemIcon = dailyChallenge
           
           if (!(state.intro && state.intro.active)) {
             if (isDailyMode(state)) {
-              var dailyEnded = checkDailyEndState(root, state, render);
-              if (!dailyEnded) {
-                runPostResolveDrops(root, state, render);
-              }
+              checkDailyEndState(root, state, render);
             } else {
               runPostResolveDrops(root, state, render);
               window.setTimeout(function () {
@@ -3844,7 +3601,7 @@ var gemIcon = dailyChallenge
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             } else {
               queueIntroTimer(state, function () {
-                runIntroExitToFreshBoard(root, state, render, { playComboSfx: false });
+                runIntroExitToFreshBoard(root, state, render);
               }, introMessageDelay + INTRO_MESSAGE_TO_NEXT_STEP_DELAY);
             }
           }
@@ -4104,6 +3861,15 @@ var gemIcon = dailyChallenge
 
       if (!(state.intro && state.intro.active)) {
         state.moveCount += 1;
+
+        if (isDailyMode(state) && state.daily.movesRemaining > 0) {
+          var previousDailyMoves = state.daily.movesRemaining;
+          state.daily.movesRemaining -= 1;
+
+          if (previousDailyMoves > 4 && state.daily.movesRemaining === 4) {
+            state.dailyJustHitDanger = true;
+          }
+        }
       }
   
       if (state.intro && state.intro.active) {
@@ -4118,9 +3884,19 @@ var gemIcon = dailyChallenge
   
       if (!(state.intro && state.intro.active)) {
         if (state.hand.every(function (piece) { return !piece; })) {
-          state.hand = generateHand(state.board, state.boardSize, state);
-          state.handCount += 1;
-          state.justDealtNewHand = true;
+          if (isDailyMode(state)) {
+            state.daily.handIndex += 1;
+
+            if (state.dailyHands && state.dailyHands[state.daily.handIndex]) {
+              state.hand = state.dailyHands[state.daily.handIndex].slice();
+            } else {
+              state.hand = [null, null, null];
+            }
+          } else {
+            state.hand = generateHand(state.board, state.boardSize, state);
+            state.handCount += 1;
+            state.justDealtNewHand = true;
+          }
         }
       }
 
@@ -4343,9 +4119,65 @@ var gemIcon = dailyChallenge
   function syncHudUi(root, state) {
     var highScoreEl = root.querySelector('.bm-hud-score-value');
     var livesEl = root.querySelector('.bm-hud-lives-value');
+    var dailyMovesEl = root.querySelector('[data-daily-moves-value]');
   
     if (highScoreEl) highScoreEl.textContent = state.highScore;
     if (livesEl) livesEl.textContent = state.lives;
+
+    if (dailyMovesEl && state.daily) {
+      dailyMovesEl.textContent = state.daily.movesRemaining;
+
+      var nextBand = state.daily.movesRemaining > 8
+        ? 'safe'
+        : state.daily.movesRemaining > 4
+          ? 'warning'
+          : 'danger';
+
+      if (state.dailyMovesBand !== nextBand) {
+        dailyMovesEl.classList.remove('bm-moves--safe', 'bm-moves--warning', 'bm-moves--danger');
+
+        if (nextBand === 'safe') {
+          dailyMovesEl.classList.add('bm-moves--safe');
+        } else if (nextBand === 'warning') {
+          dailyMovesEl.classList.add('bm-moves--warning');
+        } else {
+          dailyMovesEl.classList.add('bm-moves--danger');
+        }
+
+        if (state.dailyMovesPulseStarted) {
+          spawnDailyMovesStars(root, nextBand);
+        }
+
+        state.dailyMovesBand = nextBand;
+      } else if (!state.dailyMovesPulseStarted) {
+        if (nextBand === 'safe') {
+          dailyMovesEl.classList.add('bm-moves--safe');
+        } else if (nextBand === 'warning') {
+          dailyMovesEl.classList.add('bm-moves--warning');
+        } else {
+          dailyMovesEl.classList.add('bm-moves--danger');
+        }
+      }
+
+      state.dailyMovesPulseStarted = true;
+
+      if (state.dailyJustHitDanger) {
+        dailyMovesEl.classList.remove('bm-moves-hit');
+        void dailyMovesEl.offsetWidth;
+        dailyMovesEl.classList.add('bm-moves-hit');
+        state.dailyJustHitDanger = false;
+
+        if (state.dailyMovesHitTimer) {
+          window.clearTimeout(state.dailyMovesHitTimer);
+        }
+
+        state.dailyMovesHitTimer = window.setTimeout(function () {
+          var liveMovesEl = root.querySelector('[data-daily-moves-value]');
+          if (liveMovesEl) liveMovesEl.classList.remove('bm-moves-hit');
+          state.dailyMovesHitTimer = null;
+        }, 320);
+      }
+    }
   }
 
   function syncScoreUi(root, state) {
@@ -4462,6 +4294,7 @@ var gemIcon = dailyChallenge
   
     if (window.posthog) window.posthog.capture('level_up', { level: nextLevel.id, score: state.score });
     syncHudUi(root, state);
+    showBoardMessage(root, 'Level ' + nextLevel.id, null, 0, 'centered');
   }
 
   function transitionScreen(root, drawNext) {
@@ -4529,6 +4362,12 @@ var gemIcon = dailyChallenge
       bootTimer: null,
       homeResult: null,
       helperModal: null,
+      dailyHands: [],
+      dailyHandIndex: 0,
+      dailyMovesHitTimer: null,
+      dailyJustHitDanger: false,
+      dailyMovesBand: null,
+      dailyMovesPulseStarted: false,
       intro: {
         active: false,
         step: 0,
@@ -4541,22 +4380,14 @@ var gemIcon = dailyChallenge
         targetQueue: [],
         targetCursor: 0
       },
-      dailyStats: createDailyStatsMap(),
       daily: {
         active: false,
         puzzleId: null,
-        challengeId: 'easy',
+        movesRemaining: 0,
         gemTarget: 0,
         gemsRemaining: 0,
         completed: false,
-        failed: false,
-        variantSeed: null,
-        layoutIndices: [],
-        tries: 1,
-        startedAt: 0,
-        finishedAt: 0,
-        showingLossModal: false,
-        showingResultScreen: false
+        failed: false
       },
     };
 
@@ -4622,7 +4453,7 @@ var gemIcon = dailyChallenge
       }
 
       if (state.screen === 'home') {
-        renderHome(root, state);
+        renderHome(root);
 
         var homeResult = consumeHomeResult(state);
         if (homeResult && homeResult.reason === 'last-heart-loss') {
@@ -4658,34 +4489,50 @@ var gemIcon = dailyChallenge
         if (daily) {
           daily.addEventListener('click', function () {
             spawnCenterUiBurst(root, 20, 2);
-        
-            transitionScreen(root, function () {
-              var savedDaily = readSavedGame('daily');
-        
-              if (
-                savedDaily &&
-                savedDaily.daily &&
-                savedDaily.daily.active &&
-                savedDaily.daily.puzzleId === getCurrentDailyPuzzleKey() &&
-                savedDaily.daily.variantSeed === getCurrentDailyVariantSeed()
-              ) {
-                restoreSavedGame(state, savedDaily);
-                state.screen = 'daily';
-                render();
+
+            window.setTimeout(function () {
+              transitionScreen(root, function () {
+                var savedDaily = readSavedGame('daily');
+
+                if (
+                  savedDaily &&
+                  savedDaily.daily &&
+                  savedDaily.daily.active &&
+                  savedDaily.daily.puzzleId === getCurrentDailyPuzzleKey()
+                ) {
+                  restoreSavedGame(state, savedDaily);
+                } else {
+                  var dailyKey = getCurrentDailyPuzzleKey();
+                  startDailyGame(state, dailyKey);
+                }
+
                 playSfx('start');
-              } else {
-                launchDailyChallenge(root, state, render, 'easy');
-              }
-            });
+
+                if (window.posthog) {
+                  window.posthog.capture('daily_started', { puzzle_id: state.daily.puzzleId });
+                }
+
+                render();
+              });
+            }, 120);
           });
         }
-        
       } else {
         renderGame(root, state, render);
 
         if (!state.dragBound) {
           enableDrag(root, state, render);
           state.dragBound = true;
+        }
+
+        var game = root.querySelector('[data-game]');
+        if (game) {
+          game.addEventListener('dblclick', function () {
+            transitionScreen(root, function () {
+              state.screen = 'home';
+              render();
+            });
+          });
         }
       }
 
@@ -4757,9 +4604,8 @@ var gemIcon = dailyChallenge
         console.log({
           puzzleId: state.daily && state.daily.puzzleId,
           variantSeed: state.daily && state.daily.variantSeed,
-          gemTarget: state.daily && state.daily.gemTarget,
-          gemsRemaining: state.daily && state.daily.gemsRemaining,
-          layoutIndices: state.daily && state.daily.layoutIndices
+          chosenGems: state.daily && state.daily.chosenGems,
+          movesRemaining: state.daily && state.daily.movesRemaining
         });
       },
 
@@ -4777,6 +4623,13 @@ var gemIcon = dailyChallenge
         render();
       },
 
+      setDailyMoves: function (n) {
+        state.daily.active = true;
+        state.screen = 'daily';
+        state.daily.movesRemaining = Math.max(0, Number(n) || 0);
+        render();
+      },
+
       setDailyGems: function (n) {
         state.daily.active = true;
         state.screen = 'daily';
@@ -4790,19 +4643,15 @@ var gemIcon = dailyChallenge
         state.daily.gemsRemaining = 0;
         state.daily.completed = false;
         state.daily.failed = false;
-        state.daily.showingLossModal = false;
-        state.daily.showingResultScreen = false;
         checkDailyEndState(root, state, render);
       },
-      
+
       forceDailyLoss: function () {
         state.daily.active = true;
         state.screen = 'daily';
+        state.daily.movesRemaining = 0;
         state.daily.failed = false;
         state.daily.completed = false;
-        state.daily.showingLossModal = false;
-        state.daily.showingResultScreen = false;
-        state.hand = [null, null, null];
         checkDailyEndState(root, state, render);
       },
 
