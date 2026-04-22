@@ -4210,26 +4210,25 @@ var gemIcon = dailyChallenge
 
     function showPreview(piece, cells) {
       clearPreview();
-
+    
       if (!piece || !cells || !cells.length) return;
-      if (!isIntroTargetPlacement(cells)) return;
-
+    
+      var isIntroValid = isIntroTargetPlacement(cells);
+    
       cells.forEach(function (cell) {
         var index = cell.y * state.boardSize + cell.x;
         var cellEl = root.querySelector('[data-cell-index="' + index + '"]');
         if (!cellEl) return;
-
-        var preview;
-
-        preview = document.createElement('div');
+    
+        var preview = document.createElement('div');
         preview.className = 'bm-tile bm-tile--' + cell.tone + ' is-preview-tile';
         preview.innerHTML = '<span class="bm-tile__label">' + cell.value + '</span>';
-
+    
         cellEl.appendChild(preview);
       });
-
+    
       drag.previewCells = cells;
-      setIntroHoverState(true);
+      setIntroHoverState(isIntroValid);
     }
 
     function cleanupDrag() {
@@ -4250,6 +4249,7 @@ var gemIcon = dailyChallenge
 
     function commitPlacementFromPreview() {
       if (!drag || !drag.previewCells || !drag.previewCells.length) return false;
+      if (state.intro && state.intro.active && !isIntroTargetPlacement(drag.previewCells)) return false;
 
       var placedCells = drag.previewCells;
       var placedIndices = placedCells.map(function (cell) {
@@ -4420,19 +4420,16 @@ var gemIcon = dailyChallenge
 
     function endDrag(e) {
       if (!drag || e.pointerId !== drag.pointerId) return;
-
+    
       e.preventDefault();
-
-      var hadValidPreview = !!(drag.previewCells && drag.previewCells.length);
-
-      if (hadValidPreview) {
+    
+      var didCommit = commitPlacementFromPreview();
+    
+      if (didCommit) {
         playSfx('place');
-      }
-
-      if (commitPlacementFromPreview()) {
         return;
       }
-
+    
       cleanupDrag();
     }
 
