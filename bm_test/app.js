@@ -78,6 +78,58 @@
     start: null
   };
 
+  var BM_MOBILE_DEBUG = true;
+  var bmDebugSeq = 0;
+
+  function bmNow() {
+    try {
+      return performance.now().toFixed(1);
+    } catch (e) {
+      return String(Date.now());
+    }
+  }
+
+  function bmLog(tag, data) {
+    if (!BM_MOBILE_DEBUG) return;
+
+    bmDebugSeq += 1;
+
+    var payload = {
+      seq: bmDebugSeq,
+      t: bmNow(),
+      tag: tag
+    };
+
+    if (data && typeof data === 'object') {
+      Object.keys(data).forEach(function (key) {
+        payload[key] = data[key];
+      });
+    }
+
+    try {
+      console.log('[BMDBG]', payload);
+    } catch (e) {}
+  }
+
+  function bmAudioState() {
+    return {
+      ctxExists: !!audioCtx,
+      ctxState: audioCtx ? audioCtx.state : 'none',
+      pickupBuffer: !!SFX_BUFFERS.pickup,
+      placeBuffer: !!SFX_BUFFERS.place,
+      startBuffer: !!SFX_BUFFERS.start
+    };
+  }
+
+  function bmResolveState(state) {
+    return {
+      isResolving: !!(state && state.isResolving),
+      comboStep: state ? state.comboStep : null,
+      screen: state ? state.screen : null,
+      blastCount: state && state.blastIndices ? state.blastIndices.length : 0
+    };
+  }
+
   Object.values(SFX).forEach(function (sound) {
     sound.preload = 'auto';
     sound.playsInline = true;
@@ -135,15 +187,40 @@
   }
 
   function unlockAudioNow() {
+    bmLog('audio.unlockAudioNow.begin', bmAudioState());
     ensureAudioContext();
     primeResponsiveSfx();
   
     if (audioCtx && audioCtx.state === 'suspended') {
       audioCtx.resume().catch(function(){});
     }
+  
+    Object.keys(SFX).forEach(function (key) {
+      var sound = SFX[key];
+      if (!sound) return;
+  
+      try {
+        sound.volume = 0;
+        sound.currentTime = 0;
+        var p = sound.play();
+        if (p && typeof p.then === 'function') {
+          p.then(function () {
+            sound.pause();
+            sound.currentTime = 0;
+            sound.volume = (SFX_VOLUME[key] != null) ? SFX_VOLUME[key] : 1;
+          }).catch(function(){});
+        }
+      } catch (e) {}
+    });
+    bmLog('audio.unlockAudioNow.end', bmAudioState());
   }
 
   function playBufferedSfx(name) {
+    bmLog('audio.playBufferedSfx.try', {
+      name: name,
+      ctxState: audioCtx ? audioCtx.state : 'none',
+      hasBuffer: !!SFX_BUFFERS[name]
+    });
     var ctx = ensureAudioContext();
     var buffer = SFX_BUFFERS[name];
 
@@ -160,13 +237,26 @@
       gain.connect(ctx.destination);
       source.start(0);
 
+      bmLog('audio.playBufferedSfx.success', { name: name });
       return true;
     } catch (e) {
+      bmLog('audio.playBufferedSfx.fail', {
+        name: name,
+        message: e && e.message ? e.message : String(e)
+      });
       return false;
     }
   }
 
   function playSfx(name) {
+    bmLog('audio.playSfx.begin', {
+      name: name,
+      ctxState: audioCtx ? audioCtx.state : 'none',
+      pickupBuffer: !!SFX_BUFFERS.pickup,
+      placeBuffer: !!SFX_BUFFERS.place,
+      startBuffer: !!SFX_BUFFERS.start
+    });
+
     if (name === 'pickup' || name === 'place' || name === 'start') {
       if (playBufferedSfx(name)) return;
     }
@@ -180,10 +270,22 @@
       sound.volume = (SFX_VOLUME[name] != null) ? SFX_VOLUME[name] : 1;
 
       var playPromise = sound.play();
+      bmLog('audio.htmlAudio.play.called', { name: name });
+
       if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(function(){});
+        playPromise.catch(function (err) {
+          bmLog('audio.htmlAudio.play.rejected', {
+            name: name,
+            message: err && err.message ? err.message : String(err)
+          });
+        });
       }
-    } catch (e) {}
+    } catch (e) {
+      bmLog('audio.playSfx.throw', {
+        name: name,
+        message: e && e.message ? e.message : String(e)
+      });
+    }
   }
 
   var BOOT_POP_IN_MS = 525;
@@ -2661,10 +2763,6 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       if (oldMsg) oldMsg.remove();
 
       if (window.posthog) window.posthog.capture('intro_skipped', { intro_step: state.intro && state.intro.step });
-      state.blastIndices = [];
-      state.pendingComboPoints = 0;
-      state.comboStep = 0;
-      state.isResolving = false;
       runIntroExitToFreshBoard(root, state, render, { playComboSfx: true });
     };
 
@@ -3461,8 +3559,23 @@ var gemIcon = dailyChallenge
   }
 
   function animateGravityFall(root, state, moved) {
+    bmLog('gravity.begin', {
+      movedCount: moved ? moved.length : 0,
+      screen: state ? state.screen : null,
+      isResolving: state ? state.isResolving : null
+    });
+
     var boardEl = root.querySelector('.bm-board');
-    if (!boardEl || !moved || !moved.length) return Promise.resolve();
+
+    if (!boardEl || !moved || !moved.length) {
+      bmLog('gravity.skip', {
+        hasBoard: !!boardEl,
+        movedCount: moved ? moved.length : 0,
+        screen: state ? state.screen : null,
+        isResolving: state ? state.isResolving : null
+      });
+      return Promise.resolve();
+    }
 
     var beforeRects = getBoardCellRects(boardEl);
 
@@ -3523,6 +3636,13 @@ var gemIcon = dailyChallenge
             entry.target.style.visibility = '';
           }
         });
+
+        bmLog('gravity.end', {
+          movedCount: moved ? moved.length : 0,
+          screen: state ? state.screen : null,
+          isResolving: state ? state.isResolving : null
+        });
+
         resolve();
       }, duration + 30);
     });
@@ -3901,21 +4021,27 @@ var gemIcon = dailyChallenge
     }, 320);
   }
 
-  function forceUnlockResolve(root, state, render) {
-    state.blastIndices = [];
-    state.comboStep = 0;
-    state.pendingComboPoints = 0;
-    state.isResolving = false;
-    renderGame(root, state, render);
-  }
-
   function runBlastPhase(root, state, placedIndices, comboStep, render) {
     var blastResult;
 
     comboStep = comboStep || 1;
 
+    bmLog('blast.phase.begin', {
+      comboStep: comboStep,
+      placedCount: placedIndices ? placedIndices.length : 0,
+      screen: state ? state.screen : null,
+      isResolving: state ? state.isResolving : null
+    });
+
     blastResult = classifyBlastPhase(state.board, state.boardSize, comboStep);
     state.blastIndices = blastResult.blastIndices;
+
+    bmLog('blast.phase.classified', {
+      comboStep: comboStep,
+      hasBlast: blastResult.hasBlast,
+      blastCount: blastResult.blastIndices ? blastResult.blastIndices.length : 0,
+      scoreValue: blastResult.scoreValue
+    });
 
     if (comboStep === 1) {
       state.pendingComboPoints = 0;
@@ -3923,6 +4049,12 @@ var gemIcon = dailyChallenge
     state.pendingComboPoints += blastResult.scoreValue;
 
     if (!blastResult.hasBlast) {
+      bmLog('blast.phase.noBlast', {
+        screen: state ? state.screen : null,
+        isResolving: state ? state.isResolving : null,
+        comboStep: state ? state.comboStep : null
+      });
+
       state.blastIndices = [];
       renderGame(root, state, render);
       state.isResolving = false;
@@ -3949,6 +4081,10 @@ var gemIcon = dailyChallenge
       return;
     }
 
+    bmLog('blast.phase.playBlastSfx', {
+      comboStep: comboStep,
+      blastCount: blastResult.blastIndices ? blastResult.blastIndices.length : 0
+    });
     playSfx('blast');
 
     var isIntroBlast = !!(state.intro && state.intro.active);
@@ -4059,13 +4195,26 @@ var gemIcon = dailyChallenge
     state.blastIndices = [];
     state.comboStep = comboStep;
 
-      Promise.race([
-        animateGravityFall(root, state, moved),
-        new Promise(function (resolve) {
-          window.setTimeout(resolve, 450);
-        })
-      ]).then(function () {
-        var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, comboStep + 1);
+    bmLog('blast.phase.gravityPromise.start', {
+      screen: state ? state.screen : null,
+      isResolving: state ? state.isResolving : null,
+      comboStep: state ? state.comboStep : null
+    });
+
+    animateGravityFall(root, state, moved).then(function () {
+      bmLog('blast.phase.gravityPromise.resolved', {
+        screen: state ? state.screen : null,
+        isResolving: state ? state.isResolving : null,
+        comboStep: state ? state.comboStep : null
+      });
+
+      var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, comboStep + 1);
+
+      bmLog('blast.phase.nextClassified', {
+        nextComboStep: comboStep + 1,
+        hasBlast: nextBlastResult.hasBlast,
+        blastCount: nextBlastResult.blastIndices ? nextBlastResult.blastIndices.length : 0
+      });
 
         if (nextBlastResult.hasBlast) {
           window.setTimeout(function () {
@@ -4159,9 +4308,6 @@ var gemIcon = dailyChallenge
             }
           }
         }
-      }).catch(function (err) {
-        console.error('runBlastPhase failed', err);
-        forceUnlockResolve(root, state, render);
       });
   }
 
@@ -4376,29 +4522,17 @@ var gemIcon = dailyChallenge
 
     function cleanupDrag() {
       clearPreview();
-    
+
       if (!drag) return;
-    
-      if (
-        drag.pieceEl &&
-        drag.pointerId != null &&
-        drag.pieceEl.releasePointerCapture
-      ) {
-        try {
-          if (!drag.pieceEl.hasPointerCapture || drag.pieceEl.hasPointerCapture(drag.pointerId)) {
-            drag.pieceEl.releasePointerCapture(drag.pointerId);
-          }
-        } catch (e) {}
-      }
-    
+
       if (drag.pieceEl) {
         drag.pieceEl.classList.remove('is-held');
       }
-    
+
       if (drag.ghost && drag.ghost.parentNode) {
         drag.ghost.parentNode.removeChild(drag.ghost);
       }
-    
+
       drag = null;
     }
 
@@ -4453,37 +4587,18 @@ var gemIcon = dailyChallenge
       state.isResolving = true;
 
       var moved = applyGravity(state.board, state.boardSize);
+
+      bmLog('blast.phase.afterApplyGravity', {
+        comboStep: comboStep,
+        movedCount: moved ? moved.length : 0
+      });
       state.animMap = buildPlacementAnimMap(root, state, moved, placedIndices);
       state.blastIndices = [];
 
-      if (
-        drag.pieceEl &&
-        drag.pointerId != null &&
-        drag.pieceEl.releasePointerCapture
-      ) {
-        try {
-          if (!drag.pieceEl.hasPointerCapture || drag.pieceEl.hasPointerCapture(drag.pointerId)) {
-            drag.pieceEl.releasePointerCapture(drag.pointerId);
-          }
-        } catch (e) {}
-      }
-      
-      if (
-        drag.pieceEl &&
-        drag.pointerId != null &&
-        drag.pieceEl.releasePointerCapture
-      ) {
-        try {
-          if (!drag.pieceEl.hasPointerCapture || drag.pieceEl.hasPointerCapture(drag.pointerId)) {
-            drag.pieceEl.releasePointerCapture(drag.pointerId);
-          }
-        } catch (e) {}
-      }
-      
       if (drag.pieceEl) {
         drag.pieceEl.classList.remove('is-held');
       }
-      
+
       if (drag.ghost && drag.ghost.parentNode) {
         drag.ghost.parentNode.removeChild(drag.ghost);
       }
@@ -4517,8 +4632,6 @@ var gemIcon = dailyChallenge
       if (pieceIndex < 0 || !state.hand[pieceIndex]) return;
 
       e.preventDefault();
-
-      unlockAudioNow();
 
       playSfx('pickup');
 
@@ -4620,9 +4733,9 @@ var gemIcon = dailyChallenge
     }
 
     root.addEventListener('pointerdown', beginDrag);
-    window.addEventListener('pointermove', moveDrag, { passive: false });
-    window.addEventListener('pointerup', endDrag, { passive: false });
-    window.addEventListener('pointercancel', cancelDrag, { passive: false });
+    root.addEventListener('pointermove', moveDrag);
+    root.addEventListener('pointerup', endDrag);
+    root.addEventListener('pointercancel', cancelDrag);
   }
 
   function getLifeDeltaMessage(effectResult) {
@@ -4907,12 +5020,26 @@ var gemIcon = dailyChallenge
     };
 
     document.body.addEventListener('pointerdown', function initAudioWarmup() {
-      unlockAudioNow();
-    
+      bmLog('audio.warmup.bodyPointerdown', bmAudioState());
+      ensureAudioContext();
+      primeResponsiveSfx();
+      bmLog('audio.warmup.bodyPointerdown.afterPrime', bmAudioState());
+
       if (pendingStartSfx) {
         pendingStartSfx = false;
       }
     }, { once: true, capture: true });
+
+    window.setInterval(function () {
+      if (!BM_MOBILE_DEBUG) return;
+      if (!state.isResolving) return;
+
+      bmLog('watchdog.isResolvingStillTrue', {
+        screen: state.screen,
+        comboStep: state.comboStep,
+        blastCount: state.blastIndices ? state.blastIndices.length : 0
+      });
+    }, 1500);
 
     function runBootFlow() {
       if (state.bootTimer) {
@@ -5381,11 +5508,50 @@ var gemIcon = dailyChallenge
     return { render: render };
   }
 
+  window.addEventListener('error', function (event) {
+    bmLog('window.error', {
+      message: event && event.message ? event.message : 'unknown',
+      filename: event && event.filename ? event.filename : '',
+      lineno: event && event.lineno ? event.lineno : 0,
+      colno: event && event.colno ? event.colno : 0
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function (event) {
+    var reason = event && event.reason;
+    bmLog('window.unhandledrejection', {
+      message: reason && reason.message ? reason.message : String(reason)
+    });
+  });
+
+  ['pointerdown', 'pointerup', 'pointercancel', 'touchstart', 'touchend'].forEach(function (type) {
+    document.addEventListener(type, function (event) {
+      bmLog('input.' + type, {
+        pointerType: event.pointerType || 'touch',
+        touches: event.touches ? event.touches.length : null,
+        targetTag: event.target && event.target.tagName ? event.target.tagName : '',
+        targetClass: event.target && event.target.className ? String(event.target.className).slice(0, 120) : ''
+      });
+    }, { capture: true });
+  });
+
+  document.addEventListener('dblclick', function (event) {
+    bmLog('input.dblclick', {
+      targetTag: event.target && event.target.tagName ? event.target.tagName : '',
+      targetClass: event.target && event.target.className ? String(event.target.className).slice(0, 120) : ''
+    });
+  }, { capture: true });
+
   window.addEventListener('DOMContentLoaded', function () {
     syncUiScale();
     window.addEventListener('resize', syncUiScale);
     window.addEventListener('orientationchange', syncUiScale);
-
+  
+    document.addEventListener('pointerdown', function bmUnlockOnce() {
+      bmLog('audio.unlock.documentPointerdown', bmAudioState());
+      unlockAudioNow();
+    }, { once: true });
+  
     var app = createApp();
     app.render();
   });
