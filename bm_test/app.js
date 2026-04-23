@@ -62,13 +62,24 @@
   };
 
   var SFX_VOLUME = {
-    pickup: 0.45,
-    place: 0.45,
+    pickup: 0.4,
+    place: 0.4,
     blast: 1,
     combo: 1,
     lose: 1,
     start: 1
   };
+
+  function trackEvent(name, props) {
+    try {
+      if (
+        window.posthog &&
+        typeof window.posthog.capture === 'function'
+      ) {
+        window.posthog.capture(name, props || {});
+      }
+    } catch (e) {}
+  }
 
   var audioCtx = null;
   var pendingStartSfx = false;
@@ -2074,7 +2085,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
   playSfx('start');
 
   if (window.posthog) {
-    window.posthog.capture('daily_started', {
+    trackEvent('daily_started', {
       puzzle_id: state.daily && state.daily.puzzleId,
       challenge_id: state.daily && state.daily.challengeId
     });
@@ -2191,7 +2202,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
 
     window.setTimeout(function () {
       state.lives = Math.max(0, state.lives - 1);
-      if (window.posthog) window.posthog.capture('life_lost', { lives_remaining: state.lives, score: state.score });
+      if (window.posthog) trackEvent('life_lost', { lives_remaining: state.lives, score: state.score });
 
       playSfx('lose');
       syncHudUi(root, state);
@@ -2226,7 +2237,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
 
     window.setTimeout(function () {
       playSfx('lose');
-      if (window.posthog) window.posthog.capture('game_over', { score: state.score, high_score: state.highScore, level: state.levelId });
+      if (window.posthog) trackEvent('game_over', { score: state.score, high_score: state.highScore, level: state.levelId });
       transitionScreen(root, function () {
         clearSavedGame('game');
         setHomeResult(state, { reason: 'last-heart-loss' });
@@ -2276,7 +2287,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       }
 
       if (window.posthog) {
-        window.posthog.capture('daily_completed', {
+        trackEvent('daily_completed', {
           puzzle_id: state.daily.puzzleId,
           challenge_id: state.daily.challengeId,
           tries: state.daily.tries,
@@ -2301,7 +2312,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       state.daily.tries = failedStats.tries;
 
       if (window.posthog) {
-        window.posthog.capture('daily_failed', {
+        trackEvent('daily_failed', {
           puzzle_id: state.daily.puzzleId,
           challenge_id: state.daily.challengeId,
           gems_remaining: state.daily.gemsRemaining,
@@ -2762,7 +2773,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       var oldMsg = document.body.querySelector('.bm-board-message');
       if (oldMsg) oldMsg.remove();
 
-      if (window.posthog) window.posthog.capture('intro_skipped', { intro_step: state.intro && state.intro.step });
+      if (window.posthog) trackEvent('intro_skipped', { intro_step: state.intro && state.intro.step });
       runIntroExitToFreshBoard(root, state, render, { playComboSfx: true });
     };
 
@@ -4001,7 +4012,7 @@ var gemIcon = dailyChallenge
       }
 
       markIntroSeen();
-      if (window.posthog) window.posthog.capture('intro_completed');
+      if (window.posthog) trackEvent('intro_completed');
 
       clearSavedGame('game');
 
@@ -4187,7 +4198,7 @@ var gemIcon = dailyChallenge
     }
 
     spawnScoreStars(root);
-    if (window.posthog) window.posthog.capture('blast_triggered', { tiles_cleared: blastResult.blastIndices.length, score_awarded: blastResult.scoreValue, combo_step: comboStep });
+    if (window.posthog) trackEvent('blast_triggered', { tiles_cleared: blastResult.blastIndices.length, score_awarded: blastResult.scoreValue, combo_step: comboStep });
     addScore(root, state, blastResult.scoreValue, true);
 
     var moved = applyGravity(state.board, state.boardSize);
@@ -4225,7 +4236,7 @@ var gemIcon = dailyChallenge
             var finalComboLabel = 'Combo ' + Math.min(comboStep, 4) + 'x';
             var finalComboAnchor = blastAnchor;
             var finalComboPoints = state.pendingComboPoints;
-            if (window.posthog) window.posthog.capture('combo_achieved', { combo_step: comboStep, total_score_awarded: finalComboPoints });
+            if (window.posthog) trackEvent('combo_achieved', { combo_step: comboStep, total_score_awarded: finalComboPoints });
 
             window.setTimeout(function () {
               playSfx('combo');
@@ -4886,7 +4897,7 @@ var gemIcon = dailyChallenge
       var prevHighScore = state.highScore;
       state.highScore = state.score;
       writeHighScore(state.highScore);
-      if (window.posthog) window.posthog.capture('new_high_score', { score: state.score, previous_high_score: prevHighScore });
+      if (window.posthog) trackEvent('new_high_score', { score: state.score, previous_high_score: prevHighScore });
     }
 
     syncLevelProgression(root, state);
@@ -4917,7 +4928,7 @@ var gemIcon = dailyChallenge
       state.wallSpawnsSinceBomb = 0;
     }
 
-    if (window.posthog) window.posthog.capture('level_up', { level: nextLevel.id, score: state.score });
+    if (window.posthog) trackEvent('level_up', { level: nextLevel.id, score: state.score });
     syncHudUi(root, state);
   }
 
