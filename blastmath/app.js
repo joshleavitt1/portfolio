@@ -3542,23 +3542,100 @@ var gemIcon = dailyChallenge
     });
   }
 
+  function spawnBlastFragments(root, state, blastIndices) {
+    var board = root.querySelector('.bm-board');
+    if (!board || !blastIndices || !blastIndices.length) return;
+
+    var boardRect = board.getBoundingClientRect();
+    var comboStep = state && state.comboStep ? state.comboStep : 1;
+    var launchMode = 'normal';
+
+    blastIndices.forEach(function (index) {
+      var cell = state.board[index];
+      var cellEl = board.querySelector('[data-cell-index="' + index + '"]');
+      if (!cellEl) return;
+
+      var rect = cellEl.getBoundingClientRect();
+      var size = rect.width;
+      var pieces = 18;
+
+      if (comboStep >= 2) {
+        pieces = Math.max(8, Math.round(pieces * 0.45));
+      }
+
+      for (var i = 0; i < pieces; i++) {
+        var frag = document.createElement('div');
+        var fragSize = Math.max(5, size * (0.16 + Math.random() * 0.16));
+
+        var startX = rect.left + (size * 0.12) + Math.random() * (size * 0.76);
+        var startY = launchMode === 'life-loss'
+          ? boardRect.top + (size * 2.0) + Math.random() * (size * 0.10)
+          : rect.top + (size * 0.10) + Math.random() * (size * 0.30);
+
+        var driftX = launchMode === 'life-loss'
+          ? (-size * 1.45) + Math.random() * (size * 2.9)
+          : (-size * 1.1) + Math.random() * (size * 2.2);
+        var liftY = launchMode === 'life-loss'
+          ? (size * 0.34) + Math.random() * (size * 0.36)
+          : (size * 0.82) + Math.random() * (size * 1.08);
+        var fallY = (size * 1.85) + Math.random() * (size * 2.15);
+        var rot = (-38 + Math.random() * 76).toFixed(1);
+        var delay = Math.round(Math.random() * 24);
+        var duration = 880 + Math.round(Math.random() * 60);
+
+        var fragVariant = 1 + Math.floor(Math.random() * 4);
+
+        if (
+          isNeutralCell(cell) ||
+          isBombCell(cell) ||
+          isSkullCell(cell) ||
+          isHeartCell(cell) ||
+          isGemCell(cell)
+        ) {
+          frag.className = 'bm-blast-frag bm-blast-frag--neutral bm-blast-frag--neutral-mix-' + fragVariant;
+        } else {
+          frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone + ' bm-blast-frag--mix-' + fragVariant;
+        }
+
+        frag.style.position = 'fixed';
+        frag.style.left = Math.round(startX) + 'px';
+        frag.style.top = Math.round(startY) + 'px';
+        frag.style.width = Math.round(fragSize) + 'px';
+        frag.style.height = Math.round(fragSize) + 'px';
+        frag.style.zIndex = 9999;
+        frag.style.setProperty('--bm-frag-dx', Math.round(driftX) + 'px');
+        frag.style.setProperty('--bm-frag-lift', Math.round(liftY) + 'px');
+        frag.style.setProperty('--bm-frag-dy', Math.round(fallY) + 'px');
+        frag.style.setProperty('--bm-frag-rot', rot + 'deg');
+        frag.style.setProperty('--bm-frag-delay', delay + 'ms');
+        frag.style.setProperty('--bm-frag-duration', duration + 'ms');
+
+        document.body.appendChild(frag);
+
+        (function (node) {
+          window.setTimeout(function () {
+            if (node.parentNode) node.parentNode.removeChild(node);
+          }, delay + duration + 80);
+        })(frag);
+      }
+    });
+  }
+
   function spawnCenterUiBurst(root, count, sizeMult) {
     count = typeof count === 'number' ? count : 20;
     sizeMult = typeof sizeMult === 'number' ? sizeMult : 2;
 
     var center = getBoardCenter(root);
     if (!center) {
+      var rect = root.getBoundingClientRect();
+    
       center = {
-        left: window.innerWidth * 0.5,
-        top: window.innerHeight * 0.5
+        left: rect.left + rect.width * 0.5,
+        top: rect.top + rect.height * 0.55
       };
     }
 
-    var board = root.querySelector('.bm-board');
-    var sampleCell = board ? board.querySelector('.bm-cell') : null;
-    var baseSize = sampleCell
-      ? sampleCell.getBoundingClientRect().width
-      : 48;
+    var baseSize = 58;
 
     for (var i = 0; i < count; i++) {
       var frag = document.createElement('div');
@@ -3890,7 +3967,7 @@ var gemIcon = dailyChallenge
       state.intro.equationAnchor = blastAnchor;
     }
 
-    spawnCenterUiBurst(root, 20, 2);
+    spawnBlastFragments(root, state, blastResult.blastIndices);
 
     var specialEffectResult = applySpecialBlastEffects(state, blastResult.normalBlastIndices);
     var specialLifeMessage = getLifeDeltaMessage(specialEffectResult);
@@ -4863,16 +4940,17 @@ var gemIcon = dailyChallenge
         if (play) {
           play.addEventListener('click', function () {
             spawnCenterUiBurst(root, 20, 2);
+          
             window.setTimeout(function () {
               transitionScreen(root, function () {
                 var savedClassic = readSavedGame('game');
-
+          
                 if (savedClassic) {
                   restoreSavedGame(state, savedClassic);
                 } else {
                   resetStandardGameState(state);
                 }
-                
+          
                 state.daily = {
                   active: false,
                   puzzleId: null,
@@ -4889,9 +4967,9 @@ var gemIcon = dailyChallenge
                   showingLossModal: false,
                   showingResultScreen: false
                 };
-                
+          
                 state.screen = 'game';
-
+          
                 render();
                 playSfx('start');
               });
