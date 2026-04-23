@@ -2661,6 +2661,10 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       if (oldMsg) oldMsg.remove();
 
       if (window.posthog) window.posthog.capture('intro_skipped', { intro_step: state.intro && state.intro.step });
+      state.blastIndices = [];
+      state.pendingComboPoints = 0;
+      state.comboStep = 0;
+      state.isResolving = false;
       runIntroExitToFreshBoard(root, state, render, { playComboSfx: true });
     };
 
@@ -3457,8 +3461,71 @@ var gemIcon = dailyChallenge
   }
 
   function animateGravityFall(root, state, moved) {
-    renderBoardMarkupOnly(root, state);
-    return Promise.resolve();
+    var boardEl = root.querySelector('.bm-board');
+    if (!boardEl || !moved || !moved.length) return Promise.resolve();
+
+    var beforeRects = getBoardCellRects(boardEl);
+
+    boardEl = renderBoardMarkupOnly(root, state);
+    var afterRects = getBoardCellRects(boardEl);
+    var cellEls = boardEl.querySelectorAll('.bm-cell');
+    var clones = [];
+    var duration = 300;
+
+    moved.forEach(function (item) {
+      var fromIndex = (item.fromY * state.boardSize) + item.x;
+      var toIndex = (item.toY * state.boardSize) + item.x;
+
+      var fromRect = beforeRects[fromIndex];
+      var toRect = afterRects[toIndex];
+      if (!fromRect || !toRect) return;
+
+      var toCellEl = cellEls[toIndex];
+      var toContentEl = getCellContentEl(toCellEl);
+      if (!toContentEl) return;
+
+      var clone = toContentEl.cloneNode(true);
+      clone.classList.remove('bm-drop-land', 'bm-place-pop', 'bm-blast-pop');
+      clone.style.position = 'fixed';
+      clone.style.left = fromRect.left + 'px';
+      clone.style.top = fromRect.top + 'px';
+      clone.style.width = fromRect.width + 'px';
+      clone.style.height = fromRect.height + 'px';
+      clone.style.margin = '0';
+      clone.style.zIndex = '30';
+      clone.style.pointerEvents = 'none';
+      clone.style.willChange = 'transform';
+      clone.style.transform = 'translate3d(0,0,0)';
+
+      toContentEl.style.visibility = 'hidden';
+
+      document.body.appendChild(clone);
+      clones.push({ clone: clone, target: toContentEl });
+
+      var dx = toRect.left - fromRect.left;
+      var dy = toRect.top - fromRect.top;
+
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          clone.style.transition = 'transform ' + duration + 'ms cubic-bezier(.22,.61,.36,1)';
+          clone.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
+        });
+      });
+    });
+
+    return new Promise(function (resolve) {
+      window.setTimeout(function () {
+        clones.forEach(function (entry) {
+          if (entry.clone && entry.clone.parentNode) {
+            entry.clone.parentNode.removeChild(entry.clone);
+          }
+          if (entry.target) {
+            entry.target.style.visibility = '';
+          }
+        });
+        resolve();
+      }, duration + 30);
+    });
   }
 
   function spawnBlastFragments(root, state, blastIndices) {
@@ -3834,6 +3901,14 @@ var gemIcon = dailyChallenge
     }, 320);
   }
 
+  function forceUnlockResolve(root, state, render) {
+    state.blastIndices = [];
+    state.comboStep = 0;
+    state.pendingComboPoints = 0;
+    state.isResolving = false;
+    renderGame(root, state, render);
+  }
+
   function runBlastPhase(root, state, placedIndices, comboStep, render) {
     var blastResult;
 
@@ -3984,7 +4059,12 @@ var gemIcon = dailyChallenge
     state.blastIndices = [];
     state.comboStep = comboStep;
 
-      animateGravityFall(root, state, moved).then(function () {
+      Promise.race([
+        animateGravityFall(root, state, moved),
+        new Promise(function (resolve) {
+          window.setTimeout(resolve, 450);
+        })
+      ]).then(function () {
         var nextBlastResult = classifyBlastPhase(state.board, state.boardSize, comboStep + 1);
 
         if (nextBlastResult.hasBlast) {
@@ -4079,6 +4159,9 @@ var gemIcon = dailyChallenge
             }
           }
         }
+      }).catch(function (err) {
+        console.error('runBlastPhase failed', err);
+        forceUnlockResolve(root, state, render);
       });
   }
 
@@ -4385,6 +4468,18 @@ var gemIcon = dailyChallenge
         } catch (e) {}
       }
       
+      if (
+        drag.pieceEl &&
+        drag.pointerId != null &&
+        drag.pieceEl.releasePointerCapture
+      ) {
+        try {
+          if (!drag.pieceEl.hasPointerCapture || drag.pieceEl.hasPointerCapture(drag.pointerId)) {
+            drag.pieceEl.releasePointerCapture(drag.pointerId);
+          }
+        } catch (e) {}
+      }
+      
       if (drag.pieceEl) {
         drag.pieceEl.classList.remove('is-held');
       }
@@ -4422,6 +4517,8 @@ var gemIcon = dailyChallenge
       if (pieceIndex < 0 || !state.hand[pieceIndex]) return;
 
       e.preventDefault();
+
+      unlockAudioNow();
 
       playSfx('pickup');
 
