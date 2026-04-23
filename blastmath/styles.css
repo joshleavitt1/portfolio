@@ -932,42 +932,6 @@ body {
   --bm-tile-edge: #667186;
 }
 
-.bm-blast-frag--neutral-mix-1 {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
-    linear-gradient(180deg, #dfe5ef 0%, #b7c0d0 40%, #8792a8 100%);
-}
-.bm-blast-frag--neutral-mix-1::before {
-  background: linear-gradient(180deg, #ffffff 0%, #dce3ec 55%, #a8b2c4 100%);
-}
-
-.bm-blast-frag--neutral-mix-2 {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
-    linear-gradient(180deg, #cdd5e2 0%, #9eabc0 45%, #707c93 100%);
-}
-.bm-blast-frag--neutral-mix-2::before {
-  background: linear-gradient(180deg, #edf2f8 0%, #c6cfdd 55%, #8a96ab 100%);
-}
-
-.bm-blast-frag--neutral-mix-3 {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
-    linear-gradient(180deg, #e6ecf5 0%, #bcc5d4 36%, #7d879b 100%);
-}
-.bm-blast-frag--neutral-mix-3::before {
-  background: linear-gradient(180deg, #f9fbff 0%, #d8e0eb 50%, #9ba6ba 100%);
-}
-
-.bm-blast-frag--neutral-mix-4 {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
-    linear-gradient(180deg, #c8d0dd 0%, #a3aec1 42%, #68738a 100%);
-}
-.bm-blast-frag--neutral-mix-4::before {
-  background: linear-gradient(180deg, #f2f5fa 0%, #cfd7e3 52%, #919cb0 100%);
-}
-
 .bm-tile.bm-blast-pop,
 .bm-neutral-block.bm-blast-pop,
 .bm-special-tile.bm-blast-pop,
@@ -995,21 +959,41 @@ body {
 
 .bm-blast-frag {
   position: absolute;
-  border-radius: calc(1px * var(--bm-ui-scale));
-  border: var(--bm-tile-border) solid var(--bm-tile-edge, rgba(255,255,255,.16));
-  box-shadow:
-    0 calc(2px * var(--bm-ui-scale)) calc(5px * var(--bm-ui-scale)) rgba(0,0,0,.16),
-    inset 1px 1px 0 rgba(255,255,255,.10),
-    inset -1px -1px 0 rgba(0,0,0,.10);
+  border-radius: calc(2px * var(--bm-ui-scale));
+  border: var(--bm-tile-border) solid var(--bm-tile-edge, rgba(255,255,255,.18));
   background:
-    linear-gradient(180deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
-    linear-gradient(180deg, var(--bm-tile-top) 0%, var(--bm-tile-mid) 35%, var(--bm-tile-bot) 100%);
+    linear-gradient(180deg, var(--bm-tile-gloss, rgba(255,255,255,.26)) 0%, rgba(255,255,255,0) 100%) top / 100% var(--bm-tile-gloss-h) no-repeat,
+    linear-gradient(180deg, var(--bm-tile-top) 0%, var(--bm-tile-mid) 30%, var(--bm-tile-bot) 100%);
+  box-shadow:
+    0 calc(2px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.18),
+    inset 1px 1px 0 rgba(255,255,255,var(--bm-tile-bevel-light)),
+    inset -1px -1px 0 rgba(0,0,0,var(--bm-tile-bevel-dark));
   transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
   opacity: 0;
   will-change: transform, opacity;
   backface-visibility: hidden;
   animation: bmBlastFragFall var(--bm-frag-duration, 900ms) cubic-bezier(.22,.61,.36,1) forwards;
   animation-delay: var(--bm-frag-delay, 0ms);
+  overflow: hidden;
+}
+
+.bm-blast-frag::before {
+  content: "";
+  position: absolute;
+  inset: max(1px, calc(1px * var(--bm-ui-scale)));
+  border-radius: calc(1px * var(--bm-ui-scale));
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,var(--bm-tile-gloss-alpha)),
+      rgba(255,255,255,0) 40%
+    ),
+    linear-gradient(
+      180deg,
+      var(--bm-tile-face-top) 0%,
+      var(--bm-tile-face-mid) 60%,
+      var(--bm-tile-face-bot) 100%
+    );
 }
 
 .bm-ui-burst-frag {
@@ -1080,66 +1064,6 @@ body {
     180deg,
     var(--bm-tile-face-top) 0%,
     var(--bm-tile-face-mid) 58%,
-    var(--bm-tile-face-bot) 100%
-  );
-}
-
-.bm-blast-frag--mix-1 {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
-    linear-gradient(180deg, var(--bm-tile-top) 0%, var(--bm-tile-mid) 35%, var(--bm-tile-bot) 100%);
-}
-
-.bm-blast-frag--mix-1::before {
-  background: linear-gradient(
-    180deg,
-    var(--bm-tile-face-top) 0%,
-    var(--bm-tile-face-mid) 58%,
-    var(--bm-tile-face-bot) 100%
-  );
-}
-
-.bm-blast-frag--mix-2 {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
-    linear-gradient(180deg, var(--bm-tile-face-top) 0%, var(--bm-tile-top) 50%, var(--bm-tile-mid) 100%);
-}
-
-.bm-blast-frag--mix-2::before {
-  background: linear-gradient(
-    180deg,
-    var(--bm-tile-face-mid) 0%,
-    var(--bm-tile-face-bot) 52%,
-    var(--bm-tile-edge) 100%
-  );
-}
-
-.bm-blast-frag--mix-3 {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
-    linear-gradient(180deg, var(--bm-tile-mid) 0%, var(--bm-tile-bot) 48%, var(--bm-tile-edge) 100%);
-}
-
-.bm-blast-frag--mix-3::before {
-  background: linear-gradient(
-    180deg,
-    var(--bm-tile-face-top) 0%,
-    var(--bm-tile-face-mid) 38%,
-    var(--bm-tile-bot) 100%
-  );
-}
-
-.bm-blast-frag--mix-4 {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 100%) top / 100% 35% no-repeat,
-    linear-gradient(180deg, var(--bm-tile-edge) 0%, var(--bm-tile-mid) 42%, var(--bm-tile-face-mid) 100%);
-}
-
-.bm-blast-frag--mix-4::before {
-  background: linear-gradient(
-    180deg,
-    var(--bm-tile-top) 0%,
-    var(--bm-tile-face-top) 45%,
     var(--bm-tile-face-bot) 100%
   );
 }

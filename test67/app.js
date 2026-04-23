@@ -141,24 +141,6 @@
     if (audioCtx && audioCtx.state === 'suspended') {
       audioCtx.resume().catch(function(){});
     }
-  
-    Object.keys(SFX).forEach(function (key) {
-      var sound = SFX[key];
-      if (!sound) return;
-  
-      try {
-        sound.volume = 0;
-        sound.currentTime = 0;
-        var p = sound.play();
-        if (p && typeof p.then === 'function') {
-          p.then(function () {
-            sound.pause();
-            sound.currentTime = 0;
-            sound.volume = (SFX_VOLUME[key] != null) ? SFX_VOLUME[key] : 1;
-          }).catch(function(){});
-        }
-      } catch (e) {}
-    });
   }
 
   function playBufferedSfx(name) {
@@ -2678,7 +2660,6 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       var oldMsg = document.body.querySelector('.bm-board-message');
       if (oldMsg) oldMsg.remove();
 
-      spawnCenterUiBurst(root, 20, 2);
       if (window.posthog) window.posthog.capture('intro_skipped', { intro_step: state.intro && state.intro.step });
       runIntroExitToFreshBoard(root, state, render, { playComboSfx: true });
     };
@@ -3476,95 +3457,70 @@ var gemIcon = dailyChallenge
   }
 
   function animateGravityFall(root, state, moved) {
-    renderBoardMarkupOnly(root, state);
-    return Promise.resolve();
-  }
+    var boardEl = root.querySelector('.bm-board');
+    if (!boardEl || !moved || !moved.length) return Promise.resolve();
 
-  function spawnBlastFragments(root, state, blastIndices, comboStep, colorMode, launchMode) {
-    comboStep = comboStep || 1;
-    colorMode = colorMode || 'board';
-    launchMode = launchMode || 'normal';
-    var board = root.querySelector('.bm-board');
-    if (!board || !blastIndices || !blastIndices.length) return;
+    var beforeRects = getBoardCellRects(boardEl);
 
-    var cellEls = board.querySelectorAll('.bm-cell');
+    boardEl = renderBoardMarkupOnly(root, state);
+    var afterRects = getBoardCellRects(boardEl);
+    var cellEls = boardEl.querySelectorAll('.bm-cell');
+    var clones = [];
+    var duration = 300;
 
-    blastIndices.forEach(function (index) {
-      var cell = state.board[index];
-      if (!cell) return;
+    moved.forEach(function (item) {
+      var fromIndex = (item.fromY * state.boardSize) + item.x;
+      var toIndex = (item.toY * state.boardSize) + item.x;
 
-      var cellEl = cellEls[index];
-      if (!cellEl) return;
+      var fromRect = beforeRects[fromIndex];
+      var toRect = afterRects[toIndex];
+      if (!fromRect || !toRect) return;
 
-      var rect = cellEl.getBoundingClientRect();
-      var size = rect.width;
-      var boardRect = board.getBoundingClientRect();
+      var toCellEl = cellEls[toIndex];
+      var toContentEl = getCellContentEl(toCellEl);
+      if (!toContentEl) return;
 
-      var pieces = isNeutralCell(cell) ? 28 : 25;
+      var clone = toContentEl.cloneNode(true);
+      clone.classList.remove('bm-drop-land', 'bm-place-pop', 'bm-blast-pop');
+      clone.style.position = 'fixed';
+      clone.style.left = fromRect.left + 'px';
+      clone.style.top = fromRect.top + 'px';
+      clone.style.width = fromRect.width + 'px';
+      clone.style.height = fromRect.height + 'px';
+      clone.style.margin = '0';
+      clone.style.zIndex = '30';
+      clone.style.pointerEvents = 'none';
+      clone.style.willChange = 'transform';
+      clone.style.transform = 'translate3d(0,0,0)';
 
-      if (comboStep >= 2) {
-        pieces = Math.max(8, Math.round(pieces * 0.45));
-      }
+      toContentEl.style.visibility = 'hidden';
 
-      for (var i = 0; i < pieces; i++) {
-        var frag = document.createElement('div');
-        var fragSize = Math.max(5, size * (0.16 + Math.random() * 0.16));
+      document.body.appendChild(clone);
+      clones.push({ clone: clone, target: toContentEl });
 
-        var startX = rect.left + (size * 0.12) + Math.random() * (size * 0.76);
-        var startY = launchMode === 'life-loss'
-        ? boardRect.top + (size * 2.0) + Math.random() * (size * 0.10)
-        : rect.top + (size * 0.10) + Math.random() * (size * 0.30);
+      var dx = toRect.left - fromRect.left;
+      var dy = toRect.top - fromRect.top;
 
-          var driftX = launchMode === 'life-loss'
-          ? (-size * 1.45) + Math.random() * (size * 2.9)
-          : (-size * 1.1) + Math.random() * (size * 2.2);
-          var liftY = launchMode === 'life-loss'
-          ? (size * 0.34) + Math.random() * (size * 0.36)
-          : (size * 0.82) + Math.random() * (size * 1.08);
-        var fallY = (size * 1.85) + Math.random() * (size * 2.15);
-        var rot = (-38 + Math.random() * 76).toFixed(1);
-        var delay = Math.round(Math.random() * 24);
-        var duration = 880 + Math.round(Math.random() * 60);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          clone.style.transition = 'transform ' + duration + 'ms cubic-bezier(.22,.61,.36,1)';
+          clone.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
+        });
+      });
+    });
 
-        var fragVariant = 1 + Math.floor(Math.random() * 4);
-
-        if (colorMode === 'rainbow') {
-          var rainbowTones = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'];
-          var rainbowTone = rainbowTones[Math.floor(Math.random() * rainbowTones.length)];
-          frag.className = 'bm-blast-frag bm-blast-frag--' + rainbowTone + ' bm-blast-frag--mix-' + fragVariant;
-        } else if (
-          isNeutralCell(cell) ||
-          isBombCell(cell) ||
-          isSkullCell(cell) ||
-          isHeartCell(cell) ||
-          isGemCell(cell)
-        ) {
-          frag.className = 'bm-blast-frag bm-blast-frag--neutral bm-blast-frag--neutral-mix-' + fragVariant;
-        } else {
-          frag.className = 'bm-blast-frag bm-blast-frag--' + cell.tone + ' bm-blast-frag--mix-' + fragVariant;
-        }
-
-        frag.style.position = 'fixed';
-        frag.style.left = Math.round(startX) + 'px';
-        frag.style.top = Math.round(startY) + 'px';
-        frag.style.width = Math.round(fragSize) + 'px';
-        frag.style.height = Math.round(fragSize) + 'px';
-        frag.style.zIndex = 9999;
-        frag.style.setProperty('--bm-frag-dx', Math.round(driftX) + 'px');
-        frag.style.setProperty('--bm-frag-lift', Math.round(liftY) + 'px');
-        frag.style.setProperty('--bm-frag-dy', Math.round(fallY) + 'px');
-        frag.style.setProperty('--bm-frag-rot', rot + 'deg');
-        frag.style.setProperty('--bm-frag-delay', delay + 'ms');
-        frag.style.setProperty('--bm-frag-duration', duration + 'ms');
-
-        document.body.appendChild(frag);
-
-        (function (node) {
-          window.setTimeout(function () {
-            if (node.parentNode) node.parentNode.removeChild(node);
-          }, delay + duration + 80);
-        })(frag);
-      }
+    return new Promise(function (resolve) {
+      window.setTimeout(function () {
+        clones.forEach(function (entry) {
+          if (entry.clone && entry.clone.parentNode) {
+            entry.clone.parentNode.removeChild(entry.clone);
+          }
+          if (entry.target) {
+            entry.target.style.visibility = '';
+          }
+        });
+        resolve();
+      }, duration + 30);
     });
   }
 
@@ -3640,11 +3596,7 @@ var gemIcon = dailyChallenge
       };
     }
 
-    var board = root.querySelector('.bm-board');
-    var sampleCell = board ? board.querySelector('.bm-cell') : null;
-    var baseSize = sampleCell
-      ? sampleCell.getBoundingClientRect().width
-      : 48;
+    var baseSize = 58;
 
     for (var i = 0; i < count; i++) {
       var gem = document.createElement('img');
@@ -3920,7 +3872,7 @@ var gemIcon = dailyChallenge
       state.intro.equationAnchor = blastAnchor;
     }
 
-    spawnBlastFragments(root, state, blastResult.blastIndices, comboStep);
+    spawnCenterUiBurst(root, 20, 2);
 
     var specialEffectResult = applySpecialBlastEffects(state, blastResult.normalBlastIndices);
     var specialLifeMessage = getLifeDeltaMessage(specialEffectResult);
@@ -4327,17 +4279,29 @@ var gemIcon = dailyChallenge
 
     function cleanupDrag() {
       clearPreview();
-
+    
       if (!drag) return;
-
+    
+      if (
+        drag.pieceEl &&
+        drag.pointerId != null &&
+        drag.pieceEl.releasePointerCapture
+      ) {
+        try {
+          if (!drag.pieceEl.hasPointerCapture || drag.pieceEl.hasPointerCapture(drag.pointerId)) {
+            drag.pieceEl.releasePointerCapture(drag.pointerId);
+          }
+        } catch (e) {}
+      }
+    
       if (drag.pieceEl) {
         drag.pieceEl.classList.remove('is-held');
       }
-
+    
       if (drag.ghost && drag.ghost.parentNode) {
         drag.ghost.parentNode.removeChild(drag.ghost);
       }
-
+    
       drag = null;
     }
 
@@ -4395,10 +4359,22 @@ var gemIcon = dailyChallenge
       state.animMap = buildPlacementAnimMap(root, state, moved, placedIndices);
       state.blastIndices = [];
 
+      if (
+        drag.pieceEl &&
+        drag.pointerId != null &&
+        drag.pieceEl.releasePointerCapture
+      ) {
+        try {
+          if (!drag.pieceEl.hasPointerCapture || drag.pieceEl.hasPointerCapture(drag.pointerId)) {
+            drag.pieceEl.releasePointerCapture(drag.pointerId);
+          }
+        } catch (e) {}
+      }
+      
       if (drag.pieceEl) {
         drag.pieceEl.classList.remove('is-held');
       }
-
+      
       if (drag.ghost && drag.ghost.parentNode) {
         drag.ghost.parentNode.removeChild(drag.ghost);
       }
@@ -4533,9 +4509,9 @@ var gemIcon = dailyChallenge
     }
 
     root.addEventListener('pointerdown', beginDrag);
-    root.addEventListener('pointermove', moveDrag);
-    root.addEventListener('pointerup', endDrag);
-    root.addEventListener('pointercancel', cancelDrag);
+    window.addEventListener('pointermove', moveDrag, { passive: false });
+    window.addEventListener('pointerup', endDrag, { passive: false });
+    window.addEventListener('pointercancel', cancelDrag, { passive: false });
   }
 
   function getLifeDeltaMessage(effectResult) {
@@ -4820,9 +4796,8 @@ var gemIcon = dailyChallenge
     };
 
     document.body.addEventListener('pointerdown', function initAudioWarmup() {
-      ensureAudioContext();
-      primeResponsiveSfx();
-
+      unlockAudioNow();
+    
       if (pendingStartSfx) {
         pendingStartSfx = false;
       }
@@ -5298,10 +5273,6 @@ var gemIcon = dailyChallenge
     syncUiScale();
     window.addEventListener('resize', syncUiScale);
     window.addEventListener('orientationchange', syncUiScale);
-  
-    document.addEventListener('pointerdown', function bmUnlockOnce() {
-      unlockAudioNow();
-    }, { once: true });
   
     var app = createApp();
     app.render();
