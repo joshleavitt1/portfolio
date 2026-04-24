@@ -1697,10 +1697,22 @@ body {
 }
 
 .bm-daily-paywall__benefits {
+  display: flex;
+  flex-direction: column;
+
+  /* center the whole block */
+  align-items: center;
+
+  /* optional: tighten width so centering actually feels centered */
   width: 100%;
-  display: grid;
-  gap: calc(24px * var(--bm-ui-scale));
-  max-width: calc(440px * var(--bm-ui-scale));
+  max-width: calc(380px * var(--bm-ui-scale));
+  margin: 0 auto;
+  gap:20px
+}
+
+.bm-daily-paywall__benefits > * {
+  width: 100%;
+  text-align: left;
 }
 
 .bm-daily-paywall__benefit {

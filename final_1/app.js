@@ -4994,14 +4994,16 @@ var gemIcon = dailyChallenge
     if (skipRender) {
       syncHudUi(root, state);
     } else {
-      renderGame(root, state, render);
+      syncHudUi(root, state);
     }
 
     animateScoreTo(root, state);
 
     if (!isDailyMode(state)) {
       window.setTimeout(function () {
-        maybeOpenClassicPaywall(root, state, render, 'score_3000');
+        maybeOpenClassicPaywall(root, state, function () {
+          renderGame(root, state);
+        }, 'score_3000');
       }, 650);
     }
   }
