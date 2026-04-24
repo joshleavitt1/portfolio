@@ -154,7 +154,7 @@ body {
 
 .bm-stage {
   width: min(calc(100vw - 24px), 520px);
-  height: min(calc(100vh - 24px), 980px);
+  height: min(calc(100dvh - 24px), 980px);
   color: var(--bm-white);
   position: relative;
   overflow: hidden;

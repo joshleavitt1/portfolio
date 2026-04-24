@@ -1,3 +1,5 @@
+window.trackEvent = window.trackEvent || function() {};
+
 (function () {
   var CONFIG = {
     baseWidth: 390,
@@ -935,8 +937,11 @@ function readUserIsPaid() {
   function syncUiScale() {
     var root = document.documentElement;
     var SHELL_PADDING = 24; 
-    var usableW = Math.max(320, window.innerWidth - SHELL_PADDING);
-    var usableH = Math.max(560, window.innerHeight - SHELL_PADDING);
+    var stage = document.querySelector('.bm-stage');
+    var rect = stage ? stage.getBoundingClientRect() : null;
+    
+    var usableW = rect ? rect.width : window.innerWidth;
+    var usableH = rect ? rect.height : window.innerHeight;
     var scale = Math.min(usableW / CONFIG.baseWidth, usableH / CONFIG.baseHeight, 1.22);
     root.style.setProperty("--bm-ui-scale", String(scale.toFixed(4)));
   }
