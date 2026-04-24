@@ -1788,6 +1788,10 @@ function readUserIsPaid() {
 
     if (lifeDelta !== 0) {
       state.lives = Math.max(0, Math.min(CONFIG.startingLives, state.lives + lifeDelta));
+    
+      if (lifeDelta < 0) {
+        maybeOpenClassicFirstLossHelper(state);
+      }
     }
 
     return {
@@ -2114,6 +2118,8 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
 
     window.setTimeout(function () {
       state.lives = Math.max(0, state.lives - 1);
+      maybeOpenClassicFirstLossHelper(state);
+      
       if (window.posthog) trackEvent('life_lost', { lives_remaining: state.lives, score: state.score });
 
       playSfx('lose');
@@ -2692,6 +2698,26 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
     skipBtn.addEventListener('click', skipIntro);
   }
 
+  function maybeOpenClassicIntroHelper(state) {
+    return openHelperModal(state, {
+      id: 'classic-intro',
+      icon: '',
+      title: 'Classic Mode',
+      body: 'Blast tiles and beat your high score. Run out of moves and lose a life!'
+    });
+  }
+  
+  function maybeOpenClassicFirstLossHelper(state) {
+    if (isDailyMode(state)) return false;
+  
+    return openHelperModal(state, {
+      id: 'classic-first-loss',
+      icon: 'heart',
+      title: 'Keep Going',
+      body: 'You lost a life, but you’re still in. Keep playing until your hearts run out.'
+    });
+  }
+
   function maybeOpenTileHelper(state, kind) {
     if (!state) return false;
 
@@ -2700,7 +2726,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
         id: 'bomb',
         icon: 'bomb',
         title: 'Bomb Tile',
-        body: 'Blast next to it to clear the row and column.'
+        body: 'Blast beside it to clear the whole row and column!'
       });
     }
 
@@ -2709,7 +2735,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
         id: 'skull',
         icon: 'skull',
         title: 'Skull Tile',
-        body: 'Blast it and lose 1 life.'
+        body: 'Blast it and lose a life. Avoid it!'
       });
     }
 
@@ -2718,7 +2744,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
         id: 'heart',
         icon: 'heart',
         title: 'Heart Tile',
-        body: 'Blast it and gain 1 life.'
+        body: 'Blast it to gain a life!'
       });
     }
 
@@ -2727,7 +2753,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
         id: 'daily',
         icon: 'gem',
         title: 'Daily Challenge',
-        body: 'Blast all the gems before you run out of moves. There are 3 rounds and each gets harder.'
+        body: 'Blast all the gems before you run out of moves. 3 rounds. Can you beat them all?'
       });
     }
 
@@ -2764,10 +2790,13 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
 
     return '' +
       '<div class="bm-helper-modal" data-helper-modal>' +
-        '<div class="bm-helper-modal__card" role="dialog" aria-modal="true" aria-label="' + helper.title + '">' +
-          '<div class="bm-helper-modal__title">' + helper.title + '</div>' +
-          '<div class="bm-helper-modal__desc' + (isDaily ? ' bm-helper-modal__desc--daily' : '') + '">' + helper.body + '</div>' +
-          '<button class="bm-btn bm-btn--classic bm-helper-modal__btn" type="button" data-helper-close>Got It</button>' +
+       '<div class="bm-helper-modal__card" role="dialog" aria-modal="true" aria-label="' + helper.title + '">' +
+  (helper.icon
+    ? '<div class="bm-helper-modal__icon"><img src="images/tiles/' + helper.icon + '.svg" alt="" /></div>'
+    : '') +
+  '<div class="bm-helper-modal__title">' + helper.title + '</div>' +
+  '<div class="bm-helper-modal__desc' + (isDaily ? ' bm-helper-modal__desc--daily' : '') + '">' + helper.body + '</div>' +
+  '<button class="bm-btn bm-btn--classic bm-helper-modal__btn" type="button" data-helper-close>Got It</button>' +
         '</div>' +
       '</div>';
   }
@@ -4979,7 +5008,9 @@ var gemIcon = dailyChallenge
                 };
           
                 state.screen = 'game';
-          
+
+                maybeOpenClassicIntroHelper(state);
+                
                 render();
                 playSfx('start');
               });
