@@ -154,7 +154,7 @@ body {
 
 .bm-stage {
   width: min(calc(100vw - 24px), 520px);
-  height: min(calc(100dvh - 24px), 980px);
+  height: min(calc(var(--bm-real-vh, 1vh) * 100 - 24px), 980px);
   color: var(--bm-white);
   position: relative;
   overflow: hidden;
@@ -1824,6 +1824,44 @@ body {
 
 .bm-paywall-email-modal__cta {
   width: 100%;
+}
+
+.bm-classic-paywall__content {
+  gap: calc(42px * var(--bm-ui-scale));
+}
+
+.bm-classic-paywall__score-card {
+  width: min(calc(284px * var(--bm-ui-scale)), 78%);
+  height: calc(108px * var(--bm-ui-scale));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(26px * var(--bm-ui-scale));
+  border-radius: calc(8px * var(--bm-ui-scale));
+  background: linear-gradient(180deg, #ffc400 0%, #ff7300 100%);
+  box-shadow:
+    0 calc(8px * var(--bm-ui-scale)) calc(18px * var(--bm-ui-scale)) rgba(0,0,0,.18),
+    inset 0 calc(2px * var(--bm-ui-scale)) 0 rgba(255,255,255,.22);
+  opacity: 0;
+  transform: translateY(calc(18px * var(--bm-ui-scale))) scale(0.98);
+  animation: bmDailyResultFadeIn 380ms cubic-bezier(.2,.8,.2,1) forwards;
+  animation-delay: 200ms;
+}
+
+.bm-classic-paywall__score-icon {
+  width: calc(48px * var(--bm-ui-scale));
+  height: calc(48px * var(--bm-ui-scale));
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 calc(4px * var(--bm-ui-scale)) calc(4px * var(--bm-ui-scale)) rgba(0,0,0,.22));
+}
+
+.bm-classic-paywall__score-value {
+  font-size: calc(56px * var(--bm-ui-scale));
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 calc(4px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.25);
 }
 
 @keyframes bmPaywallSheetUp {

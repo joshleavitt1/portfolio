@@ -286,6 +286,12 @@ window.primeResponsiveSfx = window.primeResponsiveSfx || function() {};
     state.justDealtNewHand = false;
     state.classicGameOverModal = null;
     state.classicBeatHighScore = false;
+    state.classicPaywall = {
+      shown: false,
+      losses: 0,
+      startedAt: Date.now(),
+      reason: ''
+    };
 
     state.intro = {
       active: false,
@@ -619,6 +625,63 @@ function openDailyPaywall(state) {
   state.screen = 'daily-paywall';
 }
 
+function openClassicPaywall(state, reason) {
+  if (!state || state.isPaid) return false;
+  if (state.intro && state.intro.active) return false;
+  if (isDailyMode(state)) return false;
+
+  state.classicPaywall = state.classicPaywall || {};
+  state.classicPaywall.shown = true;
+  state.classicPaywall.reason = reason || 'unknown';
+  state.screen = 'classic-paywall';
+
+  if (window.posthog) {
+    trackEvent('classic_paywall_shown', {
+      reason: state.classicPaywall.reason,
+      score: state.score,
+      losses: state.classicPaywall.losses || 0,
+      moves: state.moveCount || 0
+    });
+  }
+
+  return true;
+}
+
+function maybeOpenClassicPaywall(root, state, render, reason) {
+  if (!state || state.isPaid) return false;
+  if (state.screen !== 'game') return false;
+  if (state.intro && state.intro.active) return false;
+  if (isDailyMode(state)) return false;
+
+  state.classicPaywall = state.classicPaywall || {
+    shown: false,
+    losses: 0,
+    startedAt: Date.now(),
+    reason: ''
+  };
+
+  if (state.classicPaywall.shown) return false;
+
+  var elapsedMs = Date.now() - (state.classicPaywall.startedAt || Date.now());
+  var shouldGate =
+    (state.classicPaywall.losses >= 2) ||
+    (state.score >= 3000) ||
+    (elapsedMs >= 7 * 60 * 1000);
+
+  if (!shouldGate && reason !== 'debug') return false;
+
+  transitionScreen(root, function () {
+    openClassicPaywall(state, reason || (
+      state.classicPaywall.losses >= 2 ? 'two_losses' :
+      state.score >= 3000 ? 'score_3000' :
+      'time_7_min'
+    ));
+    render();
+  });
+
+  return true;
+}
+
 function readUserIsPaid() {
   try {
     return localStorage.getItem('bm_user_valid') === 'true';
@@ -735,6 +798,7 @@ function readUserIsPaid() {
         pendingBombSpawn: state.pendingBombSpawn,
         wallSpawnsSinceBomb: state.wallSpawnsSinceBomb,
         pendingComboPoints: state.pendingComboPoints,
+        classicPaywall: state.classicPaywall || null,
         dailyStats: state.dailyStats || createDailyStatsMap(),
         daily: state.daily ? {
           active: !!state.daily.active,
@@ -784,6 +848,12 @@ function readUserIsPaid() {
     state.blastIndices = [];
     state.isResolving = false;
     state.boardMessage = '';
+    state.classicPaywall = saved.classicPaywall || {
+      shown: false,
+      losses: 0,
+      startedAt: Date.now(),
+      reason: ''
+    };
 
     state.intro = {
       active: false,
@@ -935,7 +1005,14 @@ function readUserIsPaid() {
     };
   }
 
+  function syncRealViewportHeight() {
+    var vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
+    document.documentElement.style.setProperty('--bm-real-vh', vh + 'px');
+  }
+
   function syncUiScale() {
+    syncRealViewportHeight();
+  
     var root = document.documentElement;
     var SHELL_PADDING = 24; 
     var stage = document.querySelector('.bm-stage');
@@ -2043,6 +2120,16 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
 
     window.setTimeout(function () {
       state.lives = Math.max(0, state.lives - 1);
+
+      state.classicPaywall = state.classicPaywall || {
+        shown: false,
+        losses: 0,
+        startedAt: Date.now(),
+        reason: ''
+      };
+      
+      state.classicPaywall.losses = (state.classicPaywall.losses || 0) + 1;
+      
       openClassicLifeLossModal(state);
       
       if (window.posthog) trackEvent('life_lost', { lives_remaining: state.lives, score: state.score });
@@ -2063,6 +2150,9 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       resetBoardAfterLifeLoss(state);
       renderGame(root, state, render);
       animateLifeDelta(root, -1);
+      window.setTimeout(function () {
+        maybeOpenClassicPaywall(root, state, render, 'two_losses');
+      }, 450);
     }, 320);
   }
 
@@ -3001,6 +3091,80 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
     }
   }
 
+  function bindClassicPaywall(root, state, render) {
+    var close = root.querySelector('[data-classic-paywall-close]');
+    var cta = root.querySelector('[data-classic-paywall-cta]');
+    var emailDismiss = root.querySelector('[data-paywall-email-dismiss]');
+    var emailContinue = root.querySelector('[data-paywall-email-continue]');
+  
+    if (close) {
+      close.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+  
+        var modal = root.querySelector('[data-paywall-email-modal]');
+        if (modal && modal.classList.contains('is-open')) {
+          setPaywallEmailModalOpen(root, false);
+          return;
+        }
+  
+        state.screen = 'home';
+        render();
+      };
+    }
+  
+    if (cta) {
+      cta.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPaywallEmailModalOpen(root, true);
+      };
+    }
+  
+    if (emailDismiss) {
+      emailDismiss.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPaywallEmailModalOpen(root, false);
+      };
+    }
+  
+    if (emailContinue) {
+      emailContinue.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+  
+        var input = root.querySelector('[data-paywall-email-input]');
+        var email = input ? String(input.value || '').trim() : '';
+  
+        if (!email || !email.includes('@')) {
+          if (input) input.focus();
+          return;
+        }
+  
+        localStorage.setItem('bm_user_email', email);
+        localStorage.setItem('bm_user_valid', 'true');
+        state.isPaid = true;
+  
+        setPaywallEmailModalOpen(root, false);
+  
+        state.screen = 'game';
+        render();
+        playSfx('start');
+      };
+    }
+  
+    var emailInput = root.querySelector('[data-paywall-email-input]');
+    if (emailInput && emailContinue) {
+      emailInput.onkeydown = function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          emailContinue.click();
+        }
+      };
+    }
+  }
+
   function renderBoot(root) {
     root.innerHTML = '' +
       '<section class="bm-screen bm-boot">' +
@@ -3275,6 +3439,53 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
         '<div class="bm-daily-paywall__bottom">' +
           '<div class="bm-daily-paywall__legal">$4.99/month • Cancel anytime</div>' +
           '<button class="bm-btn bm-btn--classic bm-daily-paywall__cta" type="button" data-daily-paywall-cta>Finish Challenge</button>' +
+        '</div>' +
+  
+      '</section>' +
+      renderPaywallEmailModal();
+  }
+
+  function renderClassicPaywallScreen(state) {
+    var score = Math.max(0, Number(state.score) || 0);
+  
+    return '' +
+      '<section class="bm-screen bm-daily-paywall bm-classic-paywall" data-classic-paywall>' +
+  
+        '<button class="bm-daily-paywall__close" type="button" data-classic-paywall-close aria-label="Close">' +
+          '<img class="bm-daily-paywall__close-icon" src="images/paywall/close.svg" alt="" />' +
+        '</button>' +
+  
+        '<div class="bm-daily-paywall__content bm-classic-paywall__content">' +
+  
+          '<div class="bm-daily-paywall__title bm-classic-paywall__title">Keep Your Streak Alive</div>' +
+  
+          '<div class="bm-classic-paywall__score-card">' +
+            '<img class="bm-classic-paywall__score-icon" src="images/hud/crown.svg" alt="" />' +
+            '<div class="bm-classic-paywall__score-value">' + score + '</div>' +
+          '</div>' +
+  
+          '<div class="bm-daily-paywall__benefits">' +
+            '<div class="bm-daily-paywall__benefit">' +
+              '<img class="bm-daily-paywall__benefit-icon" src="images/paywall/play.svg" alt="" />' +
+              '<div class="bm-daily-paywall__benefit-text">Play anytime without limits</div>' +
+            '</div>' +
+  
+            '<div class="bm-daily-paywall__benefit">' +
+              '<img class="bm-daily-paywall__benefit-icon" src="images/paywall/fire.svg" alt="" />' +
+              '<div class="bm-daily-paywall__benefit-text">Gain powerful upgrades</div>' +
+            '</div>' +
+  
+            '<div class="bm-daily-paywall__benefit">' +
+              '<img class="bm-daily-paywall__benefit-icon" src="images/paywall/trophy.svg" alt="" />' +
+              '<div class="bm-daily-paywall__benefit-text">Score higher and go further</div>' +
+            '</div>' +
+          '</div>' +
+  
+        '</div>' +
+  
+        '<div class="bm-daily-paywall__bottom">' +
+          '<div class="bm-daily-paywall__legal">$4.99 / Month • Cancel Anytime</div>' +
+          '<button class="bm-btn bm-btn--classic bm-daily-paywall__cta" type="button" data-classic-paywall-cta>Keep Playing</button>' +
         '</div>' +
   
       '</section>' +
@@ -4787,6 +4998,12 @@ var gemIcon = dailyChallenge
     }
 
     animateScoreTo(root, state);
+
+    if (!isDailyMode(state)) {
+      window.setTimeout(function () {
+        maybeOpenClassicPaywall(root, state, render, 'score_3000');
+      }, 650);
+    }
   }
 
   function syncLevelProgression(root, state) {
@@ -5002,10 +5219,25 @@ var gemIcon = dailyChallenge
           
                 state.screen = 'game';
 
+                state.classicPaywall = state.classicPaywall || {
+                  shown: false,
+                  losses: 0,
+                  startedAt: Date.now(),
+                  reason: ''
+                };
+                
+                if (!state.classicPaywall.startedAt) {
+                  state.classicPaywall.startedAt = Date.now();
+                }
+
                 maybeOpenClassicIntroHelper(state);
                 
                 render();
                 playSfx('start');
+
+                window.setTimeout(function () {
+                  maybeOpenClassicPaywall(root, state, render, 'time_7_min');
+                }, 7 * 60 * 1000);
               });
             }, 120);
           });
@@ -5064,6 +5296,9 @@ var gemIcon = dailyChallenge
       } else if (state.screen === 'daily-paywall') {
         root.innerHTML = renderDailyPaywallScreen(state);
         bindDailyPaywall(root, state, render);
+      } else if (state.screen === 'classic-paywall') {
+        root.innerHTML = renderClassicPaywallScreen(state);
+        bindClassicPaywall(root, state, render);
       } else {
         renderGame(root, state, render);
 
@@ -5081,6 +5316,21 @@ var gemIcon = dailyChallenge
 
       paywall: function () {
         openDailyPaywall(state);
+        render();
+      },
+
+      classicPaywall: function () {
+        openClassicPaywall(state, 'debug');
+        render();
+      },
+      
+      resetClassicPaywall: function () {
+        state.classicPaywall = {
+          shown: false,
+          losses: 0,
+          startedAt: Date.now(),
+          reason: ''
+        };
         render();
       },
 
