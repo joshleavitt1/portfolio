@@ -4599,8 +4599,7 @@ var gemIcon = dailyChallenge
 
       var moved = applyGravity(state.board, state.boardSize);
 
-      bmLog('blast.phase.afterApplyGravity', {
-        comboStep: comboStep,
+      bmLog('placement.afterApplyGravity', {
         movedCount: moved ? moved.length : 0
       });
       state.animMap = buildPlacementAnimMap(root, state, moved, placedIndices);
