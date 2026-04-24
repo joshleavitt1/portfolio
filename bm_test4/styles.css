@@ -1734,9 +1734,8 @@ body {
   inset: 0;
   z-index: 1200;
   display: grid;
-  align-items: end;
+  place-items: center;
   pointer-events: none;
-  justify-items: center;
 }
 
 .bm-paywall-email-modal__backdrop {
@@ -1754,15 +1753,16 @@ body {
   position: relative;
   align-items: center;
   z-index: 1;
-  max-width: calc(600px * var(--bm-ui-scale));
+  width: min(calc(520px * var(--bm-ui-scale)), calc(100% - 32px));
+  max-width: calc(520px * var(--bm-ui-scale));
   background: #fff;
-  border-radius: calc(28px * var(--bm-ui-scale)) calc(28px * var(--bm-ui-scale)) 0 0;
+  border-radius: calc(28px * var(--bm-ui-scale));
   padding: calc(40px * var(--bm-ui-scale)) calc(24px * var(--bm-ui-scale)) calc(24px * var(--bm-ui-scale)) calc(24px * var(--bm-ui-scale));
   display: grid;
   gap: calc(24px * var(--bm-ui-scale));
-  box-shadow: 0 calc(-8px * var(--bm-ui-scale)) calc(24px * var(--bm-ui-scale)) rgba(0,0,0,.18);
+  box-shadow: 0 calc(10px * var(--bm-ui-scale)) calc(24px * var(--bm-ui-scale)) rgba(0,0,0,.18);
   opacity: 0;
-  transform: translateY(calc(40px * var(--bm-ui-scale)));
+  transform: translateY(calc(14px * var(--bm-ui-scale))) scale(0.96);
   transition: transform 280ms cubic-bezier(.2,.8,.2,1), opacity 220ms ease;
 }
 
@@ -1777,7 +1777,7 @@ body {
 
 .bm-paywall-email-modal.is-open .bm-paywall-email-modal__sheet {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
 .bm-paywall-email-modal__title {
