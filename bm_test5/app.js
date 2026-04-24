@@ -2700,7 +2700,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
         id: 'bomb',
         icon: 'bomb',
         title: 'Bomb Tile',
-        body: 'Blast next to it to clear its row and column.'
+        body: 'Blast next to it to clear the row and column.'
       });
     }
 
@@ -3777,8 +3777,6 @@ var gemIcon = dailyChallenge
     var burst = root.querySelector('[data-score-burst]');
     if (!burst) return;
 
-    burst.innerHTML = '';
-
     var starCount = 12;
 
     for (var i = 0; i < starCount; i++) {
@@ -3801,16 +3799,15 @@ var gemIcon = dailyChallenge
       star.style.setProperty('--bm-star-delay', delay + 'ms');
 
       burst.appendChild(star);
+
+      (function (node) {
+        window.setTimeout(function () {
+          if (node.parentNode) {
+            node.parentNode.removeChild(node);
+          }
+        }, 1000);
+      })(star);
     }
-
-    burst.classList.remove('is-score-bursting');
-    void burst.offsetWidth;
-    burst.classList.add('is-score-bursting');
-
-    window.setTimeout(function () {
-      burst.classList.remove('is-score-bursting');
-      burst.innerHTML = '';
-    }, 1000);
   }
 
   function spawnDailyProgressGems(root, state) {
@@ -4008,6 +4005,14 @@ var gemIcon = dailyChallenge
 
     if (isDailyMode(state) && dailyGemsCleared > 0) {
       syncDailyHudUi(root, state);
+
+      var valueEl = root.querySelector('[data-daily-progress-value]');
+
+      if (valueEl) {
+        valueEl.classList.remove('is-daily-progress-value-hit');
+        void valueEl.offsetWidth;
+        valueEl.classList.add('is-daily-progress-value-hit');
+      }
 
       var fillEl = root.querySelector('[data-daily-progress-fill]');
       var barEl = root.querySelector('.bm-daily-progress__bar');
