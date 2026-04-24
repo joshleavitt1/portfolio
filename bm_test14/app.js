@@ -58,10 +58,10 @@ window.primeResponsiveSfx = window.primeResponsiveSfx || function() {};
   var SFX_VOLUME = {
     pickup: 0.4,
     place: 0.4,
-    blast: 1,
-    combo: 1,
-    lose: 1,
-    start: 1
+    blast: 0.8,
+    combo: 0.8,
+    lose: 0.8,
+    start: 0.8
   };
   
   var SFX_URLS = {
@@ -3460,7 +3460,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
           '<div class="bm-daily-paywall__title bm-classic-paywall__title">Keep Your Streak Alive</div>' +
   
           '<div class="bm-classic-paywall__score-card">' +
-            '<img class="bm-classic-paywall__score-icon" src="images/hud/crown.svg" alt="" />' +
+            '<img class="bm-classic-paywall__score-icon" src="images/paywall/crown.svg" alt="" />' +
             '<div class="bm-classic-paywall__score-value">' + score + '</div>' +
           '</div>' +
   
