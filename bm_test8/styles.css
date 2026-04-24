@@ -1380,11 +1380,10 @@ body {
 }
 
 .bm-helper-modal__icon img {
-  width: calc(72px * var(--bm-ui-scale));
-  height: calc(72px * var(--bm-ui-scale));
+  width: calc(56px * var(--bm-ui-scale));
+  height: calc(56px * var(--bm-ui-scale));
   object-fit: contain;
   display: block;
-  filter: drop-shadow(0 calc(4px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.22));
 }
 
 .bm-helper-modal__title {
@@ -1767,8 +1766,8 @@ body {
   position: relative;
   align-items: center;
   z-index: 1;
-  width: min(calc(520px * var(--bm-ui-scale)), calc(100% - 32px));
-  max-width: calc(520px * var(--bm-ui-scale));
+  width: min(calc(480px * var(--bm-ui-scale)), calc(100% - 32px));
+  max-width: calc(480px * var(--bm-ui-scale));
   background: #fff;
   border-radius: calc(28px * var(--bm-ui-scale));
   padding: calc(40px * var(--bm-ui-scale)) calc(24px * var(--bm-ui-scale)) calc(24px * var(--bm-ui-scale)) calc(24px * var(--bm-ui-scale));

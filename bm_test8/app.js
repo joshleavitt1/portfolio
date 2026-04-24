@@ -2712,7 +2712,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
   
     return openHelperModal(state, {
       id: 'classic-first-loss',
-      icon: 'heart',
+      icon: '',
       title: 'Keep Going',
       body: 'You lost a life, but you’re still in. Keep playing until your hearts run out.'
     });
@@ -2751,7 +2751,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
     if (kind === 'daily') {
       return openHelperModal(state, {
         id: 'daily',
-        icon: 'gem',
+        icon: '',
         title: 'Daily Challenge',
         body: 'Blast all the gems before you run out of moves. 3 rounds. Can you beat them all?'
       });
@@ -3805,7 +3805,11 @@ var gemIcon = dailyChallenge
   function spawnScoreStars(root) {
     var burst = root.querySelector('[data-score-burst]');
     if (!burst) return;
-
+  
+    burst.classList.remove('is-score-bursting');
+    void burst.offsetWidth;
+    burst.classList.add('is-score-bursting');
+  
     var starCount = 12;
 
     for (var i = 0; i < starCount; i++) {
