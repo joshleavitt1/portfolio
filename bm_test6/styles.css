@@ -1373,6 +1373,20 @@ body {
   animation: bmHelperCardIn 260ms cubic-bezier(.2,.8,.2,1) forwards;
 }
 
+.bm-helper-modal__icon {
+  display: grid;
+  place-items: center;
+  margin-bottom: calc(2px * var(--bm-ui-scale));
+}
+
+.bm-helper-modal__icon img {
+  width: calc(72px * var(--bm-ui-scale));
+  height: calc(72px * var(--bm-ui-scale));
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 calc(4px * var(--bm-ui-scale)) calc(6px * var(--bm-ui-scale)) rgba(0,0,0,.22));
+}
+
 .bm-helper-modal__title {
   display: block;
   font-size: calc(40px * var(--bm-ui-scale));
