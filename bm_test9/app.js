@@ -364,6 +364,8 @@
     state.pendingComboPoints = 0;
     state.pendingPostResolveDrops = [];
     state.justDealtNewHand = false;
+    state.classicGameOverModal = null;
+    state.classicBeatHighScore = false;
 
     state.intro = {
       active: false,
@@ -1325,7 +1327,7 @@ function readUserIsPaid() {
       map[spawn.index] = {
         type: 'drop-land',
         distance: (spawn.toRow - spawn.fromRow) * step,
-        duration: 520
+        duration: 300
       };
     });
 
@@ -1790,7 +1792,7 @@ function readUserIsPaid() {
       state.lives = Math.max(0, Math.min(CONFIG.startingLives, state.lives + lifeDelta));
     
       if (lifeDelta < 0) {
-        maybeOpenClassicFirstLossHelper(state);
+        openClassicLifeLossModal(state);
       }
     }
 
@@ -2118,7 +2120,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
 
     window.setTimeout(function () {
       state.lives = Math.max(0, state.lives - 1);
-      maybeOpenClassicFirstLossHelper(state);
+      openClassicLifeLossModal(state);
       
       if (window.posthog) trackEvent('life_lost', { lives_remaining: state.lives, score: state.score });
 
@@ -2135,7 +2137,6 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
         return;
       }
 
-      showBoardMessage(root, 'Try Again', boardCenter, 0, 'centered');
       resetBoardAfterLifeLoss(state);
       renderGame(root, state, render);
       animateLifeDelta(root, -1);
@@ -2144,25 +2145,41 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
 
   function runGameOverToHome(root, state, render) {
     var blastIndices = getAllOccupiedIndices(state.board);
-
+  
     if (blastIndices.length) {
       spawnCenterUiBurst(root, 20, 2);
       hideBoardCells(root, blastIndices);
     }
-
+  
     state.board = createEmptyBoard(state.boardSize);
     state.blastIndices = [];
-
+  
     window.setTimeout(function () {
       playSfx('lose');
-      if (window.posthog) trackEvent('game_over', { score: state.score, high_score: state.highScore, level: state.levelId });
-      transitionScreen(root, function () {
-        clearSavedGame('game');
-        setHomeResult(state, { reason: 'last-heart-loss' });
-        resetStandardGameState(state);
-        state.screen = 'home';
-        render();
-      });
+  
+      if (window.posthog) {
+        trackEvent('game_over', {
+          score: state.score,
+          high_score: state.highScore,
+          level: state.levelId
+        });
+      }
+  
+      clearSavedGame('game');
+  
+      state.classicGameOverModal = state.classicBeatHighScore
+        ? {
+            title: 'Great job',
+            body: 'You beat the high score.',
+            button: 'Play Again'
+          }
+        : {
+            title: 'So close',
+            body: 'Beat your high score next run.',
+            button: 'Try Again'
+          };
+  
+      render();
     }, 320);
   }
 
@@ -2706,6 +2723,20 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       body: 'Blast tiles and beat your high score. Run out of moves and lose a life!'
     });
   }
+
+  function openClassicLifeLossModal(state) {
+    if (isDailyMode(state)) return false;
+    if (state.lives <= 0) return false;
+  
+    state.helperModal = {
+      id: 'classic-life-loss-' + Date.now(),
+      icon: '',
+      title: 'Keep Going',
+      body: 'You lost a life, but you’re still in. Keep playing until your hearts run out.'
+    };
+  
+    return true;
+  }
   
   function maybeOpenClassicFirstLossHelper(state) {
     if (isDailyMode(state)) return false;
@@ -2716,6 +2747,11 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       title: 'Keep Going',
       body: 'You lost a life, but you’re still in. Keep playing until your hearts run out.'
     });
+  }
+
+  function isBigBlastMoment(blastResult, comboStep) {
+    if (!blastResult) return false;
+    return blastResult.totalGroups > 1 || comboStep >= 2;
   }
 
   function maybeOpenTileHelper(state, kind) {
@@ -2827,6 +2863,22 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
           render();
         }, 220);
       });
+    });
+  }
+
+  function bindClassicGameOverModal(root, state, render) {
+    var btn = root.querySelector('[data-classic-game-over-restart]');
+    if (!btn) return;
+  
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+  
+      state.classicGameOverModal = null;
+      resetStandardGameState(state);
+      state.screen = 'game';
+      render();
+      playSfx('start');
     });
   }
 
@@ -3182,7 +3234,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
   if (isDaily && state.daily && state.daily.showingResultScreen) {
     root.innerHTML = renderDailyResultScreen(state);
   } else {
-    root.innerHTML = layoutHtml + renderHelperModal(state) + renderDailyLossModal(state);
+    root.innerHTML = layoutHtml + renderHelperModal(state) + renderDailyLossModal(state) + renderClassicGameOverModal(state);
   }
 
   syncScoreUi(root, state);
@@ -3192,6 +3244,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
 
   bindDailyLossModal(root, state, renderApp);
   bindDailyResultScreen(root, state, renderApp);
+  bindClassicGameOverModal(root, state, renderApp);
 
   if (state.intro && state.intro.active) {
     ensureAudioContext();
@@ -3199,6 +3252,21 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
   }
 
   state.animMap = null;
+  }
+
+  function renderClassicGameOverModal(state) {
+    if (!state || !state.classicGameOverModal) return '';
+  
+    var modal = state.classicGameOverModal;
+  
+    return '' +
+      '<div class="bm-helper-modal bm-classic-game-over-modal" data-classic-game-over-modal>' +
+        '<div class="bm-helper-modal__card" role="dialog" aria-modal="true" aria-label="' + modal.title + '">' +
+          '<div class="bm-helper-modal__title">' + modal.title + '</div>' +
+          '<div class="bm-helper-modal__desc">' + modal.body + '</div>' +
+          '<button class="bm-btn bm-btn--classic bm-helper-modal__btn" type="button" data-classic-game-over-restart>' + modal.button + '</button>' +
+        '</div>' +
+      '</div>';
   }
 
   function renderDailyLossModal(state) {
@@ -3308,7 +3376,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
       '<div class="bm-paywall-email-modal" data-paywall-email-modal>' +
         '<button class="bm-paywall-email-modal__backdrop" type="button" data-paywall-email-dismiss aria-label="Close"></button>' +
         '<div class="bm-paywall-email-modal__sheet">' +
-          '<div class="bm-paywall-email-modal__title">One last step</div>' +
+          '<div class="bm-paywall-email-modal__title">One Last Step</div>' +
           '<div class="bm-paywall-email-modal__subtitle">Enter your email to continue, no password needed.</div>' +
           '<input class="bm-paywall-email-modal__input" type="email" inputmode="email" autocomplete="email" placeholder="Enter your email" data-paywall-email-input />' +
           '<button class="bm-btn bm-btn--classic bm-paywall-email-modal__cta" type="button" data-paywall-email-continue>Continue</button>' +
@@ -4004,6 +4072,14 @@ var gemIcon = dailyChallenge
     var isIntroBlast = !!(state.intro && state.intro.active);
 
     renderGame(root, state, render);
+    
+    if (
+      !isDailyMode(state) &&
+      !isIntroBlast &&
+      isBigBlastMoment(blastResult, comboStep)
+    ) {
+      spawnScoreStars(root);
+    }
 
     var blastAnchor = getBlastAnchor(root, blastResult.blastIndices);
 
@@ -4076,7 +4152,9 @@ var gemIcon = dailyChallenge
     }
 
     window.setTimeout(function () {
-      spawnBlastThumbPops(root, state, blastResult.blastIndices);
+      if (isBigBlastMoment(blastResult, comboStep)) {
+        spawnBlastThumbPops(root, state, blastResult.blastIndices);
+      }
     }, INTRO_THUMB_POP_DELAY);
 
     var pointsMessageDelay = BLAST_PRIMARY_MESSAGE_DELAY;
@@ -4108,7 +4186,6 @@ var gemIcon = dailyChallenge
       pointsMessageDelay = Math.max(pointsMessageDelay, specialLifeDelay + BLAST_MESSAGE_STEP_DELAY);
     }
 
-    spawnScoreStars(root);
     if (window.posthog) trackEvent('blast_triggered', { tiles_cleared: blastResult.blastIndices.length, score_awarded: blastResult.scoreValue, combo_step: comboStep });
     addScore(root, state, blastResult.scoreValue, true);
 
@@ -4784,6 +4861,7 @@ var gemIcon = dailyChallenge
     state.score += amount;
 
     if (state.score > state.highScore) {
+      state.classicBeatHighScore = true;
       var prevHighScore = state.highScore;
       state.highScore = state.score;
       writeHighScore(state.highScore);
