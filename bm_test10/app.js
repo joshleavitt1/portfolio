@@ -52,15 +52,6 @@
     maxSkullTilesOnBoard: 2
   };
 
-  var SFX = {
-    pickup: new Audio('sounds/pickup.mp3'),
-    place: new Audio('sounds/place.mp3'),
-    blast: new Audio('sounds/blast.mp3'),
-    combo: new Audio('sounds/combo.mp3'),
-    lose: new Audio('sounds/lose.mp3'),
-    start: new Audio('sounds/start.mp3')
-  };
-
   var SFX_VOLUME = {
     pickup: 0.4,
     place: 0.4,
@@ -69,153 +60,79 @@
     lose: 1,
     start: 1
   };
-
-  function trackEvent(name, props) {
-    try {
-      if (
-        window.posthog &&
-        typeof window.posthog.capture === 'function'
-      ) {
-        window.posthog.capture(name, props || {});
-      }
-    } catch (e) {}
-  }
-
-  var audioCtx = null;
-  var SFX_BUFFERS = {
-    pickup: null,
-    place: null,
-    start: null
+  
+  var SFX_URLS = {
+    pickup: 'sounds/pickup.mp3',
+    place: 'sounds/place.mp3',
+    blast: 'sounds/blast.mp3',
+    combo: 'sounds/combo.mp3',
+    lose: 'sounds/lose.mp3',
+    start: 'sounds/start.mp3'
   };
-
-  Object.values(SFX).forEach(function (sound) {
-    sound.preload = 'auto';
-    sound.playsInline = true;
-    sound.muted = false;
-    sound.load();
-  });
-
+  
+  var audioCtx = null;
+  var SFX_BUFFERS = {};
+  var lastSfxAt = {};
+  
   function ensureAudioContext() {
     if (!audioCtx) {
       var Ctx = window.AudioContext || window.webkitAudioContext;
       if (Ctx) audioCtx = new Ctx();
     }
-
+  
     if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(function(){});
+      audioCtx.resume().catch(function () {});
     }
-
+  
     return audioCtx;
   }
-
-  function loadBuffer(url, done) {
+  
+  function loadSfxBuffer(name) {
     var ctx = ensureAudioContext();
-    if (!ctx) {
-      done(null);
-      return;
-    }
-
-    fetch(url)
+    if (!ctx || SFX_BUFFERS[name]) return;
+  
+    fetch(SFX_URLS[name])
       .then(function (res) { return res.arrayBuffer(); })
       .then(function (buf) { return ctx.decodeAudioData(buf); })
-      .then(function (decoded) { done(decoded); })
-      .catch(function () { done(null); });
+      .then(function (decoded) {
+        SFX_BUFFERS[name] = decoded;
+      })
+      .catch(function () {});
   }
-
-  function primeResponsiveSfx() {
-    if (SFX_BUFFERS.pickup && SFX_BUFFERS.place && SFX_BUFFERS.start) return;
-
-    if (!SFX_BUFFERS.pickup) {
-      loadBuffer('sounds/pickup.mp3', function (buffer) {
-        SFX_BUFFERS.pickup = buffer;
-      });
-    }
-
-    if (!SFX_BUFFERS.place) {
-      loadBuffer('sounds/place.mp3', function (buffer) {
-        SFX_BUFFERS.place = buffer;
-      });
-    }
-
-    if (!SFX_BUFFERS.start) {
-      loadBuffer('sounds/start.mp3', function (buffer) {
-        SFX_BUFFERS.start = buffer;
-      });
-    }
+  
+  function primeAllSfx() {
+    Object.keys(SFX_URLS).forEach(loadSfxBuffer);
   }
-
+  
   function unlockAudioNow() {
+    audioUnlocked = true;
     ensureAudioContext();
-    primeResponsiveSfx();
-  
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(function(){});
-    }
-  
-    Object.keys(SFX).forEach(function (key) {
-      var sound = SFX[key];
-      if (!sound) return;
-  
-      try {
-        sound.volume = 0;
-        sound.currentTime = 0;
-        var p = sound.play();
-        if (p && typeof p.then === 'function') {
-          p.then(function () {
-            sound.pause();
-            sound.currentTime = 0;
-            sound.volume = (SFX_VOLUME[key] != null) ? SFX_VOLUME[key] : 1;
-          }).catch(function(){});
-        }
-      } catch (e) {}
-    });
+    primeAllSfx();
   }
-
-  function playBufferedSfx(name) {
+  
+  function playSfx(name) {
     var ctx = ensureAudioContext();
     var buffer = SFX_BUFFERS[name];
-
-    if (!ctx || !buffer) return false;
-
+  
+    if (!ctx || !buffer) return;
+  
+    var now = Date.now();
+    var minGap = name === 'start' ? 350 : 25;
+  
+    if (lastSfxAt[name] && now - lastSfxAt[name] < minGap) return;
+    lastSfxAt[name] = now;
+  
     try {
       var source = ctx.createBufferSource();
       var gain = ctx.createGain();
-
-      gain.gain.value = (SFX_VOLUME[name] != null) ? SFX_VOLUME[name] : 1;
-
+  
       source.buffer = buffer;
+      gain.gain.value = (SFX_VOLUME[name] != null) ? SFX_VOLUME[name] : 1;
+  
       source.connect(gain);
       gain.connect(ctx.destination);
       source.start(0);
-
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function playSfx(name) {
-
-    if (name === 'pickup' || name === 'place' || name === 'start') {
-      if (playBufferedSfx(name)) return;
-    }
-
-    var sound = SFX[name];
-    if (!sound) return;
-
-    try {
-      sound.pause();
-      sound.currentTime = 0;
-      sound.volume = (SFX_VOLUME[name] != null) ? SFX_VOLUME[name] : 1;
-
-      var playPromise = sound.play();
-
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(function (err) {
-        });
-      }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   var BOOT_POP_IN_MS = 525;
@@ -1327,7 +1244,7 @@ function readUserIsPaid() {
       map[spawn.index] = {
         type: 'drop-land',
         distance: (spawn.toRow - spawn.fromRow) * step,
-        duration: 300
+        duration: 520
       };
     });
 
@@ -2728,24 +2645,11 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
     if (isDailyMode(state)) return false;
     if (state.lives <= 0) return false;
   
-    state.helperModal = {
-      id: 'classic-life-loss-' + Date.now(),
-      icon: '',
-      title: 'Keep Going',
-      body: 'You lost a life, but you’re still in. Keep playing until your hearts run out.'
-    };
-  
-    return true;
-  }
-  
-  function maybeOpenClassicFirstLossHelper(state) {
-    if (isDailyMode(state)) return false;
-  
     return openHelperModal(state, {
-      id: 'classic-first-loss',
+      id: 'classic-life-loss',
       icon: '',
       title: 'Keep Going',
-      body: 'You lost a life, but you’re still in. Keep playing until your hearts run out.'
+      body: 'You lost a life, but the game’s not over. Play until your hearts run out.'
     });
   }
 
@@ -4152,7 +4056,7 @@ var gemIcon = dailyChallenge
     }
 
     window.setTimeout(function () {
-      if (isBigBlastMoment(blastResult, comboStep)) {
+      if (isIntroBlast || isBigBlastMoment(blastResult, comboStep)) {
         spawnBlastThumbPops(root, state, blastResult.blastIndices);
       }
     }, INTRO_THUMB_POP_DELAY);
@@ -5060,6 +4964,7 @@ var gemIcon = dailyChallenge
         var play = root.querySelector('[data-play]');
         if (play) {
           play.addEventListener('click', function () {
+            unlockAudioNow();
             spawnCenterUiBurst(root, 20, 2);
           
             window.setTimeout(function () {
@@ -5103,6 +5008,7 @@ var gemIcon = dailyChallenge
         var daily = root.querySelector('[data-daily]');
         if (daily) {
           daily.addEventListener('click', function () {
+            unlockAudioNow();
             var savedDaily = readSavedGame('daily');
             var hasActiveSavedDaily = !!(
               savedDaily &&

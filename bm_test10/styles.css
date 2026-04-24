@@ -133,8 +133,7 @@ select {
 
 
 body {
-  position: fixed;
-  inset: 0;
+  position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -154,22 +153,13 @@ body {
 }
 
 .bm-stage {
-  width: calc(100vw - 24px);
-  max-width: 520px;
-  height: calc(100vh - 24px);
-  height: calc(100dvh - 24px);
-  max-height: 980px;
+  width: min(calc(100vw - 24px), 520px);
+  height: min(calc(100vh - 24px), 980px);
   color: var(--bm-white);
   position: relative;
   overflow: hidden;
   overscroll-behavior: none;
   text-shadow: var(--bm-text-shadow);
-}
-
-@supports (-webkit-touch-callout: none) {
-  .bm-stage {
-    height: calc(100vh - 24px);
-  }
 }
 
 .bm-game,
@@ -1363,12 +1353,9 @@ body {
 
 .bm-helper-modal__card {
   width: min(calc(440px * var(--bm-ui-scale)), calc(100% - 32px));
-  min-height: calc(300px * var(--bm-ui-scale));
   border-radius: calc(18px * var(--bm-ui-scale));
   padding:
-    calc(42px * var(--bm-ui-scale))
-    calc(28px * var(--bm-ui-scale))
-    calc(24px * var(--bm-ui-scale));
+    calc(32px * var(--bm-ui-scale));
   display: grid;
   justify-items: center;
   align-content: start;
@@ -1415,7 +1402,6 @@ body {
   display: grid;
   place-items: center;
   width: 100%;
-  margin-top: calc(8px * var(--bm-ui-scale));
 }
 
 .bm-daily-result {
