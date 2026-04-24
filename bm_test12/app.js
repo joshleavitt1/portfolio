@@ -1,4 +1,5 @@
 window.trackEvent = window.trackEvent || function() {};
+window.primeResponsiveSfx = window.primeResponsiveSfx || function() {};
 
 (function () {
   var CONFIG = {
@@ -3157,7 +3158,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
 
   if (state.intro && state.intro.active) {
     ensureAudioContext();
-    primeResponsiveSfx();
+    primeAllSfx();
   }
 
   state.animMap = null;
