@@ -58,8 +58,8 @@ window.primeResponsiveSfx = window.primeResponsiveSfx || function() {};
   var SFX_VOLUME = {
     pickup: 0.4,
     place: 0.4,
-    blast: 0.8,
-    combo: 0.8,
+    blast: 0.6,
+    combo: 0.6,
     lose: 0.8,
     start: 0.8
   };
@@ -107,12 +107,6 @@ window.primeResponsiveSfx = window.primeResponsiveSfx || function() {};
     Object.keys(SFX_URLS).forEach(loadSfxBuffer);
   }
   
-  function unlockAudioNow() {
-    audioUnlocked = true;
-    ensureAudioContext();
-    primeAllSfx();
-  }
-  
   function playSfx(name) {
     var ctx = ensureAudioContext();
     var buffer = SFX_BUFFERS[name];
@@ -139,18 +133,7 @@ window.primeResponsiveSfx = window.primeResponsiveSfx || function() {};
   }
 
   function forceIntroPickupSfx(state) {
-    if (!(state && state.intro && state.intro.active)) {
-      playSfx('pickup');
-      return;
-    }
-  
-    unlockAudioNow();
-  
     playSfx('pickup');
-  
-    window.setTimeout(function () {
-      playSfx('pickup');
-    }, 80);
   }
 
   var BOOT_POP_IN_MS = 525;
@@ -5229,7 +5212,6 @@ var gemIcon = dailyChallenge
         var play = root.querySelector('[data-play]');
         if (play) {
           play.addEventListener('click', function () {
-            unlockAudioNow();
             spawnCenterUiBurst(root, 20, 2);
           
             window.setTimeout(function () {
@@ -5295,7 +5277,6 @@ var gemIcon = dailyChallenge
         var daily = root.querySelector('[data-daily]');
         if (daily) {
           daily.addEventListener('click', function () {
-            unlockAudioNow();
             var savedDaily = readSavedGame('daily');
             var hasActiveSavedDaily = !!(
               savedDaily &&
@@ -5674,12 +5655,7 @@ var gemIcon = dailyChallenge
   window.addEventListener('DOMContentLoaded', function () {
     syncUiScale();
     window.addEventListener('resize', syncUiScale);
-    window.addEventListener('orientationchange', syncUiScale);
-  
-    document.addEventListener('pointerdown', function bmUnlockOnce() {
-      unlockAudioNow();
-    }, { once: true });
-  
+    window.addEventListener('orientationchange', syncUiScale);  
     var app = createApp();
     app.render();
   });
