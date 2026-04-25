@@ -3208,9 +3208,25 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
   
         setPaywallEmailModalOpen(root, false);
   
-        state.screen = 'game';
+        state.daily = {
+          active: false,
+          puzzleId: null,
+          challengeId: 'easy',
+          gemTarget: 0,
+          gemsRemaining: 0,
+          completed: false,
+          failed: false,
+          variantSeed: null,
+          layoutIndices: [],
+          tries: 1,
+          startedAt: 0,
+          finishedAt: 0,
+          showingLossModal: false,
+          showingResultScreen: false
+        };
+        
+        state.screen = 'home';
         render();
-        playSfx('start');
       };
     }
   
