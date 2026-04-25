@@ -56,7 +56,7 @@ window.primeResponsiveSfx = window.primeResponsiveSfx || function() {};
   };
 
   var SFX_VOLUME = {
-    pickup: 0.4,
+    pickup: 0.2,
     place: 0.4,
     blast: 0.6,
     combo: 0.6,
@@ -75,7 +75,9 @@ window.primeResponsiveSfx = window.primeResponsiveSfx || function() {};
   
   var audioCtx = null;
   var SFX_BUFFERS = {};
+  var SFX_LOADING = {};
   var lastSfxAt = {};
+  var audioUnlocked = false;
   
   function ensureAudioContext() {
     if (!audioCtx) {
@@ -92,26 +94,61 @@ window.primeResponsiveSfx = window.primeResponsiveSfx || function() {};
   
   function loadSfxBuffer(name) {
     var ctx = ensureAudioContext();
-    if (!ctx || SFX_BUFFERS[name]) return;
+    if (!ctx || SFX_BUFFERS[name] || SFX_LOADING[name]) return;
+  
+    SFX_LOADING[name] = true;
   
     fetch(SFX_URLS[name])
-      .then(function (res) { return res.arrayBuffer(); })
+      .then(function (res) {
+        if (!res.ok) throw new Error('SFX failed: ' + name);
+        return res.arrayBuffer();
+      })
       .then(function (buf) { return ctx.decodeAudioData(buf); })
       .then(function (decoded) {
         SFX_BUFFERS[name] = decoded;
       })
-      .catch(function () {});
+      .catch(function (err) {
+        console.warn(err);
+      })
+      .finally(function () {
+        SFX_LOADING[name] = false;
+      });
   }
   
   function primeAllSfx() {
     Object.keys(SFX_URLS).forEach(loadSfxBuffer);
   }
+
+  function unlockSfx() {
+    if (audioUnlocked) return;
+  
+    var ctx = ensureAudioContext();
+    if (!ctx) return;
+  
+    var done = function () {
+      audioUnlocked = true;
+      primeAllSfx();
+    };
+  
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(done).catch(function () {});
+    } else {
+      done();
+    }
+  }
   
   function playSfx(name) {
+    unlockSfx();
+  
     var ctx = ensureAudioContext();
     var buffer = SFX_BUFFERS[name];
   
-    if (!ctx || !buffer) return;
+    if (!ctx) return;
+  
+    if (!buffer) {
+      loadSfxBuffer(name);
+      return;
+    }
   
     var now = Date.now();
     var minGap = name === 'start' ? 350 : 25;
@@ -5149,6 +5186,9 @@ var gemIcon = dailyChallenge
         showingResultScreen: false
       },
     };
+
+    document.body.addEventListener('pointerdown', unlockSfx, { once: true });
+    document.body.addEventListener('touchstart', unlockSfx, { once: true, passive: true }); 
 
     function runBootFlow() {
       if (state.bootTimer) {
