@@ -138,6 +138,21 @@ window.primeResponsiveSfx = window.primeResponsiveSfx || function() {};
     } catch (e) {}
   }
 
+  function forceIntroPickupSfx(state) {
+    if (!(state && state.intro && state.intro.active)) {
+      playSfx('pickup');
+      return;
+    }
+  
+    unlockAudioNow();
+  
+    playSfx('pickup');
+  
+    window.setTimeout(function () {
+      playSfx('pickup');
+    }, 80);
+  }
+
   var BOOT_POP_IN_MS = 525;
   var BOOT_HOLD_MS = 2150;
   var BOOT_POP_OUT_MS = 450;
@@ -633,6 +648,7 @@ function openClassicPaywall(state, reason) {
   state.classicPaywall = state.classicPaywall || {};
   state.classicPaywall.shown = true;
   state.classicPaywall.reason = reason || 'unknown';
+  lockClassicPaywall();
   state.screen = 'classic-paywall';
 
   if (window.posthog) {
@@ -680,6 +696,28 @@ function maybeOpenClassicPaywall(root, state, render, reason) {
   });
 
   return true;
+}
+
+var CLASSIC_PAYWALL_LOCK_KEY = 'blastmath.classic.paywall.locked';
+
+function isClassicPaywallLocked() {
+  try {
+    return localStorage.getItem(CLASSIC_PAYWALL_LOCK_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
+function lockClassicPaywall() {
+  try {
+    localStorage.setItem(CLASSIC_PAYWALL_LOCK_KEY, '1');
+  } catch (e) {}
+}
+
+function clearClassicPaywallLock() {
+  try {
+    localStorage.removeItem(CLASSIC_PAYWALL_LOCK_KEY);
+  } catch (e) {}
 }
 
 function readUserIsPaid() {
@@ -3056,6 +3094,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
         localStorage.setItem('bm_user_email', email);
         localStorage.setItem('bm_user_valid', 'true');
         state.isPaid = true;
+        clearClassicPaywallLock();
         state.daily = {
           active: false,
           puzzleId: null,
@@ -3145,6 +3184,7 @@ function launchDailyChallenge(root, state, render, challengeId, options) {
         localStorage.setItem('bm_user_email', email);
         localStorage.setItem('bm_user_valid', 'true');
         state.isPaid = true;
+        clearClassicPaywallLock();
   
         setPaywallEmailModalOpen(root, false);
   
@@ -4732,7 +4772,7 @@ var gemIcon = dailyChallenge
 
       e.preventDefault();
 
-      playSfx('pickup');
+      forceIntroPickupSfx(state);
 
       if (pieceEl.setPointerCapture) {
         pieceEl.setPointerCapture(e.pointerId);
@@ -5194,8 +5234,15 @@ var gemIcon = dailyChallenge
           
             window.setTimeout(function () {
               transitionScreen(root, function () {
+                if (!readUserIsPaid() && isClassicPaywallLocked()) {
+                  state.isPaid = false;
+                  openClassicPaywall(state, 'locked_reload');
+                  render();
+                  return;
+                }
+                
                 var savedClassic = readSavedGame('game');
-          
+                
                 if (savedClassic) {
                   restoreSavedGame(state, savedClassic);
                 } else {
@@ -5327,12 +5374,7 @@ var gemIcon = dailyChallenge
       },
       
       resetClassicPaywall: function () {
-        state.classicPaywall = {
-          shown: false,
-          losses: 0,
-          startedAt: Date.now(),
-          reason: ''
-        };
+        clearClassicPaywallLock();
         render();
       },
 
