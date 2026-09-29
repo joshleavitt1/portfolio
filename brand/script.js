@@ -1,4 +1,4 @@
-import { pitchRoom } from "./config.js?v=20260928-44";
+import { pitchRoom } from "./config.js?v=20260928-45";
 
 const escapeHtml = (value = "") =>
   String(value)
@@ -104,7 +104,9 @@ const renderTile = (tile) => {
             `).join("")}
           </div>
           <div class="pitch-flow__map-result" aria-hidden="true">
-            <img src="${escapeHtml(tile.result)}" alt="" />
+            <span class="pitch-flow__map-result-card">
+              <img src="${escapeHtml(tile.result)}" alt="" />
+            </span>
           </div>
         </div>
       </article>
@@ -400,7 +402,7 @@ const mountIntroSequence = () => {
   const mobile = window.matchMedia("(max-width: 760px)");
   const tileIds = mobile.matches
     ? ["logo", "flow", "clay", "motion", "phone"]
-    : ["clay", "logo", "motion", "flow", "phone"];
+    : ["clay", "flow", "logo", "phone", "motion"];
   const tileOrder = tileIds.map((id) => grid.querySelector(`[data-tile="${id}"]`)).filter(Boolean);
   const phone = grid.querySelector('[data-tile="phone"]');
   const mark = grid.querySelector("[data-animated-mark]");
@@ -420,12 +422,6 @@ const mountIntroSequence = () => {
     if (!contentReady || !phoneVisible || phonePlayed) return;
     phonePlayed = true;
     phone?.classList.add("is-phone-playing");
-    if (!mobile.matches) {
-      window.setTimeout(() => {
-        markReady = true;
-        maybePlayMark();
-      }, 180);
-    }
   };
 
   const maybePlayMark = () => {
@@ -467,6 +463,7 @@ const mountIntroSequence = () => {
     mark?.dispatchEvent(new Event("pitch:play-mark"));
     flow?.dispatchEvent(new Event("pitch:play-flow"));
     grid.classList.add("is-intro-complete");
+    grid.removeAttribute("data-intro");
   };
 
   if (reduceMotion.matches) {
@@ -475,6 +472,52 @@ const mountIntroSequence = () => {
   }
 
   requestAnimationFrame(() => {
+    if (!mobile.matches) {
+      const tileStart = 120;
+      const pairStep = 280;
+      const contentLag = 170;
+      let flowFallback = 0;
+      let flowStarted = false;
+      const startFlow = () => {
+        if (flowStarted) return;
+        flowStarted = true;
+        window.clearTimeout(flowFallback);
+        flow?.dispatchEvent(new Event("pitch:play-flow"));
+      };
+      const revealContent = {
+        clay: () => webTile?.classList.add("is-content-visible"),
+        flow: () => flow?.dispatchEvent(new Event("pitch:reveal-flow")),
+        logo: () => logoTile?.classList.add("is-content-visible"),
+        phone: () => {
+          contentReady = true;
+          maybePlayPhone();
+        },
+        motion: () => {
+          const finalSlice = mark?.querySelector(".cascade-mark__slice--5");
+          finalSlice?.addEventListener("animationend", startFlow, { once: true });
+          markReady = true;
+          maybePlayMark();
+          flowFallback = window.setTimeout(startFlow, 2100);
+        },
+      };
+
+      tileOrder.forEach((tile, index) => {
+        const launchAt = tileStart + index * pairStep;
+        window.setTimeout(() => tile.classList.add("is-launched"), launchAt);
+        window.setTimeout(() => {
+          grid.classList.add("is-content-playing");
+          revealContent[tile.dataset.tile]?.();
+        }, launchAt + contentLag);
+      });
+
+      const lastContentAt = tileStart + (tileOrder.length - 1) * pairStep + contentLag;
+      window.setTimeout(() => {
+        grid.classList.add("is-intro-complete");
+        grid.removeAttribute("data-intro");
+      }, lastContentAt + 950);
+      return;
+    }
+
     const tileStart = 120;
     const tileStep = 170;
 
@@ -484,25 +527,15 @@ const mountIntroSequence = () => {
 
     const tilesComplete = tileStart + (tileOrder.length - 1) * tileStep + 760;
     const contentStep = 210;
-    const contentWave = mobile.matches
-      ? [
-          () => logoTile?.classList.add("is-content-visible"),
-          () => flow?.dispatchEvent(new Event("pitch:reveal-flow")),
-          () => webTile?.classList.add("is-content-visible"),
-          () => {
-            contentReady = true;
-            maybePlayPhone();
-          },
-        ]
-      : [
-          () => webTile?.classList.add("is-content-visible"),
-          () => logoTile?.classList.add("is-content-visible"),
-          () => flow?.dispatchEvent(new Event("pitch:reveal-flow")),
-          () => {
-            contentReady = true;
-            maybePlayPhone();
-          },
-        ];
+    const contentWave = [
+      () => logoTile?.classList.add("is-content-visible"),
+      () => flow?.dispatchEvent(new Event("pitch:reveal-flow")),
+      () => webTile?.classList.add("is-content-visible"),
+      () => {
+        contentReady = true;
+        maybePlayPhone();
+      },
+    ];
 
     window.setTimeout(() => grid.classList.add("is-content-playing"), tilesComplete);
     contentWave.forEach((reveal, index) => {
@@ -515,7 +548,10 @@ const mountIntroSequence = () => {
       maybePlayMark();
       flow?.dispatchEvent(new Event("pitch:play-flow"));
     }, contentComplete);
-    window.setTimeout(() => grid.classList.add("is-intro-complete"), contentComplete + 200);
+    window.setTimeout(() => {
+      grid.classList.add("is-intro-complete");
+      grid.removeAttribute("data-intro");
+    }, contentComplete + 200);
   });
 };
 

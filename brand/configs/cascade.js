@@ -15,7 +15,7 @@ export const pitchRoom = {
     {
       id: "clay",
       type: "web",
-      src: "assets/cascade-web.svg",
+      src: "assets/cascade-web.svg?v=20260928-2",
       label: "Cascade website experience",
     },
     { id: "logo", type: "logo", label: "Cascade logo on cream" },
@@ -43,6 +43,6 @@ export const pitchRoom = {
       type: "motion",
       label: "Animated Cascade mark on signal orange",
     },
-    { id: "phone", type: "phone", src: "assets/cascade-phone.png", label: "Cascade mobile experience" },
+    { id: "phone", type: "phone", src: "assets/cascade-phone.png?v=20260928-2", label: "Cascade mobile experience" },
   ],
 };
