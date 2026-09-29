@@ -675,7 +675,7 @@ body {
 .pitch-tile--phone img {
   position: absolute;
   z-index: 1;
-  left: -2%;
+  left: 5%;
   bottom: -42%;
   width: auto;
   max-width: none;
@@ -774,7 +774,7 @@ body {
   }
 
   .pitch-tile--phone img {
-    left: 60%;
+    left: 50%;
     bottom: -45%;
     height: 150%;
     transform: translate(-50%, 16%);

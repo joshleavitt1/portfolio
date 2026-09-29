@@ -15,7 +15,7 @@ export const pitchRoom = {
     {
       id: "clay",
       type: "web",
-      src: "assets/cascade-web.svg?v=20260928-2",
+      src: "assets/cascade-web.svg?v=20260929-3",
       label: "Cascade website experience",
     },
     { id: "logo", type: "logo", label: "Cascade logo on cream" },

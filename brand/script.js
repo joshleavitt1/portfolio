@@ -1,4 +1,4 @@
-import { pitchRoom } from "./config.js?v=20260928-45";
+import { pitchRoom } from "./config.js?v=20260929-46";
 
 const escapeHtml = (value = "") =>
   String(value)
@@ -406,6 +406,7 @@ const mountIntroSequence = () => {
   const tileOrder = tileIds.map((id) => grid.querySelector(`[data-tile="${id}"]`)).filter(Boolean);
   const phone = grid.querySelector('[data-tile="phone"]');
   const mark = grid.querySelector("[data-animated-mark]");
+  const motionTile = grid.querySelector('[data-tile="motion"]');
   const webTile = grid.querySelector('[data-tile="clay"]');
   const logoTile = grid.querySelector('[data-tile="logo"]');
   const flow = grid.querySelector("[data-flow]");
@@ -413,9 +414,12 @@ const mountIntroSequence = () => {
   let contentReady = false;
   let markReady = false;
   const phoneVisible = true;
-  const markVisible = true;
+  let markVisible = !mobile.matches;
+  let flowReady = !mobile.matches;
+  let flowVisible = !mobile.matches;
   let phonePlayed = false;
   let markPlayed = false;
+  let flowPlayed = false;
 
   const maybePlayPhone = () => {
     if (!contentReady || !phoneVisible || phonePlayed) return;
@@ -428,6 +432,33 @@ const mountIntroSequence = () => {
     markPlayed = true;
     mark?.dispatchEvent(new Event("pitch:play-mark"));
   };
+
+  const maybePlayFlow = () => {
+    if (!flowReady || !flowVisible || flowPlayed) return;
+    flowPlayed = true;
+    flow?.dispatchEvent(new Event("pitch:play-flow"));
+  };
+
+  if (mobile.matches && !reduceMotion.matches) {
+    const observeOnce = (target, onVisible) => {
+      if (!target) return;
+      const observer = new IntersectionObserver(([entry]) => {
+        if (!entry.isIntersecting) return;
+        onVisible();
+        observer.disconnect();
+      }, { threshold: 0.28 });
+      observer.observe(target);
+    };
+
+    observeOnce(flow, () => {
+      flowVisible = true;
+      maybePlayFlow();
+    });
+    observeOnce(motionTile, () => {
+      markVisible = true;
+      maybePlayMark();
+    });
+  }
 
   const showEverything = () => {
     tileOrder.forEach((tile) => tile.classList.add("is-launched"));
@@ -459,22 +490,32 @@ const mountIntroSequence = () => {
       if (flowStarted) return;
       flowStarted = true;
       window.clearTimeout(flowFallback);
+      if (mobile.matches) return;
+      flowPlayed = true;
       flow?.dispatchEvent(new Event("pitch:play-flow"));
     };
     const revealContent = {
       clay: () => webTile?.classList.add("is-content-visible"),
-      flow: () => flow?.dispatchEvent(new Event("pitch:reveal-flow")),
+      flow: () => {
+        flow?.dispatchEvent(new Event("pitch:reveal-flow"));
+        if (mobile.matches) {
+          flowReady = true;
+          maybePlayFlow();
+        }
+      },
       logo: () => logoTile?.classList.add("is-content-visible"),
       phone: () => {
         contentReady = true;
         maybePlayPhone();
       },
       motion: () => {
-        const finalSlice = mark?.querySelector(".cascade-mark__slice--5");
-        finalSlice?.addEventListener("animationend", startFlow, { once: true });
         markReady = true;
         maybePlayMark();
-        flowFallback = window.setTimeout(startFlow, 2100);
+        if (!mobile.matches) {
+          const finalSlice = mark?.querySelector(".cascade-mark__slice--5");
+          finalSlice?.addEventListener("animationend", startFlow, { once: true });
+          flowFallback = window.setTimeout(startFlow, 2100);
+        }
       },
     };
 
