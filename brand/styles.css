@@ -46,7 +46,7 @@ body {
 .pitch-room {
   width: min(100%, 112rem);
   margin: 0 auto;
-  padding: clamp(3rem, 6vw, 7rem) clamp(1.25rem, 5vw, 6rem) clamp(5rem, 8vw, 9rem);
+  padding: 1rem 1rem clamp(5rem, 8vw, 9rem);
 }
 
 .pitch-hero {
@@ -696,7 +696,7 @@ body {
 
 @media (max-width: 760px) {
   .pitch-room {
-    padding: 2.25rem 1rem 5rem;
+    padding: 1rem 1rem 5rem;
   }
 
   .pitch-hero {

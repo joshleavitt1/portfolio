@@ -406,15 +406,14 @@ const mountIntroSequence = () => {
   const tileOrder = tileIds.map((id) => grid.querySelector(`[data-tile="${id}"]`)).filter(Boolean);
   const phone = grid.querySelector('[data-tile="phone"]');
   const mark = grid.querySelector("[data-animated-mark]");
-  const motionTile = grid.querySelector('[data-tile="motion"]');
   const webTile = grid.querySelector('[data-tile="clay"]');
   const logoTile = grid.querySelector('[data-tile="logo"]');
   const flow = grid.querySelector("[data-flow]");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let contentReady = false;
   let markReady = false;
-  let phoneVisible = !mobile.matches;
-  let markVisible = !mobile.matches;
+  const phoneVisible = true;
+  const markVisible = true;
   let phonePlayed = false;
   let markPlayed = false;
 
@@ -429,27 +428,6 @@ const mountIntroSequence = () => {
     markPlayed = true;
     mark?.dispatchEvent(new Event("pitch:play-mark"));
   };
-
-  if (mobile.matches) {
-    const observeOnce = (target, onVisible) => {
-      if (!target) return;
-      const observer = new IntersectionObserver(([entry]) => {
-        if (!entry.isIntersecting) return;
-        onVisible();
-        observer.disconnect();
-      }, { threshold: 0.28 });
-      observer.observe(target);
-    };
-
-    observeOnce(phone, () => {
-      phoneVisible = true;
-      maybePlayPhone();
-    });
-    observeOnce(motionTile, () => {
-      markVisible = true;
-      maybePlayMark();
-    });
-  }
 
   const showEverything = () => {
     tileOrder.forEach((tile) => tile.classList.add("is-launched"));
@@ -472,86 +450,48 @@ const mountIntroSequence = () => {
   }
 
   requestAnimationFrame(() => {
-    if (!mobile.matches) {
-      const tileStart = 120;
-      const pairStep = 280;
-      const contentLag = 170;
-      let flowFallback = 0;
-      let flowStarted = false;
-      const startFlow = () => {
-        if (flowStarted) return;
-        flowStarted = true;
-        window.clearTimeout(flowFallback);
-        flow?.dispatchEvent(new Event("pitch:play-flow"));
-      };
-      const revealContent = {
-        clay: () => webTile?.classList.add("is-content-visible"),
-        flow: () => flow?.dispatchEvent(new Event("pitch:reveal-flow")),
-        logo: () => logoTile?.classList.add("is-content-visible"),
-        phone: () => {
-          contentReady = true;
-          maybePlayPhone();
-        },
-        motion: () => {
-          const finalSlice = mark?.querySelector(".cascade-mark__slice--5");
-          finalSlice?.addEventListener("animationend", startFlow, { once: true });
-          markReady = true;
-          maybePlayMark();
-          flowFallback = window.setTimeout(startFlow, 2100);
-        },
-      };
-
-      tileOrder.forEach((tile, index) => {
-        const launchAt = tileStart + index * pairStep;
-        window.setTimeout(() => tile.classList.add("is-launched"), launchAt);
-        window.setTimeout(() => {
-          grid.classList.add("is-content-playing");
-          revealContent[tile.dataset.tile]?.();
-        }, launchAt + contentLag);
-      });
-
-      const lastContentAt = tileStart + (tileOrder.length - 1) * pairStep + contentLag;
-      window.setTimeout(() => {
-        grid.classList.add("is-intro-complete");
-        grid.removeAttribute("data-intro");
-      }, lastContentAt + 950);
-      return;
-    }
-
     const tileStart = 120;
-    const tileStep = 170;
-
-    tileOrder.forEach((tile, index) => {
-      window.setTimeout(() => tile.classList.add("is-launched"), tileStart + index * tileStep);
-    });
-
-    const tilesComplete = tileStart + (tileOrder.length - 1) * tileStep + 760;
-    const contentStep = 210;
-    const contentWave = [
-      () => logoTile?.classList.add("is-content-visible"),
-      () => flow?.dispatchEvent(new Event("pitch:reveal-flow")),
-      () => webTile?.classList.add("is-content-visible"),
-      () => {
+    const pairStep = 280;
+    const contentLag = 170;
+    let flowFallback = 0;
+    let flowStarted = false;
+    const startFlow = () => {
+      if (flowStarted) return;
+      flowStarted = true;
+      window.clearTimeout(flowFallback);
+      flow?.dispatchEvent(new Event("pitch:play-flow"));
+    };
+    const revealContent = {
+      clay: () => webTile?.classList.add("is-content-visible"),
+      flow: () => flow?.dispatchEvent(new Event("pitch:reveal-flow")),
+      logo: () => logoTile?.classList.add("is-content-visible"),
+      phone: () => {
         contentReady = true;
         maybePlayPhone();
       },
-    ];
+      motion: () => {
+        const finalSlice = mark?.querySelector(".cascade-mark__slice--5");
+        finalSlice?.addEventListener("animationend", startFlow, { once: true });
+        markReady = true;
+        maybePlayMark();
+        flowFallback = window.setTimeout(startFlow, 2100);
+      },
+    };
 
-    window.setTimeout(() => grid.classList.add("is-content-playing"), tilesComplete);
-    contentWave.forEach((reveal, index) => {
-      window.setTimeout(reveal, tilesComplete + index * contentStep);
+    tileOrder.forEach((tile, index) => {
+      const launchAt = tileStart + index * pairStep;
+      window.setTimeout(() => tile.classList.add("is-launched"), launchAt);
+      window.setTimeout(() => {
+        grid.classList.add("is-content-playing");
+        revealContent[tile.dataset.tile]?.();
+      }, launchAt + contentLag);
     });
 
-    const contentComplete = tilesComplete + (contentWave.length - 1) * contentStep + 950;
-    window.setTimeout(() => {
-      markReady = true;
-      maybePlayMark();
-      flow?.dispatchEvent(new Event("pitch:play-flow"));
-    }, contentComplete);
+    const lastContentAt = tileStart + (tileOrder.length - 1) * pairStep + contentLag;
     window.setTimeout(() => {
       grid.classList.add("is-intro-complete");
       grid.removeAttribute("data-intro");
-    }, contentComplete + 200);
+    }, lastContentAt + 950);
   });
 };
 
