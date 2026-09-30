@@ -694,6 +694,20 @@ body {
   transform: translateY(0);
 }
 
+@media (min-width: 761px) {
+  .pitch-room {
+    display: flex;
+    min-height: 100svh;
+    padding: 1rem;
+    flex-direction: column;
+  }
+
+  .pitch-grid {
+    width: 100%;
+    margin-block: auto;
+  }
+}
+
 @media (max-width: 760px) {
   .pitch-room {
     padding: 1rem 1rem 5rem;
