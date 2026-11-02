@@ -1,0 +1,26 @@
+/* Hide editor selection chrome; the dev inspector draws its own highlights
+   outside the email body, so inspection outlines remain visible. */
+:is(.portfolio-email, .portfolio-agentic) #pimco-email-body > [data-section-id] > .group > .pointer-events-none.absolute.inset-0.border-2 {
+  display: none;
+}
+
+/* The manual editor and inspector share the agentic demo's quiet fade timing. */
+@keyframes portfolio-email-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  .portfolio-email #pimco-email-body [data-email-feature-image] {
+    animation: portfolio-email-fade 760ms ease-out both;
+  }
+  .portfolio-email #pimco-email-body [data-section-id] > .group > .pointer-events-none.absolute.inset-0 {
+    transition: border-color 760ms ease-out;
+  }
+  .portfolio-email .portfolio-inspector-overlay {
+    animation: portfolio-email-fade 760ms ease-out both;
+  }
+  .portfolio-email .portfolio-inspector-overlay > div {
+    transition: top 760ms cubic-bezier(.22,1,.36,1), left 760ms cubic-bezier(.22,1,.36,1), width 760ms cubic-bezier(.22,1,.36,1), height 760ms cubic-bezier(.22,1,.36,1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-email .fixed[aria-hidden="true"],
+  .portfolio-email .portfolio-inspector-overlay > div { transition: none !important; }
+}

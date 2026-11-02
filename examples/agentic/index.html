@@ -1,0 +1,58 @@
+
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+      
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Email Studio</title>
+      <meta name="description" content="Streamlines email component management with a clean, efficient SAAS design, enhancing productivity for businesses seeking effective communication tools." />
+      <meta name="robots" content="noindex, nofollow" />
+      <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
+      
+      <!-- Keep the email surface opaque while its real components arrive.
+           Newly populated event details and the CTA get their own entrance. -->
+      <script>if(new URLSearchParams(location.search).has('portfolio'))document.documentElement.classList.add('portfolio-agentic');</script>
+      <style>
+        .portfolio-agentic div:has(> #pimco-email-body) { background-color: transparent; }
+        .portfolio-agentic #pimco-email-body:has(> [data-section-id]) { background-color: #00243c; }
+        @keyframes agentic-component-reveal { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes agentic-section-reveal {
+          from { grid-template-rows: 0fr; opacity: 0; }
+          to { grid-template-rows: 1fr; opacity: 1; }
+        }
+        @media (prefers-reduced-motion: no-preference) {
+          .portfolio-agentic #pimco-email-body > [data-section-id] {
+            animation: agentic-component-reveal 760ms ease-out both;
+          }
+          .portfolio-agentic #pimco-email-body > [data-section-id="t-feat1"] {
+            display: grid;
+            grid-template-rows: 1fr;
+            animation: agentic-section-reveal 760ms ease-out 760ms both;
+          }
+          .portfolio-agentic #pimco-email-body > [data-section-id="t-feat1"] > div {
+            min-height: 0;
+            overflow: hidden;
+          }
+          .portfolio-agentic #pimco-email-body > [data-section-id="t-header"] p:last-child:not(:empty) {
+            animation: agentic-component-reveal 760ms ease-out both;
+          }
+          .portfolio-agentic #pimco-email-body > [data-section-id="t-feat1"] a {
+            animation: agentic-component-reveal 760ms ease-out 760ms both;
+          }
+        }
+      </style>
+      <link rel="stylesheet" href="../../assets/email-motion.css?v=2">
+      <script type="module" crossorigin src="../../assets/email-app/index-Bwe6mjdg.js"></script>
+      <link rel="modulepreload" crossorigin href="../../assets/email-app/rolldown-runtime-W7wSyTde.js">
+      <link rel="stylesheet" crossorigin href="../../assets/email-app/index-BF8Alv-a.css">
+    </head>
+
+    <body>
+      
+      <div id="root"></div>
+
+      
+    </body>
+  </html>
+  

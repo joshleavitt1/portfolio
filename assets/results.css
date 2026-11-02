@@ -1,0 +1,26 @@
+/* Outcome details reuse the existing metadata grid and type. */
+.result-data{margin:0 0 var(--component-space)}
+.result-data .project-details{margin:0;padding-top:var(--slug-space);border:0}
+.about-phrase{white-space:nowrap}
+
+/* Keep the results page quiet between sections: no rules between the intro,
+   project metadata, story copy, or outcome details. */
+.project-heading,.project-heading.email-heading,.project-heading.cascade-heading,
+.result-data,.result-data .project-details,.story-block{border:0}
+
+/* Separate the About section from the first project. */
+.project-heading#selected-work{border-top:1px solid #dedede}
+
+/* Mark the transitions into Email Studio and Scrub as new projects. */
+.project-heading.email-heading,.project-heading.scrub-heading{border-top:1px solid #dedede}
+
+/* Share one four-column alignment across the profile, project details,
+   story copy, and result rows. */
+@media(min-width:901px){
+  .intro{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:4%;align-items:start}
+  .bio,.experience{grid-column:span 2;width:auto;min-width:0}
+  .project-heading .project-details,.result-data .project-details{grid-template-columns:repeat(4,minmax(0,1fr));column-gap:4%}
+  .story-block{grid-template-columns:repeat(4,minmax(0,1fr));column-gap:4%}
+  .story-block .story-copy,.story-block>p{grid-column:span 2;min-width:0}
+  .story-block>p{margin:0}
+}

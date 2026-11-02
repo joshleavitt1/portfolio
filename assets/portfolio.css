@@ -1,0 +1,385 @@
+@font-face{font-family:'Google Sans Flex';font-style:normal;font-weight:400;font-display:swap;src:url('google-sans-flex-400.ttf') format('truetype')}
+@font-face{font-family:'Google Sans Flex';font-style:normal;font-weight:800;font-display:swap;src:url('google-sans-flex-800.ttf') format('truetype')}
+@font-face{font-family:'Cafune';font-style:normal;font-weight:400;font-display:swap;src:url('cafune-book.otf') format('opentype')}
+@font-face{font-family:'Cafune';font-style:normal;font-weight:700;font-display:swap;src:url('cafune-bold.otf') format('opentype')}
+@font-face{font-family:'Cafune';font-style:normal;font-weight:800;font-display:swap;src:url('cafune-heavy.otf') format('opentype')}
+*{box-sizing:border-box}
+html{background:#fff;color:#171717}
+body{margin:0;font-family:'Google Sans Flex',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+main{width:88.888889%;margin:0 auto;padding:5.555556vw 0}
+.intro{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4.5vw;gap:3vw}
+h1{font-size:1.111111vw;line-height:1.25;font-weight:800;margin:0 0 1.72vw;letter-spacing:-.015em}
+.bio p{font-size:1.111111vw;line-height:1.5;font-weight:400;color:#595959;margin:0;letter-spacing:-.015em}
+.brands{display:flex;align-items:center;justify-content:space-between;width:36.25%;flex-shrink:0;padding:0 1vw .4vw 0;gap:2vw}
+.brands img{display:block;height:auto;object-fit:contain;filter:grayscale(1)}
+.brands img:nth-child(1){width:3.75vw}.brands img:nth-child(2){width:2.64vw}.brands img:nth-child(3){width:4.72vw}.brands img:nth-child(4){width:1.875vw}.brands img:nth-child(5){width:4.86vw}
+.work{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.111111vw}
+.column{display:flex;flex-direction:column;gap:1.111111vw;min-width:0}
+.tile{display:block;width:100%;object-fit:cover;border:0}
+.placeholder{background:#f7f7f7}
+.stairs{aspect-ratio:832/440;height:auto}.ocean{aspect-ratio:832/484}.laptop-frame{aspect-ratio:832/454;overflow:hidden}.laptop-frame .laptop{display:block;width:100%;height:100%;object-fit:cover;transform:scale(1.08)}
+.pimco{aspect-ratio:832/696;position:relative;overflow:hidden;background:radial-gradient(ellipse at 100% -25%,#0055a5 0,transparent 60%),#002638}
+.beam{position:absolute;width:46.5%;height:auto;left:0;top:32.5%}
+.wordmark{position:absolute;width:31%;height:auto;left:56.7%;top:46.5%}
+.conversation{aspect-ratio:832/712;height:auto}.palette{aspect-ratio:832/480}.phone{aspect-ratio:832/928}
+@media(min-width:1920px){main{max-width:2560px}}
+@media(max-width:900px){main{width:88.888889%;padding:48px 0}.intro{display:block;margin-bottom:48px}h1{font-size:17px;margin-bottom:22px}.bio p{font-size:17px;line-height:1.5}.desktop-break{display:none}.bio{max-width:580px}.brands{width:100%;max-width:470px;padding:0;margin-top:32px;gap:24px}.brands img:nth-child(1){width:54px}.brands img:nth-child(2){width:38px}.brands img:nth-child(3){width:68px}.brands img:nth-child(4){width:27px}.brands img:nth-child(5){width:70px}.work,.column{gap:12px}}
+@media(max-width:600px){main{width:auto;margin:0 24px;padding:40px 0}.intro{margin-bottom:36px}.bio p{font-size:16px}.brands{gap:16px;flex-wrap:wrap}.brands img:nth-child(1){width:48px}.brands img:nth-child(2){width:34px}.brands img:nth-child(3){width:60px}.brands img:nth-child(4){width:24px}.brands img:nth-child(5){width:62px}.work{grid-template-columns:1fr;gap:16px}.column{gap:16px}}
+
+/* Persistent navigation and project structure */
+html{scroll-behavior:smooth;scroll-padding-top:104px}
+
+.site-header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.header-inner{width:88.888889%;max-width:2560px;margin:auto;min-height:80px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.site-header a{color:#171717;text-decoration:none}
+.identity{font-size:16px;font-weight:800;letter-spacing:-.025em}
+.site-header nav{display:flex;gap:32px;font-size:13px}
+.site-header nav a{padding:12px 0}
+.site-header nav a:hover{color:#727272}
+a:focus-visible{outline:2px solid #007aff;outline-offset:6px}
+main{padding-top:64px}
+.eyebrow{font-size:11px;font-weight:400;letter-spacing:.09em;color:#888;margin-bottom:20px}
+.bio p{font-size:clamp(17px,1.35vw,26px);line-height:1.5}
+.intro{margin-bottom:64px}
+.project-heading{position:relative;margin-bottom:28px}
+.project-title-row{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:28px 0 24px;border-top:1px solid #dedede;border-bottom:1px solid #dedede}
+.project-title-row h2{font-size:clamp(30px,3vw,48px);font-weight:500;line-height:1.1;letter-spacing:-.055em;margin:0}
+.project-index{font-size:10px;letter-spacing:.08em;color:#888}
+.project-details{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:26px 0 36px}
+.project-details dt{font-size:10px;letter-spacing:.08em;color:#888;margin-bottom:12px}
+.project-details dd{font-size:14px;line-height:1.5;margin:0}
+@media(max-width:900px){.header-inner{min-height:72px}main{padding-top:40px}.intro{margin-bottom:48px}}
+@media(max-width:600px){.header-inner{width:auto;margin:0 24px;min-height:68px}.identity{font-size:14px}.site-header nav{gap:22px;font-size:12px}main{padding-top:32px}.project-title-row{align-items:center;padding:24px 0}.project-index{font-size:8px}.project-details{gap:16px}.project-details dd{font-size:12px}.intro{margin-bottom:40px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+.site-header .contact-links{gap:12px}.site-header .contact-links a{display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:10px}.contact-links svg{display:block;width:22px;height:22px}
+
+.intro{align-items:flex-start}.experience{width:36.25%;flex-shrink:0}.experience .brands{width:100%;margin-top:0;min-height:3.333333vw}.experience .eyebrow{line-height:1.25;margin-top:0}.eyebrow{letter-spacing:.04em}
+@media(max-width:900px){.experience{width:100%;max-width:470px;margin-top:32px}.experience .brands{min-height:27px}.experience .eyebrow{margin-bottom:20px}}
+@font-face{font-family:'Geist Mono';font-style:normal;font-weight:400;font-display:swap;src:url('geist-mono-400.ttf') format('truetype')}
+.eyebrow,.project-index,.project-details dt{font-family:'Geist Mono',monospace;font-weight:400}
+
+.eyebrow,.project-index,.project-details dt{text-transform:uppercase}
+
+.site-header{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
+.header-blur{position:fixed;inset:0 0 auto;height:110px;pointer-events:none;z-index:9}
+.header-blur span{position:absolute;inset:0;-webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur));-webkit-mask-image:var(--mask);mask-image:var(--mask)}
+.project-title-row{border-bottom:0}
+.contact-links .resume-icon{display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:10px;color:#171717}
+.header-blur span:nth-child(1){--blur:0.25px;--mask:linear-gradient(to top,transparent 0.0%,black 16.6667%,black 33.3333%,transparent 50.0%)}
+.header-blur span:nth-child(2){--blur:0.5px;--mask:linear-gradient(to top,transparent 16.6667%,black 33.3333%,black 50.0%,transparent 66.6667%)}
+.header-blur span:nth-child(3){--blur:1px;--mask:linear-gradient(to top,transparent 33.3333%,black 50.0%,black 66.6667%,transparent 83.3333%)}
+.header-blur span:nth-child(4){--blur:2px;--mask:linear-gradient(to top,transparent 50.0%,black 66.6667%,black 83.3333%,transparent 100.0%)}
+.header-blur span:nth-child(5){--blur:4px;--mask:linear-gradient(to top,transparent 66.6667%,black 83.3333%,black 100.0%,transparent 116.6667%)}
+.header-blur span:nth-child(6){--blur:8px;--mask:linear-gradient(to top,transparent 83.3333%,black 100.0%,black 116.6667%,transparent 133.3333%)}
+
+.ocean-motion{position:relative;overflow:hidden;background:#00334d}.ocean-motion video{width:100%;height:100%;display:block;object-fit:cover}.motion-toggle{position:absolute;bottom:12px;right:12px;border:1px solid #ffffff66;border-radius:3px;background:#00263888;color:white;font:10px 'Geist Mono',monospace;padding:7px 10px;cursor:pointer;opacity:0;transition:opacity .2s}.ocean-motion:hover .motion-toggle,.motion-toggle:focus-visible{opacity:1}@media(hover:none){.motion-toggle{opacity:1}}
+
+.animated-palette{display:flex;overflow:hidden;background:#f7f7f7}.animated-palette span{flex:1;background:var(--color);transform-origin:bottom;animation:palette-enter 1100ms cubic-bezier(.22,1,.36,1) var(--delay) both}@keyframes palette-enter{from{transform:scaleY(0)}to{transform:scaleY(1)}}@media(prefers-reduced-motion:reduce){.animated-palette span{animation:none}}
+
+.animated-palette{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0}.animated-palette span{min-width:0;margin:0;border:0}
+.brand-frame{position:absolute;inset:0;perspective:800px;opacity:0;animation:brand-scene 20s linear var(--scene-delay) infinite}
+.brand-arrow{position:absolute;left:0;top:50%;width:68%;height:auto;animation:arrow-arrive 20s cubic-bezier(.22,1,.36,1) var(--scene-delay) infinite;transform:translate(-105%,-50%)}
+.brand-frame .wordmark{top:50%;transform:translateY(-50%) translateZ(-160px);animation:wordmark-arrive 20s cubic-bezier(.22,1,.36,1) var(--scene-delay) infinite}
+@keyframes brand-scene{0%,22%{opacity:1}25%,100%{opacity:0}}
+@keyframes arrow-arrive{0%{transform:translate(-105%,-50%)}5%,22%{transform:translate(0,-50%)}25%,100%{transform:translate(0,-50%)}}
+@keyframes wordmark-arrive{0%,2%{opacity:0;transform:translateY(-50%) translateZ(-160px)}7%,22%{opacity:1;transform:translateY(-50%) translateZ(0)}25%,100%{opacity:0;transform:translateY(-50%) translateZ(0)}}
+@media(prefers-reduced-motion:reduce){.brand-frame,.brand-arrow,.brand-frame .wordmark{animation:none}.brand-frame:first-child{opacity:1}.brand-arrow{transform:translate(0,-50%)}.brand-frame .wordmark{transform:translateY(-50%);opacity:1}}
+
+.stairs,.conversation{height:auto;object-fit:cover}.stairs{height:auto;aspect-ratio:832/440}.conversation{height:auto;aspect-ratio:832/712}.product-showcase{margin-top:clamp(24px,4vw,72px);padding:4% 12% 0;background:linear-gradient(145deg,#ded4c7 0%,#eee9e2 50%,#fff 100%);overflow:hidden}.demo-window{position:relative;width:100%;aspect-ratio:1440/1120;box-shadow:0 12px 65px #49351d16;overflow:hidden;background:white}.demo-window iframe{position:absolute;left:0;top:0;width:1440px;height:1120px;border:0;transform-origin:top left}@media(max-width:600px){.product-showcase{padding:20px 3% 0}}
+
+.product-showcase{background:linear-gradient(to top,#ffffff 25%,#e0d4c5 100%)}.demo-window{box-shadow:0 0 80px 0 rgba(182,145,100,.4)}.demo-window iframe{pointer-events:none}
+
+/* Replay the palette with each five-second arrow scene. */
+.animated-palette span{animation:palette-cycle 5s cubic-bezier(.22,1,.36,1) var(--delay) infinite}
+@keyframes palette-cycle{0%{transform:scaleY(0)}22%,80%{transform:scaleY(1)}96%,100%{transform:scaleY(0)}}
+@media(prefers-reduced-motion:reduce){.animated-palette span{animation:none;transform:none}}
+
+.animated-palette span{animation:palette-fluid 5s cubic-bezier(.45,0,.2,1) var(--delay) infinite;will-change:transform;backface-visibility:hidden}
+@keyframes palette-fluid{0%{transform:scaleY(0)}30%,66%{transform:scaleY(1)}100%{transform:scaleY(0)}}
+@media(prefers-reduced-motion:reduce){.animated-palette span{animation:none;transform:none}}
+
+.phone-showcase{position:relative;background:linear-gradient(to bottom,#e0d4c5 0%,#ffffff 85%);isolation:isolate;overflow:visible;clip-path:inset(-15% 0 0 0)}.phone-device{position:absolute;width:88%;height:auto;left:7%;bottom:0;display:block;transform:translateY(18%);opacity:0;transition:transform 1.5s cubic-bezier(.22,1,.36,1),opacity .8s ease;filter:drop-shadow(8px 10px 14px #78562b18)}.phone-showcase.is-visible .phone-device{transform:translateY(0);opacity:1}@media(prefers-reduced-motion:reduce){.phone-device{transition:none;transform:none;opacity:1}}
+
+.animated-palette:not(.motion-active) span{animation:none;transform:scaleY(0)}.pimco:not(.motion-active) .brand-frame,.pimco:not(.motion-active) .brand-arrow,.pimco:not(.motion-active) .brand-frame .wordmark{animation:none}.pimco:not(.motion-active) .brand-frame{opacity:0}@media(prefers-reduced-motion:reduce){.animated-palette:not(.motion-active) span{transform:none}.pimco:not(.motion-active) .brand-frame:first-child{opacity:1}}
+/* Keep delayed bands hidden before their first animation frame. */
+.animated-palette span{transform:scaleY(0);animation-fill-mode:both}
+@media(prefers-reduced-motion:reduce){.animated-palette span{transform:none}}
+/* Invert the white header artwork against the page beneath it. */
+.site-header{mix-blend-mode:difference;color:#fff}
+.site-header a,.site-header nav a:hover,.contact-links .resume-icon{color:#fff}
+.site-header .resume-icon svg path[fill="white"]{fill:#000}
+
+.email-heading{margin-top:80px;margin-bottom:28px}.email-showcase{background:linear-gradient(to top,#fff 25%,#aed5f1 100%);padding:4% 8% 0;overflow:hidden}.email-window{position:relative;width:100%;aspect-ratio:1440/1000;background:#fff;box-shadow:0 0 80px #7eb6df55;overflow:hidden}.email-window iframe{position:absolute;left:0;top:0;width:1440px;height:1000px;border:0;transform-origin:top left}@media(max-width:600px){.email-showcase{padding:20px 2% 0}.email-heading{margin-top:48px}}
+
+/* Separate project with its editor contained in the blue presentation frame. */
+#email-studio{scroll-margin-top:110px}
+.email-heading{margin-top:80px;margin-bottom:28px}
+.email-showcase{padding:3.125% 12% 0}
+.email-window{margin-inline:auto}
+@media(max-width:600px){.email-showcase{padding:20px 2% 0}}
+
+/* Keep the Email Studio title within the blue gradient project background. */
+.email-showcase{padding:4% 8% 0}
+.email-heading{margin:0 4% 28px}
+@media(max-width:600px){.email-showcase{padding:24px 2% 0}.email-heading{margin:0 2% 20px}}
+
+/* Email Studio uses the same project topper and metadata layout as the first case study. */
+.email-heading{margin:80px 0 28px}
+.email-heading .project-title-row{border-top:1px solid #dedede;padding:28px 0 24px}
+.email-heading .project-details{margin:26px 0 36px}
+@media(max-width:600px){.email-heading{margin:48px 0 20px}.email-heading .project-title-row{padding:24px 0}}
+
+/* Cascade brand sprint project frame. */
+#cascade-project{scroll-margin-top:110px}
+.cascade-heading{margin:80px 0 28px}
+.cascade-heading .project-title-row{border-top:1px solid #dedede;padding:28px 0 24px}
+.cascade-heading .project-details{margin:26px 0 36px}
+.cascade-showcase{overflow:hidden;background:#fff;padding:4% 12% 0}
+.cascade-window{position:relative;width:100%;aspect-ratio:1440/1120;overflow:hidden;background:#fff;box-shadow:0 0 80px 0 rgba(182,145,100,.18)}
+.cascade-window iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+@media(max-width:600px){.cascade-heading{margin:48px 0 20px}.cascade-heading .project-title-row{padding:24px 0}.cascade-showcase{padding:20px 3% 0}.cascade-window{aspect-ratio:390/2300}}
+
+/* Cascade's brand sprint recast in the portfolio's full-width three-column grid. */
+.cascade-work{margin-top:0}
+.cascade-work .tile{display:grid;place-items:center;overflow:hidden}
+.cascade-site{aspect-ratio:374/625;background:#ffd2c1;padding:5%}
+.cascade-site img{width:100%;height:100%;object-fit:contain}
+.cascade-map{aspect-ratio:422/356;background:#fffaf0;padding:7%}
+.cascade-map img{width:100%;height:100%;object-fit:contain}
+.cascade-logo{aspect-ratio:422/356;background:#fffaf0;padding:14%}
+.cascade-logo img{width:100%;height:auto;object-fit:contain}
+.cascade-result{aspect-ratio:374/625;background:#7d0904;padding:7%}
+.cascade-result img{width:100%;height:100%;object-fit:contain}
+.cascade-motion{aspect-ratio:422/356;background:#ff4d07 no-repeat}
+.cascade-motion img{width:23%;height:auto;filter:brightness(0) invert(1);transform:translateY(22px) scale(.82);opacity:0;transition:transform 1.2s cubic-bezier(.2,.8,.2,1),opacity .8s ease}
+.cascade-motion.cascade-active img{transform:translateY(0) scale(1);opacity:1}
+.cascade-phone{aspect-ratio:374/625;background:#fffaf0;padding:2% 8% 0}
+.cascade-phone img{width:100%;height:100%;object-fit:contain;object-position:center bottom}
+@media(max-width:600px){.cascade-work,.cascade-work .column{gap:16px}.cascade-work .column{min-width:0}}
+@media(prefers-reduced-motion:reduce){.cascade-motion img{transform:none;opacity:1;transition:none}}
+
+.product-showcase-secondary{margin-top:clamp(20px,3vw,48px)}
+
+/* Match Cascade tile heights and phone entrance to the PIMCO project grid. */
+.cascade-site{aspect-ratio:832/440;padding:3%;background:#ffd2c1}
+.cascade-site img{width:auto;height:100%;max-width:100%;object-fit:contain}
+.cascade-map{aspect-ratio:832/484;padding:5%}
+.cascade-card{aspect-ratio:832/454;background:#fffaf0;padding:8%}
+.cascade-card img{width:100%;height:100%;object-fit:contain}
+.cascade-logo{aspect-ratio:832/696}
+.cascade-result{aspect-ratio:832/712}
+.cascade-motion{aspect-ratio:832/480}
+.cascade-phone{aspect-ratio:832/928;background:linear-gradient(to bottom,#e0d4c5 0%,#fff 85%);isolation:isolate;overflow:visible;clip-path:inset(-15% 0 0 0)}
+.cascade-phone .phone-device{position:absolute;width:88%;height:auto;left:7%;bottom:0;transform:translateY(18%);opacity:0;display:block;filter:drop-shadow(8px 10px 14px #78562b18);transition:transform 1.5s cubic-bezier(.22,1,.36,1),opacity .8s ease}
+.cascade-phone.is-visible .phone-device{transform:translateY(0);opacity:1}
+@media(max-width:600px){.cascade-work .cascade-site,.cascade-work .cascade-map,.cascade-work .cascade-card,.cascade-work .cascade-logo,.cascade-work .cascade-result,.cascade-work .cascade-motion,.cascade-work .cascade-phone{aspect-ratio:auto;min-height:0}.cascade-work .cascade-site{aspect-ratio:832/440}.cascade-work .cascade-map{aspect-ratio:832/484}.cascade-work .cascade-card{aspect-ratio:832/454}.cascade-work .cascade-logo{aspect-ratio:832/696}.cascade-work .cascade-result{aspect-ratio:832/712}.cascade-work .cascade-motion{aspect-ratio:832/480}.cascade-work .cascade-phone{aspect-ratio:832/928}}
+@media(prefers-reduced-motion:reduce){.cascade-phone .phone-device{transform:none;opacity:1;transition:none}}
+
+/* Keep the PIMCO palette bands flush while they animate as one clean unit. */
+.animated-palette{display:block;position:relative;overflow:hidden}
+.animated-palette span{position:absolute;top:0;bottom:0;width:calc(16.666667% + 1px);margin:0;animation-delay:var(--delay)!important}
+.animated-palette span:nth-child(1){left:0}
+.animated-palette span:nth-child(2){left:16.666667%}
+.animated-palette span:nth-child(3){left:33.333333%}
+.animated-palette span:nth-child(4){left:50%}
+.animated-palette span:nth-child(5){left:66.666667%}
+.animated-palette span:nth-child(6){left:83.333333%}
+
+/* Editorial case-study text blocks, following the quiet two-column reference. */
+.story-block{display:grid;grid-template-columns:1fr 1fr;column-gap:8%;align-items:start;margin:clamp(84px,10vw,160px) 0 clamp(32px,4vw,56px);padding-top:clamp(52px,6vw,96px);border-top:1px solid #dedede}.story-block+.product-showcase{margin-top:0}
+.story-copy{padding-left:10%}
+.story-number{display:block;color:#999;font:12px/1.4 'Geist Mono',monospace}
+.story-block h3{margin:clamp(42px,5vw,76px) 0 0;font-size:clamp(28px,2.6vw,40px);line-height:1.12;font-weight:500;letter-spacing:-.045em}
+.story-block>p{margin:clamp(48px,5vw,76px) 6% 0 0;color:#626262;font-size:clamp(16px,1.12vw,20px);line-height:1.65;letter-spacing:-.012em}
+@media(max-width:700px){.story-block{grid-template-columns:1fr;row-gap:0;margin:72px 0;padding-top:36px}.story-copy{padding-left:0}.story-block h3{margin-top:24px;font-size:29px}.story-block>p{margin:28px 0 0;font-size:16px;line-height:1.6}}
+
+/* Portfolio motion runs only while its showcase is in view. */
+.email-route-showcase{margin-top:clamp(24px,4vw,72px)}
+.email-screen-heading{margin:0 4% 24px;color:#00243c;font:12px/1.4 'Geist Mono',monospace;letter-spacing:.08em}
+@media(max-width:600px){.email-screen-heading{margin:0 2% 18px}}
+
+/* These are portfolio demonstrations, so the surrounding page owns wheel and
+   touch scrolling. The embedded editor remains a visual walkthrough rather
+   than trapping the visitor inside its internal canvas. */
+.email-window iframe{pointer-events:none!important;user-select:none}
+
+/* One shared editorial grid aligns the profile, project metadata, and every
+   case-study introduction. The story titles now use the same left column as
+   project titles; the explanatory copy uses the same right column as the
+   project discipline. */
+:root{--editorial-grid-gap:8%}
+@media(min-width:901px){
+  .intro{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:var(--editorial-grid-gap);align-items:start}
+  .experience{width:auto}
+  .project-details{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--editorial-grid-gap)}
+  .story-block{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:var(--editorial-grid-gap)}
+  .story-copy{padding-left:0}
+  .story-block>p{margin-right:0}
+}
+
+/* The project divider has matching air on both sides. Context blocks begin
+   directly after the project metadata instead of adding a second rule and
+   a large empty band. */
+.intro{margin-bottom:48px}
+.project-title-row{padding-top:48px}
+.story-block{border-top:0;padding-top:0;margin-top:clamp(48px,6vw,96px)}
+@media(max-width:700px){.story-block{padding-top:0;border-top:0;margin-top:48px}}
+
+/* Shared vertical rhythm for the portfolio. Major components receive the
+   same breathing room above and below; every small label/slug uses one
+   consistent gap before the content it introduces. */
+:root{--component-space:clamp(44px,3vw,64px);--slug-space:clamp(18px,1.4vw,28px)}
+.intro{margin:0;padding-block:var(--component-space)}
+.project-heading{margin:0;padding-block:var(--component-space);border-top:1px solid #dedede}
+.project-title-row{padding:0;border-top:0}
+.project-details{margin:var(--component-space) 0 0}
+.story-block{margin:0;padding-block:var(--component-space);border:0}
+.eyebrow,.project-details dt{margin:0 0 var(--slug-space)}
+.story-number{margin:0 0 var(--slug-space)}
+.story-block h3{margin:0}
+.story-block>p{margin:var(--slug-space) 0 0}
+@media(max-width:700px){
+  :root{--component-space:40px;--slug-space:20px}
+  .story-block{margin:0;padding-block:var(--component-space)}
+}
+
+/* Adjacent components share one rhythm token at their boundary instead of
+   stacking two independent paddings. This keeps the header-to-ABOUT and
+   metadata-to-/01 spacing consistent with the other component transitions. */
+main{padding-top:0}
+.project-heading{padding-bottom:0}
+
+/* A single slug style carries through the profile, project metadata, and
+   case-study markers. */
+.eyebrow,.project-details dt,.story-number{
+  font:12px/1.4 'Geist Mono',monospace;
+  font-weight:400;
+  letter-spacing:.04em;
+  color:#999;
+}
+
+/* Each project introduction follows the exact same vertical rhythm. The
+   first contextual block borrows the project's bottom space, so adjacent
+   sections meet on one shared gap instead of two stacked gaps. */
+.project-heading,
+.project-heading.email-heading,
+.project-heading.cascade-heading{
+  margin:0;
+  padding-block:var(--component-space);
+  border-top:1px solid #dedede;
+}
+.project-heading .project-title-row{
+  padding:0;
+  border-top:0;
+}
+.project-heading .project-details{
+  margin:var(--component-space) 0 0;
+}
+.project-heading + .story-block{
+  padding-top:0;
+}
+
+/* Project names carry the same confident weight as the site identity. */
+.project-title-row h2{font-family:'Cafune','Google Sans Flex',Arial,sans-serif;font-weight:700;letter-spacing:1px}
+
+/* The second Email Studio frame starts with the completed message and reveals
+   its development view only while the visitor is inspecting it. */
+.email-window--dev-reveal .email-window__finished{z-index:1}
+.email-window--dev-reveal .email-window__dev{z-index:2;opacity:0;pointer-events:none;transition:opacity .28s ease}
+.email-window--dev-reveal.is-dev-playing .email-window__dev{opacity:1;pointer-events:none}
+.story-block h3{font-family:'Cafune','Google Sans Flex',Arial,sans-serif;font-weight:400;letter-spacing:1px}
+.identity{font-family:'Google Sans Flex',Arial,sans-serif;font-weight:800;letter-spacing:-.025em}
+.site-header{mix-blend-mode:normal;color:#000}
+.site-header a,.site-header nav a:hover,.contact-links .resume-icon,.identity{color:#000}
+.site-header .contact-links{gap:20px}
+.site-header .contact-links a{display:inline-flex;width:auto;height:auto;padding:0;font-size:13px;line-height:1.25;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.site-header .contact-links .contact-icon{display:none}
+
+/* SF Pro for portfolio copy; artwork and the mono slugs keep their own type. */
+.identity,.contact-label,.bio>p,.project-title-row>h2,.project-details dd,.story-block h3,.story-block>p{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',sans-serif;letter-spacing:normal}
+
+/* Scrub Capital's healthcare identity, composed as a three-column brand board. */
+@font-face{font-family:'Neue Haas Scrub';font-style:normal;font-weight:500;font-display:swap;src:url('scrub/neue-haas-display-medium.ttf') format('truetype')}
+#scrub-project{scroll-margin-top:150px}
+.scrub-heading{margin:0}
+.scrub-work{margin-top:0}
+.scrub-work .tile{position:relative;overflow:hidden}
+.scrub-laptop{aspect-ratio:832/460;object-fit:cover}
+.scrub-statement{aspect-ratio:832/416;display:flex;align-items:center;justify-content:center;padding:10%;color:#fff;background:url('scrub/blue-shader-texture.png') center/cover no-repeat,#087bff;isolation:isolate}
+.scrub-shader{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0;pointer-events:none;opacity:0}
+.scrub-shader.is-ready{opacity:1}
+.scrub-statement-copy{position:relative;z-index:1;margin:0;font-family:'Neue Haas Scrub','Google Sans Flex',Arial,sans-serif;font-size:clamp(13px,1.8229vw,52.5px);font-weight:500;line-height:1.2;letter-spacing:0;color:#fff}
+.scrub-statement-line{display:block;white-space:nowrap}
+.scrub-statement-word{display:inline-block;opacity:0;transform:translateY(.22em);filter:blur(6px)}
+.scrub-statement.text-playing .scrub-statement-word{animation:scrub-text-turn 4.8s cubic-bezier(.22,1,.36,1) var(--word-delay) infinite both}
+@keyframes scrub-text-turn{0%{opacity:0;transform:translateY(.22em);filter:blur(6px)}24%,60%{opacity:1;transform:translateY(0);filter:blur(0)}78%,100%{opacity:0;transform:translateY(-.12em);filter:blur(6px)}}
+
+/* Opaque rear portraits sit behind the larger, sharp center card. */
+.scrub-portraits{aspect-ratio:832/460;flex:1 0 auto;position:relative;display:block;isolation:isolate;container-type:inline-size;--portrait-blur:1cqw;background:radial-gradient(ellipse at 50% 0%,#dceeff 0%,#f0f7ff 45%,#fff 83%)}
+.scrub-portrait{position:absolute;left:50%;top:50%;display:block;width:43%;height:auto;aspect-ratio:1;object-fit:cover;margin:0;border-radius:10px;box-shadow:0 5cqw 6cqw -3cqw #122c4c40;opacity:1;transition:none;will-change:transform,filter}
+.scrub-portrait-a{z-index:3;transform:translate(-50%,-50%);filter:blur(0)}
+.scrub-portrait-b{z-index:1;transform:translate(-50%,-50%) translateX(58%) scale(.64);filter:blur(var(--portrait-blur))}
+.scrub-portrait-c{z-index:1;transform:translate(-50%,-50%) translateX(-58%) scale(.64);filter:blur(var(--portrait-blur))}
+.scrub-portraits.motion-active .scrub-portrait{animation:scrub-portrait-cycle 12s cubic-bezier(.4,0,.2,1) infinite,scrub-portrait-depth 12s steps(1,end) infinite}
+.scrub-portraits.motion-active .scrub-portrait-b{animation-delay:-8s}
+.scrub-portraits.motion-active .scrub-portrait-c{animation-delay:-4s}
+@keyframes scrub-portrait-cycle{
+  0%,23.333%{transform:translate(-50%,-50%) translateX(0) scale(1);filter:blur(0)}
+  33.333%,56.667%{transform:translate(-50%,-50%) translateX(-58%) scale(.64);filter:blur(var(--portrait-blur))}
+  61.667%{transform:translate(-50%,-50%) translateX(0) scale(.5);filter:blur(var(--portrait-blur))}
+  66.667%,90%{transform:translate(-50%,-50%) translateX(58%) scale(.64);filter:blur(var(--portrait-blur))}
+  100%{transform:translate(-50%,-50%) translateX(0) scale(1);filter:blur(0)}
+}
+@keyframes scrub-portrait-depth{
+  0%,23.332%{z-index:3}
+  23.333%{z-index:2}
+  33.333%{z-index:1}
+  56.667%{z-index:0}
+  66.667%{z-index:1}
+  90%,100%{z-index:3}
+}
+
+.scrub-logo{aspect-ratio:832/696;display:grid;place-items:center;background:radial-gradient(ellipse at 100% 0%,#83bdff 0%,#d8eaff 30%,#fff 69%)}
+.scrub-logo img{display:block;width:62%;height:auto}
+.scrub-devices{aspect-ratio:832/712;object-fit:cover}
+.scrub-mark{aspect-ratio:832/480;display:grid;place-items:center;background:linear-gradient(180deg,#0095ff 0%,#0055fc 100%)}
+.scrub-mark-svg{display:block;width:22%;height:auto;overflow:visible}
+.scrub-mark.motion-active .scrub-mark-svg{animation:scrub-mark-exit 4.8s cubic-bezier(.45,0,.2,1) infinite}
+.scrub-mark-bar{opacity:0;clip-path:inset(0 100% 0 0)}
+.scrub-mark-stem{opacity:0;transform:translateY(12px)}
+.scrub-mark-top{opacity:0;transform:scale(.35);transform-box:fill-box;transform-origin:50% 100%}
+.scrub-mark.motion-active .scrub-mark-bar{animation:scrub-mark-bar-loop 4.8s cubic-bezier(.22,1,.36,1) infinite}
+.scrub-mark.motion-active .scrub-mark-stem{animation:scrub-mark-stem-loop 4.8s cubic-bezier(.22,1,.36,1) infinite}
+.scrub-mark.motion-active .scrub-mark-top{animation:scrub-mark-top-loop 4.8s cubic-bezier(.2,1.4,.4,1) infinite}
+@keyframes scrub-mark-bar-loop{0%,4%{opacity:0;clip-path:inset(0 100% 0 0)}16%,100%{opacity:1;clip-path:inset(0)}}
+@keyframes scrub-mark-stem-loop{0%,14%{opacity:0;transform:translateY(12px)}26%,100%{opacity:1;transform:translateY(0)}}
+@keyframes scrub-mark-top-loop{0%,24%{opacity:0;transform:scale(.35)}36%,100%{opacity:1;transform:scale(1)}}
+@keyframes scrub-mark-exit{0%,78%{opacity:1;transform:scale(1)}94%,100%{opacity:0;transform:scale(.94)}}
+
+/* Anchor the phone near the panel top; let its lower edge crop like the PIMCO board. */
+.scrub-work .scrub-phone{aspect-ratio:832/928;background:linear-gradient(to bottom,#a9d1ff 0%,#fff 88%);isolation:isolate;overflow:visible;clip-path:inset(-15% 0 0 0)}
+.scrub-phone .phone-device{position:absolute;width:160%;height:auto;left:-26%;top:-10%;bottom:auto;display:block;transform:translateY(18%);opacity:0;filter:drop-shadow(8px 10px 14px #183e5c24);transition:transform 1.5s cubic-bezier(.22,1,.36,1),opacity .8s ease}
+.scrub-phone.is-visible .phone-device{transform:translateY(0);opacity:1}
+@media(max-width:600px){.scrub-work,.scrub-work .column{gap:16px}.scrub-work .column{min-width:0}.scrub-statement-copy{font-size:6.3vw}.scrub-portrait{border-radius:8px}}
+@media(prefers-reduced-motion:reduce){
+ .scrub-statement-word{opacity:1;transform:none;filter:none;animation:none!important}
+ .scrub-portrait{animation:none!important}
+ .scrub-mark-bar{opacity:1;clip-path:none;animation:none!important}
+ .scrub-mark-stem{opacity:1;transform:none;animation:none!important}
+ .scrub-mark-top{opacity:1;transform:none;animation:none!important}
+ .scrub-mark.motion-active .scrub-mark-svg{opacity:1;transform:none;animation:none}
+ .scrub-phone .phone-device{transform:none;opacity:1;transition:none}
+}
+
+/* Keep the identity and contact links in the page's normal flow. */
+.site-header{position:static}
+.header-blur{display:none}
+
+/* Project summaries share the four-column reference layout. */
+.project-details{grid-template-columns:repeat(4,minmax(0,1fr));column-gap:4%;row-gap:28px}
+.project-details>div{min-width:0}
+.project-details dd{font-weight:400;line-height:1.5}
+.site-header .identity{font-size:16px;font-weight:800;line-height:1.25;letter-spacing:normal;text-transform:none}
+@media(max-width:600px){.site-header .identity{font-size:14px}}
+@media(max-width:900px){.project-details{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:8%}}

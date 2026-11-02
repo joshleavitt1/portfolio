@@ -1,624 +1,200 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Portfolio</title>
-    <link
-      rel="preconnect"
-      href="https://fonts.googleapis.com"
-    />
-    <link
-      rel="preconnect"
-      href="https://fonts.gstatic.com"
-      crossorigin
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Source+Serif+4:wght@400;600&family=Source+Serif+Pro:ital,wght@1,400;1,800&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      body {
-        margin: 0;
-        position: relative;
-        overflow-x: hidden;
-        background: #F7F7FD;
-      }
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Josh Leavitt — Designer and builder specializing in brand and product design. Currently Head of User Experience at PIMCO.">
+<title>Josh Leavitt — Results</title>
+<base href="./">
+<link rel="icon" href="data:,">
+<link rel="preload" href="assets/google-sans-flex-400.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="assets/portfolio.css?v=scrub-centered-3">
+<link rel="stylesheet" href="assets/results.css?v=3">
+</head>
+<body id="top">
+<div class="header-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+<header class="site-header">
+<div class="header-inner">
+<a class="identity" href="#top">JOSH LEAVITT</a>
+<nav class="contact-links" aria-label="Contact links">
+<a class="resume-icon" href="assets/josh_leavitt_resume.pdf" target="_blank" rel="noopener noreferrer" aria-label="Open Josh Leavitt résumé PDF" title="Résumé PDF"><span class="contact-label">CV</span><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2.5H5.5v19h13V7z"/><path d="M14 2.5V7h4.5"/><path d="M4 11h16v7H4z" fill="white"/><path d="M6.5 16v-3.5h1a1 1 0 0 1 0 2h-1m4 1.5v-3.5h.6c2 0 2 3.5 0 3.5h-.6m5 0v-3.5h2m-2 1.7h1.5" stroke-width="1"/></svg></a>
+<a href="https://www.linkedin.com/in/joshleavitt1/" target="_blank" rel="noopener noreferrer" aria-label="Josh Leavitt on LinkedIn" title="LinkedIn"><span class="contact-label">LinkedIn</span><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M20.45 2H3.55C2.69 2 2 2.68 2 3.52v16.96c0 .84.69 1.52 1.55 1.52h16.9c.86 0 1.55-.68 1.55-1.52V3.52c0-.84-.69-1.52-1.55-1.52ZM7.93 18.75H4.98V9.2h2.95v9.55ZM6.45 7.9a1.71 1.71 0 1 1 0-3.42 1.71 1.71 0 0 1 0 3.42Zm12.3 10.85H15.8V14.1c0-1.11-.02-2.54-1.55-2.54-1.55 0-1.79 1.21-1.79 2.46v4.73H9.51V9.2h2.83v1.3h.04c.4-.75 1.36-1.55 2.79-1.55 2.98 0 3.58 1.96 3.58 4.51v5.29Z"/></svg></a>
+<a href="mailto:josh@joshleavitt.com" aria-label="Email Josh Leavitt" title="josh@joshleavitt.com"><span class="contact-label">Email</span><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="1"/><path d="m3 5 9 7 9-7"/></svg></a>
+</nav>
+</div>
+</header>
+<main>
+<header class="intro" id="about">
+<div class="bio">
+<h1 class="eyebrow">ABOUT</h1>
+<p>Designer and builder working across financial products, design <span class="about-phrase">systems, and AI workflows.</span> Currently Head of UX at PIMCO.</p>
+</div>
+<div class="experience"><h2 class="eyebrow">EXPERIENCE</h2>
+<div class="brands" aria-label="Brand experience">
+<img src="assets/PIMCO.svg" width="54" height="11" alt="PIMCO">
+<img src="assets/AIG.svg" width="38" height="21" alt="AIG">
+<img src="assets/BR.svg" width="68" height="10" alt="BlackRock">
+<img src="assets/AMEX.svg" width="27" height="27" alt="American Express">
+<img src="assets/CITIZENS.svg" width="70" height="12" alt="Citizens">
+</div>
+</div>
+</header>
+<section class="project-heading" id="selected-work" aria-labelledby="project-title">
+<div class="project-title-row"><h2 id="project-title">PIMCO Digital Brand</h2></div>
+<dl class="project-details"><div><dt>ROLE</dt><dd>Head of User Experience</dd></div><div><dt>SCOPE</dt><dd>Digital Brand</dd><dd>Product Design</dd><dd>Design System</dd></div><div><dt>INDUSTRY</dt><dd>Investment Management</dd><dd>Financial Services</dd></div><div><dt>TYPE</dt><dd>Website</dd><dd>Email</dd></div></dl>
+</section>
+<section class="work" aria-label="Selected brand and product work">
+<div class="column">
+<img class="tile stairs" src="assets/stairs-hq.png" width="832" height="440" alt="Professional walking up a sunlit staircase">
+<div class="tile ocean ocean-motion">
+<video id="ocean-video" muted loop playsinline preload="metadata" poster="assets/ocean-poster.jpg" aria-label="Rich blue ocean waves and white sea foam"><source src="assets/ocean-loop.mp4" type="video/mp4"></video>
+<button class="motion-toggle" type="button" aria-label="Pause ocean video">Pause</button>
+</div>
+<div class="tile laptop-frame"><img class="laptop" src="assets/laptop-updated.png" width="1612" height="881" alt="Laptop on a white sofa"></div>
+</div>
+<div class="column">
+<div class="tile pimco" role="img" aria-label="PIMCO brand animation cycling through four sculptural blue arrows">
+<div class="brand-frame" style="--scene-delay:0s"><img class="brand-arrow" src="assets/arrow-1.png" alt=""><img class="wordmark" src="assets/pimco-white.png" alt=""></div><div class="brand-frame" style="--scene-delay:5s"><img class="brand-arrow" src="assets/arrow-2.png" alt=""><img class="wordmark" src="assets/pimco-white.png" alt=""></div><div class="brand-frame" style="--scene-delay:10s"><img class="brand-arrow" src="assets/arrow-3.png" alt=""><img class="wordmark" src="assets/pimco-white.png" alt=""></div><div class="brand-frame" style="--scene-delay:15s"><img class="brand-arrow" src="assets/arrow-4.png" alt=""><img class="wordmark" src="assets/pimco-white.png" alt=""></div>
+</div>
+<img class="tile conversation" src="assets/conversation-hq.png" width="832" height="712" alt="A woman in conversation in a bright office">
+</div>
+<div class="column">
+<div class="tile palette animated-palette" role="img" aria-label="PIMCO palette: deep blue, dark blue, bright blue, light blue, aquamarine, and beach white"><span style="--color:#00243C;--delay:0ms" aria-hidden="true"></span><span style="--color:#1A3873;--delay:120ms" aria-hidden="true"></span><span style="--color:#007AFF;--delay:240ms" aria-hidden="true"></span><span style="--color:#33C2FF;--delay:360ms" aria-hidden="true"></span><span style="--color:#00F6FF;--delay:480ms" aria-hidden="true"></span><span style="--color:#DED4C7;--delay:600ms" aria-hidden="true"></span></div>
+<div class="tile phone phone-showcase"><img src="assets/phone.png?v=oil-shock" alt="PIMCO mobile article about the credit market and oil shock" class="phone-device"></div>
+</div>
+</section>
+<section class="story-block" aria-labelledby="pimco-story-01"><div class="story-copy"><span class="story-number">/01</span><h3 id="pimco-story-01">Rooted in the Pacific</h3></div><p>As a leader in fixed income, PIMCO needed a digital presence as distinctive as its perspective. I brought its Pacific roots into the interface through oceanic colors and open space. The pinnacle imagery reflects a firmwide commitment to rigor and clarity. I also led an in-house platform migration around Sitecore and a shared Angular component library, cutting operating costs by 50%.</p></section>
+<section class="result-data" aria-label="PIMCO brand outcomes and technology"><dl class="project-details"><div><dt>YEARLY OPERATING COST</dt><dd>Reduced from 1M to 500K</dd></div><div><dt>CMS</dt><dd>Sitecore</dd></div><div><dt>COMPONENT LIBRARY</dt><dd>Angular</dd></div><div><dt>DESIGN DECISION</dt><dd>Distinctive, inspired by the Pacific</dd></div></dl></section>
 
-      .page {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: flex-start;
-        position: relative;
-        z-index: 1;
-      }
+<section class="product-showcase" aria-label="PIMCO product finder walkthrough">
+<div class="demo-window"><iframe src="examples/funds/?v=10" tabindex="-1" title="PIMCO product search and fund detail walkthrough" loading="lazy"></iframe></div>
+</section>
+<section class="story-block" aria-labelledby="pimco-story-02"><div class="story-copy"><span class="story-number">/02</span><h3 id="pimco-story-02">Complex Choices, Made Clear</h3></div><p>Client feedback showed that finding the right funds added unnecessary friction. I redesigned browsing around discovery and comparison, with detailed fund information one step away. Bringing fund documents into the header made an important part of that research easier to find. Monthly US downloads rose from 11,500 to 12,400 in GA4, giving us a stronger signal of investment consideration.</p></section>
+<section class="result-data" aria-label="Fund discovery outcomes and measurement"><dl class="project-details"><div><dt>DOCUMENT DOWNLOADS</dt><dd>11,500 → 12,400</dd><dd>(Average monthly rolling, US)</dd></div><div><dt>MEASUREMENT</dt><dd>GA4</dd></div><div><dt>USER SIGNAL</dt><dd>Document download is the highest investment intent activity</dd></div><div><dt>DESIGN DECISION</dt><dd>Key downloads visible in the page header</dd></div></dl></section>
 
-      .hero-shell {
-        position: relative;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
+<section class="product-showcase product-showcase-secondary" aria-label="PIMCO fund browsing and fund detail walkthrough">
+<div class="demo-window"><iframe src="examples/insights/?v=20" tabindex="-1" title="PIMCO fund browsing: Page 3 results and Page 2 detail walkthrough" loading="lazy"></iframe></div>
+</section>
+<section class="story-block" aria-labelledby="pimco-story-03"><div class="story-copy"><span class="story-number">/03</span><h3 id="pimco-story-03">Market Insights to Action</h3></div><p>Clients rely on PIMCO for its market perspective, but they wanted those insights to be easier to understand, share, and act on. Partnering with Content Marketing, we rebuilt article pages to highlight key takeaways and supplement them with related charts, podcasts, and articles. Scroll depth rose 20%, and 60% of users interacted with related content.</p></section>
+<section class="result-data" aria-label="Insight engagement outcomes and measurement"><dl class="project-details"><div><dt>SCROLL DEPTH</dt><dd>+20%</dd></div><div><dt>CONTINUED EXPLORATION</dt><dd>6 of 10 clicked related content</dd><dd>(Up from 4)</dd></div><div><dt>MEASUREMENT</dt><dd>GA4</dd></div><div><dt>DESIGN DECISION</dt><dd>Supplement long form content with bite sized insights</dd></div></dl></section>
 
-      .hero-backdrop {
-        position: absolute;
-        width: 700px;
-        height: 700px;
-        left: 50%;
-        top: 20px;
-        transform: translateX(-50%);
-        border-radius: 50%;
-        pointer-events: none;
-        z-index: 0;
-      }
+<article id="email-studio" aria-labelledby="email-title">
+<section class="project-heading email-heading">
+<div class="project-title-row"><h2 id="email-title">Email Studio</h2></div>
+<dl class="project-details"><div><dt>ROLE</dt><dd>Builder</dd></div><div><dt>SCOPE</dt><dd>AI Workflow</dd><dd>Product</dd></div><div><dt>INDUSTRY</dt><dd>Marketing Ops</dd><dd>Financial Services</dd></div><div><dt>TYPE</dt><dd>Digital Product</dd></div></dl>
+</section>
+<section class="email-showcase" aria-label="Email Studio masterbrand editor">
+<div class="email-window"><iframe src="examples/masterbrand/?portfolio&v=24" title="Email Studio — Masterbrand editor" loading="lazy"></iframe></div>
+</section>
+<section class="story-block" aria-labelledby="email-story-01"><div class="story-copy"><span class="story-number">/01</span><h3 id="email-story-01">Written Brief to Working Email</h3></div><p>Building an email meant writing a brief in Word, handing it to an outside vendor, and working through rounds of revisions. I built Email Studio so channel marketers could create and review emails directly. Shared components give them control over content while keeping the design consistent. Average design-to-delivery speed increased 40%.</p></section>
+<section class="result-data" aria-label="Email editor outcomes and technology"><dl class="project-details"><div><dt>DESIGN TO DELIVERY</dt><dd>5 days → 2 days</dd></div><div><dt>SUPPORTED CHANNELS</dt><dd>Advisor Forum, In Person Events, Webcasts, Product Launches, Thought Leadership, and Subscriptions.</dd></div><div><dt>WORKFLOW</dt><dd>Drag and drop editor</dd></div><div><dt>BUILT WITH</dt><dd>GitHub Copilot CLI, Angular</dd></div></dl></section>
 
-      .hero-backdrop::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(135deg, #eaf0f8 0%, #f6f7fa 100%);
-        border-radius: 50%;
-        filter: blur(100px);
-      }
+<section class="email-showcase email-route-showcase" aria-label="Email Studio development inspector">
+<div class="email-window email-window--dev-reveal"><iframe class="email-window__finished" src="examples/masterbrand/?portfolio&finished&v=26" title="Email Studio — Completed email" loading="lazy"></iframe><iframe class="email-window__dev" src="examples/dev/?portfolio&v=13" title="Email Studio — Dev inspector" loading="lazy"></iframe></div>
+</section>
+<section class="story-block" aria-labelledby="email-story-02"><div class="story-copy"><span class="story-number">/02</span><h3 id="email-story-02">Components at Scale</h3></div><p>New components still needed to ship on time, even with a smaller build team. I built an inspection view that puts the actual code, spacing, typography, colors, and assets in one place. Designers and developers can check the same details as the system grows. The team maintained its previous component delivery timeline despite reduced headcount.</p></section>
+<section class="result-data" aria-label="Component delivery outcomes and implementation"><dl class="project-details"><div><dt>DELIVERY</dt><dd>One new component per week</dd></div><div><dt>TEAM CAPACITY</dt><dd>Reduced from 4 to 1</dd><dd>(Components ship at previous pace)</dd></div><div><dt>INSPECTION</dt><dd>Bundled code, design variables, and assets</dd></div><div><dt>DESIGN DECISION</dt><dd>Provide shared design reference for implementation</dd></div></dl></section>
 
-      .hero-backdrop::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 50%;
-        background-image:
-          repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.85) 0 2px, transparent 2px 40px),
-          repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.85) 0 2px, transparent 2px 40px);
-          mask-image: radial-gradient(
-  circle at 50% 50%,
-  rgba(255,255,255,1) 42%,
-  rgba(255,255,255,0.6) 50%,
-  rgba(255,255,255,0) 65%
-);
-        opacity: 0.65;
-      }
+<section id="email-agentic" class="email-showcase email-route-showcase" aria-label="Email Studio agentic builder">
+<div class="email-window"><iframe src="examples/agentic/?portfolio&v=26" title="Email Studio — Agentic builder" loading="lazy"></iframe></div>
+</section>
+<section class="story-block" aria-labelledby="email-story-03"><div class="story-copy"><span class="story-number">/03</span><h3 id="email-story-03">Type to Build</h3></div><p>What if making an email started with saying what you need? I built a conversational prototype around the drag and drop editor. A brief becomes a live email, then follow-up requests add event details, funds, and legal copy. The component system holds the design rules while the marketer reviews and refines the result.</p></section>
+<section class="result-data" aria-label="Conversational email beta evaluation"><dl class="project-details"><div><dt>STATUS</dt><dd>Beta release</dd></div><div><dt>OPPORTUNITY</dt><dd>Draft emails, websites, and social through conversations</dd></div><div><dt>RISK</dt><dd>Token cost associated with creation and refinement</dd></div><div><dt>TESTING</dt><dd>Determine user preference and effectiveness</dd></div></dl></section>
 
-      .site-header {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        align-self: center;
-        position: relative;
-        z-index: 1;
-        margin-top: 72px;
-      }
+</article>
+<article id="scrub-project" aria-labelledby="scrub-title">
+<section class="project-heading scrub-heading">
+<div class="project-title-row"><h2 id="scrub-title">Scrub Capital</h2></div>
+<dl class="project-details"><div><dt>ROLE</dt><dd>Designer</dd></div><div><dt>SCOPE</dt><dd>Brand Identity</dd><dd>Motion Design</dd></div><div><dt>INDUSTRY</dt><dd>Healthcare</dd><dd>Venture Capital</dd></div><div><dt>TYPE</dt><dd>Brand Platform</dd></div></dl>
+</section>
+<section class="work scrub-work" aria-label="Scrub Capital brand and digital experience">
+<div class="column">
+<div class="tile scrub-statement" aria-label="Founders need more than capital"><canvas class="scrub-shader" aria-hidden="true"></canvas><p class="scrub-statement-copy" aria-hidden="true"><span class="scrub-statement-line"><span class="scrub-statement-word" style="--word-delay:.1s">Founders</span> <span class="scrub-statement-word" style="--word-delay:.24s">need</span></span><span class="scrub-statement-line"><span class="scrub-statement-word" style="--word-delay:.38s">more</span> <span class="scrub-statement-word" style="--word-delay:.52s">than</span> <span class="scrub-statement-word" style="--word-delay:.66s">capital.</span></span></p></div>
+<img class="tile scrub-laptop" src="assets/scrub/laptop.png" alt="Scrub Capital healthcare investment website shown on a laptop" loading="lazy">
+<div class="tile scrub-portraits" aria-label="The clinicians shaping the future of healthcare">
+<img class="scrub-portrait scrub-portrait-b" src="assets/scrub/doctor-2.png" alt="Clinician in blue scrubs" loading="lazy">
+<img class="scrub-portrait scrub-portrait-a" src="assets/scrub/doctor-1.png" alt="Physician and healthcare founder" loading="lazy">
+<img class="scrub-portrait scrub-portrait-c" src="assets/scrub/doctor-3.png" alt="Physician in a white coat" loading="lazy">
+</div>
+</div>
+<div class="column">
+<div class="tile scrub-logo"><img src="assets/scrub/logo-text.svg" alt="Scrub Capital wordmark" loading="lazy"></div>
+<img class="tile scrub-devices" src="assets/scrub/medical-devices.png" alt="Clinicians working together with connected medical devices" loading="lazy">
+</div>
+<div class="column">
+<div class="tile scrub-mark" aria-label="Scrub Capital mark"><svg class="scrub-mark-svg" viewBox="0 0 90 91" role="img" aria-labelledby="scrub-mark-title"><title id="scrub-mark-title">Scrub Capital mark</title><rect class="scrub-mark-bar" y="33.75" width="90" height="22.5" rx="3" fill="white"/><path class="scrub-mark-top" d="M32.667 3C32.667 1.343 34.01 0 35.667 0h16.5c1.657 0 3 1.343 3 3v25.519c0 2.396-2.67 3.825-4.664 2.496l-16.5-11a3 3 0 0 1-1.336-2.496V3Z" fill="white"/><path class="scrub-mark-stem" d="M55.667 87.922c0 1.657-1.343 3-3 3h-16.5c-1.657 0-3-1.343-3-3v-40.5c0-1.657 1.343-3 3-3h16.5c1.657 0 3 1.343 3 3v40.5Z" fill="white"/></svg></div>
+<div class="tile phone phone-showcase scrub-phone"><img src="assets/scrub/phone.png" alt="Scrub Capital healthcare brand on a mobile phone" class="phone-device" loading="lazy"></div>
+</div>
+</section>
+<section class="story-block" aria-labelledby="scrub-story-01"><div class="story-copy"><span class="story-number">/01</span><h3 id="scrub-story-01">By Clinicians, for Clinicians</h3></div><p>Scrub backs healthcare founders with firsthand experience delivering care. I centered the identity on that connection between clinical experience and company ownership. The logo brings together ideas of the cap table and health, while motion adds energy and keeps the founders and their message at the center.</p></section>
 
-      .immersive-reveal {
-        --reveal-delay: 0ms;
-        position: relative;
-        opacity: 0;
-        transform: translateY(32px) scale(0.985);
-        filter: blur(18px) saturate(0.8);
-        transition:
-          opacity 900ms cubic-bezier(0.16, 1, 0.3, 1),
-          transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
-          filter 900ms cubic-bezier(0.16, 1, 0.3, 1);
-        transition-delay: var(--reveal-delay);
-      }
+</article>
+</main>
 
-      .immersive-reveal::after {
-        content: "";
-        position: absolute;
-        inset: -6%;
-        background: radial-gradient(circle at 50% 50%, #ffffff0f, transparent 55%);
-        opacity: 0;
-        filter: blur(30px);
-        transition: opacity 1600ms ease, filter 1200ms ease;
-        pointer-events: none;
-        z-index: -1;
-      }
+<script>
+const ocean=document.querySelector('#ocean-video');
+const toggle=document.querySelector('.motion-toggle');
+const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
+function sync(){toggle.textContent=ocean.paused?'Play':'Pause';toggle.setAttribute('aria-label',ocean.paused?'Play ocean video':'Pause ocean video')}
+if(reduced.matches){ocean.autoplay=false;ocean.pause()}
+let oceanNear=false,oceanUserPaused=false;
+function updateOcean(){if(oceanNear&&!document.hidden&&!reduced.matches&&!oceanUserPaused)ocean.play().catch(()=>{});else{ocean.pause();if((!oceanNear||document.hidden)&&ocean.readyState>0)ocean.currentTime=0}}
+toggle.addEventListener('click',()=>{if(ocean.paused){oceanUserPaused=false;updateOcean()}else{oceanUserPaused=true;ocean.pause()}});
+ocean.addEventListener('play',sync);ocean.addEventListener('pause',sync);sync();
+</script>
+<script>
+document.querySelectorAll('.demo-window').forEach(demoWindow=>new ResizeObserver(()=>{demoWindow.querySelector('iframe').style.transform=`scale(${demoWindow.clientWidth/1440})`}).observe(demoWindow));
+</script>
+<script>
+const phoneTiles=[...document.querySelectorAll('.phone-showcase')];
+const phoneVisibility=new Map(phoneTiles.map(tile=>[tile,false]));
+const syncPhoneTiles=()=>phoneTiles.forEach(tile=>tile.classList.toggle('is-visible',phoneVisibility.get(tile)&&!document.hidden&&!reduced.matches));
+phoneTiles.forEach(tile=>new IntersectionObserver(([entry])=>{phoneVisibility.set(tile,entry.isIntersecting);syncPhoneTiles()},{threshold:.15}).observe(tile));
+</script>
+<script>
+const motionTiles=[...document.querySelectorAll('.pimco,.animated-palette')];
+const motionVisibility=new Map(motionTiles.map(tile=>[tile,false]));
+const syncMotionTiles=()=>motionTiles.forEach(tile=>tile.classList.toggle('motion-active',motionVisibility.get(tile)&&!document.hidden&&!reduced.matches));
+motionTiles.forEach(tile=>new IntersectionObserver(([entry])=>{motionVisibility.set(tile,entry.isIntersecting);syncMotionTiles()},{rootMargin:'0px',threshold:.15}).observe(tile));
+new IntersectionObserver(entries=>{oceanNear=entries[0].isIntersecting;updateOcean()},{rootMargin:'0px',threshold:.15}).observe(ocean);
+document.querySelectorAll('.demo-window iframe').forEach(frame=>{let storyNear=false;const notify=()=>frame.contentWindow?.postMessage({type:'demo-visibility',visible:storyNear&&!document.hidden},location.origin);new IntersectionObserver(entries=>{storyNear=entries[0].isIntersecting;notify()},{rootMargin:'0px',threshold:.1}).observe(frame);frame.addEventListener('load',notify);document.addEventListener('visibilitychange',notify)});
+document.querySelectorAll('.email-window iframe').forEach(frame=>{let storyNear=false;const notify=()=>frame.contentWindow?.postMessage({type:'email-demo-visibility',visible:storyNear&&!document.hidden},location.origin);new IntersectionObserver(entries=>{storyNear=entries[0].isIntersecting;notify()},{rootMargin:'0px',threshold:.1}).observe(frame);frame.addEventListener('load',notify);window.addEventListener('message',event=>{if(event.origin===location.origin&&event.source===frame.contentWindow&&event.data?.type==='email-demo-ready')notify()});document.addEventListener('visibilitychange',notify)});
+document.querySelectorAll('.email-window--dev-reveal').forEach(emailWindow=>{const devFrame=emailWindow.querySelector('.email-window__dev');if(!devFrame)return;let visible=false,ready=false,timer=0;const sync=()=>{clearTimeout(timer);emailWindow.classList.remove('is-dev-playing');devFrame.contentWindow?.postMessage({type:'email-dev-preview',visible:false},location.origin);if(!visible||document.hidden||!ready)return;timer=window.setTimeout(()=>{emailWindow.classList.add('is-dev-playing');devFrame.contentWindow?.postMessage({type:'email-dev-preview',visible:true},location.origin)},700)};new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;sync()},{rootMargin:'0px',threshold:.16}).observe(emailWindow);devFrame.addEventListener('load',()=>{ready=true;sync()});document.addEventListener('visibilitychange',sync)});
+document.addEventListener('visibilitychange',()=>{syncMotionTiles();syncPhoneTiles();updateOcean()});
+</script>
+<script src="assets/scrub-shader.js?v=4"></script>
+<script>
+const scrubPhone=document.querySelector('.scrub-phone');
+const scrubStatement=document.querySelector('.scrub-statement');
+const scrubMark=document.querySelector('.scrub-mark');
+const scrubPortraits=document.querySelector('.scrub-portraits');
+const scrubShader=window.createScrubShader?.(scrubStatement?.querySelector('canvas'));
+let scrubPhoneNear=false;
+let scrubStatementNear=false;
+let scrubMarkNear=false;
+let scrubPortraitsNear=false;
+const syncScrubPhone=()=>{if(scrubPhone)scrubPhone.classList.toggle('is-visible',scrubPhoneNear&&!document.hidden&&!reduced.matches)};
+if(scrubPhone)new IntersectionObserver(([entry])=>{scrubPhoneNear=entry.isIntersecting;syncScrubPhone()},{threshold:.15}).observe(scrubPhone);
+// Each visible tile starts immediately, so the Scrub animations can play
+// together while still stopping and resetting outside the visitor's view.
+const syncScrubStatement=()=>{
+  const active=scrubStatementNear&&!document.hidden&&!reduced.matches;
+  scrubStatement?.classList.toggle('motion-active',active);
+  scrubStatement?.classList.toggle('text-playing',active);
+  scrubShader?.setActive(active);
+};
+if(scrubStatement&&'IntersectionObserver'in window)new IntersectionObserver(([entry])=>{scrubStatementNear=entry.isIntersecting;syncScrubStatement()},{threshold:.2}).observe(scrubStatement);
+else if(scrubStatement){scrubStatementNear=true;syncScrubStatement()}
+const syncScrubMark=()=>{scrubMark?.classList.toggle('motion-active',scrubMarkNear&&!document.hidden&&!reduced.matches)};
+if(scrubMark&&'IntersectionObserver'in window)new IntersectionObserver(([entry])=>{scrubMarkNear=entry.isIntersecting;syncScrubMark()},{threshold:.2}).observe(scrubMark);
+else if(scrubMark){scrubMarkNear=true;syncScrubMark()}
+reduced.addEventListener('change',()=>{syncScrubStatement();syncScrubMark()});
+const syncScrubPortraits=()=>{if(scrubPortraits)scrubPortraits.classList.toggle('motion-active',scrubPortraitsNear&&!document.hidden&&!reduced.matches)};
+if(scrubPortraits&&'IntersectionObserver'in window)new IntersectionObserver(([entry])=>{scrubPortraitsNear=entry.isIntersecting;syncScrubPortraits()},{threshold:.2}).observe(scrubPortraits);
+else if(scrubPortraits)scrubPortraits.classList.add('motion-active');
+document.addEventListener('visibilitychange',()=>{syncScrubPhone();syncScrubStatement();syncScrubMark();syncScrubPortraits()});
+document.querySelectorAll('.email-window').forEach(emailWindow=>new ResizeObserver(()=>{emailWindow.querySelectorAll('iframe').forEach(frame=>{frame.style.transform=`scale(${emailWindow.clientWidth/1440})`})}).observe(emailWindow));
+</script>
 
-      .immersive-reveal.in-view {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-        filter: blur(0) saturate(1);
-      }
-
-      .immersive-reveal.in-view::after {
-        opacity: 1;
-        filter: blur(12px);
-      }
-
-      .headshot-image {
-        width: 200px;
-        height: 200px;
-      }
-
-      .hero {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 40px 120px 80px 120px;
-        box-sizing: border-box;
-        text-align: center;
-        position: relative;
-        z-index: 1;
-      }
-
-      .hero-content {
-        width: 100%;
-        max-width: 900px;
-      }
-
-      .hero p {
-        max-width: 600px;
-        margin-left: auto;
-        margin-right: auto;
-      }
-
-      .logo-carousel {
-        width: 100%;
-        max-width: 900px;
-        margin: 0 auto 80px;
-        padding: 24px 0;
-        background: transparent;
-        border-radius: 4px;
-      }
-
-      .logo-track {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 40px;
-        align-items: center;
-        justify-items: center;
-        width: 100%;
-      }
-
-      .logo-item {
-        height: 64px;
-        display: contents;
-      }
-
-      .logo-item[aria-hidden='true'] {
-        display: none;
-      }
-
-      .logo-item img {
-        display: block;
-      }
-
-      .logo-item img.no-filter {
-        filter: none;
-      }
-
-      @keyframes logo-marquee {
-        0% {
-          transform: translateX(0);
-        }
-
-        100% {
-          transform: translateX(-50%);
-        }
-      }
-
-        h1 {
-          font-family: 'Inter', sans-serif;
-          font-weight: 500;
-          font-size: 56px;
-          line-height: 110%;
-          letter-spacing: -0.04em;
-          text-align: center;
-          margin: 0 0 16px;
-          color: #0f172a;
-        }
-
-        .financial-sector {
-          display: block;
-          color: #084fff;
-        }
-
-        p {
-          color: #737373;
-        font-family: 'Inter', sans-serif;
-        font-weight: 300;
-        font-size: 20px;
-        line-height: 160%;
-        letter-spacing: -0.02em;
-        margin: 0 0 40px;
-      }
-
-        button,
-        .resume-button {
-          background: #084fff;
-          border: none;
-          color: #ffffff;
-          font-family: 'Inter', sans-serif;
-          font-size: 16px;
-          font-weight: 600;
-          height: 56px;
-          padding: 0 32px;
-          cursor: pointer;
-          border-radius: 4px;
-          box-shadow: 0 12px 24px rgba(55, 98, 227, 0.4);
-          transition:
-            opacity 1100ms cubic-bezier(0.16, 1, 0.3, 1),
-            filter 1200ms cubic-bezier(0.16, 1, 0.3, 1),
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-      button:hover,
-      button:focus-visible,
-      .resume-button:hover,
-      .resume-button:focus-visible {
-        transform: translateY(-4px);
-        background: linear-gradient(
-            0deg,
-            rgba(255, 255, 255, 0.08),
-            rgba(255, 255, 255, 0.08)
-          ),
-          #084fff;
-      }
-
-      .resume-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-      }
-
-      .case-study {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        margin: 0 auto 120px;
-        padding: 0 24px;
-        box-sizing: border-box;
-        text-align: center;
-      }
-
-      .case-study img {
-        width: 100%;
-        max-width: 960px;
-        border-radius: 12px;
-        object-fit: cover;
-        box-shadow: 0 0 100px rgba(0, 0, 0, 0.05);
-      }
-
-      .case-study h2 {
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-        font-size: 40px;
-        line-height: 1.2;
-        color: #0f172a;
-        margin: 24px 0 0;
-      }
-
-      .case-study p {
-        max-width: 800px;
-        margin: 0;
-      }
-
-      .case-metrics {
-        display: flex;
-        gap: 24px;
-        width: 100%;
-        max-width: 800px;
-        margin: 8px auto 0;
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-
-      .case-metric-card {
-        flex: 1 1 280px;
-        background: #fff;
-        border: 0px;
-        border-radius: 12px;
-        padding: 20px;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        box-shadow: 0 0 100px rgba(0, 0, 0, 0.05);
-      }
-
-      .case-metric-card h2 {
-        margin: 0;
-        font-size: 32px;
-      }
-
-      .case-metric-card p {
-        margin: 0;
-        color: #737373;
-      }
-
-      @media (max-width: 900px) {
-        .page {
-          align-items: center;
-        }
-
-        .site-header {
-          margin: 48px 16px 0;
-          width: auto;
-          max-width: calc(100% - 32px);
-          justify-content: center;
-        }
-
-        .hero {
-          flex-direction: column;
-          align-items: center;
-          padding: 48px 32px;
-          text-align: center;
-          min-height: auto;
-        }
-
-        .hero-content {
-          max-width: none;
-          text-align: center;
-        }
-
-        h1,
-        p {
-          text-align: center;
-        }
-
-        /* Hide carousel on mobile */
-        .logo-carousel {
-          display: none;
-        }
-
-        h1 {
-          font-size: 40px;
-          background: none;
-          -webkit-background-clip: initial;
-          -webkit-text-fill-color: #0f172a;
-          color: #0f172a;
-        }
-
-        .case-study h2 {
-          font-size: 32px;
-          background: none;
-          -webkit-background-clip: initial;
-          -webkit-text-fill-color: #0f172a;
-          color: #0f172a;
-        }
-
-        .logo-item {
-          min-width: 160px;
-        }
-
-        .logo-track {
-          display: flex;
-          align-items: center;
-          gap: 64px;
-          width: max-content;
-          animation: logo-marquee 22s linear infinite;
-          justify-content: center;
-        }
-
-        .logo-track:hover {
-          animation-play-state: paused;
-        }
-
-        .logo-item {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 64px;
-        }
-
-        .logo-item[aria-hidden='true'] {
-          display: contents;
-        }
-
-        .logo-item img {
-          display: block;
-          margin: 0 auto;
-        }
-
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .immersive-reveal,
-        .immersive-reveal::after {
-          transition: none;
-          animation: none;
-          transform: none;
-          filter: none;
-          opacity: 1;
-        }
-
-        .logo-track {
-          animation: none !important;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="page">
-      <div class="hero-shell">
-        <div class="hero-backdrop" aria-hidden="true"></div>
-        <header class="site-header immersive-reveal" data-delay="0ms">
-          <img
-            src="images/headshot.png"
-            alt="Headshot of Josh Leavitt"
-            class="headshot-image"
-          />
-        </header>
-        <div class="hero">
-          <div class="hero-content immersive-reveal" data-delay="200ms">
-            <h1>
-              Design leader who drives clarity, craft, and impact across the
-              <span class="financial-sector">financial sector</span>
-            </h1>
-            <p>
-              10+ years leading design teams and creating experiences that empower clients and deliver measurable results.
-            </p>
-          </div>
-          <a
-            class="resume-button immersive-reveal"
-            href="images/josh_leavitt_resume.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-delay="400ms"
-          >
-            Download Resume
-          </a>
-        </div>
-      </div>
-      <section class="logo-carousel immersive-reveal" aria-label="Companies I've worked with" data-delay="600ms">
-        <div class="logo-track">
-          <div class="logo-item">
-            <div class="logo-item">
-              <img src="images/logos/pimco.svg" alt="PIMCO logo" width="72px" height="13px" />
-            </div>
-            <img src="images/logos/aig.svg" alt="AIG logo" width="50px" height="27px" />
-          </div>
-          <div class="logo-item">
-            <img src="images/logos/amex.svg" alt="American Express logo" width="36px" height="36px" class="no-filter" />
-          </div>
-          <div class="logo-item">
-            <img src="images/logos/blackrock.svg" alt="BlackRock logo" width="90px" height="13px" />
-          </div>
-          <div class="logo-item">
-            <img src="images/logos/citizens.svg" alt="Citizens logo" width="93px" height="15px" />
-          </div>
-          <div class="logo-item" aria-hidden="true">
-            <img src="images/logos/pimco.svg" alt="" width="72px" height="13px" />
-          </div>
-          <div class="logo-item" aria-hidden="true">
-            <img src="images/logos/aig.svg" alt="" width="50px" height="27px" />
-          </div>
-          <div class="logo-item" aria-hidden="true">
-            <img src="images/logos/amex.svg" alt="" width="36px" height="36px" class="no-filter" />
-          </div>
-          <div class="logo-item" aria-hidden="true">
-            <img src="images/logos/blackrock.svg" alt="" width="90px" height="13px" />
-          </div>
-          <div class="logo-item" aria-hidden="true">
-            <img src="images/logos/citizens.svg" alt="" width="93px" height="15px" />
-          </div>
-        </div>
-      </section>
-
-    <section class="case-study" aria-labelledby="case-study-1-title">
-      <div>
-        <img src="images/case/Case_1.jpg" alt="Screenshot of Pro Analytics dashboard" />
-      </div>
-      <h2 id="case-study-1-title">Analytics Platform</h2>
-      <p>
-        I accelerated advisor acquisition by launching Pro, an integrated sales-enablement
-        platform that equips advisors with real-time insights to drive client outcomes.
-        Intuitive workflows include performance analysis, yield forecasting, and account
-        management.
-      </p>
-      <div class="case-metrics">
-        <div class="case-metric-card">
-          <h2>300mm</h2>
-          <p>Annual AUM</p>
-        </div>
-        <div class="case-metric-card">
-          <h2>100%</h2>
-          <p>Sales Adoption</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="case-study" aria-labelledby="case-study-2-title">
-      <div>
-        <img src="images/case/Case_2.jpg" alt="Client Insights platform screens" />
-      </div>
-      <h2 id="case-study-2-title">Global Website</h2>
-      <p>
-        Led the end-to-end migration of a global marketing platform, aligning component architecture, development velocity, accessibility standards (ADA/WCAG), and cross-functional teams.
-      </p>
-      <div class="case-metrics">
-        <div class="case-metric-card">
-          <h2>50%</h2>
-          <p>YOY Cost Reduction</p>
-        </div>
-        <div class="case-metric-card">
-          <h2>100%</h2>
-          <p>Critical Compliance Fixes</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="case-study" aria-labelledby="case-study-3-title">
-      <div>
-        <img src="images/case/Case_3.jpg" alt="Client Insights platform screens" />
-      </div>
-      <h2 id="case-study-3-title">AI Sales Copilot</h2>
-      <p>
-        Launched an AI-powered sales copilot enabling advisors to access real-time performance, CRM, tax, and legal insights during client preparation and live calls.
-      </p>
-      <div class="case-metrics">
-        <div class="case-metric-card">
-          <h2>2x</h2>
-          <p>Productivity Gained</p>
-        </div>
-        <div class="case-metric-card">
-          <h2>#1</h2>
-          <p>Internal App</p>
-        </div>
-      </div>
-    </section>
-    </div>
-    <script>
-      const stagedElements = [
-        { selector: '.site-header', delay: 100 },
-        { selector: '.hero-content', delay: 300 },
-        { selector: '.resume-button', delay: 1000 },
-        { selector: '.logo-carousel', delay: 700 },
-      ]
-        .map(({ selector, delay }) => {
-          const element = document.querySelector(selector);
-          return element ? { element, delay } : null;
-        })
-        .filter(Boolean);
-
-      const stagedElementNodes = stagedElements.map(({ element }) => element);
-
-      const revealElements = Array.from(
-        document.querySelectorAll('.immersive-reveal')
-      ).filter((element) => !stagedElementNodes.includes(element));
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('in-view');
-              observer.unobserve(entry.target);
-            }
-          });
-        },
-        {
-          root: null,
-          rootMargin: '0px 0px -10% 0px',
-          threshold: 0.25,
-        }
-      );
-
-      revealElements.forEach((element, index) => {
-        const delay = element.dataset.delay || `${Math.min(index * 90, 540)}ms`;
-        element.style.setProperty('--reveal-delay', delay);
-        observer.observe(element);
-      });
-
-      stagedElements.forEach(({ element, delay }) => {
-        const delayValue = Number.isFinite(delay) ? delay : 0;
-        element.style.setProperty('--reveal-delay', `${delayValue}ms`);
-
-        window.setTimeout(() => {
-          element.classList.add('in-view');
-        }, delayValue + 60);
-      });
-    </script>
-  </body>
+</body>
 </html>
