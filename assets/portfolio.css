@@ -86,7 +86,7 @@ main{padding-top:64px}
 @keyframes wordmark-arrive{0%,2%{opacity:0;transform:translateY(-50%) translateZ(-160px)}7%,22%{opacity:1;transform:translateY(-50%) translateZ(0)}25%,100%{opacity:0;transform:translateY(-50%) translateZ(0)}}
 @media(prefers-reduced-motion:reduce){.brand-frame,.brand-arrow,.brand-frame .wordmark{animation:none}.brand-frame:first-child{opacity:1}.brand-arrow{transform:translate(0,-50%)}.brand-frame .wordmark{transform:translateY(-50%);opacity:1}}
 
-.stairs,.conversation{height:auto;object-fit:cover}.stairs{height:auto;aspect-ratio:832/440}.conversation{height:auto;aspect-ratio:832/712}.product-showcase{margin-top:clamp(24px,4vw,72px);padding:4% 12% 0;background:linear-gradient(145deg,#ded4c7 0%,#eee9e2 50%,#fff 100%);overflow:hidden}.demo-window{position:relative;width:100%;aspect-ratio:1440/1120;box-shadow:0 12px 65px #49351d16;overflow:hidden;background:white}.demo-window iframe{position:absolute;left:0;top:0;width:1440px;height:1120px;border:0;transform-origin:top left}@media(max-width:600px){.product-showcase{padding:20px 3% 0}}
+.stairs,.conversation{height:auto;object-fit:cover}.stairs{height:auto;aspect-ratio:832/440}.conversation{height:auto;aspect-ratio:832/712}.product-showcase{margin-top:clamp(24px,4vw,72px);padding:4% 12% 0;background:linear-gradient(145deg,#ded4c7 0%,#eee9e2 50%,#fff 100%);overflow:hidden}.demo-window{position:relative;width:100%;aspect-ratio:1440/1120;box-shadow:0 12px 65px #49351d16;overflow:hidden;background:white}.demo-window iframe{position:absolute;left:0;top:0;width:1440px;height:1120px;border:0;transform-origin:top left}@media(max-width:600px){.product-showcase{padding:3% 3% 0}}
 
 .product-showcase{background:linear-gradient(to top,#ffffff 25%,#e0d4c5 100%)}.demo-window{box-shadow:0 0 80px 0 rgba(182,145,100,.4)}.demo-window iframe{pointer-events:none}
 
@@ -110,19 +110,19 @@ main{padding-top:64px}
 .site-header a,.site-header nav a:hover,.contact-links .resume-icon{color:#fff}
 .site-header .resume-icon svg path[fill="white"]{fill:#000}
 
-.email-heading{margin-top:80px;margin-bottom:28px}.email-showcase{background:linear-gradient(to top,#fff 25%,#aed5f1 100%);padding:4% 8% 0;overflow:hidden}.email-window{position:relative;width:100%;aspect-ratio:1440/1000;background:#fff;box-shadow:0 0 80px #7eb6df55;overflow:hidden}.email-window iframe{position:absolute;left:0;top:0;width:1440px;height:1000px;border:0;transform-origin:top left}@media(max-width:600px){.email-showcase{padding:20px 2% 0}.email-heading{margin-top:48px}}
+.email-heading{margin-top:80px;margin-bottom:28px}.email-showcase{background:linear-gradient(to top,#fff 25%,#aed5f1 100%);padding:4% 8% 0;overflow:hidden}.email-window{position:relative;width:100%;aspect-ratio:1440/1000;background:#fff;box-shadow:0 0 80px #7eb6df55;overflow:hidden}.email-window iframe{position:absolute;left:0;top:0;width:1440px;height:1000px;border:0;transform-origin:top left}@media(max-width:600px){.email-showcase{padding:2% 2% 0}.email-heading{margin-top:48px}}
 
 /* Separate project with its editor contained in the blue presentation frame. */
 #email-studio{scroll-margin-top:110px}
 .email-heading{margin-top:80px;margin-bottom:28px}
 .email-showcase{padding:3.125% 12% 0}
 .email-window{margin-inline:auto}
-@media(max-width:600px){.email-showcase{padding:20px 2% 0}}
+@media(max-width:600px){.email-showcase{padding:2% 2% 0}}
 
 /* Keep the Email Studio title within the blue gradient project background. */
 .email-showcase{padding:4% 8% 0}
 .email-heading{margin:0 4% 28px}
-@media(max-width:600px){.email-showcase{padding:24px 2% 0}.email-heading{margin:0 2% 20px}}
+@media(max-width:600px){.email-showcase{padding:2% 2% 0}.email-heading{margin:0 2% 20px}}
 
 /* Email Studio uses the same project topper and metadata layout as the first case study. */
 .email-heading{margin:80px 0 28px}
