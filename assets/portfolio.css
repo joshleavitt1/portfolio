@@ -386,3 +386,9 @@ main{padding-top:0}
 
 /* Explicit frame dimensions prevent iOS from expanding an embedded demo. */
 .email-window iframe{display:block;min-width:0;max-width:none}
+
+/* Oversized mockups can extend beyond their visual mask on iOS. Clip at
+   the mobile page edge without changing vertical scrolling or tile overlap. */
+@media(max-width:600px){
+  html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
+}
