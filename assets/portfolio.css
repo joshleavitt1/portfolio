@@ -383,3 +383,6 @@ main{padding-top:0}
 .site-header .identity{font-size:16px;font-weight:800;line-height:1.25;letter-spacing:normal;text-transform:none}
 @media(max-width:600px){.site-header .identity{font-size:14px}}
 @media(max-width:900px){.project-details{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:8%}}
+
+/* Explicit frame dimensions prevent iOS from expanding an embedded demo. */
+.email-window iframe{display:block;min-width:0;max-width:none}

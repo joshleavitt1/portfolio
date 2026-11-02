@@ -24,3 +24,44 @@
   .portfolio-email .fixed[aria-hidden="true"],
   .portfolio-email .portfolio-inspector-overlay > div { transition: none !important; }
 }
+
+/* Keep iOS iframe layout and image decoding at the same desktop geometry
+   used by the cursor paths; only the outer portfolio scales the preview. */
+:is(.portfolio-email, .portfolio-agentic) {
+  width: 1440px;
+  height: 1000px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+:is(.portfolio-email, .portfolio-agentic) body,
+:is(.portfolio-email, .portfolio-agentic) #root {
+  width: 1440px;
+  height: 1000px;
+  margin: 0;
+}
+:is(.portfolio-email, .portfolio-agentic) .h-screen { height: 1000px; }
+:is(.portfolio-email, .portfolio-agentic) [data-email-banner-image] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 5334 / 1708;
+  object-fit: contain;
+}
+:is(.portfolio-email, .portfolio-agentic) [data-email-feature-frame] {
+  position: relative;
+  width: 100%;
+  height: 315px;
+  min-height: 315px;
+  flex-shrink: 0;
+}
+:is(.portfolio-email, .portfolio-agentic) [data-email-feature-image] {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
+}
