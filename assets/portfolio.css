@@ -392,3 +392,13 @@ main{padding-top:0}
 @media(max-width:600px){
   html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
 }
+
+/* Portfolio type palette. Embedded work keeps its own brand styling. */
+:root{--portfolio-ink:#171717;--portfolio-slug:#999999}
+body,.site-header,.site-header a,.site-header nav a:hover,
+.site-header .identity,.contact-links .resume-icon,
+.project-title-row h2,.story-block h3{color:var(--portfolio-ink)}
+.bio>p,.story-block>p{font-size:16px;color:var(--portfolio-ink)}
+.project-details dd{font-size:14px;color:var(--portfolio-ink)}
+.site-header .contact-links a{font-size:14px;color:var(--portfolio-ink)}
+.eyebrow,.project-details dt,.story-number,.project-index,.email-screen-heading{color:var(--portfolio-slug)}
